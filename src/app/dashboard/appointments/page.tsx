@@ -208,30 +208,30 @@ export default function AppointmentsPage() {
           <div className="space-y-4 pt-2">
             <div className="space-y-1.5">
               <Label>Servicio *</Label>
-              <Select value={form.serviceId} onValueChange={v => setForm(f => ({ ...f, serviceId: v ?? "" }))}>
-                <SelectTrigger><SelectValue placeholder="Selecciona un servicio" /></SelectTrigger>
-                <SelectContent>
-                  {services.map(s => <SelectItem key={s.id} value={s.id}>{s.name} — {s.duration} min</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <select value={form.serviceId} onChange={e => setForm(f => ({ ...f, serviceId: e.target.value }))}
+                className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
+                <option value="" style={{ backgroundColor: "#3a3a3c" }}>Selecciona un servicio</option>
+                {services.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#3a3a3c" }}>{s.name} — {s.duration} min</option>)}
+              </select>
             </div>
             <div className="space-y-1.5">
               <Label>Profesional *</Label>
-              <Select value={form.staffId} onValueChange={v => setForm(f => ({ ...f, staffId: v ?? "" }))}>
-                <SelectTrigger><SelectValue placeholder="Selecciona un profesional" /></SelectTrigger>
-                <SelectContent>
-                  {staff.map(s => <SelectItem key={s.id} value={s.id}>{s.user.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <select value={form.staffId} onChange={e => setForm(f => ({ ...f, staffId: e.target.value }))}
+                className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
+                <option value="" style={{ backgroundColor: "#3a3a3c" }}>Selecciona un profesional</option>
+                {staff.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#3a3a3c" }}>{s.user.name}</option>)}
+              </select>
             </div>
             <div className="space-y-1.5">
               <Label>Cliente</Label>
-              <Select value={form.clientId} onValueChange={v => setForm(f => ({ ...f, clientId: v ?? "" }))}>
-                <SelectTrigger><SelectValue placeholder="Sin cliente asignado" /></SelectTrigger>
-                <SelectContent>
-                  {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <select value={form.clientId} onChange={e => setForm(f => ({ ...f, clientId: e.target.value }))}
+                className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
+                <option value="" style={{ backgroundColor: "#3a3a3c" }}>Sin cliente asignado</option>
+                {clients.map(c => <option key={c.id} value={c.id} style={{ backgroundColor: "#3a3a3c" }}>{c.name}</option>)}
+              </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
