@@ -202,10 +202,11 @@ export default function ServicesPage() {
                 <select
                   value={form.categoryId ?? ""}
                   onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}
-                  className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}
                 >
-                  <option value="">Sin categoría</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  <option value="" style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>Sin categoría</option>
+                  {categories.map(c => <option key={c.id} value={c.id} style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>{c.name}</option>)}
                 </select>
               </div>
               <div className="col-span-2 space-y-2">
