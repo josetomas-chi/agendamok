@@ -61,8 +61,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!service) return NextResponse.json({ error: "Servicio no encontrado" }, { status: 404 })
 
     const [h, m] = data.time.split(":").map(Number)
-    const base = parseISO(data.date)
-    const startTime = setMinutes(setHours(base, h), m)
+    const startTime = new Date(`${data.date}T${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:00`)
     const endTime = addMinutes(startTime, service.duration)
 
     let clientId = data.clientId

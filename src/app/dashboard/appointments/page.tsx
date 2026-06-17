@@ -169,10 +169,10 @@ export default function AppointmentsPage() {
           <p className="text-sm mt-1">Los turnos aparecerán aquí cuando los clientes reserven</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="rounded-xl border border-white/10 overflow-hidden">
           {filtered.map((a, i) => (
             <div key={a.id} onClick={() => setSelected(a)}
-              className={`flex items-center gap-4 px-4 py-3.5 cursor-pointer hover:bg-muted/20 transition-colors ${i !== filtered.length - 1 ? "border-b" : ""}`}>
+              className={`flex items-center gap-4 px-4 py-3.5 cursor-pointer hover:bg-white/5 transition-colors ${i !== filtered.length - 1 ? "border-b border-white/10" : ""}`}>
               <div className="w-1 h-10 rounded-full flex-shrink-0" style={{ backgroundColor: a.service.color }} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
