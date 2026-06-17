@@ -59,25 +59,25 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-xl border overflow-hidden">
+    <div className="rounded-xl overflow-hidden" style={{ background: "#e8e8ea", border: "1px solid #4a4a4e" }}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b">
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "2px solid #3a3a3c", background: "#dcdcde" }}>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="border-[#5a5a5e] bg-white/60 hover:bg-white/80 text-[#2a2a2c]">
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={() => navigate(1)}>
+          <Button variant="outline" size="icon" onClick={() => navigate(1)} className="border-[#5a5a5e] bg-white/60 hover:bg-white/80 text-[#2a2a2c]">
             <ChevronRight className="w-4 h-4" />
           </Button>
-          <h2 className="font-semibold text-sm ml-2">
+          <h2 className="font-semibold text-sm ml-2 text-[#1a1a1c]">
             {view === "week"
               ? `${format(weekStart, "d MMM", { locale: es })} — ${format(addDays(weekStart, 6), "d MMM yyyy", { locale: es })}`
               : format(currentDate, "EEEE d MMMM yyyy", { locale: es })}
           </h2>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant={view === "week" ? "default" : "outline"} size="sm" onClick={() => setView("week")}>Semana</Button>
-          <Button variant={view === "day" ? "default" : "outline"} size="sm" onClick={() => setView("day")}>Dia</Button>
+          <Button variant={view === "week" ? "default" : "outline"} size="sm" onClick={() => setView("week")} className={view !== "week" ? "border-[#5a5a5e] bg-white/60 hover:bg-white/80 text-[#2a2a2c]" : ""}>Semana</Button>
+          <Button variant={view === "day" ? "default" : "outline"} size="sm" onClick={() => setView("day")} className={view !== "day" ? "border-[#5a5a5e] bg-white/60 hover:bg-white/80 text-[#2a2a2c]" : ""}>Dia</Button>
           <Button size="sm" onClick={() => onNewAppointment?.(format(new Date(), "yyyy-MM-dd"), "09:00")}>
             <Plus className="w-4 h-4 mr-1" /> Nuevo turno
           </Button>
@@ -87,16 +87,20 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
       {/* Calendar grid */}
       <div className="overflow-x-auto">
         <div className="min-w-[700px] max-h-[660px] overflow-y-auto">
-          {/* Day headers — sticky dentro del scroll */}
-          <div className="flex border-b bg-white sticky top-0 z-10">
-            <div className="w-16 flex-shrink-0 py-2 px-3 text-xs text-muted-foreground" />
+          {/* Day headers */}
+          <div className="flex sticky top-0 z-10" style={{ borderBottom: "2px solid #3a3a3c", background: "#d4d4d8" }}>
+            <div className="w-16 flex-shrink-0 py-2 px-3 text-xs text-[#5a5a5e]" />
             {displayDays.map((day) => (
               <div
                 key={day.toISOString()}
-                className={cn("flex-1 py-2 px-3 text-center text-xs font-medium border-l", isSameDay(day, new Date()) && "bg-indigo-50")}
+                className="flex-1 py-2 px-3 text-center text-xs font-medium"
+                style={{
+                  borderLeft: "1px solid #3a3a3c",
+                  background: isSameDay(day, new Date()) ? "rgba(56,189,248,0.15)" : "transparent",
+                }}
               >
-                <div className="text-muted-foreground uppercase">{format(day, "EEE", { locale: es })}</div>
-                <div className={cn("text-lg font-semibold mt-0.5", isSameDay(day, new Date()) && "text-indigo-600")}>
+                <div className="uppercase text-[#5a5a5e]">{format(day, "EEE", { locale: es })}</div>
+                <div className={cn("text-lg font-semibold mt-0.5", isSameDay(day, new Date()) ? "text-sky-600" : "text-[#1a1a1c]")}>
                   {format(day, "d")}
                 </div>
               </div>
@@ -106,8 +110,8 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
           {/* Time slots */}
           <div>
             {HOURS.map((hour) => (
-              <div key={hour} className="flex border-b">
-                <div className="w-16 flex-shrink-0 py-3 px-3 text-xs text-muted-foreground text-right border-r">
+              <div key={hour} className="flex" style={{ borderBottom: "1px solid #3a3a3c" }}>
+                <div className="w-16 flex-shrink-0 py-3 px-3 text-xs text-[#5a5a5e] text-right" style={{ borderRight: "1px solid #3a3a3c" }}>
                   {hour}:00
                 </div>
                 {displayDays.map((day) => {
@@ -118,14 +122,19 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
                       key={day.toISOString()}
                       onClick={() => { if (dayAppts.length === 0) handleCellClick(day, hour) }}
                       className={cn(
-                        "flex-1 border-l min-h-[60px] p-1 relative transition-colors",
-                        isSameDay(day, new Date()) && "bg-indigo-50/30",
-                        dayAppts.length === 0 && onNewAppointment && "cursor-pointer hover:bg-indigo-50/60 group"
+                        "flex-1 min-h-[60px] p-1 relative transition-colors group",
+                        dayAppts.length === 0 && onNewAppointment && "cursor-pointer"
                       )}
+                      style={{
+                        borderLeft: "1px solid #3a3a3c",
+                        background: isSameDay(day, new Date()) ? "rgba(56,189,248,0.06)" : "transparent",
+                      }}
+                      onMouseEnter={e => { if (dayAppts.length === 0) (e.currentTarget as HTMLDivElement).style.background = isSameDay(day, new Date()) ? "rgba(56,189,248,0.14)" : "rgba(56,189,248,0.08)" }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSameDay(day, new Date()) ? "rgba(56,189,248,0.06)" : "transparent" }}
                     >
                       {dayAppts.length === 0 && onNewAppointment && (
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Plus className="w-4 h-4 text-indigo-400" />
+                          <Plus className="w-4 h-4 text-sky-500" />
                         </div>
                       )}
                       {dayAppts.map((a) => (
@@ -149,7 +158,7 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
       </div>
 
       {/* Status legend */}
-      <div className="flex items-center gap-3 px-4 py-2 border-t text-xs text-muted-foreground">
+      <div className="flex items-center gap-3 px-4 py-2 text-xs text-[#5a5a5e]" style={{ borderTop: "2px solid #3a3a3c", background: "#d4d4d8" }}>
         {[
           { label: "Pendiente", color: "bg-yellow-400" },
           { label: "Confirmado", color: "bg-green-500" },
