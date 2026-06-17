@@ -42,7 +42,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md space-y-4">
         <div className="text-center">
-          <Link href="/" className="text-2xl font-bold text-indigo-600">Agenda Pro</Link>
+          <Link href="/" className="text-2xl font-bold text-indigo-600">AgendaMok</Link>
           <p className="mt-1 text-muted-foreground text-sm">Crea tu cuenta gratis</p>
         </div>
         <Card>

@@ -17,9 +17,9 @@ function base(content: string) {
     .btn{display:inline-block;background:#6366f1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;margin-top:16px}
     .footer{text-align:center;color:#9ca3af;font-size:12px;margin-top:24px}
   </style></head><body><div class="card">
-    <div class="logo">Agenda Pro</div>
+    <div class="logo">AgendaMok</div>
     ${content}
-    <div class="footer">Agenda Pro · Sistema de reservas online</div>
+    <div class="footer">AgendaMok · Sistema de reservas online</div>
   </div></body></html>`
 }
 
@@ -61,10 +61,10 @@ export async function sendInvite({
   await resend.emails.send({
     from: FROM,
     to: ownerEmail,
-    subject: `Te invitamos a gestionar ${businessName} en Agenda Pro`,
+    subject: `Te invitamos a gestionar ${businessName} en AgendaMok`,
     html: base(`
-      <h1>Bienvenido a Agenda Pro</h1>
-      <p>Hola <strong>${ownerName}</strong>, tu negocio <strong>${businessName}</strong> ya está creado en Agenda Pro.</p>
+      <h1>Bienvenido a AgendaMok</h1>
+      <p>Hola <strong>${ownerName}</strong>, tu negocio <strong>${businessName}</strong> ya está creado en AgendaMok.</p>
       <p>Haz clic en el botón para crear tu contraseña y acceder a tu panel:</p>
       <a href="${inviteUrl}" class="btn">Activar mi cuenta</a>
       <p style="margin-top:16px;font-size:13px;color:#9ca3af">Este link expira en 7 días.</p>

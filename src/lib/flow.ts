@@ -39,9 +39,9 @@ async function flowGet(endpoint: string, params: Record<string, string>) {
 
 // Plans (prices in CLP)
 export const PLANS = {
-  FREE: { name: "Agenda Pro — Plan Inicial", amount: 4990, currency: "CLP", interval: 1 },
-  PRO: { name: "Agenda Pro — Plan Pro", amount: 9900, currency: "CLP", interval: 1 },
-  ENTERPRISE: { name: "Agenda Pro — Plan Enterprise", amount: 29900, currency: "CLP", interval: 1 },
+  FREE: { name: "AgendaMok — Plan Inicial", amount: 4990, currency: "CLP", interval: 1 },
+  PRO: { name: "AgendaMok — Plan Pro", amount: 9900, currency: "CLP", interval: 1 },
+  ENTERPRISE: { name: "AgendaMok — Plan Enterprise", amount: 29900, currency: "CLP", interval: 1 },
 }
 
 // Create a Flow customer

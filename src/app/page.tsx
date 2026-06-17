@@ -38,7 +38,7 @@ const plans = [
     description: "Para cadenas y franquicias",
     features: ["Todo lo de Pro", "Multi-sede consolidado", "API access", "Soporte prioritario", "Onboarding dedicado"],
     cta: "Contactar ventas",
-    href: "mailto:hola@agendapro.cl",
+    href: "mailto:hola@agendamok.cl",
     highlight: false,
   },
 ]
@@ -159,7 +159,7 @@ export default function LandingPage() {
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-[#5a5a62]/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="font-bold text-xl text-white tracking-tight">
-            Agenda<span className="text-sky-400">Pro</span>
+            Agenda<span className="text-sky-400">Mok</span>
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm text-white/60">
             <Link href="#features" className="hover:text-white transition-colors">Funciones</Link>
@@ -226,7 +226,7 @@ export default function LandingPage() {
                   <div className="w-3 h-3 rounded-full bg-red-500/80" />
                   <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
                   <div className="w-3 h-3 rounded-full bg-green-500/80" />
-                  <div className="flex-1 mx-4 h-5 rounded-md bg-white/5 text-xs text-white/30 flex items-center justify-center">agendapro.cl/dashboard</div>
+                  <div className="flex-1 mx-4 h-5 rounded-md bg-white/5 text-xs text-white/30 flex items-center justify-center">agendamok.cl/dashboard</div>
                 </div>
                 <div className="grid grid-cols-4 gap-px bg-white/5 p-px">
                   <div className="bg-[#242426] col-span-1 p-4 space-y-2">
@@ -427,7 +427,7 @@ export default function LandingPage() {
 
       <footer className="border-t border-white/5 py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-white/30">
-          <p>© 2025 Agenda Pro. Todos los derechos reservados.</p>
+          <p>© 2025 AgendaMok. Todos los derechos reservados.</p>
           <div className="flex gap-6">
             <Link href="/privacy" className="hover:text-white/60 transition-colors">Privacidad</Link>
             <Link href="/terms" className="hover:text-white/60 transition-colors">Términos</Link>

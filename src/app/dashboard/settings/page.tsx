@@ -277,7 +277,7 @@ export default function SettingsPage() {
               <CardContent className="p-5 space-y-3">
                 <div>
                   <p className="font-bold text-lg text-green-800">Activa el Plan Inicial</p>
-                  <p className="text-sm text-green-700">Tu periodo de prueba termino. Activa tu plan para seguir usando Agenda Pro.</p>
+                  <p className="text-sm text-green-700">Tu periodo de prueba termino. Activa tu plan para seguir usando AgendaMok.</p>
                   <p className="text-2xl font-bold text-green-700 mt-2">$4.990 <span className="text-sm font-normal">/mes</span></p>
                 </div>
                 <Button className="w-full bg-green-600 hover:bg-green-700 gap-2" onClick={() => handleSubscribe("FREE")} disabled={subscribing}>

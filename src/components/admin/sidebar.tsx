@@ -26,7 +26,7 @@ export function AdminSidebar() {
             <Shield className="w-4 h-4 text-white" />
           </div>
           <div>
-            <span className="font-bold text-white text-sm">Agenda Pro</span>
+            <span className="font-bold text-white text-sm">AgendaMok</span>
             <p className="text-xs text-gray-400">Super Admin</p>
           </div>
         </Link>

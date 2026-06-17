@@ -6,7 +6,7 @@ import "./globals.css"
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" })
 
 export const metadata: Metadata = {
-  title: { default: "Agenda Pro", template: "%s | Agenda Pro" },
+  title: { default: "AgendaMok", template: "%s | AgendaMok" },
   description: "Gestión de turnos y reservas para tu negocio. Booking online 24/7.",
 }
 

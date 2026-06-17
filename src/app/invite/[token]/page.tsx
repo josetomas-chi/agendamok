@@ -53,8 +53,8 @@ export default function InvitePage() {
           <CardTitle>{done ? "Cuenta activada" : "Crea tu contraseña"}</CardTitle>
           <CardDescription>
             {done
-              ? "Tu cuenta está lista. Ahora puedes iniciar sesión en Agenda Pro."
-              : "Bienvenido a Agenda Pro. Elige una contraseña para activar tu cuenta."}
+              ? "Tu cuenta está lista. Ahora puedes iniciar sesión en AgendaMok."
+              : "Bienvenido a AgendaMok. Elige una contraseña para activar tu cuenta."}
           </CardDescription>
         </CardHeader>
         <CardContent>

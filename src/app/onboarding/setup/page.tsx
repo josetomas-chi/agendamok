@@ -262,7 +262,7 @@ export default function SetupPage() {
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground p-3 bg-gray-50 rounded-lg">
                 <Lock className="w-3.5 h-3.5 flex-shrink-0" />
-                Tus datos de tarjeta son procesados de forma segura por Flow.cl. Agenda Pro nunca almacena los datos de tu tarjeta.
+                Tus datos de tarjeta son procesados de forma segura por Flow.cl. AgendaMok nunca almacena los datos de tu tarjeta.
               </div>
               <Button className="w-full gap-2 h-11" onClick={handleRegisterCard} disabled={registeringCard}>
                 <CreditCard className="w-4 h-4" />

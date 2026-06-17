@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     if (subscription && subscription.plan !== "FREE") {
       const { subscribeCustomer, createPlan, PLANS } = await import("@/lib/flow")
       const plan = PLANS[subscription.plan as keyof typeof PLANS]
-      const planId = `agenda-pro-${subscription.plan.toLowerCase()}`
+      const planId = `agendamok-${subscription.plan.toLowerCase()}`
 
       try {
         await createPlan(planId, plan.name, plan.amount, plan.currency, plan.interval)
