@@ -244,7 +244,7 @@ function ServiceGrid({ items, onEdit, onDelete, onToggle }: {
   onToggle: (s: Service) => void
 }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
       {items.map(s => (
         <div
           key={s.id}
