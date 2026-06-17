@@ -61,7 +61,7 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
   return (
     <div className="rounded-xl overflow-hidden" style={{ background: "#c8c8cc", border: "1px solid #4a4a4e" }}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "2px solid #3a3a3c", background: "#bebec2" }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "2px solid rgba(255,255,255,0.7)", background: "#bebec2" }}>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="border-[#5a5a5e] bg-white/60 hover:bg-white/80 text-[#2a2a2c]">
             <ChevronLeft className="w-4 h-4" />
@@ -88,14 +88,14 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
       <div className="overflow-x-auto">
         <div className="min-w-[700px] max-h-[660px] overflow-y-auto">
           {/* Day headers */}
-          <div className="flex sticky top-0 z-10" style={{ borderBottom: "2px solid #3a3a3c", background: "#b8b8bc" }}>
+          <div className="flex sticky top-0 z-10" style={{ borderBottom: "2px solid rgba(255,255,255,0.7)", background: "#b8b8bc" }}>
             <div className="w-16 flex-shrink-0 py-2 px-3 text-xs text-[#5a5a5e]" />
             {displayDays.map((day) => (
               <div
                 key={day.toISOString()}
                 className="flex-1 py-2 px-3 text-center text-xs font-medium"
                 style={{
-                  borderLeft: "1px solid #3a3a3c",
+                  borderLeft: "1px solid rgba(255,255,255,0.5)",
                   background: isSameDay(day, new Date()) ? "rgba(56,189,248,0.15)" : "transparent",
                 }}
               >
@@ -110,8 +110,8 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
           {/* Time slots */}
           <div>
             {HOURS.map((hour) => (
-              <div key={hour} className="flex" style={{ borderBottom: "1px solid #3a3a3c" }}>
-                <div className="w-16 flex-shrink-0 py-3 px-3 text-xs text-[#5a5a5e] text-right" style={{ borderRight: "1px solid #3a3a3c" }}>
+              <div key={hour} className="flex" style={{ borderBottom: "1px solid rgba(255,255,255,0.5)" }}>
+                <div className="w-16 flex-shrink-0 py-3 px-3 text-xs text-[#5a5a5e] text-right" style={{ borderRight: "1px solid rgba(255,255,255,0.5)" }}>
                   {hour}:00
                 </div>
                 {displayDays.map((day) => {
@@ -126,7 +126,7 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
                         dayAppts.length === 0 && onNewAppointment && "cursor-pointer"
                       )}
                       style={{
-                        borderLeft: "1px solid #3a3a3c",
+                        borderLeft: "1px solid rgba(255,255,255,0.5)",
                         background: isSameDay(day, new Date()) ? "rgba(56,189,248,0.06)" : "transparent",
                       }}
                       onMouseEnter={e => { if (dayAppts.length === 0) (e.currentTarget as HTMLDivElement).style.background = isSameDay(day, new Date()) ? "rgba(56,189,248,0.14)" : "rgba(56,189,248,0.08)" }}
@@ -158,7 +158,7 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
       </div>
 
       {/* Status legend */}
-      <div className="flex items-center gap-3 px-4 py-2 text-xs text-[#3a3a3c]" style={{ borderTop: "2px solid #3a3a3c", background: "#b8b8bc" }}>
+      <div className="flex items-center gap-3 px-4 py-2 text-xs text-[#3a3a3c]" style={{ borderTop: "2px solid rgba(255,255,255,0.7)", background: "#b8b8bc" }}>
         {[
           { label: "Pendiente", color: "bg-yellow-400" },
           { label: "Confirmado", color: "bg-green-500" },
