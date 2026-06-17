@@ -45,13 +45,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{business.name}</h1>
-          <p className="text-muted-foreground text-sm">Panel de control</p>
-        </div>
-      </div>
-
       <StatsCards
         totalAppointments={business._count.appointments}
         totalClients={business._count.clients}
