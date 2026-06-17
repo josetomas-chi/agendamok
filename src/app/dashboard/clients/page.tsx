@@ -22,11 +22,11 @@ type Client = {
 }
 
 const SEGMENT_LABELS: Record<string, { label: string; color: string }> = {
-  NEW: { label: "Nuevo", color: "bg-blue-100 text-blue-700" },
+  NEW: { label: "Nuevo", color: "bg-sky-500/15 text-sky-300" },
   REGULAR: { label: "Regular", color: "bg-gray-100 text-gray-700" },
-  FREQUENT: { label: "Frecuente", color: "bg-green-100 text-green-700" },
-  VIP: { label: "VIP", color: "bg-purple-100 text-purple-700" },
-  AT_RISK: { label: "En riesgo", color: "bg-orange-100 text-orange-700" },
+  FREQUENT: { label: "Frecuente", color: "bg-green-500/15 text-green-300" },
+  VIP: { label: "VIP", color: "bg-purple-500/15 text-purple-300" },
+  AT_RISK: { label: "En riesgo", color: "bg-orange-500/15 text-orange-300" },
 }
 
 export default function ClientsPage() {

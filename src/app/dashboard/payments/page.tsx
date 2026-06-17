@@ -25,7 +25,7 @@ const METHODS = [
 ]
 
 const METHOD_LABELS: Record<string, string> = { CASH: "Efectivo", CARD: "Tarjeta", TRANSFER: "Transferencia", ONLINE: "Online" }
-const PAYMENT_STATUS: Record<string, string> = { PAID: "bg-green-100 text-green-700", PENDING: "bg-yellow-100 text-yellow-700", REFUNDED: "bg-red-100 text-red-700" }
+const PAYMENT_STATUS: Record<string, string> = { PAID: "bg-green-500/15 text-green-300", PENDING: "bg-yellow-500/15 text-yellow-300", REFUNDED: "bg-red-500/15 text-red-300" }
 
 export default function PaymentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -80,18 +80,19 @@ export default function PaymentsPage() {
 
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card><CardContent className="p-5 flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-green-50 flex items-center justify-center"><DollarSign className="w-5 h-5 text-green-600" /></div>
-          <div><p className="text-2xl font-bold">${todayRevenue.toLocaleString("es-AR")}</p><p className="text-sm text-muted-foreground">Recaudado hoy</p></div>
-        </CardContent></Card>
-        <Card><CardContent className="p-5 flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-green-50 flex items-center justify-center"><CheckCircle2 className="w-5 h-5 text-green-600" /></div>
-          <div><p className="text-2xl font-bold">{paid}</p><p className="text-sm text-muted-foreground">Pagados</p></div>
-        </CardContent></Card>
-        <Card><CardContent className="p-5 flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-yellow-50 flex items-center justify-center"><CreditCard className="w-5 h-5 text-yellow-600" /></div>
-          <div><p className="text-2xl font-bold">{pending}</p><p className="text-sm text-muted-foreground">Pendientes de cobro</p></div>
-        </CardContent></Card>
+        {[
+          { icon: DollarSign, value: `$${todayRevenue.toLocaleString("es-AR")}`, label: "Recaudado hoy" },
+          { icon: CheckCircle2, value: paid, label: "Pagados" },
+          { icon: CreditCard, value: pending, label: "Pendientes de cobro" },
+        ].map(({ icon: Icon, value, label }) => (
+          <Card key={label}><CardContent className="p-5 flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-sky-500/15 flex items-center justify-center flex-shrink-0"
+              style={{ boxShadow: "0 0 16px rgba(56,189,248,0.25)" }}>
+              <Icon className="w-5 h-5 text-sky-400" />
+            </div>
+            <div><p className="text-2xl font-bold">{value}</p><p className="text-sm text-muted-foreground">{label}</p></div>
+          </CardContent></Card>
+        ))}
       </div>
 
       {/* Appointment list */}

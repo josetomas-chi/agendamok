@@ -92,9 +92,9 @@ export default function MarketingPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { title: "Clientes VIP", desc: "Premiá a tus mejores clientes con ofertas exclusivas", segment: "VIP", color: "bg-purple-50 border-purple-200" },
-              { title: "En riesgo", desc: "Recuperá clientes que no reservan hace 60+ días", segment: "AT_RISK", color: "bg-orange-50 border-orange-200" },
-              { title: "Nuevos", desc: "Dales la bienvenida a tus nuevos clientes", segment: "NEW", color: "bg-blue-50 border-blue-200" },
+              { title: "Clientes VIP", desc: "Premiá a tus mejores clientes con ofertas exclusivas", segment: "VIP", color: "bg-purple-500/10 border-purple-400/20" },
+              { title: "En riesgo", desc: "Recuperá clientes que no reservan hace 60+ días", segment: "AT_RISK", color: "bg-orange-500/10 border-orange-400/20" },
+              { title: "Nuevos", desc: "Dales la bienvenida a tus nuevos clientes", segment: "NEW", color: "bg-sky-500/10 border-sky-400/20" },
             ].map(t => (
               <Card key={t.title} className={`border ${t.color}`}>
                 <CardHeader className="pb-2"><CardTitle className="text-sm">{t.title}</CardTitle><CardDescription className="text-xs">{t.desc}</CardDescription></CardHeader>
