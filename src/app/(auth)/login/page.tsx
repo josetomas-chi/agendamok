@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
@@ -47,6 +47,24 @@ export default function LoginPage() {
   }
 
   return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" name="email" type="email" placeholder="tu@email.com" required />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="password">Contraseña</Label>
+        <Input id="password" name="password" type="password" required />
+      </div>
+      <Button type="submit" className="w-full" disabled={loading}>
+        {loading ? "Ingresando..." : "Ingresar"}
+      </Button>
+    </form>
+  )
+}
+
+export default function LoginPage() {
+  return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md space-y-4">
         <div className="text-center">
@@ -59,19 +77,9 @@ export default function LoginPage() {
             <CardDescription>Ingresa tu email y contraseña</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" placeholder="tu@email.com" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
-                <Input id="password" name="password" type="password" required />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Ingresando..." : "Ingresar"}
-              </Button>
-            </form>
+            <Suspense fallback={<div className="h-32 animate-pulse bg-muted rounded" />}>
+              <LoginForm />
+            </Suspense>
             <div className="mt-4 text-center text-sm">
               <span className="text-muted-foreground">¿No tienes cuenta? </span>
               <Link href="/register" className="text-indigo-600 hover:underline">Registrarte gratis</Link>
