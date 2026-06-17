@@ -97,10 +97,10 @@ export default function AppointmentsPage() {
       body: JSON.stringify({
         serviceId: form.serviceId,
         staffId: form.staffId,
-        clientId: form.clientId || null,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        notes: form.notes || null,
+        clientId: form.clientId || undefined,
+        date: form.date,
+        time: form.time,
+        notes: form.notes || undefined,
         status: "CONFIRMED",
       }),
     })
