@@ -145,20 +145,7 @@ export default function ServicesPage() {
           <Button className="mt-4" onClick={openNew}>Crear servicio</Button>
         </div>
       ) : (
-        <div className="space-y-6">
-          {Object.values(grouped).map(({ cat, items }) => items.length > 0 && (
-            <div key={cat.id}>
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">{cat.name}</h3>
-              <ServiceGrid items={items} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleActive} />
-            </div>
-          ))}
-          {uncategorized.length > 0 && (
-            <div>
-              {categories.length > 0 && <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Sin categoría</h3>}
-              <ServiceGrid items={uncategorized} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleActive} />
-            </div>
-          )}
-        </div>
+        <ServiceGrid items={services} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleActive} />
       )}
 
       {/* Categories quick-add */}
@@ -256,6 +243,7 @@ function ServiceGrid({ items, onEdit, onDelete, onToggle }: {
               </div>
               {!s.isActive && <Badge variant="secondary" className="text-xs flex-shrink-0">Inactivo</Badge>}
             </div>
+            {s.category && <p className="text-xs text-muted-foreground mb-1">{s.category.name}</p>}
             {s.description && <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{s.description}</p>}
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{s.duration} min</span>
