@@ -75,9 +75,9 @@ export default function SettingsPage() {
   }
 
   const planInfo: Record<string, { label: string; desc: string; color: string }> = {
-    FREE: { label: "Plan Inicial", desc: "Gratis 3 meses, luego $4.990/mes • Hasta 2 profesionales", color: "bg-green-50 border-green-200 text-green-700" },
-    PRO: { label: "Plan Pro", desc: "Citas ilimitadas • 10 profesionales • Reportes avanzados", color: "bg-indigo-50 border-indigo-100 text-indigo-700" },
-    ENTERPRISE: { label: "Plan Enterprise", desc: "Todo ilimitado • Multi-sede • Soporte prioritario", color: "bg-purple-50 border-purple-100 text-purple-700" },
+    FREE: { label: "Plan Inicial", desc: "Gratis 3 meses, luego $4.990/mes • Hasta 2 profesionales", color: "bg-green-500/15 border-green-400/20 text-green-300" },
+    PRO: { label: "Plan Pro", desc: "Citas ilimitadas • 10 profesionales • Reportes avanzados", color: "bg-sky-500/15 border-sky-400/20 text-sky-300" },
+    ENTERPRISE: { label: "Plan Enterprise", desc: "Todo ilimitado • Multi-sede • Soporte prioritario", color: "bg-purple-500/15 border-purple-400/20 text-purple-300" },
   }
   const currentPlan = subscription?.plan || "FREE"
   const info = planInfo[currentPlan]
@@ -273,12 +273,12 @@ export default function SettingsPage() {
 
           {/* Activate Inicial after trial / upgrade */}
           {currentPlan === "FREE" && trialExpired && (
-            <Card className="border-green-300 bg-green-50">
+            <Card className="border-green-400/30 bg-green-500/10">
               <CardContent className="p-5 space-y-3">
                 <div>
-                  <p className="font-bold text-lg text-green-800">Activa el Plan Inicial</p>
-                  <p className="text-sm text-green-700">Tu periodo de prueba termino. Activa tu plan para seguir usando AgendaMok.</p>
-                  <p className="text-2xl font-bold text-green-700 mt-2">$4.990 <span className="text-sm font-normal">/mes</span></p>
+                  <p className="font-bold text-lg text-green-300">Activa el Plan Inicial</p>
+                  <p className="text-sm text-green-400/80">Tu periodo de prueba termino. Activa tu plan para seguir usando AgendaMok.</p>
+                  <p className="text-2xl font-bold text-green-300 mt-2">$4.990 <span className="text-sm font-normal">/mes</span></p>
                 </div>
                 <Button className="w-full bg-green-600 hover:bg-green-700 gap-2" onClick={() => handleSubscribe("FREE")} disabled={subscribing}>
                   <CreditCard className="w-4 h-4" />
@@ -292,11 +292,11 @@ export default function SettingsPage() {
           {currentPlan === "FREE" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Pro */}
-              <Card className="border-indigo-200">
+              <Card className="border-sky-400/30 bg-sky-500/5">
                 <CardContent className="p-5 space-y-3">
                   <div>
                     <p className="font-bold text-lg">Plan Pro</p>
-                    <p className="text-2xl font-bold text-indigo-600 mt-1">$9.900 <span className="text-sm font-normal text-muted-foreground">/mes</span></p>
+                    <p className="text-2xl font-bold text-sky-400 mt-1">$9.900 <span className="text-sm font-normal text-muted-foreground">/mes</span></p>
                   </div>
                   <ul className="text-sm space-y-1 text-muted-foreground">
                     <li>✓ Citas ilimitadas</li>
@@ -313,11 +313,11 @@ export default function SettingsPage() {
               </Card>
 
               {/* Enterprise */}
-              <Card className="border-purple-200">
+              <Card className="border-purple-400/30 bg-purple-500/5">
                 <CardContent className="p-5 space-y-3">
                   <div>
                     <p className="font-bold text-lg">Plan Enterprise</p>
-                    <p className="text-2xl font-bold text-purple-600 mt-1">$29.900 <span className="text-sm font-normal text-muted-foreground">/mes</span></p>
+                    <p className="text-2xl font-bold text-purple-400 mt-1">$29.900 <span className="text-sm font-normal text-muted-foreground">/mes</span></p>
                   </div>
                   <ul className="text-sm space-y-1 text-muted-foreground">
                     <li>✓ Todo lo del plan Pro</li>
