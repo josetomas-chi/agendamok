@@ -187,11 +187,11 @@ export default function ServicesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Duración (min) *</Label>
-                <Input type="number" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: +e.target.value }))} min={5} step={5} />
+                <Input type="number" value={form.duration || ""} onChange={e => setForm(f => ({ ...f, duration: e.target.value === "" ? 0 : +e.target.value }))} min={5} step={5} placeholder="60" />
               </div>
               <div className="space-y-2">
                 <Label>Precio *</Label>
-                <Input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: +e.target.value }))} min={0} />
+                <Input type="number" value={form.price || ""} onChange={e => setForm(f => ({ ...f, price: e.target.value === "" ? 0 : +e.target.value }))} min={0} placeholder="0" />
               </div>
               <div className="space-y-2">
                 <Label>Tiempo entre sesiones (min)</Label>
