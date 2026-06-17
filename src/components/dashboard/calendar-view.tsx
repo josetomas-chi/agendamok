@@ -59,9 +59,9 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
   }
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: "#e8e8ea", border: "1px solid #4a4a4e" }}>
+    <div className="rounded-xl overflow-hidden" style={{ background: "#c8c8cc", border: "1px solid #4a4a4e" }}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "2px solid #3a3a3c", background: "#dcdcde" }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "2px solid #3a3a3c", background: "#bebec2" }}>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="border-[#5a5a5e] bg-white/60 hover:bg-white/80 text-[#2a2a2c]">
             <ChevronLeft className="w-4 h-4" />
@@ -88,7 +88,7 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
       <div className="overflow-x-auto">
         <div className="min-w-[700px] max-h-[660px] overflow-y-auto">
           {/* Day headers */}
-          <div className="flex sticky top-0 z-10" style={{ borderBottom: "2px solid #3a3a3c", background: "#d4d4d8" }}>
+          <div className="flex sticky top-0 z-10" style={{ borderBottom: "2px solid #3a3a3c", background: "#b8b8bc" }}>
             <div className="w-16 flex-shrink-0 py-2 px-3 text-xs text-[#5a5a5e]" />
             {displayDays.map((day) => (
               <div
@@ -158,7 +158,7 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
       </div>
 
       {/* Status legend */}
-      <div className="flex items-center gap-3 px-4 py-2 text-xs text-[#5a5a5e]" style={{ borderTop: "2px solid #3a3a3c", background: "#d4d4d8" }}>
+      <div className="flex items-center gap-3 px-4 py-2 text-xs text-[#3a3a3c]" style={{ borderTop: "2px solid #3a3a3c", background: "#b8b8bc" }}>
         {[
           { label: "Pendiente", color: "bg-yellow-400" },
           { label: "Confirmado", color: "bg-green-500" },
