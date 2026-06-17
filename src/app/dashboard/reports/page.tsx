@@ -42,10 +42,10 @@ export default function ReportsPage() {
   const { monthStats, revenueByMonth, topServices, topClients } = data
 
   const kpis = [
-    { label: "Ingresos del mes", value: `$${monthStats.revenue.toLocaleString("es-AR")}`, icon: TrendingUp, color: "text-green-600 bg-green-50" },
-    { label: "Turnos completados", value: monthStats.completed, icon: CheckCircle, color: "text-blue-600 bg-blue-50" },
-    { label: "Tasa de ocupación", value: `${monthStats.occupancyRate}%`, icon: Users, color: "text-indigo-600 bg-indigo-50" },
-    { label: "Tasa de ausentismo", value: `${monthStats.noShowRate}%`, icon: AlertCircle, color: "text-orange-600 bg-orange-50" },
+    { label: "Ingresos del mes", value: `$${monthStats.revenue.toLocaleString("es-AR")}`, icon: TrendingUp },
+    { label: "Turnos completados", value: monthStats.completed, icon: CheckCircle },
+    { label: "Tasa de ocupación", value: `${monthStats.occupancyRate}%`, icon: Users },
+    { label: "Tasa de ausentismo", value: `${monthStats.noShowRate}%`, icon: AlertCircle },
   ]
 
   const pieData = [
@@ -69,8 +69,9 @@ export default function ReportsPage() {
         {kpis.map(k => (
           <Card key={k.label}>
             <CardContent className="p-5 flex items-center gap-4">
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${k.color}`}>
-                <k.icon className="w-5 h-5" />
+              <div className="w-11 h-11 rounded-xl bg-sky-500/15 flex items-center justify-center flex-shrink-0"
+                style={{ boxShadow: "0 0 16px rgba(56,189,248,0.25)" }}>
+                <k.icon className="w-5 h-5 text-sky-400" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{k.value}</p>

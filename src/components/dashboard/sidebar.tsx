@@ -40,7 +40,7 @@ export function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
+      <nav className="flex-1 py-3 px-3 space-y-0.5 overflow-hidden">
         {nav.map(({ href, label, icon: Icon }) => {
           const isActive = href === "/dashboard" ? pathname === href : pathname.startsWith(href)
           return (
@@ -48,7 +48,7 @@ export function Sidebar() {
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
+                "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all",
                 isActive
                   ? "bg-sky-500/20 text-sky-300 border border-sky-400/20"
                   : "text-white/50 hover:bg-white/10 hover:text-white"
@@ -65,7 +65,7 @@ export function Sidebar() {
       <div className="p-3 border-t border-white/10">
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm text-white/40 hover:bg-white/10 hover:text-white transition-all"
+          className="flex items-center gap-3 px-3 py-2 w-full rounded-xl text-sm text-white/40 hover:bg-white/10 hover:text-white transition-all"
         >
           <LogOut className="w-4 h-4" />
           Cerrar sesión
