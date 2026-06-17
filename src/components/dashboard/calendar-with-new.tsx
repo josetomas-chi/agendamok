@@ -102,11 +102,7 @@ export function CalendarWithNew({ businessId, services, staff, clients }: Props)
 
   return (
     <>
-      {/* DEBUG — remove after fix */}
-      <div className="mb-2 p-2 bg-black/40 rounded text-xs text-white/70 font-mono">
-        appts en estado: {appts.length} | últimos: {appts.slice(-3).map(a => `${a.id.slice(-4)} ${new Date(a.startTime).toLocaleTimeString()}`).join(", ") || "ninguno"}
-      </div>
-      <CalendarView
+<CalendarView
         appointments={appts}
         businessId={businessId}
         onNewAppointment={handleNewAppointment}
