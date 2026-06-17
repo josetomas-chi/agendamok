@@ -89,8 +89,9 @@ export default function LandingPage() {
           background-clip: text;
         }
         .card-glow:hover {
-          box-shadow: 0 0 40px rgba(99,102,241,0.15);
-          border-color: rgba(99,102,241,0.4);
+          box-shadow: 0 0 60px rgba(99,102,241,0.3), 0 0 20px rgba(255,255,255,0.05);
+          border-color: rgba(99,102,241,0.6);
+          background-color: rgba(255,255,255,0.08) !important;
         }
       `}</style>
 
