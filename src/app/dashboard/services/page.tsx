@@ -194,7 +194,7 @@ export default function ServicesPage() {
                 <Input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: +e.target.value }))} min={0} />
               </div>
               <div className="space-y-2">
-                <Label>Buffer post-turno (min)</Label>
+                <Label>Tiempo entre sesiones (min)</Label>
                 <Input type="number" value={form.bufferAfter} onChange={e => setForm(f => ({ ...f, bufferAfter: +e.target.value }))} min={0} step={5} />
               </div>
               <div className="space-y-2">
