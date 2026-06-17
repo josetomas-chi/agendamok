@@ -65,7 +65,7 @@ export default function LandingPage() {
   useScrollReveal()
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#0a0a0a] text-white">
+    <div className="flex flex-col min-h-screen bg-[#1c1c1e] text-white">
       <style>{`
         .reveal {
           opacity: 0;
@@ -95,7 +95,7 @@ export default function LandingPage() {
       `}</style>
 
       {/* Nav */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-black/60 backdrop-blur-xl">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-[#1c1c1e]/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="font-bold text-xl text-white tracking-tight">
             Agenda<span className="text-indigo-400">Pro</span>
@@ -165,12 +165,12 @@ export default function LandingPage() {
                   <div className="flex-1 mx-4 h-5 rounded bg-white/5 text-xs text-white/30 flex items-center justify-center">agendapro.cl/dashboard</div>
                 </div>
                 <div className="grid grid-cols-4 gap-px bg-white/5 p-px">
-                  <div className="bg-[#111] col-span-1 p-4 space-y-3">
+                  <div className="bg-[#2c2c2e] col-span-1 p-4 space-y-3">
                     {["Inicio","Turnos","Clientes","Staff","Servicios","Reportes"].map(item => (
                       <div key={item} className={`text-xs px-3 py-2 rounded-lg ${item === "Turnos" ? "bg-indigo-600/30 text-indigo-300" : "text-white/30"}`}>{item}</div>
                     ))}
                   </div>
-                  <div className="bg-[#0d0d0d] col-span-3 p-4">
+                  <div className="bg-[#242426] col-span-3 p-4">
                     <div className="grid grid-cols-3 gap-3 mb-4">
                       {[["Turnos hoy","12"],["Este mes","$284.000"],["Clientes","48"]].map(([label, val]) => (
                         <div key={label} className="bg-white/5 rounded-xl p-3">
