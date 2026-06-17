@@ -2,7 +2,9 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
-import { addMinutes, parseISO, setHours, setMinutes } from "date-fns"
+import { addMinutes, format } from "date-fns"
+import { es } from "date-fns/locale"
+import { sendBookingConfirmation } from "@/lib/email"
 
 const schema = z.object({
   serviceId: z.string().cuid(),
@@ -96,6 +98,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         client: { select: { name: true, email: true, phone: true } },
       },
     })
+
+    // Send confirmation email if client has email
+    if (appointment.client?.email) {
+      const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
+      sendBookingConfirmation({
+        clientName: appointment.client.name,
+        clientEmail: appointment.client.email,
+        businessName: business?.name || "",
+        serviceName: appointment.service.name,
+        staffName: appointment.staff.user.name || "Sin asignar",
+        date: format(startTime, "EEEE d 'de' MMMM yyyy", { locale: es }),
+        time: format(startTime, "HH:mm"),
+        duration: service.duration,
+      }).catch(() => {})
+    }
 
     return NextResponse.json({ appointment }, { status: 201 })
   } catch (e) {

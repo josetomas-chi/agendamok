@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState } from "react"
 import { CalendarView } from "./calendar-view"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -35,18 +35,6 @@ export function CalendarWithNew({ appointments, businessId, services, staff, cli
   const [saving, setSaving] = useState(false)
   const [appts, setAppts] = useState(appointments)
 
-  const reloadAppts = useCallback(async () => {
-    const from = new Date()
-    from.setDate(1)
-    from.setHours(0, 0, 0, 0)
-    const to = new Date(from.getFullYear(), from.getMonth() + 2, 0, 23, 59, 59)
-    const r = await fetch(`/api/businesses/${businessId}/appointments?from=${from.toISOString()}&to=${to.toISOString()}`)
-    if (r.ok) {
-      const d = await r.json()
-      setAppts(d.appointments || [])
-    }
-  }, [businessId])
-
   function handleNewAppointment(date: string, time: string) {
     setForm({ ...DEFAULT_FORM, date, time })
     setOpen(true)
@@ -73,10 +61,11 @@ export function CalendarWithNew({ appointments, businessId, services, staff, cli
     })
 
     if (r.ok) {
+      const d = await r.json()
+      setAppts(prev => [...prev, d.appointment])
       toast.success("Turno creado")
       setOpen(false)
       setForm(DEFAULT_FORM)
-      await reloadAppts()
     } else {
       const d = await r.json()
       toast.error(d.error || "Error al crear turno")
