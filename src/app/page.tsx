@@ -65,7 +65,7 @@ export default function LandingPage() {
   useScrollReveal()
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#3a3a3c] text-white">
+    <div className="flex flex-col min-h-screen bg-[#52525a] text-white">
       <style>{`
         .reveal {
           opacity: 0;
@@ -83,23 +83,23 @@ export default function LandingPage() {
         .reveal-delay-5 { transition-delay: 0.5s; }
         .reveal-delay-6 { transition-delay: 0.6s; }
         .gradient-text {
-          background: linear-gradient(135deg, #fff 0%, #a5b4fc 50%, #818cf8 100%);
+          background: linear-gradient(135deg, #fff 0%, #7dd3fc 50%, #38bdf8 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
         }
         .card-glow:hover {
-          box-shadow: 0 0 60px rgba(99,102,241,0.3), 0 0 20px rgba(255,255,255,0.05);
-          border-color: rgba(99,102,241,0.6);
+          box-shadow: 0 0 60px rgba(56,189,248,0.35), 0 0 20px rgba(255,255,255,0.05);
+          border-color: rgba(56,189,248,0.6);
           background-color: rgba(255,255,255,0.08) !important;
         }
       `}</style>
 
       {/* Nav */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-[#48484a]/80 backdrop-blur-xl">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-[#5a5a62]/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="font-bold text-xl text-white tracking-tight">
-            Agenda<span className="text-indigo-400">Pro</span>
+            Agenda<span className="text-sky-400">Pro</span>
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm text-white/60">
             <Link href="#features" className="hover:text-white transition-colors">Funciones</Link>
@@ -110,7 +110,7 @@ export default function LandingPage() {
             <Link href="/login" className="text-sm text-white/70 hover:text-white transition-colors px-3 py-1.5">
               Ingresar
             </Link>
-            <Link href="/register" className="text-sm font-medium bg-indigo-600 hover:bg-indigo-500 transition-colors px-4 py-2 rounded-full">
+            <Link href="/register" className="text-sm font-medium bg-sky-500 hover:bg-sky-400 transition-colors px-4 py-2 rounded-full">
               Empezar gratis
             </Link>
           </div>
@@ -122,8 +122,8 @@ export default function LandingPage() {
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
           {/* Background glow */}
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-indigo-600/10 blur-[120px]" />
-            <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-purple-600/8 blur-[100px]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-sky-500/10 blur-[120px]" />
+            <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-sky-600/8 blur-[100px]" />
           </div>
 
           <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-24">
@@ -144,7 +144,7 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/register" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 transition-all rounded-full text-base font-semibold group">
+              <Link href="/register" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-sky-500 hover:bg-sky-400 transition-all rounded-full text-base font-semibold group">
                 Empezar gratis
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -159,9 +159,9 @@ export default function LandingPage() {
             <div className="mt-20 relative">
               <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#3a3a3c] to-transparent z-10" />
               {/* Retroiluminación */}
-              <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-indigo-600/40 via-purple-600/30 to-indigo-600/40 blur-xl" />
-              <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-indigo-500/20 via-white/5 to-purple-500/20" />
-              <div className="relative rounded-2xl border border-white/20 bg-[#2c2c2e] overflow-hidden shadow-2xl shadow-indigo-900/40">
+              <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-sky-500/40 via-sky-400/20 to-sky-500/40 blur-xl" />
+              <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-sky-400/20 via-white/5 to-sky-400/20" />
+              <div className="relative rounded-2xl border border-white/20 bg-[#2c2c2e] overflow-hidden shadow-2xl shadow-sky-900/40">
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10 bg-[#242426]">
                   <div className="w-3 h-3 rounded-full bg-red-500/80" />
                   <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
@@ -171,13 +171,13 @@ export default function LandingPage() {
                 <div className="grid grid-cols-4 gap-px bg-white/5 p-px">
                   <div className="bg-[#242426] col-span-1 p-4 space-y-2">
                     {["Inicio","Turnos","Clientes","Staff","Servicios","Reportes"].map(item => (
-                      <div key={item} className={`text-xs px-3 py-2 rounded-lg ${item === "Turnos" ? "bg-indigo-600/40 text-indigo-300 font-medium" : "text-white/30 hover:text-white/50"}`}>{item}</div>
+                      <div key={item} className={`text-xs px-3 py-2 rounded-lg ${item === "Turnos" ? "bg-sky-500/40 text-sky-300 font-medium" : "text-white/30 hover:text-white/50"}`}>{item}</div>
                     ))}
                   </div>
                   <div className="bg-[#2c2c2e] col-span-3 p-4">
                     <div className="grid grid-cols-3 gap-3 mb-4">
                       {[
-                        { label: "Turnos hoy", val: "12", sub: "+3 vs ayer", color: "text-indigo-400" },
+                        { label: "Turnos hoy", val: "12", sub: "+3 vs ayer", color: "text-sky-400" },
                         { label: "Este mes", val: "$284K", sub: "+18% ↑", color: "text-green-400" },
                         { label: "Clientes", val: "48", sub: "4 nuevos", color: "text-purple-400" },
                       ].map(({ label, val, sub, color }) => (
@@ -243,8 +243,8 @@ export default function LandingPage() {
                   key={f.title}
                   className={`reveal reveal-delay-${(i % 3) + 1} card-glow group p-6 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] transition-all cursor-default`}
                 >
-                  <div className="w-10 h-10 rounded-xl bg-indigo-600/20 flex items-center justify-center mb-4 group-hover:bg-indigo-600/30 transition-colors">
-                    <f.icon className="w-5 h-5 text-indigo-400" />
+                  <div className="w-10 h-10 rounded-xl bg-sky-500/20 flex items-center justify-center mb-4 group-hover:bg-sky-500/30 transition-colors">
+                    <f.icon className="w-5 h-5 text-sky-400" />
                   </div>
                   <h3 className="font-semibold text-white mb-2">{f.title}</h3>
                   <p className="text-sm text-white/40 leading-relaxed">{f.desc}</p>
@@ -295,12 +295,12 @@ export default function LandingPage() {
                   key={plan.name}
                   className={`reveal reveal-delay-${i + 1} card-glow relative rounded-2xl border p-6 flex flex-col transition-all ${
                     plan.highlight
-                      ? "border-indigo-500/50 bg-indigo-600/10"
+                      ? "border-sky-400/50 bg-sky-500/10"
                       : "border-white/10 bg-white/[0.03]"
                   }`}
                 >
                   {plan.highlight && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-indigo-600 rounded-full text-xs font-semibold">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-sky-500 rounded-full text-xs font-semibold">
                       Más popular
                     </div>
                   )}
@@ -315,7 +315,7 @@ export default function LandingPage() {
                   <ul className="space-y-3 flex-1 mb-6">
                     {plan.features.map((feat) => (
                       <li key={feat} className="flex items-center gap-2 text-sm text-white/60">
-                        <Check className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                        <Check className="w-4 h-4 text-sky-400 flex-shrink-0" />
                         {feat}
                       </li>
                     ))}
@@ -324,7 +324,7 @@ export default function LandingPage() {
                     href={plan.href}
                     className={`w-full text-center py-3 rounded-full text-sm font-semibold transition-all ${
                       plan.highlight
-                        ? "bg-indigo-600 hover:bg-indigo-500 text-white"
+                        ? "bg-sky-500 hover:bg-sky-400 text-white"
                         : "border border-white/20 hover:border-white/40 hover:bg-white/5 text-white/80"
                     }`}
                   >
