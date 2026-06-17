@@ -244,30 +244,23 @@ function ServiceGrid({ items, onEdit, onDelete, onToggle }: {
   onToggle: (s: Service) => void
 }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="flex flex-wrap gap-2">
       {items.map(s => (
-        <Card key={s.id} className={cn("group relative overflow-hidden transition-all hover:shadow-md", !s.isActive && "opacity-60")}>
-          <div className="h-1 w-full" style={{ backgroundColor: s.color }} />
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <Circle className="w-3 h-3 flex-shrink-0" fill={s.color} color={s.color} />
-                <h3 className="font-semibold truncate">{s.name}</h3>
-              </div>
-              {!s.isActive && <Badge variant="secondary" className="text-xs flex-shrink-0">Inactivo</Badge>}
-            </div>
-            {s.description && <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{s.description}</p>}
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{s.duration} min</span>
-              <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{Number(s.price).toLocaleString("es-AR")}</span>
-            </div>
-            <div className="flex gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => onEdit(s)}><Pencil className="w-3 h-3" /></Button>
-              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => onToggle(s)}><Power className="w-3 h-3" /></Button>
-              <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive hover:text-destructive" onClick={() => onDelete(s.id)}><Trash2 className="w-3 h-3" /></Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div
+          key={s.id}
+          className={cn("group flex items-center gap-3 rounded-xl border border-white/10 bg-card px-4 py-2.5 hover:bg-white/5 transition-all", !s.isActive && "opacity-50")}
+        >
+          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold leading-none truncate">{s.name}</p>
+            <p className="text-xs text-muted-foreground mt-1">{s.duration} min · ${Number(s.price).toLocaleString("es-AR")}</p>
+          </div>
+          <div className="flex gap-0.5 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => onEdit(s)}><Pencil className="w-3 h-3" /></Button>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => onToggle(s)}><Power className="w-3 h-3" /></Button>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:text-destructive" onClick={() => onDelete(s.id)}><Trash2 className="w-3 h-3" /></Button>
+          </div>
+        </div>
       ))}
     </div>
   )
