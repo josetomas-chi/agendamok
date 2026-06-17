@@ -199,16 +199,14 @@ export default function ServicesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Categoría</Label>
-                <Select value={form.categoryId ?? ""} onValueChange={v => setForm(f => ({ ...f, categoryId: v ?? "" }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sin categoría">
-                      {form.categoryId ? (categories.find(c => c.id === form.categoryId)?.name ?? "Sin categoría") : "Sin categoría"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={4} className="max-h-48 overflow-y-auto w-[var(--radix-select-trigger-width)]">
-                    {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <select
+                  value={form.categoryId ?? ""}
+                  onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}
+                  className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="">Sin categoría</option>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
               </div>
               <div className="col-span-2 space-y-2">
                 <Label>Descripción</Label>
