@@ -27,10 +27,15 @@ export function Sidebar() {
 
   return (
     <aside className="w-60 bg-[#3a3a3c] border-r border-white/10 flex flex-col flex-shrink-0 h-screen">
-      {/* Spacer aligned with topbar height */}
+      {/* Logo */}
       <div className="h-14 border-b border-white/10 flex items-center px-4">
-        <Link href="/dashboard" className="w-8 h-8 rounded-lg bg-sky-500/20 flex items-center justify-center">
-          <Calendar className="w-4 h-4 text-sky-400" />
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-sky-500/20 flex items-center justify-center flex-shrink-0">
+            <Calendar className="w-4 h-4 text-sky-400" />
+          </div>
+          <span className="font-bold text-base tracking-tight text-white">
+            Agenda<span className="text-sky-400">Mok</span>
+          </span>
         </Link>
       </div>
 
