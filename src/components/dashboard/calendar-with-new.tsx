@@ -34,22 +34,29 @@ export function CalendarWithNew({ businessId, services, staff, clients }: Props)
   const [saving, setSaving] = useState(false)
   const [appts, setAppts] = useState<Appointment[]>([])
 
-  const fetchAppts = useCallback(async () => {
+  const fetchAppts = useCallback(async (signal?: AbortSignal) => {
     const from = new Date()
     from.setDate(1)
     from.setHours(0, 0, 0, 0)
     const to = new Date(from.getFullYear(), from.getMonth() + 2, 0, 23, 59, 59)
-    const r = await fetch(
-      `/api/businesses/${businessId}/appointments?from=${from.toISOString()}&to=${to.toISOString()}`
-    )
-    if (r.ok) {
-      const d = await r.json()
-      setAppts(d.appointments ?? [])
+    try {
+      const r = await fetch(
+        `/api/businesses/${businessId}/appointments?from=${from.toISOString()}&to=${to.toISOString()}`,
+        { signal }
+      )
+      if (r.ok) {
+        const d = await r.json()
+        setAppts(d.appointments ?? [])
+      }
+    } catch {
+      // AbortError — fetch cancelled, ignore
     }
   }, [businessId])
 
   useEffect(() => {
-    fetchAppts()
+    const controller = new AbortController()
+    fetchAppts(controller.signal)
+    return () => controller.abort()
   }, [fetchAppts])
 
   function handleNewAppointment(date: string, time: string) {
@@ -79,10 +86,13 @@ export function CalendarWithNew({ businessId, services, staff, clients }: Props)
 
     if (r.ok) {
       const d = await r.json()
+      // Optimistic update — show immediately
       setAppts(prev => [...prev, d.appointment])
       setOpen(false)
       setForm(DEFAULT_FORM)
       toast.success("Turno creado")
+      // Reload from server after a tick so the DB write is visible
+      setTimeout(() => fetchAppts(), 500)
     } else {
       const d = await r.json()
       toast.error(d.error || "Error al crear turno")
