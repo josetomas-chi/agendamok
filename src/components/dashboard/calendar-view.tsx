@@ -162,7 +162,7 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
         {[
           { label: "Pendiente", color: "bg-yellow-400" },
           { label: "Confirmado", color: "bg-green-500" },
-          { label: "Completado", color: "bg-gray-400" },
+          { label: "Completado", color: "bg-blue-500" },
           { label: "Cancelado", color: "bg-red-400" },
           { label: "No se presentó", color: "bg-orange-400" },
         ].map((s) => (

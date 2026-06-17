@@ -26,7 +26,7 @@ type Client = { id: string; name: string }
 const STATUS = {
   PENDING:   { label: "Pendiente",      color: "bg-yellow-500/15 text-yellow-300 border-yellow-400/20" },
   CONFIRMED: { label: "Confirmado",     color: "bg-green-500/15 text-green-300 border-green-400/20" },
-  COMPLETED: { label: "Completado",     color: "bg-sky-500/15 text-sky-300 border-sky-400/20" },
+  COMPLETED: { label: "Completado",     color: "bg-blue-500/15 text-blue-300 border-blue-400/20" },
   CANCELLED: { label: "Cancelado",      color: "bg-red-500/15 text-red-300 border-red-400/20" },
   NO_SHOW:   { label: "No se presentó", color: "bg-orange-500/15 text-orange-300 border-orange-400/20" },
 }
