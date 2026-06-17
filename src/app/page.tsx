@@ -94,34 +94,64 @@ export default function LandingPage() {
           background-color: rgba(255,255,255,0.08) !important;
         }
         @keyframes zoomPulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.04); }
+          0%, 100% { transform: scale(1); letter-spacing: -0.02em; }
+          50% { transform: scale(1.06); letter-spacing: 0.01em; }
         }
         .cta-zoom {
-          animation: zoomPulse 3s ease-in-out infinite;
+          animation: zoomPulse 3.5s ease-in-out infinite;
           display: inline-block;
         }
         @keyframes shimmer {
           0% { background-position: -200% center; }
           100% { background-position: 200% center; }
         }
+        @keyframes ringPulse {
+          0%, 100% { transform: scale(1); opacity: 0.6; }
+          50% { transform: scale(1.15); opacity: 0; }
+        }
+        @keyframes ringPulse2 {
+          0%, 100% { transform: scale(1); opacity: 0.4; }
+          50% { transform: scale(1.25); opacity: 0; }
+        }
+        @keyframes floatUp {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+        }
+        .cta-btn-wrap {
+          position: relative;
+          display: inline-flex;
+        }
+        .cta-btn-wrap::before, .cta-btn-wrap::after {
+          content: '';
+          position: absolute;
+          inset: -4px;
+          border-radius: 9999px;
+          border: 2px solid rgba(56,189,248,0.6);
+          animation: ringPulse 2s ease-out infinite;
+        }
+        .cta-btn-wrap::after {
+          inset: -10px;
+          border-color: rgba(56,189,248,0.3);
+          animation: ringPulse2 2s ease-out infinite 0.4s;
+        }
         .cta-btn {
-          background: white;
-          transition: transform 0.2s, box-shadow 0.2s;
-          box-shadow: 0 0 0 0 rgba(56,189,248,0);
+          background: linear-gradient(135deg, #fff 0%, #e0f2fe 100%);
+          transition: transform 0.25s, box-shadow 0.25s;
+          box-shadow: 0 0 30px rgba(56,189,248,0.4), 0 4px 20px rgba(0,0,0,0.3);
+          animation: floatUp 3s ease-in-out infinite;
         }
         .cta-btn::before {
           content: '';
           position: absolute;
           inset: 0;
-          background: linear-gradient(90deg, transparent 0%, rgba(56,189,248,0.3) 50%, transparent 100%);
+          background: linear-gradient(90deg, transparent 0%, rgba(56,189,248,0.4) 50%, transparent 100%);
           background-size: 200% 100%;
-          animation: shimmer 2.5s linear infinite;
+          animation: shimmer 2s linear infinite;
           border-radius: 9999px;
         }
         .cta-btn:hover {
-          transform: scale(1.05);
-          box-shadow: 0 0 40px rgba(56,189,248,0.5);
+          transform: scale(1.08) translateY(-2px);
+          box-shadow: 0 0 60px rgba(56,189,248,0.7), 0 8px 30px rgba(0,0,0,0.3);
         }
       `}</style>
 
@@ -370,7 +400,8 @@ export default function LandingPage() {
         <section className="py-32 border-t border-white/5 relative overflow-hidden">
           {/* Glow de fondo animado */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-[600px] h-[600px] rounded-full bg-sky-500/10 blur-[100px] animate-pulse" />
+            <div className="w-[700px] h-[700px] rounded-full bg-sky-500/15 blur-[120px] animate-pulse" />
+            <div className="absolute w-[400px] h-[400px] rounded-full bg-sky-400/10 blur-[80px]" style={{animation: "ringPulse 4s ease-in-out infinite"}} />
           </div>
           <div className="relative max-w-4xl mx-auto px-4 text-center">
             <div className="reveal">
@@ -381,12 +412,14 @@ export default function LandingPage() {
               <p className="text-white/40 text-lg mb-10">
                 Configura tu negocio en minutos y empieza a recibir reservas online.
               </p>
-              <Link href="/register" className="cta-btn inline-flex items-center gap-2 px-10 py-4 bg-white text-black rounded-full text-base font-semibold group relative overflow-hidden">
-                <span className="relative z-10 flex items-center gap-2">
-                  Crear cuenta gratis
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </span>
-              </Link>
+              <div className="cta-btn-wrap">
+                <Link href="/register" className="cta-btn inline-flex items-center gap-2 px-12 py-5 text-black rounded-full text-lg font-bold group relative overflow-hidden">
+                  <span className="relative z-10 flex items-center gap-2">
+                    Crear cuenta gratis
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                </Link>
+              </div>
             </div>
           </div>
         </section>
