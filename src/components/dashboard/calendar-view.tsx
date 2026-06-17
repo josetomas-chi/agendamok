@@ -23,7 +23,8 @@ interface Props {
   onNewAppointment?: (date: string, time: string) => void
 }
 
-const HOURS = Array.from({ length: 13 }, (_, i) => i + 8) // 8:00 - 20:00
+// Half-hour slots: [8,0], [8,30], [9,0], [9,30] ... [20,0]
+const SLOTS = Array.from({ length: 25 }, (_, i) => ({ h: 8 + Math.floor(i / 2), m: (i % 2) * 30 }))
 
 export function CalendarView({ appointments, onNewAppointment }: Props) {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -51,10 +52,10 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
 
   const displayDays = view === "day" ? [currentDate] : weekDays
 
-  function handleCellClick(day: Date, hour: number) {
+  function handleCellClick(day: Date, hour: number, minute = 0) {
     if (!onNewAppointment) return
     const date = format(day, "yyyy-MM-dd")
-    const time = `${String(hour).padStart(2, "0")}:00`
+    const time = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
     onNewAppointment(date, time)
   }
 
@@ -109,20 +110,23 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
 
           {/* Time slots */}
           <div>
-            {HOURS.map((hour) => (
-              <div key={hour} className="flex" style={{ borderBottom: "1px solid rgba(255,255,255,0.5)" }}>
-                <div className="w-16 flex-shrink-0 py-3 px-3 text-xs text-[#5a5a5e] text-right" style={{ borderRight: "1px solid rgba(255,255,255,0.5)" }}>
-                  {hour}:00
+            {SLOTS.map(({ h, m }) => (
+              <div key={`${h}-${m}`} className="flex" style={{ borderBottom: m === 0 ? "1px solid rgba(255,255,255,0.5)" : "1px solid rgba(255,255,255,0.2)" }}>
+                <div className="w-16 flex-shrink-0 py-1.5 px-3 text-xs text-[#5a5a5e] text-right" style={{ borderRight: "1px solid rgba(255,255,255,0.5)" }}>
+                  {m === 0 ? `${h}:00` : `${h}:30`}
                 </div>
                 {displayDays.map((day) => {
                   const key = format(day, "yyyy-MM-dd")
-                  const dayAppts = (apptsByDay[key] || []).filter(a => new Date(a.startTime).getHours() === hour)
+                  const dayAppts = (apptsByDay[key] || []).filter(a => {
+                    const d = new Date(a.startTime)
+                    return d.getHours() === h && d.getMinutes() === m
+                  })
                   return (
                     <div
                       key={day.toISOString()}
-                      onClick={() => { if (dayAppts.length === 0) handleCellClick(day, hour) }}
+                      onClick={() => { if (dayAppts.length === 0) handleCellClick(day, h, m) }}
                       className={cn(
-                        "flex-1 min-h-[60px] p-1 relative transition-colors group",
+                        "flex-1 min-h-[30px] p-0.5 relative transition-colors group",
                         dayAppts.length === 0 && onNewAppointment && "cursor-pointer"
                       )}
                       style={{

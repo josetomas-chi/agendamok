@@ -144,9 +144,8 @@ export function CalendarWithNew({ appointments, businessId, services, staff, cli
                   >
                     <SelectTrigger><SelectValue placeholder="MM" /></SelectTrigger>
                     <SelectContent>
-                      {["00", "10", "20", "30", "40", "50"].map(m => (
-                        <SelectItem key={m} value={m}>{m} min</SelectItem>
-                      ))}
+                      <SelectItem value="00">:00</SelectItem>
+                      <SelectItem value="30">:30</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
