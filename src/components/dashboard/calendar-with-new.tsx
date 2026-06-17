@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { CalendarView } from "./calendar-view"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,6 +32,7 @@ interface Props {
 const DEFAULT_FORM = { serviceId: "", staffId: "", clientId: "", date: "", time: "", notes: "" }
 
 export function CalendarWithNew({ appointments, businessId, services, staff, clients }: Props) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(DEFAULT_FORM)
   const [saving, setSaving] = useState(false)
@@ -65,11 +67,10 @@ export function CalendarWithNew({ appointments, businessId, services, staff, cli
     })
 
     if (r.ok) {
-      const d = await r.json()
       toast.success("Turno creado")
       setOpen(false)
       setForm(DEFAULT_FORM)
-      setAppts(prev => [...prev, { ...d.appointment, service: services.find(s => s.id === form.serviceId) || { name: "", color: "#6366f1" }, staff: staff.find(s => s.id === form.staffId) || { user: { name: "" } }, client: { name: "" } }])
+      router.refresh()
     } else {
       const d = await r.json()
       toast.error(d.error || "Error al crear turno")
