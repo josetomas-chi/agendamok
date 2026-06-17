@@ -3,11 +3,8 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
+import { ArrowRight } from "lucide-react"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -39,45 +36,60 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md space-y-4">
-        <div className="text-center">
-          <Link href="/" className="text-2xl font-bold text-indigo-600">AgendaMok</Link>
-          <p className="mt-1 text-muted-foreground text-sm">Crea tu cuenta gratis</p>
+    <div className="min-h-screen flex items-center justify-center bg-[#52525a] px-4">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-sky-500/10 blur-[100px] pointer-events-none" />
+
+      <div className="relative w-full max-w-sm">
+        <div className="text-center mb-8">
+          <Link href="/" className="text-3xl font-bold text-white tracking-tight">
+            Agenda<span className="text-sky-400">Mok</span>
+          </Link>
+          <p className="mt-2 text-sm text-white/40">Crea tu cuenta gratis</p>
         </div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Crear cuenta</CardTitle>
-            <CardDescription>14 días gratis, sin tarjeta de crédito</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nombre completo</Label>
-                <Input id="name" name="name" placeholder="Juan García" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" placeholder="tu@email.com" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
-                <Input id="password" name="password" type="password" minLength={8} required />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Creando cuenta..." : "Crear cuenta gratis"}
-              </Button>
-              <p className="text-xs text-center text-muted-foreground">
-                Al registrarte aceptas nuestros{" "}
-                <Link href="/terms" className="underline">Términos de servicio</Link>
-              </p>
-            </form>
-            <div className="mt-4 text-center text-sm">
-              <span className="text-muted-foreground">¿Ya tienes cuenta? </span>
-              <Link href="/login" className="text-indigo-600 hover:underline">Ingresar</Link>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-sm p-6 shadow-xl shadow-black/20">
+          <h1 className="text-lg font-semibold text-white mb-1">Crear cuenta</h1>
+          <p className="text-sm text-white/40 mb-6">3 meses gratis · Sin tarjeta al inicio</p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-sm text-white/60">Nombre completo</label>
+              <input
+                name="name" required placeholder="Juan García"
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-sky-400/60 focus:bg-white/15 transition-all text-sm"
+              />
             </div>
-          </CardContent>
-        </Card>
+            <div className="space-y-1.5">
+              <label className="text-sm text-white/60">Email</label>
+              <input
+                name="email" type="email" required placeholder="tu@email.com"
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-sky-400/60 focus:bg-white/15 transition-all text-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm text-white/60">Contraseña</label>
+              <input
+                name="password" type="password" minLength={8} required placeholder="Mínimo 8 caracteres"
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-sky-400/60 focus:bg-white/15 transition-all text-sm"
+              />
+            </div>
+            <button
+              type="submit" disabled={loading}
+              className="w-full py-3 rounded-full bg-sky-500 hover:bg-sky-400 disabled:opacity-50 transition-all text-white font-semibold text-sm flex items-center justify-center gap-2 group mt-2"
+            >
+              {loading ? "Creando cuenta..." : <>Crear cuenta gratis <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>}
+            </button>
+            <p className="text-xs text-center text-white/20">
+              Al registrarte aceptas nuestros{" "}
+              <Link href="/terms" className="text-white/40 hover:text-white/60 underline">Términos de servicio</Link>
+            </p>
+          </form>
+
+          <div className="mt-5 text-center text-sm">
+            <span className="text-white/30">¿Ya tienes cuenta? </span>
+            <Link href="/login" className="text-sky-400 hover:text-sky-300 transition-colors">Ingresar</Link>
+          </div>
+        </div>
       </div>
     </div>
   )
