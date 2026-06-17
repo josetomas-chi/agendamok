@@ -93,6 +93,36 @@ export default function LandingPage() {
           border-color: rgba(56,189,248,0.6);
           background-color: rgba(255,255,255,0.08) !important;
         }
+        @keyframes zoomPulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.04); }
+        }
+        .cta-zoom {
+          animation: zoomPulse 3s ease-in-out infinite;
+          display: inline-block;
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        .cta-btn {
+          background: white;
+          transition: transform 0.2s, box-shadow 0.2s;
+          box-shadow: 0 0 0 0 rgba(56,189,248,0);
+        }
+        .cta-btn::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, transparent 0%, rgba(56,189,248,0.3) 50%, transparent 100%);
+          background-size: 200% 100%;
+          animation: shimmer 2.5s linear infinite;
+          border-radius: 9999px;
+        }
+        .cta-btn:hover {
+          transform: scale(1.05);
+          box-shadow: 0 0 40px rgba(56,189,248,0.5);
+        }
       `}</style>
 
       {/* Nav */}
@@ -337,19 +367,25 @@ export default function LandingPage() {
         </section>
 
         {/* CTA Final */}
-        <section className="py-32 border-t border-white/5">
-          <div className="max-w-4xl mx-auto px-4 text-center">
+        <section className="py-32 border-t border-white/5 relative overflow-hidden">
+          {/* Glow de fondo animado */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-[600px] h-[600px] rounded-full bg-sky-500/10 blur-[100px] animate-pulse" />
+          </div>
+          <div className="relative max-w-4xl mx-auto px-4 text-center">
             <div className="reveal">
-              <h2 className="text-4xl sm:text-6xl font-bold tracking-tight mb-6">
+              <h2 className="text-5xl sm:text-7xl font-bold tracking-tight mb-6 leading-tight cta-zoom">
                 Empieza hoy.<br />
                 <span className="gradient-text">Es gratis.</span>
               </h2>
               <p className="text-white/40 text-lg mb-10">
                 Configura tu negocio en minutos y empieza a recibir reservas online.
               </p>
-              <Link href="/register" className="inline-flex items-center gap-2 px-10 py-4 bg-white text-black hover:bg-white/90 transition-all rounded-full text-base font-semibold group">
-                Crear cuenta gratis
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <Link href="/register" className="cta-btn inline-flex items-center gap-2 px-10 py-4 bg-white text-black rounded-full text-base font-semibold group relative overflow-hidden">
+                <span className="relative z-10 flex items-center gap-2">
+                  Crear cuenta gratis
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </span>
               </Link>
             </div>
           </div>
