@@ -116,12 +116,12 @@ export default function ClientsPage() {
           <p className="text-sm mt-1">{search ? "Probá con otra búsqueda" : "Los clientes aparecen cuando reservan un turno"}</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border overflow-hidden">
-          <div className="grid grid-cols-[1fr,auto,auto,auto,auto] gap-4 px-4 py-2.5 border-b bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        <div className="rounded-xl border border-white/10 overflow-hidden">
+          <div className="grid grid-cols-[1fr,auto,auto,auto,auto] gap-4 px-4 py-2.5 border-b border-white/10 bg-white/5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
             <span>Cliente</span><span>Turnos</span><span>Gasto total</span><span>Segmento</span><span></span>
           </div>
           {clients.map(c => (
-            <div key={c.id} className="grid grid-cols-[1fr,auto,auto,auto,auto] gap-4 px-4 py-3.5 border-b last:border-0 items-center hover:bg-muted/20 transition-colors">
+            <div key={c.id} className="grid grid-cols-[1fr,auto,auto,auto,auto] gap-4 px-4 py-3.5 border-b border-white/10 last:border-0 items-center hover:bg-white/5 transition-colors">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm flex-shrink-0">
                   {c.name[0].toUpperCase()}
