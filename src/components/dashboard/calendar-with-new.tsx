@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { CalendarView } from "./calendar-view"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,7 +20,6 @@ type Staff = { id: string; user: { name: string | null } }
 type Client = { id: string; name: string }
 
 interface Props {
-  appointments: Appointment[]
   businessId: string
   services: Service[]
   staff: Staff[]
@@ -29,11 +28,29 @@ interface Props {
 
 const DEFAULT_FORM = { serviceId: "", staffId: "", clientId: "", date: "", time: "", notes: "" }
 
-export function CalendarWithNew({ appointments, businessId, services, staff, clients }: Props) {
+export function CalendarWithNew({ businessId, services, staff, clients }: Props) {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(DEFAULT_FORM)
   const [saving, setSaving] = useState(false)
-  const [appts, setAppts] = useState(appointments)
+  const [appts, setAppts] = useState<Appointment[]>([])
+
+  const fetchAppts = useCallback(async () => {
+    const from = new Date()
+    from.setDate(1)
+    from.setHours(0, 0, 0, 0)
+    const to = new Date(from.getFullYear(), from.getMonth() + 2, 0, 23, 59, 59)
+    const r = await fetch(
+      `/api/businesses/${businessId}/appointments?from=${from.toISOString()}&to=${to.toISOString()}`
+    )
+    if (r.ok) {
+      const d = await r.json()
+      setAppts(d.appointments ?? [])
+    }
+  }, [businessId])
+
+  useEffect(() => {
+    fetchAppts()
+  }, [fetchAppts])
 
   function handleNewAppointment(date: string, time: string) {
     setForm({ ...DEFAULT_FORM, date, time })
@@ -63,9 +80,9 @@ export function CalendarWithNew({ appointments, businessId, services, staff, cli
     if (r.ok) {
       const d = await r.json()
       setAppts(prev => [...prev, d.appointment])
-      toast.success("Turno creado")
       setOpen(false)
       setForm(DEFAULT_FORM)
+      toast.success("Turno creado")
     } else {
       const d = await r.json()
       toast.error(d.error || "Error al crear turno")
