@@ -157,36 +157,49 @@ export default function LandingPage() {
 
             {/* Dashboard preview */}
             <div className="mt-20 relative">
-              <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0a0a0a] to-transparent z-10" />
-              <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur overflow-hidden shadow-2xl shadow-indigo-900/20">
-                <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
-                  <div className="w-3 h-3 rounded-full bg-red-500/70" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
-                  <div className="w-3 h-3 rounded-full bg-green-500/70" />
-                  <div className="flex-1 mx-4 h-5 rounded bg-white/5 text-xs text-white/30 flex items-center justify-center">agendapro.cl/dashboard</div>
+              <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#3a3a3c] to-transparent z-10" />
+              {/* Retroiluminación */}
+              <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-indigo-600/40 via-purple-600/30 to-indigo-600/40 blur-xl" />
+              <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-indigo-500/20 via-white/5 to-purple-500/20" />
+              <div className="relative rounded-2xl border border-white/20 bg-[#2c2c2e] overflow-hidden shadow-2xl shadow-indigo-900/40">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10 bg-[#242426]">
+                  <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                  <div className="flex-1 mx-4 h-5 rounded-md bg-white/5 text-xs text-white/30 flex items-center justify-center">agendapro.cl/dashboard</div>
                 </div>
                 <div className="grid grid-cols-4 gap-px bg-white/5 p-px">
-                  <div className="bg-[#48484a] col-span-1 p-4 space-y-3">
+                  <div className="bg-[#242426] col-span-1 p-4 space-y-2">
                     {["Inicio","Turnos","Clientes","Staff","Servicios","Reportes"].map(item => (
-                      <div key={item} className={`text-xs px-3 py-2 rounded-lg ${item === "Turnos" ? "bg-indigo-600/30 text-indigo-300" : "text-white/30"}`}>{item}</div>
+                      <div key={item} className={`text-xs px-3 py-2 rounded-lg ${item === "Turnos" ? "bg-indigo-600/40 text-indigo-300 font-medium" : "text-white/30 hover:text-white/50"}`}>{item}</div>
                     ))}
                   </div>
-                  <div className="bg-[#3a3a3c] col-span-3 p-4">
+                  <div className="bg-[#2c2c2e] col-span-3 p-4">
                     <div className="grid grid-cols-3 gap-3 mb-4">
-                      {[["Turnos hoy","12"],["Este mes","$284.000"],["Clientes","48"]].map(([label, val]) => (
-                        <div key={label} className="bg-white/5 rounded-xl p-3">
-                          <div className="text-xs text-white/30 mb-1">{label}</div>
-                          <div className="text-lg font-bold text-white">{val}</div>
+                      {[
+                        { label: "Turnos hoy", val: "12", sub: "+3 vs ayer", color: "text-indigo-400" },
+                        { label: "Este mes", val: "$284K", sub: "+18% ↑", color: "text-green-400" },
+                        { label: "Clientes", val: "48", sub: "4 nuevos", color: "text-purple-400" },
+                      ].map(({ label, val, sub, color }) => (
+                        <div key={label} className="bg-white/[0.06] rounded-xl p-3 border border-white/5">
+                          <div className="text-[10px] text-white/40 mb-1 uppercase tracking-wide">{label}</div>
+                          <div className={`text-2xl font-bold ${color} mb-0.5`}>{val}</div>
+                          <div className="text-[10px] text-white/30">{sub}</div>
                         </div>
                       ))}
                     </div>
-                    <div className="bg-white/5 rounded-xl p-3 space-y-2">
-                      {[["10:00","María González","Corte + color","#6366f1"],["11:30","Carlos Reyes","Barba","#10b981"],["13:00","Ana Torres","Manicure","#ec4899"]].map(([time, name, service, color]) => (
-                        <div key={name} className="flex items-center gap-3 text-xs">
-                          <span className="text-white/30 w-10">{time}</span>
-                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{background: color}} />
-                          <span className="text-white/70 flex-1">{name}</span>
-                          <span className="text-white/30">{service}</span>
+                    <div className="bg-white/[0.04] rounded-xl p-3 space-y-2.5 border border-white/5">
+                      <div className="text-[10px] text-white/30 uppercase tracking-wide mb-2">Próximos turnos</div>
+                      {[
+                        ["10:00","María González","Corte + color","#6366f1"],
+                        ["11:30","Carlos Reyes","Barba","#10b981"],
+                        ["13:00","Ana Torres","Manicure","#ec4899"],
+                      ].map(([time, name, service, color]) => (
+                        <div key={name} className="flex items-center gap-3 text-xs py-1">
+                          <span className="text-white/30 w-10 font-mono">{time}</span>
+                          <div className="w-2 h-2 rounded-full flex-shrink-0 shadow-sm" style={{background: color, boxShadow: `0 0 6px ${color}`}} />
+                          <span className="text-white/80 flex-1 font-medium">{name}</span>
+                          <span className="text-white/30 text-[10px] px-2 py-0.5 rounded-full bg-white/5">{service}</span>
                         </div>
                       ))}
                     </div>
