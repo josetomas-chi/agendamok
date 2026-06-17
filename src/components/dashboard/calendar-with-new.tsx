@@ -1,13 +1,11 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useCallback } from "react"
 import { CalendarView } from "./calendar-view"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 
 type Appointment = {
@@ -32,14 +30,25 @@ interface Props {
 const DEFAULT_FORM = { serviceId: "", staffId: "", clientId: "", date: "", time: "", notes: "" }
 
 export function CalendarWithNew({ appointments, businessId, services, staff, clients }: Props) {
-  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(DEFAULT_FORM)
   const [saving, setSaving] = useState(false)
   const [appts, setAppts] = useState(appointments)
 
+  const reloadAppts = useCallback(async () => {
+    const from = new Date()
+    from.setDate(1)
+    from.setHours(0, 0, 0, 0)
+    const to = new Date(from.getFullYear(), from.getMonth() + 2, 0, 23, 59, 59)
+    const r = await fetch(`/api/businesses/${businessId}/appointments?from=${from.toISOString()}&to=${to.toISOString()}`)
+    if (r.ok) {
+      const d = await r.json()
+      setAppts(d.appointments || [])
+    }
+  }, [businessId])
+
   function handleNewAppointment(date: string, time: string) {
-    setForm({ ...DEFAULT_FORM, date, time: time.split(":")[0].padStart(2, "0") + ":00" })
+    setForm({ ...DEFAULT_FORM, date, time })
     setOpen(true)
   }
 
@@ -49,9 +58,6 @@ export function CalendarWithNew({ appointments, businessId, services, staff, cli
       return
     }
     setSaving(true)
-    const service = services.find(s => s.id === form.serviceId)
-    const startTime = new Date(`${form.date}T${form.time}`)
-    const endTime = new Date(startTime.getTime() + (service?.duration || 60) * 60000)
 
     const r = await fetch(`/api/businesses/${businessId}/appointments`, {
       method: "POST",
@@ -70,7 +76,7 @@ export function CalendarWithNew({ appointments, businessId, services, staff, cli
       toast.success("Turno creado")
       setOpen(false)
       setForm(DEFAULT_FORM)
-      router.refresh()
+      await reloadAppts()
     } else {
       const d = await r.json()
       toast.error(d.error || "Error al crear turno")
@@ -127,27 +133,25 @@ export function CalendarWithNew({ appointments, businessId, services, staff, cli
               <div className="space-y-1.5">
                 <Label>Hora *</Label>
                 <div className="flex gap-2">
-                  <Select
+                  <select
                     value={form.time ? form.time.split(":")[0] : ""}
-                    onValueChange={h => setForm(f => ({ ...f, time: `${h}:${f.time.split(":")[1] || "00"}` }))}
-                  >
-                    <SelectTrigger><SelectValue placeholder="HH" /></SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 15 }, (_, i) => i + 7).map(h => (
-                        <SelectItem key={h} value={String(h).padStart(2, "0")}>{String(h).padStart(2, "0")}h</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select
+                    onChange={e => setForm(f => ({ ...f, time: `${e.target.value}:${f.time.split(":")[1] || "00"}` }))}
+                    className="flex-1 h-9 rounded-md border border-input px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
+                    <option value="" style={{ backgroundColor: "#3a3a3c" }}>HH</option>
+                    {Array.from({ length: 15 }, (_, i) => i + 7).map(h => (
+                      <option key={h} value={String(h).padStart(2, "0")} style={{ backgroundColor: "#3a3a3c" }}>{String(h).padStart(2, "0")}h</option>
+                    ))}
+                  </select>
+                  <select
                     value={form.time ? form.time.split(":")[1] : ""}
-                    onValueChange={m => setForm(f => ({ ...f, time: `${f.time.split(":")[0] || "08"}:${m}` }))}
-                  >
-                    <SelectTrigger><SelectValue placeholder="MM" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="00">:00</SelectItem>
-                      <SelectItem value="30">:30</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    onChange={e => setForm(f => ({ ...f, time: `${f.time.split(":")[0] || "08"}:${e.target.value}` }))}
+                    className="flex-1 h-9 rounded-md border border-input px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
+                    <option value="" style={{ backgroundColor: "#3a3a3c" }}>MM</option>
+                    <option value="00" style={{ backgroundColor: "#3a3a3c" }}>:00</option>
+                    <option value="30" style={{ backgroundColor: "#3a3a3c" }}>:30</option>
+                  </select>
                 </div>
               </div>
             </div>
