@@ -1,66 +1,115 @@
+"use client"
+
 import Link from "next/link"
-import { buttonVariants } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Check, Calendar, Users, CreditCard, Bell, BarChart3, Globe } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { useEffect, useRef } from "react"
+import { Check, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight } from "lucide-react"
 
 const features = [
-  { icon: Calendar, title: "Calendario inteligente", desc: "Vista semanal/mensual con drag & drop para reagendar turnos al instante." },
-  { icon: Globe, title: "Booking 24/7", desc: "Tus clientes reservan desde cualquier dispositivo, a cualquier hora." },
-  { icon: Users, title: "Gestión de staff", desc: "Horarios, comisiones, días libres y acceso diferenciado por rol." },
-  { icon: Bell, title: "Recordatorios automáticos", desc: "Email y WhatsApp automáticos antes de cada turno para reducir ausentismo." },
-  { icon: CreditCard, title: "Cobros online", desc: "Acepta pagos y depósitos online con Stripe. Genera facturas PDF." },
-  { icon: BarChart3, title: "Reportes y analytics", desc: "Ingresos, ocupación, comisiones y top clientes en tiempo real." },
+  { icon: Calendar, title: "Calendario inteligente", desc: "Vista semanal y diaria. Arrastra y suelta para mover turnos al instante." },
+  { icon: Globe, title: "Reservas online 24/7", desc: "Tus clientes reservan desde el celular, a cualquier hora, sin llamar." },
+  { icon: Users, title: "Gestión de equipo", desc: "Horarios, comisiones y acceso diferenciado por cada profesional." },
+  { icon: Bell, title: "Recordatorios automáticos", desc: "Email antes de cada turno. Menos ausencias, más ingresos." },
+  { icon: CreditCard, title: "Cobros y pagos", desc: "Acepta pagos online y lleva el control de cada transacción." },
+  { icon: BarChart3, title: "Reportes en tiempo real", desc: "Ingresos, ocupación y métricas clave en un solo lugar." },
 ]
 
 const plans = [
   {
-    name: "Free",
-    price: "0",
-    description: "Para empezar sin riesgo",
-    features: ["1 sede", "Hasta 2 profesionales", "50 turnos/mes", "Booking online", "Email básico"],
-    cta: "Empezar gratis",
+    name: "Inicial",
+    price: "4.990",
+    description: "Para negocios que están comenzando",
+    features: ["1 sede", "Hasta 3 profesionales", "Turnos ilimitados", "Booking online", "Recordatorios por email"],
+    cta: "Empezar — 3 meses gratis",
     href: "/register",
     highlight: false,
   },
   {
     name: "Pro",
-    price: "9.900",
+    price: "9.990",
     description: "Para negocios en crecimiento",
-    features: ["Sedes ilimitadas", "Profesionales ilimitados", "Turnos ilimitados", "WhatsApp + email", "Pagos online", "Reportes completos", "Fidelización"],
-    cta: "Probar 14 días gratis",
+    features: ["Sedes ilimitadas", "Profesionales ilimitados", "Turnos ilimitados", "WhatsApp + email", "Pagos online", "Reportes completos"],
+    cta: "Probar gratis",
     href: "/register?plan=pro",
     highlight: true,
   },
   {
     name: "Enterprise",
-    price: "29.900",
+    price: "29.990",
     description: "Para cadenas y franquicias",
-    features: ["Todo lo de Pro", "Multi-sede consolidado", "API access", "Soporte prioritario", "Onboarding dedicado", "SLA garantizado"],
+    features: ["Todo lo de Pro", "Multi-sede consolidado", "API access", "Soporte prioritario", "Onboarding dedicado"],
     cta: "Contactar ventas",
-    href: "/contact",
+    href: "mailto:hola@agendapro.cl",
     highlight: false,
   },
 ]
 
+function useScrollReveal() {
+  useEffect(() => {
+    const els = document.querySelectorAll(".reveal")
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("revealed")
+          }
+        })
+      },
+      { threshold: 0.15 }
+    )
+    els.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
+}
+
 export default function LandingPage() {
+  useScrollReveal()
+
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-[#0a0a0a] text-white">
+      <style>{`
+        .reveal {
+          opacity: 0;
+          transform: translateY(40px);
+          transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1);
+        }
+        .reveal.revealed {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .reveal-delay-1 { transition-delay: 0.1s; }
+        .reveal-delay-2 { transition-delay: 0.2s; }
+        .reveal-delay-3 { transition-delay: 0.3s; }
+        .reveal-delay-4 { transition-delay: 0.4s; }
+        .reveal-delay-5 { transition-delay: 0.5s; }
+        .reveal-delay-6 { transition-delay: 0.6s; }
+        .gradient-text {
+          background: linear-gradient(135deg, #fff 0%, #a5b4fc 50%, #818cf8 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        .card-glow:hover {
+          box-shadow: 0 0 40px rgba(99,102,241,0.15);
+          border-color: rgba(99,102,241,0.4);
+        }
+      `}</style>
+
       {/* Nav */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-black/60 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="font-bold text-xl text-indigo-600">Agenda Pro</Link>
-          <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
-            <Link href="#features" className="hover:text-foreground transition-colors">Funciones</Link>
-            <Link href="#pricing" className="hover:text-foreground transition-colors">Precios</Link>
-            <Link href="/login" className="hover:text-foreground transition-colors">Ingresar</Link>
+          <Link href="/" className="font-bold text-xl text-white tracking-tight">
+            Agenda<span className="text-indigo-400">Pro</span>
+          </Link>
+          <nav className="hidden md:flex items-center gap-8 text-sm text-white/60">
+            <Link href="#features" className="hover:text-white transition-colors">Funciones</Link>
+            <Link href="#pricing" className="hover:text-white transition-colors">Precios</Link>
+            <Link href="/login" className="hover:text-white transition-colors">Ingresar</Link>
           </nav>
-          <div className="flex items-center gap-2">
-            <Link href="/login" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+          <div className="flex items-center gap-3">
+            <Link href="/login" className="text-sm text-white/70 hover:text-white transition-colors px-3 py-1.5">
               Ingresar
             </Link>
-            <Link href="/register" className={buttonVariants({ size: "sm" })}>
+            <Link href="/register" className="text-sm font-medium bg-indigo-600 hover:bg-indigo-500 transition-colors px-4 py-2 rounded-full">
               Empezar gratis
             </Link>
           </div>
@@ -69,47 +118,147 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-indigo-50 to-white py-24 sm:py-32">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <Badge variant="secondary" className="mb-4">Nuevo: Recordatorios por WhatsApp</Badge>
-            <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-gray-900 mb-6">
-              Gestión de turnos{" "}
-              <span className="text-indigo-600">para cualquier negocio</span>
+        <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+          {/* Background glow */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-indigo-600/10 blur-[120px]" />
+            <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-purple-600/8 blur-[100px]" />
+          </div>
+
+          <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-24">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-xs text-white/60 mb-8">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              Nuevo: Recordatorios automáticos por email
+            </div>
+
+            <h1 className="text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] mb-8">
+              <span className="gradient-text">Gestiona turnos.</span>
+              <br />
+              <span className="text-white/90">Haz crecer tu negocio.</span>
             </h1>
-            <p className="max-w-2xl mx-auto text-lg text-muted-foreground mb-10">
-              Peluquerías, centros médicos, gimnasios, estudios legales y más.
-              Tus clientes reservan online 24/7 y tú gestionas todo desde un solo lugar.
+
+            <p className="max-w-2xl mx-auto text-lg sm:text-xl text-white/50 mb-12 leading-relaxed">
+              La plataforma de reservas online para peluquerías, clínicas, gimnasios y cualquier negocio con turnos.
+              Configura en 5 minutos.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/register" className={buttonVariants({ size: "lg" })}>
-                Empezar gratis — sin tarjeta
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/register" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 transition-all rounded-full text-base font-semibold group">
+                Empezar gratis
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link href="/book/demo" className={buttonVariants({ size: "lg", variant: "outline" })}>
+              <Link href="/book/demo" className="inline-flex items-center justify-center px-8 py-4 border border-white/20 hover:border-white/40 hover:bg-white/5 transition-all rounded-full text-base text-white/80">
                 Ver demo en vivo
               </Link>
             </div>
-            <p className="mt-4 text-sm text-muted-foreground">
-              Más de 5.000 negocios ya usan Agenda Pro
-            </p>
+
+            <p className="mt-8 text-sm text-white/30">3 meses gratis en todos los planes · Sin tarjeta al inicio</p>
+
+            {/* Dashboard preview */}
+            <div className="mt-20 relative">
+              <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0a0a0a] to-transparent z-10" />
+              <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur overflow-hidden shadow-2xl shadow-indigo-900/20">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
+                  <div className="w-3 h-3 rounded-full bg-red-500/70" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
+                  <div className="w-3 h-3 rounded-full bg-green-500/70" />
+                  <div className="flex-1 mx-4 h-5 rounded bg-white/5 text-xs text-white/30 flex items-center justify-center">agendapro.cl/dashboard</div>
+                </div>
+                <div className="grid grid-cols-4 gap-px bg-white/5 p-px">
+                  <div className="bg-[#111] col-span-1 p-4 space-y-3">
+                    {["Inicio","Turnos","Clientes","Staff","Servicios","Reportes"].map(item => (
+                      <div key={item} className={`text-xs px-3 py-2 rounded-lg ${item === "Turnos" ? "bg-indigo-600/30 text-indigo-300" : "text-white/30"}`}>{item}</div>
+                    ))}
+                  </div>
+                  <div className="bg-[#0d0d0d] col-span-3 p-4">
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                      {[["Turnos hoy","12"],["Este mes","$284.000"],["Clientes","48"]].map(([label, val]) => (
+                        <div key={label} className="bg-white/5 rounded-xl p-3">
+                          <div className="text-xs text-white/30 mb-1">{label}</div>
+                          <div className="text-lg font-bold text-white">{val}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-3 space-y-2">
+                      {[["10:00","María González","Corte + color","#6366f1"],["11:30","Carlos Reyes","Barba","#10b981"],["13:00","Ana Torres","Manicure","#ec4899"]].map(([time, name, service, color]) => (
+                        <div key={name} className="flex items-center gap-3 text-xs">
+                          <span className="text-white/30 w-10">{time}</span>
+                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{background: color}} />
+                          <span className="text-white/70 flex-1">{name}</span>
+                          <span className="text-white/30">{service}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Stats */}
+        <section className="py-24 border-y border-white/5">
+          <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            {[
+              ["5 min", "para configurar tu negocio"],
+              ["24/7", "reservas sin intervención"],
+              ["−40%", "reducción de ausencias"],
+              ["100%", "de tus datos, siempre"],
+            ].map(([num, label], i) => (
+              <div key={label} className={`reveal reveal-delay-${i + 1}`}>
+                <div className="text-4xl font-bold gradient-text mb-2">{num}</div>
+                <div className="text-sm text-white/40">{label}</div>
+              </div>
+            ))}
           </div>
         </section>
 
         {/* Features */}
-        <section id="features" className="py-20 bg-white">
+        <section id="features" className="py-32">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold tracking-tight">Todo lo que tu negocio necesita</h2>
-              <p className="mt-4 text-muted-foreground">Una plataforma completa para gestionar turnos, clientes y pagos.</p>
+            <div className="text-center mb-20 reveal">
+              <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+                Todo lo que necesitas,<br />
+                <span className="gradient-text">nada que no uses</span>
+              </h2>
+              <p className="text-white/40 text-lg max-w-xl mx-auto">Una plataforma completa diseñada para negocios de servicios.</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {features.map((f) => (
-                <div key={f.title} className="flex gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                    <f.icon className="w-5 h-5 text-indigo-600" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {features.map((f, i) => (
+                <div
+                  key={f.title}
+                  className={`reveal reveal-delay-${(i % 3) + 1} card-glow group p-6 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] transition-all cursor-default`}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-indigo-600/20 flex items-center justify-center mb-4 group-hover:bg-indigo-600/30 transition-colors">
+                    <f.icon className="w-5 h-5 text-indigo-400" />
                   </div>
+                  <h3 className="font-semibold text-white mb-2">{f.title}</h3>
+                  <p className="text-sm text-white/40 leading-relaxed">{f.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* How it works */}
+        <section className="py-32 border-t border-white/5">
+          <div className="max-w-4xl mx-auto px-4 text-center">
+            <div className="reveal mb-20">
+              <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+                Listo en <span className="gradient-text">3 pasos</span>
+              </h2>
+            </div>
+            <div className="space-y-16">
+              {[
+                { num: "01", title: "Crea tu cuenta", desc: "Regístrate y configura tu negocio: nombre, servicios y equipo. Toma menos de 5 minutos." },
+                { num: "02", title: "Comparte tu link", desc: "Tus clientes acceden a tu página de reservas desde cualquier dispositivo y eligen horario." },
+                { num: "03", title: "Gestiona todo desde el panel", desc: "Calendario, clientes, pagos y reportes en un solo lugar. Sin planillas, sin papel." },
+              ].map((step, i) => (
+                <div key={step.num} className={`reveal reveal-delay-${i + 1} flex flex-col sm:flex-row items-center sm:items-start gap-6 text-left`}>
+                  <div className="text-6xl font-bold text-white/10 flex-shrink-0 w-24 text-center">{step.num}</div>
                   <div>
-                    <h3 className="font-semibold mb-1">{f.title}</h3>
-                    <p className="text-sm text-muted-foreground">{f.desc}</p>
+                    <h3 className="text-xl font-semibold text-white mb-2">{step.title}</h3>
+                    <p className="text-white/40 leading-relaxed">{step.desc}</p>
                   </div>
                 </div>
               ))}
@@ -118,80 +267,87 @@ export default function LandingPage() {
         </section>
 
         {/* Pricing */}
-        <section id="pricing" className="py-20 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold tracking-tight">Planes y precios</h2>
-              <p className="mt-4 text-muted-foreground">Elige el plan que mejor se adapte a tu negocio. Cancela cuando quieras.</p>
+        <section id="pricing" className="py-32 border-t border-white/5">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-20 reveal">
+              <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+                Precios <span className="gradient-text">simples y claros</span>
+              </h2>
+              <p className="text-white/40 text-lg">3 meses gratis en todos los planes. Cancela cuando quieras.</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              {plans.map((plan) => (
-                <Card
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {plans.map((plan, i) => (
+                <div
                   key={plan.name}
-                  className={plan.highlight ? "border-indigo-600 shadow-lg scale-105" : ""}
+                  className={`reveal reveal-delay-${i + 1} card-glow relative rounded-2xl border p-6 flex flex-col transition-all ${
+                    plan.highlight
+                      ? "border-indigo-500/50 bg-indigo-600/10"
+                      : "border-white/10 bg-white/[0.03]"
+                  }`}
                 >
-                  <CardHeader>
-                    {plan.highlight && (
-                      <Badge className="w-fit mb-2 bg-indigo-600">Más popular</Badge>
-                    )}
-                    <CardTitle>{plan.name}</CardTitle>
-                    <CardDescription>{plan.description}</CardDescription>
-                    <div className="mt-2">
-                      <span className="text-3xl font-bold">
-                        {plan.price === "0" ? "Gratis" : `$${plan.price}`}
-                      </span>
-                      {plan.price !== "0" && (
-                        <span className="text-muted-foreground text-sm"> /mes</span>
-                      )}
+                  {plan.highlight && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-indigo-600 rounded-full text-xs font-semibold">
+                      Más popular
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <ul className="space-y-2">
-                      {plan.features.map((feat) => (
-                        <li key={feat} className="flex items-center gap-2 text-sm">
-                          <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-                          {feat}
-                        </li>
-                      ))}
-                    </ul>
-                    <Link
-                      href={plan.href}
-                      className={cn(
-                        buttonVariants({ variant: plan.highlight ? "default" : "outline" }),
-                        "w-full justify-center"
-                      )}
-                    >
-                      {plan.cta}
-                    </Link>
-                  </CardContent>
-                </Card>
+                  )}
+                  <div className="mb-6">
+                    <h3 className="font-semibold text-white text-lg mb-1">{plan.name}</h3>
+                    <p className="text-sm text-white/40 mb-4">{plan.description}</p>
+                    <div className="flex items-end gap-1">
+                      <span className="text-4xl font-bold text-white">${plan.price}</span>
+                      <span className="text-white/40 text-sm mb-1">/mes</span>
+                    </div>
+                  </div>
+                  <ul className="space-y-3 flex-1 mb-6">
+                    {plan.features.map((feat) => (
+                      <li key={feat} className="flex items-center gap-2 text-sm text-white/60">
+                        <Check className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                        {feat}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href={plan.href}
+                    className={`w-full text-center py-3 rounded-full text-sm font-semibold transition-all ${
+                      plan.highlight
+                        ? "bg-indigo-600 hover:bg-indigo-500 text-white"
+                        : "border border-white/20 hover:border-white/40 hover:bg-white/5 text-white/80"
+                    }`}
+                  >
+                    {plan.cta}
+                  </Link>
+                </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="py-20 bg-indigo-600">
+        {/* CTA Final */}
+        <section className="py-32 border-t border-white/5">
           <div className="max-w-4xl mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Empieza a recibir turnos online hoy mismo
-            </h2>
-            <p className="text-indigo-100 mb-8">
-              Configura tu negocio en menos de 5 minutos. Sin tarjeta de crédito.
-            </p>
-            <Link href="/register" className={buttonVariants({ size: "lg", variant: "secondary" })}>
-              Crear cuenta gratuita
-            </Link>
+            <div className="reveal">
+              <h2 className="text-4xl sm:text-6xl font-bold tracking-tight mb-6">
+                Empieza hoy.<br />
+                <span className="gradient-text">Es gratis.</span>
+              </h2>
+              <p className="text-white/40 text-lg mb-10">
+                Configura tu negocio en minutos y empieza a recibir reservas online.
+              </p>
+              <Link href="/register" className="inline-flex items-center gap-2 px-10 py-4 bg-white text-black hover:bg-white/90 transition-all rounded-full text-base font-semibold group">
+                Crear cuenta gratis
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
           </div>
         </section>
       </main>
 
-      <footer className="border-t bg-white py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
+      <footer className="border-t border-white/5 py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-white/30">
           <p>© 2025 Agenda Pro. Todos los derechos reservados.</p>
-          <div className="flex gap-4">
-            <Link href="/privacy" className="hover:text-foreground">Privacidad</Link>
-            <Link href="/terms" className="hover:text-foreground">Términos</Link>
+          <div className="flex gap-6">
+            <Link href="/privacy" className="hover:text-white/60 transition-colors">Privacidad</Link>
+            <Link href="/terms" className="hover:text-white/60 transition-colors">Términos</Link>
           </div>
         </div>
       </footer>
