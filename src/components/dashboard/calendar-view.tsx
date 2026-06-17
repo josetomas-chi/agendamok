@@ -160,14 +160,14 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
       {/* Status legend */}
       <div className="flex items-center gap-3 px-4 py-2 text-xs text-[#3a3a3c]" style={{ borderTop: "2px solid rgba(255,255,255,0.7)", background: "#b8b8bc" }}>
         {[
-          { label: "Pendiente", color: "bg-yellow-400" },
-          { label: "Confirmado", color: "bg-green-500" },
-          { label: "Completado", color: "bg-blue-500" },
-          { label: "Cancelado", color: "bg-red-400" },
-          { label: "No se presentó", color: "bg-orange-400" },
+          { label: "Pendiente",      hex: "#facc15" },
+          { label: "Confirmado",     hex: "#22c55e" },
+          { label: "Completado",     hex: "#3b82f6" },
+          { label: "Cancelado",      hex: "#f87171" },
+          { label: "No se presentó", hex: "#fb923c" },
         ].map((s) => (
           <div key={s.label} className="flex items-center gap-1">
-            <div className={`w-2 h-2 rounded-full ${s.color}`} />
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.hex }} />
             {s.label}
           </div>
         ))}
