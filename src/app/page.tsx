@@ -255,7 +255,7 @@ export default function LandingPage() {
                 { num: "03", title: "Gestiona todo desde el panel", desc: "Calendario, clientes, pagos y reportes en un solo lugar. Sin planillas, sin papel." },
               ].map((step, i) => (
                 <div key={step.num} className={`reveal reveal-delay-${i + 1} flex flex-col sm:flex-row items-center sm:items-start gap-6 text-left`}>
-                  <div className="text-6xl font-bold text-white/10 flex-shrink-0 w-24 text-center">{step.num}</div>
+                  <div className="text-6xl font-bold text-white/40 flex-shrink-0 w-24 text-center">{step.num}</div>
                   <div>
                     <h3 className="text-xl font-semibold text-white mb-2">{step.title}</h3>
                     <p className="text-white/40 leading-relaxed">{step.desc}</p>
