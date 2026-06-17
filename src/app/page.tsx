@@ -133,9 +133,9 @@ export default function LandingPage() {
             </div>
 
             <h1 className="text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] mb-8">
-              <span className="gradient-text">Gestiona turnos.</span>
+              <span className="text-white/90">El verdadero</span>
               <br />
-              <span className="text-white/90">Haz crecer tu negocio.</span>
+              <span className="gradient-text">Copiloto de tu negocio.</span>
             </h1>
 
             <p className="max-w-2xl mx-auto text-lg sm:text-xl text-white/50 mb-12 leading-relaxed">
