@@ -1,0 +1,505 @@
+generator client {
+  provider        = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  BUSINESS_OWNER
+  STAFF
+  CLIENT
+}
+
+enum SubscriptionPlan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+  ONLINE
+}
+
+enum NotificationType {
+  BOOKING_CONFIRMATION
+  REMINDER_24H
+  REMINDER_1H
+  FOLLOWUP_REVIEW
+  CANCELLATION
+  CUSTOM
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+enum CommissionType {
+  PERCENTAGE
+  FLAT
+}
+
+enum ClientSegment {
+  VIP
+  FREQUENT
+  AT_RISK
+  NEW
+  REGULAR
+}
+
+// ─── AUTH / USERS ─────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          UserRole  @default(CLIENT)
+  phone         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  accounts      Account[]
+  sessions      Session[]
+  businessOwner Business?    @relation("BusinessOwner")
+  staffProfile  StaffMember?
+  clientProfile Client?
+
+  @@index([email])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─── BUSINESS ─────────────────────────────────────────────────────────────────
+
+model Business {
+  id          String    @id @default(cuid())
+  ownerId     String    @unique
+  name        String
+  slug        String    @unique
+  category    String
+  description String?   @db.Text
+  logo        String?
+  website     String?
+  timezone    String    @default("America/Argentina/Buenos_Aires")
+  currency    String    @default("ARS")
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  owner                     User                       @relation("BusinessOwner", fields: [ownerId], references: [id])
+  subscription              Subscription?
+  locations                 Location[]
+  services                  Service[]
+  staff                     StaffMember[]
+  clients                   Client[]
+  appointments              Appointment[]
+  categories                ServiceCategory[]
+  giftCards                 GiftCard[]
+  discountCodes             DiscountCode[]
+  campaigns                 Campaign[]
+  notifications             NotificationTemplate[]
+  googleCalendarIntegration GoogleCalendarIntegration?
+
+  @@index([slug])
+  @@map("businesses")
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  businessId           String             @unique
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  flowCustomerId       String?            @unique
+  flowSubscriptionId   String?            @unique
+  plan                 SubscriptionPlan   @default(FREE)
+  status               SubscriptionStatus @default(TRIALING)
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  trialEndsAt          DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+// ─── LOCATIONS ───────────────────────────────────────────────────────────────
+
+model Location {
+  id         String    @id @default(cuid())
+  businessId String
+  name       String
+  address    String?
+  city       String?
+  country    String?
+  phone      String?
+  timezone   String?
+  isDefault  Boolean   @default(false)
+  capacity   Int       @default(1)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  staff        StaffMember[] @relation("StaffLocations")
+  services     Service[]     @relation("ServiceLocations")
+  appointments Appointment[]
+
+  @@map("locations")
+}
+
+// ─── SERVICES ─────────────────────────────────────────────────────────────────
+
+model ServiceCategory {
+  id         String    @id @default(cuid())
+  businessId String
+  name       String
+  order      Int       @default(0)
+  createdAt  DateTime  @default(now())
+  deletedAt  DateTime?
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  services Service[]
+
+  @@map("service_categories")
+}
+
+model Service {
+  id              String    @id @default(cuid())
+  businessId      String
+  categoryId      String?
+  name            String
+  description     String?   @db.Text
+  duration        Int
+  price           Decimal   @db.Decimal(10, 2)
+  deposit         Decimal?  @db.Decimal(10, 2)
+  color           String    @default("#6366f1")
+  isActive        Boolean   @default(true)
+  requiresDeposit Boolean   @default(false)
+  bufferAfter     Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  business     Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category     ServiceCategory? @relation(fields: [categoryId], references: [id])
+  staff        StaffMember[]    @relation("StaffServices")
+  locations    Location[]       @relation("ServiceLocations")
+  appointments Appointment[]
+
+  @@map("services")
+}
+
+// ─── STAFF ────────────────────────────────────────────────────────────────────
+
+model StaffMember {
+  id              String         @id @default(cuid())
+  userId          String         @unique
+  businessId      String
+  bio             String?        @db.Text
+  specialty       String?
+  color           String         @default("#8b5cf6")
+  commissionType  CommissionType @default(PERCENTAGE)
+  commissionValue Decimal        @db.Decimal(5, 2) @default(0)
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  locations    Location[]    @relation("StaffLocations")
+  services     Service[]     @relation("StaffServices")
+  schedules    WorkSchedule[]
+  daysOff      DayOff[]
+  appointments Appointment[]
+
+  @@map("staff_members")
+}
+
+model WorkSchedule {
+  id        String  @id @default(cuid())
+  staffId   String
+  dayOfWeek Int
+  startTime String
+  endTime   String
+  isWorking Boolean @default(true)
+  breaks    Json?
+
+  staff StaffMember @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, dayOfWeek])
+  @@map("work_schedules")
+}
+
+model DayOff {
+  id      String   @id @default(cuid())
+  staffId String
+  date    DateTime @db.Date
+  reason  String?
+
+  staff StaffMember @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@map("days_off")
+}
+
+// ─── CLIENTS ──────────────────────────────────────────────────────────────────
+
+model Client {
+  id            String        @id @default(cuid())
+  userId        String?       @unique
+  businessId    String
+  name          String
+  email         String?
+  phone         String?
+  notes         String?       @db.Text
+  tags          String[]      @default([])
+  segment       ClientSegment @default(NEW)
+  loyaltyPoints Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  user         User?         @relation(fields: [userId], references: [id])
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([businessId, email])
+  @@map("clients")
+}
+
+// ─── APPOINTMENTS ─────────────────────────────────────────────────────────────
+
+model Appointment {
+  id            String            @id @default(cuid())
+  businessId    String
+  locationId    String?
+  serviceId     String
+  staffId       String
+  clientId      String
+  startTime     DateTime
+  endTime       DateTime
+  status        AppointmentStatus @default(PENDING)
+  notes         String?           @db.Text
+  internalNotes String?           @db.Text
+  googleEventId String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  deletedAt     DateTime?
+
+  business      Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  location      Location?         @relation(fields: [locationId], references: [id])
+  service       Service           @relation(fields: [serviceId], references: [id])
+  staff         StaffMember       @relation(fields: [staffId], references: [id])
+  client        Client            @relation(fields: [clientId], references: [id])
+  payment       Payment?
+  notifications NotificationLog[]
+
+  @@index([businessId, startTime])
+  @@index([staffId, startTime])
+  @@index([clientId])
+  @@map("appointments")
+}
+
+// ─── PAYMENTS ─────────────────────────────────────────────────────────────────
+
+model Payment {
+  id                      String        @id @default(cuid())
+  appointmentId           String        @unique
+  amount                  Decimal       @db.Decimal(10, 2)
+  currency                String        @default("ARS")
+  status                  PaymentStatus @default(PENDING)
+  method                  PaymentMethod @default(CASH)
+  stripePaymentIntentId   String?       @unique
+  stripeCheckoutSessionId String?       @unique
+  isDeposit               Boolean       @default(false)
+  paidAt                  DateTime?
+  invoiceUrl              String?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+// ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
+
+model NotificationTemplate {
+  id         String              @id @default(cuid())
+  businessId String
+  type       NotificationType
+  channel    NotificationChannel
+  subject    String?
+  body       String              @db.Text
+  isActive   Boolean             @default(true)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, type, channel])
+  @@map("notification_templates")
+}
+
+model NotificationLog {
+  id            String              @id @default(cuid())
+  appointmentId String
+  type          NotificationType
+  channel       NotificationChannel
+  recipient     String
+  status        String              @default("sent")
+  error         String?
+  sentAt        DateTime            @default(now())
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@map("notification_logs")
+}
+
+// ─── MARKETING ────────────────────────────────────────────────────────────────
+
+model GiftCard {
+  id         String    @id @default(cuid())
+  businessId String
+  code       String    @unique
+  amount     Decimal   @db.Decimal(10, 2)
+  balance    Decimal   @db.Decimal(10, 2)
+  expiresAt  DateTime?
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("gift_cards")
+}
+
+model DiscountCode {
+  id         String         @id @default(cuid())
+  businessId String
+  code       String
+  type       CommissionType @default(PERCENTAGE)
+  value      Decimal        @db.Decimal(10, 2)
+  maxUses    Int?
+  usedCount  Int            @default(0)
+  expiresAt  DateTime?
+  isActive   Boolean        @default(true)
+  createdAt  DateTime       @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, code])
+  @@map("discount_codes")
+}
+
+model Campaign {
+  id             String         @id @default(cuid())
+  businessId     String
+  name           String
+  subject        String
+  body           String         @db.Text
+  segment        ClientSegment?
+  sentAt         DateTime?
+  scheduledAt    DateTime?
+  recipientCount Int            @default(0)
+  createdAt      DateTime       @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("campaigns")
+}
+
+// ─── INTEGRATIONS ─────────────────────────────────────────────────────────────
+
+model GoogleCalendarIntegration {
+  id           String   @id @default(cuid())
+  businessId   String   @unique
+  accessToken  String   @db.Text
+  refreshToken String   @db.Text
+  calendarId   String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("google_calendar_integrations")
+}
