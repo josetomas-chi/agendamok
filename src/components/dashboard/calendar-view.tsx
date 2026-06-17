@@ -4,7 +4,6 @@ import { useState, useMemo } from "react"
 import { format, startOfWeek, addDays, isSameDay } from "date-fns"
 import { es } from "date-fns/locale"
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 type Appointment = {
@@ -23,7 +22,6 @@ interface Props {
   onNewAppointment?: (date: string, time: string) => void
 }
 
-// Half-hour slots: [8,0], [8,30], [9,0], [9,30] ... [20,0]
 const SLOTS = Array.from({ length: 25 }, (_, i) => ({ h: 8 + Math.floor(i / 2), m: (i % 2) * 30 }))
 
 export function CalendarView({ appointments, onNewAppointment }: Props) {
@@ -32,11 +30,11 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  const displayDays = view === "day" ? [currentDate] : weekDays
 
   function navigate(dir: 1 | -1) {
-    const delta = view === "week" ? 7 : 1
     const d = new Date(currentDate)
-    d.setDate(d.getDate() + dir * delta)
+    d.setDate(d.getDate() + dir * (view === "week" ? 7 : 1))
     setCurrentDate(d)
   }
 
@@ -50,129 +48,171 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
     return map
   }, [appointments])
 
-  const displayDays = view === "day" ? [currentDate] : weekDays
-
   function handleCellClick(day: Date, hour: number, minute = 0) {
     if (!onNewAppointment) return
-    const date = format(day, "yyyy-MM-dd")
-    const time = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
-    onNewAppointment(date, time)
+    onNewAppointment(
+      format(day, "yyyy-MM-dd"),
+      `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
+    )
   }
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: "#c8c8cc", border: "1px solid #4a4a4e" }}>
+    <div className="rounded-2xl overflow-hidden border border-white/10" style={{ background: "#2c2c30" }}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "2px solid rgba(255,255,255,0.7)", background: "#bebec2" }}>
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/8" style={{ background: "#2c2c30" }}>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="border-[#5a5a5e] bg-white/60 hover:bg-white/80 text-[#2a2a2c]">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 transition-colors"
+          >
             <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={() => navigate(1)} className="border-[#5a5a5e] bg-white/60 hover:bg-white/80 text-[#2a2a2c]">
+          </button>
+          <button
+            onClick={() => navigate(1)}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 transition-colors"
+          >
             <ChevronRight className="w-4 h-4" />
-          </Button>
-          <h2 className="font-semibold text-sm ml-2 text-[#1a1a1c]">
+          </button>
+          <h2 className="font-semibold text-sm text-white ml-1">
             {view === "week"
               ? `${format(weekStart, "d MMM", { locale: es })} — ${format(addDays(weekStart, 6), "d MMM yyyy", { locale: es })}`
               : format(currentDate, "EEEE d MMMM yyyy", { locale: es })}
           </h2>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant={view === "week" ? "default" : "outline"} size="sm" onClick={() => setView("week")} className={view !== "week" ? "border-[#5a5a5e] bg-white/60 hover:bg-white/80 text-[#2a2a2c]" : ""}>Semana</Button>
-          <Button variant={view === "day" ? "default" : "outline"} size="sm" onClick={() => setView("day")} className={view !== "day" ? "border-[#5a5a5e] bg-white/60 hover:bg-white/80 text-[#2a2a2c]" : ""}>Dia</Button>
-          <Button size="sm" onClick={() => onNewAppointment?.(format(new Date(), "yyyy-MM-dd"), "09:00")}>
-            <Plus className="w-4 h-4 mr-1" /> Nuevo turno
-          </Button>
+          <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs">
+            <button
+              onClick={() => setView("week")}
+              className={cn(
+                "px-3 py-1.5 transition-colors",
+                view === "week" ? "bg-sky-500 text-white font-medium" : "text-white/50 hover:text-white hover:bg-white/8"
+              )}
+            >
+              Semana
+            </button>
+            <button
+              onClick={() => setView("day")}
+              className={cn(
+                "px-3 py-1.5 border-l border-white/10 transition-colors",
+                view === "day" ? "bg-sky-500 text-white font-medium" : "text-white/50 hover:text-white hover:bg-white/8"
+              )}
+            >
+              Día
+            </button>
+          </div>
+          <button
+            onClick={() => onNewAppointment?.(format(new Date(), "yyyy-MM-dd"), "09:00")}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white text-xs font-medium transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Nuevo turno
+          </button>
         </div>
       </div>
 
-      {/* Calendar grid */}
+      {/* Grid */}
       <div className="overflow-x-auto">
-        <div className="min-w-[700px] max-h-[660px] overflow-y-auto">
+        <div className="min-w-[600px] max-h-[620px] overflow-y-auto">
           {/* Day headers */}
-          <div className="flex sticky top-0 z-10" style={{ borderBottom: "2px solid rgba(255,255,255,0.7)", background: "#b8b8bc" }}>
-            <div className="w-16 flex-shrink-0 py-2 px-3 text-xs text-[#5a5a5e]" />
-            {displayDays.map((day) => (
-              <div
-                key={day.toISOString()}
-                className="flex-1 py-2 px-3 text-center text-xs font-medium"
-                style={{
-                  borderLeft: "1px solid rgba(255,255,255,0.5)",
-                  background: isSameDay(day, new Date()) ? "rgba(56,189,248,0.15)" : "transparent",
-                }}
-              >
-                <div className="uppercase text-[#5a5a5e]">{format(day, "EEE", { locale: es })}</div>
-                <div className={cn("text-lg font-semibold mt-0.5", isSameDay(day, new Date()) ? "text-sky-600" : "text-[#1a1a1c]")}>
-                  {format(day, "d")}
+          <div className="flex sticky top-0 z-10 border-b border-white/8" style={{ background: "#2c2c30" }}>
+            <div className="w-14 flex-shrink-0" />
+            {displayDays.map((day) => {
+              const isToday = isSameDay(day, new Date())
+              return (
+                <div key={day.toISOString()} className="flex-1 py-3 text-center">
+                  <div className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
+                    {format(day, "EEE", { locale: es })}
+                  </div>
+                  <div className={cn(
+                    "text-base font-semibold mx-auto w-8 h-8 flex items-center justify-center rounded-full",
+                    isToday ? "bg-sky-500 text-white" : "text-white/70"
+                  )}>
+                    {format(day, "d")}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Time slots */}
           <div>
-            {SLOTS.map(({ h, m }) => (
-              <div key={`${h}-${m}`} className="flex" style={{ borderBottom: m === 0 ? "1px solid rgba(255,255,255,0.5)" : "1px solid rgba(255,255,255,0.2)" }}>
-                <div className="w-16 flex-shrink-0 py-1.5 px-3 text-xs text-[#5a5a5e] text-right" style={{ borderRight: "1px solid rgba(255,255,255,0.5)" }}>
-                  {m === 0 ? `${h}:00` : `${h}:30`}
+            {SLOTS.map(({ h, m }) => {
+              const isHour = m === 0
+              return (
+                <div
+                  key={`${h}-${m}`}
+                  className="flex"
+                  style={{ borderBottom: isHour ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(255,255,255,0.03)" }}
+                >
+                  <div className="w-14 flex-shrink-0 pr-3 flex items-start justify-end pt-1">
+                    {isHour && (
+                      <span className="text-[10px] text-white/25 tabular-nums">{h}:00</span>
+                    )}
+                  </div>
+                  {displayDays.map((day) => {
+                    const key = format(day, "yyyy-MM-dd")
+                    const isToday = isSameDay(day, new Date())
+                    const dayAppts = (apptsByDay[key] || []).filter(a => {
+                      const d = new Date(a.startTime)
+                      return d.getHours() === h && d.getMinutes() === m
+                    })
+                    return (
+                      <div
+                        key={day.toISOString()}
+                        onClick={() => { if (dayAppts.length === 0) handleCellClick(day, h, m) }}
+                        className={cn(
+                          "flex-1 min-h-[28px] px-0.5 py-0.5 relative group border-l border-white/5 transition-colors",
+                          isToday && "bg-sky-500/[0.03]",
+                          dayAppts.length === 0 && onNewAppointment && "cursor-pointer hover:bg-white/[0.03]"
+                        )}
+                      >
+                        {dayAppts.length === 0 && onNewAppointment && (
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Plus className="w-3.5 h-3.5 text-sky-500/60" />
+                          </div>
+                        )}
+                        {dayAppts.map((a) => (
+                          <div
+                            key={a.id}
+                            onClick={e => e.stopPropagation()}
+                            className="rounded-lg text-xs p-2 mb-0.5 cursor-pointer select-none transition-all hover:brightness-110 hover:shadow-lg"
+                            style={{
+                              background: a.service.color
+                                ? `linear-gradient(135deg, ${a.service.color}ee, ${a.service.color}bb)`
+                                : "linear-gradient(135deg, #38bdf8ee, #38bdf8bb)",
+                              boxShadow: `0 2px 8px ${a.service.color || "#38bdf8"}40`,
+                            }}
+                          >
+                            <div className="font-semibold text-white truncate leading-tight">
+                              {a.client?.name ?? "Sin cliente"}
+                            </div>
+                            <div className="text-white/75 truncate text-[10px] mt-0.5 leading-tight">
+                              {a.service.name}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  })}
                 </div>
-                {displayDays.map((day) => {
-                  const key = format(day, "yyyy-MM-dd")
-                  const dayAppts = (apptsByDay[key] || []).filter(a => {
-                    const d = new Date(a.startTime)
-                    return d.getHours() === h && d.getMinutes() === m
-                  })
-                  return (
-                    <div
-                      key={day.toISOString()}
-                      onClick={() => { if (dayAppts.length === 0) handleCellClick(day, h, m) }}
-                      className={cn(
-                        "flex-1 min-h-[30px] p-0.5 relative transition-colors group",
-                        dayAppts.length === 0 && onNewAppointment && "cursor-pointer"
-                      )}
-                      style={{
-                        borderLeft: "1px solid rgba(255,255,255,0.5)",
-                        background: isSameDay(day, new Date()) ? "rgba(56,189,248,0.06)" : "transparent",
-                      }}
-                      onMouseEnter={e => { if (dayAppts.length === 0) (e.currentTarget as HTMLDivElement).style.background = isSameDay(day, new Date()) ? "rgba(56,189,248,0.14)" : "rgba(56,189,248,0.08)" }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSameDay(day, new Date()) ? "rgba(56,189,248,0.06)" : "transparent" }}
-                    >
-                      {dayAppts.length === 0 && onNewAppointment && (
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Plus className="w-4 h-4 text-sky-500" />
-                        </div>
-                      )}
-                      {dayAppts.map((a) => (
-                        <div
-                          key={a.id}
-                          className="rounded text-xs p-1 mb-1 text-white cursor-pointer hover:opacity-90 transition-opacity"
-                          style={{ backgroundColor: a.service.color }}
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <div className="font-medium truncate">{a.client.name}</div>
-                          <div className="opacity-80 truncate">{a.service.name}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )
-                })}
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>
 
-      {/* Status legend */}
-      <div className="flex items-center gap-3 px-4 py-2 text-xs text-[#3a3a3c]" style={{ borderTop: "2px solid rgba(255,255,255,0.7)", background: "#b8b8bc" }}>
+      {/* Legend */}
+      <div className="flex items-center gap-4 px-5 py-2.5 border-t border-white/8">
         {[
-          { label: "Pendiente",      hex: "#facc15" },
-          { label: "Confirmado",     hex: "#22c55e" },
-          { label: "Completado",     hex: "#3b82f6" },
-          { label: "Cancelado",      hex: "#f87171" },
-          { label: "No se presentó", hex: "#fb923c" },
+          { label: "Pendiente",       hex: "#facc15" },
+          { label: "Confirmado",      hex: "#22c55e" },
+          { label: "Completado",      hex: "#3b82f6" },
+          { label: "Cancelado",       hex: "#f87171" },
+          { label: "No se presentó",  hex: "#fb923c" },
         ].map((s) => (
-          <div key={s.label} className="flex items-center gap-1">
+          <div key={s.label} className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.hex }} />
-            {s.label}
+            <span className="text-[11px] text-white/35">{s.label}</span>
           </div>
         ))}
       </div>
