@@ -57,10 +57,9 @@ export function CalendarWithNew({ appointments, businessId, services, staff, cli
       body: JSON.stringify({
         serviceId: form.serviceId,
         staffId: form.staffId,
-        clientId: form.clientId || null,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        notes: form.notes || null,
+        clientId: form.clientId || undefined,
+        startTime: new Date(`${form.date}T${form.time}`).toISOString(),
+        notes: form.notes || undefined,
         status: "CONFIRMED",
       }),
     })

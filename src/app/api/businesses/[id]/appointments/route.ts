@@ -11,8 +11,7 @@ const schema = z.object({
   clientName: z.string().optional(),
   clientEmail: z.string().email().optional(),
   clientPhone: z.string().optional(),
-  date: z.string(),
-  time: z.string(),
+  startTime: z.string(), // ISO string from browser (local timezone)
   notes: z.string().optional(),
   status: z.enum(["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED", "NO_SHOW"]).default("CONFIRMED"),
 })
@@ -60,8 +59,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const service = await prisma.service.findUnique({ where: { id: data.serviceId } })
     if (!service) return NextResponse.json({ error: "Servicio no encontrado" }, { status: 404 })
 
-    const [h, m] = data.time.split(":").map(Number)
-    const startTime = new Date(`${data.date}T${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:00`)
+    const startTime = new Date(data.startTime)
     const endTime = addMinutes(startTime, service.duration)
 
     let clientId = data.clientId
