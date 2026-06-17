@@ -205,7 +205,7 @@ export default function ServicesPage() {
                       {form.categoryId ? (categories.find(c => c.id === form.categoryId)?.name ?? "Sin categoría") : "Sin categoría"}
                     </SelectValue>
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4} className="max-h-48 overflow-y-auto w-[var(--radix-select-trigger-width)]">
                     {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
