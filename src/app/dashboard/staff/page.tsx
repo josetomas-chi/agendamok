@@ -202,8 +202,8 @@ export default function StaffPage() {
       {/* Staff detail sheet */}
       {selected && (
         <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
+          <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden p-0">
+            <DialogHeader className="px-6 pt-6 pb-4 border-b border-white/10 flex-shrink-0">
               <div className="flex items-center gap-3">
                 <label className="relative w-12 h-12 flex-shrink-0 cursor-pointer group/photo">
                   <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only"
@@ -227,26 +227,28 @@ export default function StaffPage() {
                 </div>
               </div>
             </DialogHeader>
-            <Tabs defaultValue="schedule">
-              <TabsList className="w-full">
+            <Tabs defaultValue="schedule" className="flex flex-col flex-1 overflow-hidden">
+              <TabsList className="w-full flex-shrink-0 mx-0 px-6">
                 <TabsTrigger value="schedule" className="flex-1">Horarios</TabsTrigger>
                 <TabsTrigger value="exceptions" className="flex-1">Excepciones</TabsTrigger>
                 <TabsTrigger value="info" className="flex-1">Info</TabsTrigger>
               </TabsList>
-              <TabsContent value="schedule" className="pt-4">
-                <ScheduleEditor schedules={selected.schedules} onSave={s => updateSchedule(selected.id, s)} />
-              </TabsContent>
-              <TabsContent value="exceptions" className="pt-4">
-                <ExceptionsEditor businessId={businessId} staffId={selected.id} />
-              </TabsContent>
-              <TabsContent value="info" className="pt-4 space-y-3 text-sm">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><p className="text-muted-foreground text-xs mb-1">Email</p><p>{selected.user.email}</p></div>
-                  <div><p className="text-muted-foreground text-xs mb-1">Teléfono</p><p>{selected.user.phone || "—"}</p></div>
-                  <div><p className="text-muted-foreground text-xs mb-1">Comisión</p><p>{selected.commissionValue}{selected.commissionType === "PERCENTAGE" ? "%" : " (fijo)"}</p></div>
-                </div>
-                {selected.bio && <div><p className="text-muted-foreground text-xs mb-1">Bio</p><p>{selected.bio}</p></div>}
-              </TabsContent>
+              <div className="flex-1 overflow-y-auto px-6 pb-6">
+                <TabsContent value="schedule" className="pt-4 mt-0">
+                  <ScheduleEditor schedules={selected.schedules} onSave={s => updateSchedule(selected.id, s)} />
+                </TabsContent>
+                <TabsContent value="exceptions" className="pt-4 mt-0">
+                  <ExceptionsEditor businessId={businessId} staffId={selected.id} />
+                </TabsContent>
+                <TabsContent value="info" className="pt-4 mt-0 space-y-3 text-sm">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><p className="text-muted-foreground text-xs mb-1">Email</p><p>{selected.user.email}</p></div>
+                    <div><p className="text-muted-foreground text-xs mb-1">Teléfono</p><p>{selected.user.phone || "—"}</p></div>
+                    <div><p className="text-muted-foreground text-xs mb-1">Comisión</p><p>{selected.commissionValue}{selected.commissionType === "PERCENTAGE" ? "%" : " (fijo)"}</p></div>
+                  </div>
+                  {selected.bio && <div><p className="text-muted-foreground text-xs mb-1">Bio</p><p>{selected.bio}</p></div>}
+                </TabsContent>
+              </div>
             </Tabs>
           </DialogContent>
         </Dialog>
