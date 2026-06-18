@@ -202,51 +202,51 @@ export default function StaffPage() {
       {/* Staff detail sheet */}
       {selected && (
         <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-          <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden p-0">
-            <DialogHeader className="px-6 pt-6 pb-4 border-b border-white/10 flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <label className="relative w-12 h-12 flex-shrink-0 cursor-pointer group/photo">
+          <DialogContent className="max-w-md p-0">
+            <DialogHeader className="px-5 pt-4 pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <label className="relative w-9 h-9 flex-shrink-0 cursor-pointer group/photo">
                   <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only"
                     onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(selected, f); e.target.value = "" }} />
                   {selected.user.image ? (
-                    <img src={selected.user.image} alt={selected.user.name || ""} className="w-12 h-12 rounded-full object-cover" />
+                    <img src={selected.user.image} alt={selected.user.name || ""} className="w-9 h-9 rounded-full object-cover" />
                   ) : (
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl" style={{ backgroundColor: selected.color }}>
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-base" style={{ backgroundColor: selected.color }}>
                       {selected.user.name?.[0] || "?"}
                     </div>
                   )}
                   <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover/photo:opacity-100 transition-opacity">
                     {uploadingId === selected.id
-                      ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      : <Camera className="w-4 h-4 text-white" />}
+                      ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      : <Camera className="w-3 h-3 text-white" />}
                   </div>
                 </label>
                 <div>
-                  <DialogTitle>{selected.user.name}</DialogTitle>
-                  <p className="text-sm text-muted-foreground">{selected.specialty || "Sin especialidad"}</p>
+                  <DialogTitle className="text-sm">{selected.user.name}</DialogTitle>
+                  <p className="text-xs text-muted-foreground">{selected.specialty || "Sin especialidad"}</p>
                 </div>
               </div>
             </DialogHeader>
-            <Tabs defaultValue="schedule" className="flex flex-col flex-1 overflow-hidden">
-              <TabsList className="w-full flex-shrink-0 mx-0 px-6">
-                <TabsTrigger value="schedule" className="flex-1">Horarios</TabsTrigger>
-                <TabsTrigger value="exceptions" className="flex-1">Excepciones</TabsTrigger>
-                <TabsTrigger value="info" className="flex-1">Info</TabsTrigger>
+            <Tabs defaultValue="schedule">
+              <TabsList className="w-full rounded-none border-b border-white/10 bg-transparent h-9">
+                <TabsTrigger value="schedule" className="flex-1 text-xs h-full rounded-none">Horarios</TabsTrigger>
+                <TabsTrigger value="exceptions" className="flex-1 text-xs h-full rounded-none">Excepciones</TabsTrigger>
+                <TabsTrigger value="info" className="flex-1 text-xs h-full rounded-none">Info</TabsTrigger>
               </TabsList>
-              <div className="flex-1 overflow-y-auto px-6 pb-6">
-                <TabsContent value="schedule" className="pt-4 mt-0">
+              <div className="px-5 pb-5 pt-3">
+                <TabsContent value="schedule" className="mt-0">
                   <ScheduleEditor schedules={selected.schedules} onSave={s => updateSchedule(selected.id, s)} />
                 </TabsContent>
-                <TabsContent value="exceptions" className="pt-4 mt-0">
+                <TabsContent value="exceptions" className="mt-0">
                   <ExceptionsEditor businessId={businessId} staffId={selected.id} />
                 </TabsContent>
-                <TabsContent value="info" className="pt-4 mt-0 space-y-3 text-sm">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><p className="text-muted-foreground text-xs mb-1">Email</p><p>{selected.user.email}</p></div>
-                    <div><p className="text-muted-foreground text-xs mb-1">Teléfono</p><p>{selected.user.phone || "—"}</p></div>
-                    <div><p className="text-muted-foreground text-xs mb-1">Comisión</p><p>{selected.commissionValue}{selected.commissionType === "PERCENTAGE" ? "%" : " (fijo)"}</p></div>
+                <TabsContent value="info" className="mt-0 space-y-2 text-xs">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><p className="text-muted-foreground mb-0.5">Email</p><p>{selected.user.email}</p></div>
+                    <div><p className="text-muted-foreground mb-0.5">Teléfono</p><p>{selected.user.phone || "—"}</p></div>
+                    <div><p className="text-muted-foreground mb-0.5">Comisión</p><p>{selected.commissionValue}{selected.commissionType === "PERCENTAGE" ? "%" : " (fijo)"}</p></div>
                   </div>
-                  {selected.bio && <div><p className="text-muted-foreground text-xs mb-1">Bio</p><p>{selected.bio}</p></div>}
+                  {selected.bio && <div><p className="text-muted-foreground mb-0.5">Bio</p><p>{selected.bio}</p></div>}
                 </TabsContent>
               </div>
             </Tabs>
@@ -313,114 +313,112 @@ function ExceptionsEditor({ businessId, staffId }: { businessId: string; staffId
     load()
   }
 
-  return (
-    <div className="space-y-4">
-      <p className="text-xs text-muted-foreground">Bloquea días o reduce la capacidad para fechas específicas, sin afectar el resto.</p>
+  const inputCls = "w-full h-7 rounded-md border border-input px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+  const inputStyle = { backgroundColor: "#3a3a3c", color: "#f4f4f5" }
 
+  return (
+    <div className="space-y-3">
       {/* Form */}
-      <div className="rounded-xl border border-white/10 p-4 space-y-3">
-        <p className="text-sm font-medium">Nueva excepción</p>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <label className="text-xs text-muted-foreground">Desde *</label>
+      <div className="rounded-lg border border-white/10 p-3 space-y-2">
+        <p className="text-xs font-medium">Nueva excepción</p>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] text-muted-foreground">Desde *</label>
             <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-              className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-              style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }} />
+              className={inputCls} style={inputStyle} />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs text-muted-foreground">Hasta (opcional)</label>
+          <div>
+            <label className="text-[10px] text-muted-foreground">Hasta (opcional)</label>
             <input type="date" value={form.endDate} min={form.date || undefined}
               onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
-              className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-              style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }} />
+              className={inputCls} style={inputStyle} />
           </div>
         </div>
-        <div className="space-y-1.5">
-          <label className="text-xs text-muted-foreground">Tipo</label>
-          <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as typeof form.type }))}
-            className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none"
-            style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
-            <option value="BLOCKED">Bloquear día/horario</option>
-            <option value="CAPACITY_OVERRIDE">Reducir capacidad</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button onClick={() => setForm(f => ({ ...f, fullDay: !f.fullDay }))}
-            className={`w-9 h-5 rounded-full transition-colors flex-shrink-0 ${form.fullDay ? "bg-primary" : "bg-muted-foreground/30"}`}>
-            <div className={`w-3.5 h-3.5 rounded-full bg-white mx-auto transition-transform ${form.fullDay ? "translate-x-1.5" : "-translate-x-1.5"}`} />
-          </button>
-          <span className="text-sm">Todo el día</span>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] text-muted-foreground">Tipo</label>
+            <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as typeof form.type }))}
+              className={inputCls} style={inputStyle}>
+              <option value="BLOCKED">Bloquear</option>
+              <option value="CAPACITY_OVERRIDE">Reducir capacidad</option>
+            </select>
+          </div>
+          <div className="flex items-end pb-0.5">
+            <button onClick={() => setForm(f => ({ ...f, fullDay: !f.fullDay }))}
+              className="flex items-center gap-1.5 text-xs">
+              <div className={`w-8 h-4 rounded-full transition-colors relative flex-shrink-0 ${form.fullDay ? "bg-primary" : "bg-muted-foreground/30"}`}>
+                <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${form.fullDay ? "left-[18px]" : "left-0.5"}`} />
+              </div>
+              Todo el día
+            </button>
+          </div>
         </div>
 
         {!form.fullDay && (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-xs text-muted-foreground">Desde</label>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] text-muted-foreground">Hora inicio</label>
               <input type="time" value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
-                className="w-full h-9 rounded-md border border-input px-3 text-sm"
-                style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }} />
+                className={inputCls} style={inputStyle} />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs text-muted-foreground">Hasta</label>
+            <div>
+              <label className="text-[10px] text-muted-foreground">Hora fin</label>
               <input type="time" value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
-                className="w-full h-9 rounded-md border border-input px-3 text-sm"
-                style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }} />
+                className={inputCls} style={inputStyle} />
             </div>
           </div>
         )}
 
-        {form.type === "CAPACITY_OVERRIDE" && (
-          <div className="space-y-1.5">
-            <label className="text-xs text-muted-foreground">Capacidad para este día</label>
-            <input type="number" min={1} max={20} value={form.capacity}
-              onChange={e => setForm(f => ({ ...f, capacity: Math.max(1, +e.target.value) }))}
-              className="w-full h-9 rounded-md border border-input px-3 text-sm"
-              style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }} />
+        <div className="grid grid-cols-2 gap-2">
+          {form.type === "CAPACITY_OVERRIDE" && (
+            <div>
+              <label className="text-[10px] text-muted-foreground">Capacidad</label>
+              <input type="number" min={1} max={20} value={form.capacity}
+                onChange={e => setForm(f => ({ ...f, capacity: Math.max(1, +e.target.value) }))}
+                className={inputCls} style={inputStyle} />
+            </div>
+          )}
+          <div className={form.type === "CAPACITY_OVERRIDE" ? "" : "col-span-2"}>
+            <label className="text-[10px] text-muted-foreground">Motivo (opcional)</label>
+            <input type="text" value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}
+              placeholder="Vacaciones, capacitación..."
+              className={inputCls} style={inputStyle} />
           </div>
-        )}
-
-        <div className="space-y-1.5">
-          <label className="text-xs text-muted-foreground">Motivo (opcional)</label>
-          <input type="text" value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}
-            placeholder="Ej: Capacitación, vacaciones..."
-            className="w-full h-9 rounded-md border border-input px-3 text-sm"
-            style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }} />
         </div>
 
         <button onClick={handleAdd} disabled={saving}
-          className="w-full h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
+          className="w-full h-7 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
           {saving ? "Guardando..." : "Agregar excepción"}
         </button>
       </div>
 
       {/* List */}
       {loading ? (
-        <div className="h-16 bg-muted/20 animate-pulse rounded-xl" />
+        <div className="h-10 bg-muted/20 animate-pulse rounded-lg" />
       ) : exceptions.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-4">Sin excepciones configuradas</p>
+        <p className="text-xs text-muted-foreground text-center py-2">Sin excepciones configuradas</p>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-1">
           {exceptions.map(ex => (
-            <div key={ex.id} className="flex items-center gap-3 p-3 rounded-xl border border-white/8 bg-white/3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${ex.type === "BLOCKED" ? "bg-red-500/15" : "bg-amber-500/15"}`}>
-                {ex.type === "BLOCKED" ? <Ban className="w-4 h-4 text-red-400" /> : <Users className="w-4 h-4 text-amber-400" />}
+            <div key={ex.id} className="flex items-center gap-2 p-2 rounded-lg border border-white/8 bg-white/3">
+              <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${ex.type === "BLOCKED" ? "bg-red-500/15" : "bg-amber-500/15"}`}>
+                {ex.type === "BLOCKED" ? <Ban className="w-3 h-3 text-red-400" /> : <Users className="w-3 h-3 text-amber-400" />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">
-                  {new Date(ex.date).toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })}
+                <p className="text-xs font-medium leading-tight">
+                  {new Date(ex.date).toLocaleDateString("es-CL", { day: "numeric", month: "short" })}
                   {ex.endDate && ex.endDate !== ex.date && (
-                    <span> → {new Date(ex.endDate).toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })}</span>
+                    <span> → {new Date(ex.endDate).toLocaleDateString("es-CL", { day: "numeric", month: "short" })}</span>
                   )}
-                  {ex.startTime && ex.endTime && <span className="text-muted-foreground ml-1">· {ex.startTime}–{ex.endTime}</span>}
+                  {ex.startTime && ex.endTime && <span className="text-muted-foreground"> {ex.startTime}–{ex.endTime}</span>}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  {ex.type === "BLOCKED" ? "Bloqueado" : `Capacidad: ${ex.capacity} personas`}
+                <p className="text-[10px] text-muted-foreground leading-tight">
+                  {ex.type === "BLOCKED" ? "Bloqueado" : `Cap. ${ex.capacity}`}
                   {ex.reason && ` · ${ex.reason}`}
                 </p>
               </div>
-              <button onClick={() => handleDelete(ex.id)} className="text-muted-foreground hover:text-red-400 transition-colors p-1">
-                <Trash2 className="w-4 h-4" />
+              <button onClick={() => handleDelete(ex.id)} className="text-muted-foreground hover:text-red-400 transition-colors p-0.5">
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
           ))}
@@ -445,26 +443,26 @@ function ScheduleEditor({ schedules, onSave }: { schedules: Schedule[]; onSave: 
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {local.map(s => (
-        <div key={s.dayOfWeek} className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${s.isWorking ? "bg-card" : "bg-muted/50 opacity-60"}`}>
-          <button onClick={() => toggle(s.dayOfWeek)} className={`w-10 h-6 rounded-full transition-colors flex-shrink-0 ${s.isWorking ? "bg-primary" : "bg-muted-foreground/30"}`}>
-            <div className={`w-4 h-4 rounded-full bg-white mx-auto transition-transform ${s.isWorking ? "translate-x-2" : "-translate-x-2"}`} />
+        <div key={s.dayOfWeek} className={`flex items-center gap-2 py-1.5 px-2 rounded-md border transition-colors ${s.isWorking ? "bg-card" : "bg-muted/30 opacity-60"}`}>
+          <button onClick={() => toggle(s.dayOfWeek)} className={`w-8 h-4.5 rounded-full transition-colors flex-shrink-0 relative ${s.isWorking ? "bg-primary" : "bg-muted-foreground/30"}`}
+            style={{ width: 32, height: 18 }}>
+            <div className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white transition-all ${s.isWorking ? "left-[14px]" : "left-0.5"}`} />
           </button>
-          <span className="w-8 text-sm font-medium">{DAYS[s.dayOfWeek]}</span>
+          <span className="w-7 text-xs font-medium">{DAYS[s.dayOfWeek]}</span>
           {s.isWorking ? (
-            <div className="flex items-center gap-2 flex-1">
-              <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-              <Input type="time" value={s.startTime} onChange={e => updateTime(s.dayOfWeek, "startTime", e.target.value)} className="h-8 w-28" />
-              <span className="text-muted-foreground text-sm">—</span>
-              <Input type="time" value={s.endTime} onChange={e => updateTime(s.dayOfWeek, "endTime", e.target.value)} className="h-8 w-28" />
+            <div className="flex items-center gap-1.5 flex-1">
+              <Input type="time" value={s.startTime} onChange={e => updateTime(s.dayOfWeek, "startTime", e.target.value)} className="h-7 text-xs px-2 w-24" />
+              <span className="text-muted-foreground text-xs">–</span>
+              <Input type="time" value={s.endTime} onChange={e => updateTime(s.dayOfWeek, "endTime", e.target.value)} className="h-7 text-xs px-2 w-24" />
             </div>
           ) : (
-            <span className="text-sm text-muted-foreground flex-1">No trabaja</span>
+            <span className="text-xs text-muted-foreground flex-1">No trabaja</span>
           )}
         </div>
       ))}
-      <Button className="w-full mt-2" onClick={() => onSave(local)}>Guardar horarios</Button>
+      <Button className="w-full h-8 text-xs mt-2" onClick={() => onSave(local)}>Guardar horarios</Button>
     </div>
   )
 }
