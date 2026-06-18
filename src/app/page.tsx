@@ -1,8 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useRef } from "react"
-import { Check, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight } from "lucide-react"
+import { useEffect } from "react"
+import { Check, X, Minus, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight } from "lucide-react"
 
 const features = [
   { icon: Calendar, title: "Calendario inteligente", desc: "Vista semanal y diaria. Arrastra y suelta para mover turnos al instante." },
@@ -15,33 +15,84 @@ const features = [
 
 const plans = [
   {
-    name: "Inicial",
-    price: "4.990",
-    description: "Para negocios que están comenzando",
-    features: ["1 sede", "Hasta 3 profesionales", "Turnos ilimitados", "Booking online", "Recordatorios por email"],
+    name: "Starter",
+    price: "9.900",
+    description: "Para independientes y negocios que están comenzando",
+    features: [
+      "1 profesional",
+      "Turnos ilimitados",
+      "Booking online 24/7",
+      "CRM de clientes",
+      "Pagos online y POS",
+      "Reportes básicos",
+      "Recordatorios por email",
+      "500 emails marketing/mes",
+    ],
     cta: "Empezar — 3 meses gratis",
-    href: "/register",
+    href: "/register?plan=starter",
     highlight: false,
   },
   {
-    name: "Pro",
-    price: "9.990",
-    description: "Para negocios en crecimiento",
-    features: ["Sedes ilimitadas", "Profesionales ilimitados", "Turnos ilimitados", "WhatsApp + email", "Pagos online", "Reportes completos"],
+    name: "Negocio",
+    price: "24.900",
+    description: "Para negocios en crecimiento con equipo",
+    features: [
+      "Hasta 5 profesionales",
+      "Todo lo del plan Starter",
+      "Gift cards",
+      "Encuestas de satisfacción",
+      "Comisiones de staff",
+      "Inventario",
+      "2.000 emails marketing/mes",
+      "Soporte por chat",
+    ],
     cta: "Probar gratis",
-    href: "/register?plan=pro",
+    href: "/register?plan=negocio",
     highlight: true,
   },
   {
-    name: "Enterprise",
-    price: "29.990",
-    description: "Para cadenas y franquicias",
-    features: ["Todo lo de Pro", "Multi-sede consolidado", "API access", "Soporte prioritario", "Onboarding dedicado"],
-    cta: "Contactar ventas",
-    href: "mailto:hola@agendamok.cl",
+    name: "Pro",
+    price: "39.900",
+    description: "Para empresas y clínicas con múltiples profesionales",
+    features: [
+      "Profesionales ilimitados",
+      "Todo lo del plan Negocio",
+      "Ficha clínica personalizable",
+      "Presupuestos y cotizaciones",
+      "Múltiples sedes",
+      "5.000 emails marketing/mes",
+      "API access",
+      "Soporte prioritario",
+    ],
+    cta: "Probar gratis",
+    href: "/register?plan=pro",
     highlight: false,
   },
 ]
+
+type FeatureValue = boolean | string
+
+const comparisonRows: { feature: string; us: FeatureValue[]; them: FeatureValue[] }[] = [
+  { feature: "Turnos ilimitados", us: [true, true, true], them: [true, true, true] },
+  { feature: "Booking online 24/7", us: [true, true, true], them: [true, true, true] },
+  { feature: "CRM de clientes", us: [true, true, true], them: [true, true, true] },
+  { feature: "Recordatorios por email", us: [true, true, true], them: [true, true, true] },
+  { feature: "Pagos online + POS", us: [true, true, true], them: ["$20.000/mes extra", "$20.000/mes extra", "$20.000/mes extra"] },
+  { feature: "Reportes", us: ["Básico", "Completo", "Completo"], them: ["Básico", "Completo", "Completo"] },
+  { feature: "Gift cards", us: [false, true, true], them: [false, false, true] },
+  { feature: "Encuestas de satisfacción", us: [false, true, true], them: [false, false, true] },
+  { feature: "Comisiones de staff", us: [false, true, true], them: [false, true, true] },
+  { feature: "Ficha clínica personalizable", us: [false, false, true], them: [false, false, true] },
+  { feature: "WhatsApp automático", us: ["Add-on $4.900/mes", "Add-on $4.900/mes", "Add-on $4.900/mes"], them: ["$5.000/mes extra", "$5.000/mes extra", "$5.000/mes extra"] },
+  { feature: "Múltiples sedes", us: [false, false, true], them: [false, false, true] },
+  { feature: "API access", us: [false, false, true], them: [false, false, true] },
+]
+
+function CellValue({ val, isUs }: { val: FeatureValue; isUs: boolean }) {
+  if (val === true) return <Check className={`w-4 h-4 ${isUs ? "text-sky-400" : "text-white/25"}`} />
+  if (val === false) return <Minus className="w-4 h-4 text-white/10" />
+  return <span className={`text-[10px] text-center leading-tight ${isUs ? "text-sky-300" : "text-red-400/70"}`}>{val}</span>
+}
 
 function useScrollReveal() {
   useEffect(() => {
@@ -348,9 +399,11 @@ export default function LandingPage() {
               <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
                 Precios <span className="gradient-text">simples y claros</span>
               </h2>
-              <p className="text-white/40 text-lg">3 meses gratis en todos los planes. Cancela cuando quieras.</p>
+              <p className="text-white/40 text-lg">3 meses gratis en todos los planes · Sin tarjeta al inicio · Cancela cuando quieras.</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            {/* Plan cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-24">
               {plans.map((plan, i) => (
                 <div
                   key={plan.name}
@@ -370,7 +423,7 @@ export default function LandingPage() {
                     <p className="text-sm text-white/40 mb-4">{plan.description}</p>
                     <div className="flex items-end gap-1">
                       <span className="text-4xl font-bold text-white">${plan.price}</span>
-                      <span className="text-white/40 text-sm mb-1">/mes</span>
+                      <span className="text-white/40 text-sm mb-1">/mes + IVA</span>
                     </div>
                   </div>
                   <ul className="space-y-3 flex-1 mb-6">
@@ -393,6 +446,107 @@ export default function LandingPage() {
                   </Link>
                 </div>
               ))}
+            </div>
+
+            {/* Comparison table */}
+            <div className="reveal">
+              <div className="text-center mb-10">
+                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                  ¿Por qué <span className="gradient-text">AgendaMok</span>?
+                </h3>
+                <p className="text-white/40">Comparado con la competencia líder del mercado</p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 overflow-hidden">
+                {/* Header */}
+                <div className="grid grid-cols-[2fr,1fr,1fr,1fr,1fr,1fr,1fr] bg-white/5 border-b border-white/10">
+                  <div className="p-4" />
+                  {/* AgendaMok headers */}
+                  <div className="p-4 text-center border-l border-white/10">
+                    <div className="text-xs text-sky-400 font-bold uppercase tracking-wider mb-1">AgendaMok</div>
+                    <div className="text-xs text-white/50">Starter</div>
+                    <div className="text-sm font-bold text-white">$9.900</div>
+                  </div>
+                  <div className="p-4 text-center border-l border-sky-400/30 bg-sky-500/5">
+                    <div className="text-xs text-sky-400 font-bold uppercase tracking-wider mb-1">AgendaMok</div>
+                    <div className="text-xs text-white/50">Negocio</div>
+                    <div className="text-sm font-bold text-white">$24.900</div>
+                  </div>
+                  <div className="p-4 text-center border-l border-white/10">
+                    <div className="text-xs text-sky-400 font-bold uppercase tracking-wider mb-1">AgendaMok</div>
+                    <div className="text-xs text-white/50">Pro</div>
+                    <div className="text-sm font-bold text-white">$39.900</div>
+                  </div>
+                  {/* Competitor headers */}
+                  <div className="p-4 text-center border-l border-white/5">
+                    <div className="text-xs text-white/25 font-bold uppercase tracking-wider mb-1">Competencia</div>
+                    <div className="text-xs text-white/25">Individual</div>
+                    <div className="text-sm font-bold text-white/30">$15.900</div>
+                  </div>
+                  <div className="p-4 text-center border-l border-white/5">
+                    <div className="text-xs text-white/25 font-bold uppercase tracking-wider mb-1">Competencia</div>
+                    <div className="text-xs text-white/25">Básico</div>
+                    <div className="text-sm font-bold text-white/30">$34.900</div>
+                  </div>
+                  <div className="p-4 text-center border-l border-white/5">
+                    <div className="text-xs text-white/25 font-bold uppercase tracking-wider mb-1">Competencia</div>
+                    <div className="text-xs text-white/25">Premium</div>
+                    <div className="text-sm font-bold text-white/30">$54.900</div>
+                  </div>
+                </div>
+
+                {/* Rows */}
+                {comparisonRows.map((row, ri) => (
+                  <div
+                    key={row.feature}
+                    className={`grid grid-cols-[2fr,1fr,1fr,1fr,1fr,1fr,1fr] border-b border-white/5 last:border-0 ${ri % 2 === 0 ? "" : "bg-white/[0.015]"}`}
+                  >
+                    <div className="p-3 pl-4 text-sm text-white/60 flex items-center">{row.feature}</div>
+                    {/* AgendaMok cols */}
+                    {row.us.map((val, ci) => (
+                      <div key={ci} className={`p-3 flex items-center justify-center border-l ${ci === 1 ? "border-sky-400/20 bg-sky-500/[0.03]" : "border-white/5"}`}>
+                        <CellValue val={val} isUs />
+                      </div>
+                    ))}
+                    {/* Competitor cols */}
+                    {row.them.map((val, ci) => (
+                      <div key={ci} className="p-3 flex items-center justify-center border-l border-white/5">
+                        <CellValue val={val} isUs={false} />
+                      </div>
+                    ))}
+                  </div>
+                ))}
+
+                {/* Footer row: prices */}
+                <div className="grid grid-cols-[2fr,1fr,1fr,1fr,1fr,1fr,1fr] bg-white/5 border-t border-white/10">
+                  <div className="p-4 text-sm font-semibold text-white/60">Precio mensual + IVA</div>
+                  <div className="p-4 text-center border-l border-white/10">
+                    <span className="text-sky-400 font-bold">$9.900</span>
+                  </div>
+                  <div className="p-4 text-center border-l border-sky-400/30 bg-sky-500/5">
+                    <span className="text-sky-400 font-bold">$24.900</span>
+                  </div>
+                  <div className="p-4 text-center border-l border-white/10">
+                    <span className="text-sky-400 font-bold">$39.900</span>
+                  </div>
+                  <div className="p-4 text-center border-l border-white/5">
+                    <span className="text-white/30 font-bold">$15.900</span>
+                    <div className="text-[10px] text-red-400/70 mt-0.5">+ add-ons</div>
+                  </div>
+                  <div className="p-4 text-center border-l border-white/5">
+                    <span className="text-white/30 font-bold">$34.900</span>
+                    <div className="text-[10px] text-red-400/70 mt-0.5">+ add-ons</div>
+                  </div>
+                  <div className="p-4 text-center border-l border-white/5">
+                    <span className="text-white/30 font-bold">$54.900</span>
+                    <div className="text-[10px] text-red-400/70 mt-0.5">+ add-ons</div>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-center text-xs text-white/20 mt-4">
+                Precios de la competencia obtenidos de su sitio web oficial. Sujetos a cambio sin previo aviso.
+              </p>
             </div>
           </div>
         </section>
