@@ -84,6 +84,14 @@ enum ExceptionType {
   CAPACITY_OVERRIDE
 }
 
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
 // ─── AUTH / USERS ─────────────────────────────────────────────────────────────
 
 model User {
@@ -190,6 +198,7 @@ model Business {
   surveys                   SatisfactionSurvey[]
   commissions               CommissionRecord[]
   clinicalRecords           ClinicalRecord[]
+  quotes                    Quote[]
 
   @@index([slug])
   @@map("businesses")
@@ -281,6 +290,7 @@ model Service {
   staff        StaffMember[]    @relation("StaffServices")
   locations    Location[]       @relation("ServiceLocations")
   appointments Appointment[]
+  quoteItems   QuoteItem[]
 
   @@map("services")
 }
@@ -380,6 +390,7 @@ model Client {
   business        Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   appointments    Appointment[]
   clinicalRecord  ClinicalRecord?
+  quotes          Quote[]
 
   @@index([businessId, email])
   @@map("clients")
@@ -626,4 +637,42 @@ model GoogleCalendarIntegration {
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@map("google_calendar_integrations")
+}
+
+// ─── QUOTES ───────────────────────────────────────────────────────────────────
+
+model Quote {
+  id          String      @id @default(cuid())
+  businessId  String
+  clientId    String?
+  number      Int
+  status      QuoteStatus @default(DRAFT)
+  validUntil  DateTime?
+  notes       String?     @db.Text
+  discount    Float       @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?
+
+  business Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client   Client?     @relation(fields: [clientId], references: [id])
+  items    QuoteItem[]
+
+  @@unique([businessId, number])
+  @@index([businessId])
+  @@map("quotes")
+}
+
+model QuoteItem {
+  id          String  @id @default(cuid())
+  quoteId     String
+  description String
+  quantity    Int     @default(1)
+  unitPrice   Float
+  serviceId   String?
+
+  quote   Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  service Service? @relation(fields: [serviceId], references: [id])
+
+  @@map("quote_items")
 }

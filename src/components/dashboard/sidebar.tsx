@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   Calendar, Users, Scissors, UserCheck, BarChart3,
-  Settings, CreditCard, Megaphone, MapPin, LogOut, LayoutDashboard, Star, Percent, Stethoscope,
+  Settings, CreditCard, Megaphone, MapPin, LogOut, LayoutDashboard, Star, Percent, Stethoscope, FileText,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -21,6 +21,7 @@ const nav = [
   { href: "/dashboard/surveys", label: "Encuestas", icon: Star },
   { href: "/dashboard/commissions", label: "Comisiones", icon: Percent },
   { href: "/dashboard/locations", label: "Sedes", icon: MapPin },
+  { href: "/dashboard/quotes", label: "Presupuestos", icon: FileText },
   { href: "/dashboard/settings", label: "Configuración", icon: Settings },
 ]
 
