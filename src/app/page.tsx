@@ -465,7 +465,7 @@ export default function LandingPage() {
 
               <div className="rounded-2xl border border-white/10 overflow-hidden">
                 {/* Header */}
-                <div className="grid grid-cols-[2fr,1fr,1fr,1fr,1fr,1fr,1fr] bg-white/5 border-b border-white/10">
+                <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] bg-white/5 border-b border-white/10">
                   <div className="p-4" />
                   {/* AgendaMok headers */}
                   <div className="p-4 text-center border-l border-white/10">
@@ -505,7 +505,7 @@ export default function LandingPage() {
                 {comparisonRows.map((row, ri) => (
                   <div
                     key={row.feature}
-                    className={`grid grid-cols-[2fr,1fr,1fr,1fr,1fr,1fr,1fr] border-b border-white/5 last:border-0 ${ri % 2 === 0 ? "" : "bg-white/[0.015]"}`}
+                    className={`grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] border-b border-white/5 last:border-0 ${ri % 2 === 0 ? "" : "bg-white/[0.015]"}`}
                   >
                     <div className="p-3 pl-4 text-sm text-white/60 flex items-center">{row.feature}</div>
                     {/* AgendaMok cols */}
@@ -524,7 +524,7 @@ export default function LandingPage() {
                 ))}
 
                 {/* Footer row: prices */}
-                <div className="grid grid-cols-[2fr,1fr,1fr,1fr,1fr,1fr,1fr] bg-white/5 border-t border-white/10">
+                <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] bg-white/5 border-t border-white/10">
                   <div className="p-4 text-sm font-semibold text-white/60">
                     Precio mensual + IVA
                     <div className="text-[10px] text-sky-400/70 font-normal mt-0.5">Sin costos ocultos</div>
