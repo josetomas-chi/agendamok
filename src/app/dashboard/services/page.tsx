@@ -172,65 +172,64 @@ export default function ServicesPage() {
 
       {/* Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Editar servicio" : "Nuevo servicio"}</DialogTitle>
+        <DialogContent className="max-w-md p-5">
+          <DialogHeader className="pb-3">
+            <DialogTitle className="text-base">{editing ? "Editar servicio" : "Nuevo servicio"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2 space-y-2">
-                <Label>Nombre *</Label>
-                <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ej: Corte de cabello" />
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Nombre *</Label>
+              <Input className="h-8 text-sm mt-1" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ej: Sesión Kinesiología" />
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              <div className="col-span-1">
+                <Label className="text-xs">Duración (min)</Label>
+                <Input className="h-8 text-sm mt-1" type="number" value={form.duration || ""} onChange={e => setForm(f => ({ ...f, duration: e.target.value === "" ? 0 : +e.target.value }))} min={5} step={5} />
               </div>
-              <div className="space-y-2">
-                <Label>Duración (min) *</Label>
-                <Input type="number" value={form.duration || ""} onChange={e => setForm(f => ({ ...f, duration: e.target.value === "" ? 0 : +e.target.value }))} min={5} step={5} placeholder="60" />
+              <div className="col-span-1">
+                <Label className="text-xs">Precio</Label>
+                <Input className="h-8 text-sm mt-1" type="number" value={form.price || ""} onChange={e => setForm(f => ({ ...f, price: e.target.value === "" ? 0 : +e.target.value }))} min={0} />
               </div>
-              <div className="space-y-2">
-                <Label>Precio *</Label>
-                <Input type="number" value={form.price || ""} onChange={e => setForm(f => ({ ...f, price: e.target.value === "" ? 0 : +e.target.value }))} min={0} placeholder="0" />
+              <div className="col-span-1">
+                <Label className="text-xs">Buffer (min)</Label>
+                <Input className="h-8 text-sm mt-1" type="number" value={form.bufferAfter} onChange={e => setForm(f => ({ ...f, bufferAfter: +e.target.value }))} min={0} step={5} />
               </div>
-              <div className="space-y-2">
-                <Label>Tiempo entre sesiones (min)</Label>
-                <Input type="number" value={form.bufferAfter} onChange={e => setForm(f => ({ ...f, bufferAfter: +e.target.value }))} min={0} step={5} />
-              </div>
-              <div className="space-y-2">
-                <Label>Capacidad simultánea</Label>
-                <Input type="number" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: Math.max(1, +e.target.value) }))} min={1} max={20} />
-                <p className="text-xs text-muted-foreground">Personas que pueden reservar este servicio al mismo tiempo</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Categoría</Label>
-                <select
-                  value={form.categoryId ?? ""}
-                  onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}
-                  className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                  style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}
-                >
-                  <option value="" style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>Sin categoría</option>
-                  {categories.map(c => <option key={c.id} value={c.id} style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>{c.name}</option>)}
-                </select>
-              </div>
-              <div className="col-span-2 space-y-2">
-                <Label>Descripción</Label>
-                <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} />
-              </div>
-              <div className="col-span-2 space-y-2">
-                <Label>Color</Label>
-                <div className="flex gap-2 flex-wrap">
-                  {COLORS.map(c => (
-                    <button key={c} onClick={() => setForm(f => ({ ...f, color: c }))}
-                      className={cn("w-7 h-7 rounded-full transition-transform", form.color === c && "scale-125 ring-2 ring-offset-2 ring-primary")}
-                      style={{ backgroundColor: c }} />
-                  ))}
-                </div>
+              <div className="col-span-1">
+                <Label className="text-xs">Capacidad</Label>
+                <Input className="h-8 text-sm mt-1" type="number" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: Math.max(1, +e.target.value) }))} min={1} max={20} />
               </div>
             </div>
-            <div className="flex gap-2 pt-2">
-              <Button className="flex-1" onClick={handleSave} disabled={saving || !form.name}>
+            <div>
+              <Label className="text-xs">Categoría</Label>
+              <select
+                value={form.categoryId ?? ""}
+                onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}
+                className="w-full h-8 rounded-md border border-input px-3 text-sm mt-1 focus:outline-none focus:ring-1 focus:ring-ring"
+                style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}
+              >
+                <option value="" style={{ backgroundColor: "#3a3a3c" }}>Sin categoría</option>
+                {categories.map(c => <option key={c.id} value={c.id} style={{ backgroundColor: "#3a3a3c" }}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs">Descripción</Label>
+              <Textarea className="text-sm mt-1" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} />
+            </div>
+            <div>
+              <Label className="text-xs">Color</Label>
+              <div className="flex gap-1.5 flex-wrap mt-1">
+                {COLORS.map(c => (
+                  <button key={c} onClick={() => setForm(f => ({ ...f, color: c }))}
+                    className={cn("w-6 h-6 rounded-full transition-transform", form.color === c && "scale-125 ring-2 ring-offset-1 ring-primary")}
+                    style={{ backgroundColor: c }} />
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button className="flex-1 h-8 text-sm" onClick={handleSave} disabled={saving || !form.name}>
                 {saving ? "Guardando..." : "Guardar"}
               </Button>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+              <Button variant="outline" className="h-8 text-sm" onClick={() => setOpen(false)}>Cancelar</Button>
             </div>
           </div>
         </DialogContent>
