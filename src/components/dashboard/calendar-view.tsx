@@ -30,13 +30,14 @@ interface Props {
   businessId: string
   onNewAppointment?: (date: string, time: string, staffId?: string) => void
   onAppointmentMoved?: (id: string, newStartTime: string) => void
+  onAppointmentClick?: (id: string) => void
 }
 
 const SLOTS = Array.from({ length: 26 }, (_, i) => ({ h: 8 + Math.floor(i / 2), m: (i % 2) * 30 }))
 const WEEK_DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
 const SLOT_H = 32 // px per 30-min slot
 
-export function CalendarView({ appointments, staffMembers = [], businessId, onNewAppointment, onAppointmentMoved }: Props) {
+export function CalendarView({ appointments, staffMembers = [], businessId, onNewAppointment, onAppointmentMoved, onAppointmentClick }: Props) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<"week" | "day">("day")
   const [miniMonth, setMiniMonth] = useState(new Date())
@@ -230,6 +231,7 @@ export function CalendarView({ appointments, staffMembers = [], businessId, onNe
               onDragLeave={() => setDragOverSlot(null)}
               onDrop={handleDrop}
               onNewAppointment={onNewAppointment}
+              onAppointmentClick={onAppointmentClick}
             />
           ) : (
             <WeekView
@@ -242,6 +244,7 @@ export function CalendarView({ appointments, staffMembers = [], businessId, onNe
               onDragLeave={() => setDragOverSlot(null)}
               onDrop={handleDrop}
               onNewAppointment={onNewAppointment}
+              onAppointmentClick={onAppointmentClick}
               onDayClick={(day) => { setCurrentDate(day); setView("day") }}
             />
           )}
@@ -253,7 +256,7 @@ export function CalendarView({ appointments, staffMembers = [], businessId, onNe
 
 // ─── DAY VIEW: columns per staff ─────────────────────────────────────────────
 
-function DayStaffView({ day, staffCols, apptsByDay, dragOverSlot, onDragStart, onDragOver, onDragLeave, onDrop, onNewAppointment }: {
+function DayStaffView({ day, staffCols, apptsByDay, dragOverSlot, onDragStart, onDragOver, onDragLeave, onDrop, onNewAppointment, onAppointmentClick }: {
   day: Date
   staffCols: StaffMember[]
   apptsByDay: Record<string, Appointment[]>
@@ -263,6 +266,7 @@ function DayStaffView({ day, staffCols, apptsByDay, dragOverSlot, onDragStart, o
   onDragLeave: () => void
   onDrop: (e: React.DragEvent, day: Date, h: number, m: number) => void
   onNewAppointment?: (date: string, time: string, staffId?: string) => void
+  onAppointmentClick?: (id: string) => void
 }) {
   const dayKey = format(day, "yyyy-MM-dd")
   const dayAppts = apptsByDay[dayKey] || []
@@ -333,7 +337,7 @@ function DayStaffView({ day, staffCols, apptsByDay, dragOverSlot, onDragStart, o
                   </div>
                 )}
                 {slotAppts.map(a => (
-                  <ApptCard key={a.id} appt={a} onDragStart={onDragStart} />
+                  <ApptCard key={a.id} appt={a} onDragStart={onDragStart} onApptClick={onAppointmentClick} />
                 ))}
               </div>
             )
@@ -346,7 +350,7 @@ function DayStaffView({ day, staffCols, apptsByDay, dragOverSlot, onDragStart, o
 
 // ─── WEEK VIEW ────────────────────────────────────────────────────────────────
 
-function WeekView({ displayDays, apptsByDay, dragOverSlot, currentDate, onDragStart, onDragOver, onDragLeave, onDrop, onNewAppointment, onDayClick }: {
+function WeekView({ displayDays, apptsByDay, dragOverSlot, currentDate, onDragStart, onDragOver, onDragLeave, onDrop, onNewAppointment, onAppointmentClick, onDayClick }: {
   displayDays: Date[]
   apptsByDay: Record<string, Appointment[]>
   dragOverSlot: string | null
@@ -356,6 +360,7 @@ function WeekView({ displayDays, apptsByDay, dragOverSlot, currentDate, onDragSt
   onDragLeave: () => void
   onDrop: (e: React.DragEvent, day: Date, h: number, m: number) => void
   onNewAppointment?: (date: string, time: string) => void
+  onAppointmentClick?: (id: string) => void
   onDayClick: (day: Date) => void
 }) {
   return (
@@ -422,7 +427,7 @@ function WeekView({ displayDays, apptsByDay, dragOverSlot, currentDate, onDragSt
                 )}
                 {slotAppts.length > 0 && (
                   <div className={slotAppts.length > 1 ? "flex gap-0.5" : ""}>
-                    {slotAppts.map(a => <ApptCard key={a.id} appt={a} compact onDragStart={onDragStart} />)}
+                    {slotAppts.map(a => <ApptCard key={a.id} appt={a} compact onDragStart={onDragStart} onApptClick={onAppointmentClick} />)}
                   </div>
                 )}
               </div>
@@ -436,18 +441,19 @@ function WeekView({ displayDays, apptsByDay, dragOverSlot, currentDate, onDragSt
 
 // ─── APPOINTMENT CARD ─────────────────────────────────────────────────────────
 
-function ApptCard({ appt, compact, onDragStart }: {
+function ApptCard({ appt, compact, onDragStart, onApptClick }: {
   appt: Appointment
   compact?: boolean
   onDragStart: (e: React.DragEvent, id: string) => void
+  onApptClick?: (id: string) => void
 }) {
   const color = appt.service.color || "#38bdf8"
   return (
     <div
       draggable
       onDragStart={e => onDragStart(e, appt.id)}
-      onClick={e => e.stopPropagation()}
-      className="rounded-lg text-xs p-2 cursor-grab active:cursor-grabbing select-none transition-all hover:brightness-110 hover:shadow-lg active:opacity-60 active:scale-95 w-full"
+      onClick={e => { e.stopPropagation(); onApptClick?.(appt.id) }}
+      className="rounded-lg text-xs p-2 cursor-pointer select-none transition-all hover:brightness-110 hover:shadow-lg active:opacity-60 active:scale-95 w-full"
       style={{
         background: `linear-gradient(135deg, ${color}ee, ${color}99)`,
         boxShadow: `0 2px 8px ${color}40`,

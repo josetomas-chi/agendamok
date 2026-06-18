@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { Phone, Mail, Clock, User, X } from "lucide-react"
 import { CalendarView } from "./calendar-view"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,7 +13,8 @@ type Appointment = {
   id: string; startTime: Date | string; endTime: Date | string; status: string
   service: { name: string; color: string }
   staff: { id: string; color: string; user: { name: string | null; image: string | null } }
-  client: { name: string }
+  client: { name: string; email: string | null; phone: string | null }
+  notes: string | null
 }
 
 type Service = { id: string; name: string; duration: number }
@@ -35,6 +37,8 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
   const [form, setForm] = useState(DEFAULT_FORM)
   const [saving, setSaving] = useState(false)
   const [appts, setAppts] = useState<Appointment[]>([])
+  const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null)
+  const popupRef = useRef<HTMLDivElement>(null)
 
   const fetchAppts = useCallback(async (signal?: AbortSignal) => {
     const from = new Date()
@@ -103,19 +107,86 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
     setSaving(false)
   }
 
+  function formatTime(dt: Date | string) {
+    return new Date(dt).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
+  }
+
   return (
     <>
-<CalendarView
+      <CalendarView
         appointments={appts}
         staffMembers={staff}
         businessId={businessId}
         onNewAppointment={handleNewAppointment}
+        onAppointmentClick={(id) => {
+          const appt = appts.find(a => a.id === id)
+          if (appt) setSelectedAppt(appt)
+        }}
         onAppointmentMoved={(id, newStartTime) => {
           setAppts(prev => prev.map(a =>
             a.id === id ? { ...a, startTime: newStartTime } : a
           ))
         }}
       />
+
+      {/* Appointment detail popup */}
+      {selectedAppt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedAppt(null)}>
+          <div
+            ref={popupRef}
+            className="bg-[#2c2c30] border border-white/10 rounded-2xl p-5 w-full max-w-sm shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: selectedAppt.service.color }} />
+                <h3 className="font-semibold text-white">{selectedAppt.service.name}</h3>
+              </div>
+              <button onClick={() => setSelectedAppt(null)} className="text-white/40 hover:text-white transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 text-sm">
+                <Clock className="w-4 h-4 text-white/40 flex-shrink-0" />
+                <span className="text-white/70">
+                  {formatTime(selectedAppt.startTime)} – {formatTime(selectedAppt.endTime)}
+                </span>
+              </div>
+
+              <div className="border-t border-white/5 pt-3 space-y-2.5">
+                <div className="flex items-center gap-3 text-sm">
+                  <User className="w-4 h-4 text-white/40 flex-shrink-0" />
+                  <span className="text-white font-medium">{selectedAppt.client.name}</span>
+                </div>
+                {selectedAppt.client.phone && (
+                  <a href={`tel:${selectedAppt.client.phone}`} className="flex items-center gap-3 text-sm group">
+                    <Phone className="w-4 h-4 text-white/40 flex-shrink-0" />
+                    <span className="text-sky-400 group-hover:text-sky-300 transition-colors">{selectedAppt.client.phone}</span>
+                  </a>
+                )}
+                {selectedAppt.client.email && (
+                  <a href={`mailto:${selectedAppt.client.email}`} className="flex items-center gap-3 text-sm group">
+                    <Mail className="w-4 h-4 text-white/40 flex-shrink-0" />
+                    <span className="text-sky-400 group-hover:text-sky-300 transition-colors">{selectedAppt.client.email}</span>
+                  </a>
+                )}
+                {selectedAppt.notes && (
+                  <div className="mt-2 bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-xs text-white/50">
+                    {selectedAppt.notes}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 pt-1 border-t border-white/5 text-xs text-white/30">
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: selectedAppt.staff.user.image ? undefined : selectedAppt.staff.color }} />
+                {selectedAppt.staff.user.name}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
