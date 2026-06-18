@@ -16,9 +16,9 @@ enum UserRole {
 }
 
 enum SubscriptionPlan {
-  FREE
+  STARTER
+  NEGOCIO
   PRO
-  ENTERPRISE
 }
 
 enum SubscriptionStatus {
@@ -212,7 +212,7 @@ model Subscription {
   stripeSubscriptionId String?            @unique
   flowCustomerId       String?            @unique
   flowSubscriptionId   String?            @unique
-  plan                 SubscriptionPlan   @default(FREE)
+  plan                 SubscriptionPlan   @default(STARTER)
   status               SubscriptionStatus @default(TRIALING)
   currentPeriodStart   DateTime?
   currentPeriodEnd     DateTime?

@@ -34,27 +34,26 @@ export async function POST(req: Request) {
   if (event === "subscription_canceled" || status === "canceled") {
     await prisma.subscription.updateMany({
       where: { flowSubscriptionId: subscriptionId },
-      data: { status: "CANCELED", plan: "FREE" },
+      data: { status: "CANCELED" },
     })
   }
 
   if (event === "customer_register") {
-    // Card registered — now subscribe the customer to their plan
     const subscription = await prisma.subscription.findFirst({
       where: { flowCustomerId: customerId },
     })
-    if (subscription && subscription.plan !== "FREE") {
+    if (subscription) {
       const { subscribeCustomer, createPlan, PLANS } = await import("@/lib/flow")
-      const plan = PLANS[subscription.plan as keyof typeof PLANS]
-      const planId = `agendamok-${subscription.plan.toLowerCase()}`
+      const planKey = subscription.plan as keyof typeof PLANS
+      const plan = PLANS[planKey]
 
       try {
-        await createPlan(planId, plan.name, plan.amount, plan.currency, plan.interval)
+        await createPlan(plan.planId, plan.name, plan.amount, plan.currency, plan.interval)
       } catch {
-        // Plan may already exist, continue
+        // Plan may already exist in Flow, continue
       }
 
-      const sub = await subscribeCustomer(customerId, planId)
+      const sub = await subscribeCustomer(customerId, plan.planId)
       await prisma.subscription.update({
         where: { id: subscription.id },
         data: {

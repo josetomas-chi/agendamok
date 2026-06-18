@@ -127,23 +127,42 @@ export default function SettingsPage() {
   }
 
   async function handleCancel() {
-    if (!confirm("¿Cancelar tu suscripcion? Volveras al plan Free al final del periodo.")) return
+    if (!confirm("¿Cancelar tu suscripción? El plan se mantendrá activo hasta el fin del periodo pagado.")) return
     const r = await fetch("/api/flow/cancel", { method: "POST" })
     if (r.ok) {
-      toast.success("Suscripcion cancelada")
+      toast.success("Suscripción cancelada")
       setSubscription(s => s ? { ...s, cancelAtPeriodEnd: true } : s)
     } else {
       toast.error("Error al cancelar")
     }
   }
 
-  const planInfo: Record<string, { label: string; desc: string; color: string }> = {
-    FREE: { label: "Plan Inicial", desc: "Gratis 3 meses, luego $4.990/mes • Hasta 2 profesionales", color: "bg-green-500/15 border-green-400/20 text-green-300" },
-    PRO: { label: "Plan Pro", desc: "Citas ilimitadas • 10 profesionales • Reportes avanzados", color: "bg-sky-500/15 border-sky-400/20 text-sky-300" },
-    ENTERPRISE: { label: "Plan Enterprise", desc: "Todo ilimitado • Multi-sede • Soporte prioritario", color: "bg-purple-500/15 border-purple-400/20 text-purple-300" },
+  const PLAN_INFO: Record<string, { label: string; price: string; features: string[]; color: string; btnColor: string }> = {
+    STARTER: {
+      label: "Starter",
+      price: "$9.900/mes",
+      features: ["1 profesional", "Turnos ilimitados", "Booking online 24/7", "CRM de clientes", "Pagos online y POS", "Recordatorios por email"],
+      color: "bg-white/5 border-white/20 text-white",
+      btnColor: "bg-white/10 hover:bg-white/20",
+    },
+    NEGOCIO: {
+      label: "Negocio",
+      price: "$24.900/mes",
+      features: ["Hasta 5 profesionales", "Todo lo del plan Starter", "Encuestas de satisfacción", "Comisiones de staff", "2.000 emails marketing/mes", "Soporte por chat"],
+      color: "bg-sky-500/10 border-sky-400/40 text-sky-300",
+      btnColor: "bg-sky-500 hover:bg-sky-400",
+    },
+    PRO: {
+      label: "Pro",
+      price: "$39.900/mes",
+      features: ["Profesionales ilimitados", "Todo lo del plan Negocio", "Ficha clínica", "Presupuestos y cotizaciones", "Múltiples sedes", "API access"],
+      color: "bg-purple-500/10 border-purple-400/40 text-purple-300",
+      btnColor: "bg-purple-600 hover:bg-purple-500",
+    },
   }
-  const currentPlan = subscription?.plan || "FREE"
-  const info = planInfo[currentPlan]
+
+  const currentPlan = (subscription?.plan || "STARTER") as keyof typeof PLAN_INFO
+  const info = PLAN_INFO[currentPlan] ?? PLAN_INFO.STARTER
 
   const trialEndsAt = subscription?.trialEndsAt ? new Date(subscription.trialEndsAt) : null
   const trialDaysLeft = trialEndsAt ? Math.max(0, Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null
@@ -437,19 +456,19 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <div className={`flex items-center justify-between p-4 border rounded-xl ${info.color}`}>
                 <div>
-                  <p className="font-bold">{info.label}</p>
-                  <p className="text-sm opacity-80">{info.desc}</p>
-                  {currentPlan === "FREE" && trialDaysLeft !== null && trialDaysLeft > 0 && (
-                    <p className="text-xs font-medium mt-1">
-                      Periodo gratis: {trialDaysLeft} dias restantes
+                  <p className="font-bold text-lg">Plan {info.label}</p>
+                  <p className="text-sm opacity-70">{info.price} + IVA</p>
+                  {trialDaysLeft !== null && trialDaysLeft > 0 && (
+                    <p className="text-xs font-medium mt-1 text-sky-300">
+                      Prueba gratuita: {trialDaysLeft} días restantes
                     </p>
                   )}
-                  {currentPlan === "FREE" && trialExpired && (
-                    <p className="text-xs font-semibold text-red-600 mt-1">
+                  {trialExpired && subscription?.status !== "ACTIVE" && (
+                    <p className="text-xs font-semibold text-red-400 mt-1">
                       Periodo de prueba vencido — activa tu plan para continuar
                     </p>
                   )}
-                  {subscription?.currentPeriodEnd && currentPlan !== "FREE" && (
+                  {subscription?.currentPeriodEnd && subscription.status === "ACTIVE" && (
                     <p className="text-xs opacity-60 mt-1">
                       {subscription.cancelAtPeriodEnd ? "Cancela el" : "Renueva el"}{" "}
                       {new Date(subscription.currentPeriodEnd).toLocaleDateString("es-CL")}
@@ -457,84 +476,69 @@ export default function SettingsPage() {
                   )}
                 </div>
                 <Badge variant="secondary">
-                  {currentPlan === "FREE" && trialDaysLeft !== null && trialDaysLeft > 0 ? "Prueba gratuita" :
-                   subscription?.status === "ACTIVE" ? "Activo" : subscription?.status || "Inicial"}
+                  {trialDaysLeft !== null && trialDaysLeft > 0 ? "Prueba gratuita" :
+                   subscription?.status === "ACTIVE" ? "Activo" :
+                   subscription?.status === "PAST_DUE" ? "Pago pendiente" :
+                   subscription?.status === "CANCELED" ? "Cancelado" : "Sin suscripción"}
                 </Badge>
               </div>
-              {currentPlan !== "FREE" && !subscription?.cancelAtPeriodEnd && (
-                <Button variant="outline" size="sm" className="text-red-500 hover:text-red-600" onClick={handleCancel}>
-                  Cancelar suscripcion
+              {subscription?.status === "ACTIVE" && !subscription.cancelAtPeriodEnd && (
+                <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300 border-red-400/30" onClick={handleCancel}>
+                  Cancelar suscripción
                 </Button>
+              )}
+              {subscription?.cancelAtPeriodEnd && (
+                <p className="text-xs text-amber-400">Tu plan se cancela al fin del periodo. Hasta entonces podés seguir usándolo.</p>
               )}
             </CardContent>
           </Card>
 
-          {/* Activate Inicial after trial / upgrade */}
-          {currentPlan === "FREE" && trialExpired && (
-            <Card className="border-green-400/30 bg-green-500/10">
-              <CardContent className="p-5 space-y-3">
-                <div>
-                  <p className="font-bold text-lg text-green-300">Activa el Plan Inicial</p>
-                  <p className="text-sm text-green-400/80">Tu periodo de prueba termino. Activa tu plan para seguir usando AgendaMok.</p>
-                  <p className="text-2xl font-bold text-green-300 mt-2">$4.990 <span className="text-sm font-normal">/mes</span></p>
-                </div>
-                <Button className="w-full bg-green-600 hover:bg-green-700 gap-2" onClick={() => handleSubscribe("FREE")} disabled={subscribing}>
-                  <CreditCard className="w-4 h-4" />
-                  {subscribing ? "Procesando..." : "Activar Plan Inicial — $4.990/mes"}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+          {/* Plan cards — show all, highlight current, allow switching */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {(Object.entries(PLAN_INFO) as [string, typeof PLAN_INFO[string]][]).map(([key, plan]) => {
+              const isCurrent = key === currentPlan && subscription?.status === "ACTIVE"
+              return (
+                <Card key={key} className={`relative border ${isCurrent ? "border-sky-400/50 bg-sky-500/5" : "border-white/10 bg-white/[0.02]"}`}>
+                  {isCurrent && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-sky-500 rounded-full text-xs font-semibold text-white">
+                      Plan actual
+                    </div>
+                  )}
+                  <CardContent className="p-5 space-y-3 pt-6">
+                    <div>
+                      <p className="font-bold text-lg text-white">Plan {plan.label}</p>
+                      <p className="text-2xl font-bold text-sky-400 mt-1">
+                        {plan.price.split("/")[0]} <span className="text-sm font-normal text-white/40">/mes + IVA</span>
+                      </p>
+                    </div>
+                    <ul className="text-sm space-y-1.5 text-white/60">
+                      {plan.features.map(f => (
+                        <li key={f} className="flex items-center gap-2">
+                          <span className="text-sky-400">✓</span> {f}
+                        </li>
+                      ))}
+                    </ul>
+                    {!isCurrent && (
+                      <Button
+                        className={`w-full gap-2 text-white ${plan.btnColor}`}
+                        onClick={() => handleSubscribe(key)}
+                        disabled={subscribing}
+                      >
+                        <CreditCard className="w-4 h-4" />
+                        {subscribing ? "Procesando..." : `Activar Plan ${plan.label}`}
+                      </Button>
+                    )}
+                    {isCurrent && (
+                      <div className="text-center text-sm text-sky-400 py-2">✓ Plan activo</div>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
 
-          {/* Plan options */}
-          {currentPlan === "FREE" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Pro */}
-              <Card className="border-sky-400/30 bg-sky-500/5">
-                <CardContent className="p-5 space-y-3">
-                  <div>
-                    <p className="font-bold text-lg">Plan Pro</p>
-                    <p className="text-2xl font-bold text-sky-400 mt-1">$9.900 <span className="text-sm font-normal text-muted-foreground">/mes</span></p>
-                  </div>
-                  <ul className="text-sm space-y-1 text-muted-foreground">
-                    <li>✓ Citas ilimitadas</li>
-                    <li>✓ Hasta 10 profesionales</li>
-                    <li>✓ Reportes avanzados</li>
-                    <li>✓ Notificaciones automaticas</li>
-                    <li>✓ Soporte por email</li>
-                  </ul>
-                  <Button className="w-full gap-2" onClick={() => handleSubscribe("PRO")} disabled={subscribing}>
-                    <CreditCard className="w-4 h-4" />
-                    {subscribing ? "Procesando..." : "Suscribirse — $9.900/mes"}
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Enterprise */}
-              <Card className="border-purple-400/30 bg-purple-500/5">
-                <CardContent className="p-5 space-y-3">
-                  <div>
-                    <p className="font-bold text-lg">Plan Enterprise</p>
-                    <p className="text-2xl font-bold text-purple-400 mt-1">$29.900 <span className="text-sm font-normal text-muted-foreground">/mes</span></p>
-                  </div>
-                  <ul className="text-sm space-y-1 text-muted-foreground">
-                    <li>✓ Todo lo del plan Pro</li>
-                    <li>✓ Profesionales ilimitados</li>
-                    <li>✓ Multi-sede</li>
-                    <li>✓ API access</li>
-                    <li>✓ Soporte prioritario</li>
-                  </ul>
-                  <Button className="w-full gap-2 bg-purple-600 hover:bg-purple-700" onClick={() => handleSubscribe("ENTERPRISE")} disabled={subscribing}>
-                    <CreditCard className="w-4 h-4" />
-                    {subscribing ? "Procesando..." : "Suscribirse — $29.900/mes"}
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          <p className="text-xs text-muted-foreground">
-            Los pagos se procesan de forma segura a traves de Flow. Tu tarjeta se cobra automaticamente cada mes. Puedes cancelar en cualquier momento.
+          <p className="text-xs text-white/30">
+            Pagos procesados de forma segura a través de Flow. Tu tarjeta se registra una vez y los cobros son automáticos cada mes. Podés cancelar en cualquier momento desde esta pantalla.
           </p>
         </TabsContent>
       </Tabs>
