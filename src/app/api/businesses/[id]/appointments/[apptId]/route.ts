@@ -30,12 +30,39 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     where: { id: apptId },
     data: body,
     include: {
-      service: { select: { name: true, color: true } },
-      staff: { include: { user: { select: { name: true } } } },
+      service: { select: { name: true, color: true, price: true } },
+      staff: { select: { id: true, commissionType: true, commissionValue: true, user: { select: { name: true } } } },
       client: { select: { name: true, email: true, phone: true } },
       business: { select: { name: true } },
+      payment: { select: { amount: true } },
     },
   })
+
+  // Calculate commission when appointment is marked COMPLETED for the first time
+  if (body.status === "COMPLETED" && prevAppt?.status !== "COMPLETED") {
+    const existing = await prisma.commissionRecord.findUnique({ where: { appointmentId: apptId } })
+    if (!existing && Number(appointment.staff.commissionValue) > 0) {
+      const base = appointment.payment
+        ? Number(appointment.payment.amount)
+        : Number(appointment.service.price)
+      const commissionAmount = appointment.staff.commissionType === "PERCENTAGE"
+        ? (base * Number(appointment.staff.commissionValue)) / 100
+        : Number(appointment.staff.commissionValue)
+
+      if (commissionAmount > 0) {
+        await prisma.commissionRecord.create({
+          data: {
+            businessId: id,
+            staffId: appointment.staff.id,
+            appointmentId: apptId,
+            amount: commissionAmount,
+            type: appointment.staff.commissionType,
+            rate: appointment.staff.commissionValue,
+          },
+        })
+      }
+    }
+  }
 
   // Send satisfaction survey when appointment is marked COMPLETED for the first time
   if (body.status === "COMPLETED" && prevAppt?.status !== "COMPLETED" && appointment.client.email) {

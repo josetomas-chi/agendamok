@@ -187,6 +187,7 @@ model Business {
   googleCalendarIntegration GoogleCalendarIntegration?
   availabilityExceptions    AvailabilityException[]
   surveys                   SatisfactionSurvey[]
+  commissions               CommissionRecord[]
 
   @@index([slug])
   @@map("businesses")
@@ -305,6 +306,7 @@ model StaffMember {
   daysOff      DayOff[]
   appointments Appointment[]
   exceptions   AvailabilityException[]
+  commissions  CommissionRecord[]
 
   @@map("staff_members")
 }
@@ -406,6 +408,7 @@ model Appointment {
   payment       Payment?
   notifications NotificationLog[]
   survey        SatisfactionSurvey?
+  commission    CommissionRecord?
 
   @@index([businessId, startTime])
   @@index([staffId, startTime])
@@ -519,6 +522,29 @@ model Campaign {
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@map("campaigns")
+}
+
+// ─── COMMISSIONS ──────────────────────────────────────────────────────────────
+
+model CommissionRecord {
+  id            String   @id @default(cuid())
+  businessId    String
+  staffId       String
+  appointmentId String   @unique
+  amount        Decimal  @db.Decimal(10, 2)
+  type          CommissionType
+  rate          Decimal  @db.Decimal(5, 2)  // % or flat value used
+  isPaid        Boolean  @default(false)
+  paidAt        DateTime?
+  createdAt     DateTime @default(now())
+
+  business    Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  staff       StaffMember @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, staffId])
+  @@index([businessId, isPaid])
+  @@map("commission_records")
 }
 
 // ─── SATISFACTION SURVEYS ─────────────────────────────────────────────────────
