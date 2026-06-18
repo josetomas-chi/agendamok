@@ -193,7 +193,7 @@ export default function OnboardingPage() {
                 <span className="font-medium text-sky-300">Plan Starter</span>
                 <span className="text-xs bg-sky-500 text-white px-2 py-0.5 rounded-full font-semibold">30 días gratis</span>
               </div>
-              <p className="text-xs text-white/40">A partir del día 91 se cobra $9.900/mes + IVA automáticamente. Podés cancelar cuando quieras.</p>
+              <p className="text-xs text-white/40">A partir del día 31 se cobra $9.900/mes + IVA automáticamente. Podés cancelar cuando quieras.</p>
             </div>
 
             <div className="flex items-start gap-2.5 text-xs text-white/30 bg-white/[0.03] border border-white/5 rounded-xl p-3">
