@@ -11,12 +11,12 @@ import { toast } from "sonner"
 type Appointment = {
   id: string; startTime: Date | string; endTime: Date | string; status: string
   service: { name: string; color: string }
-  staff: { user: { name: string | null } }
+  staff: { id: string; color: string; user: { name: string | null; image: string | null } }
   client: { name: string }
 }
 
 type Service = { id: string; name: string; duration: number }
-type Staff = { id: string; user: { name: string | null } }
+type Staff = { id: string; color: string; user: { name: string | null; image: string | null } }
 type Client = { id: string; name: string }
 
 interface Props {
@@ -104,6 +104,7 @@ export function CalendarWithNew({ businessId, services, staff, clients }: Props)
     <>
 <CalendarView
         appointments={appts}
+        staffMembers={staff}
         businessId={businessId}
         onNewAppointment={handleNewAppointment}
         onAppointmentMoved={(id, newStartTime) => {
