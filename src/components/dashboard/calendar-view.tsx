@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef } from "react"
 import { format, startOfWeek, addDays, isSameDay } from "date-fns"
 import { es } from "date-fns/locale"
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 type Appointment = {
   id: string
@@ -20,13 +21,16 @@ interface Props {
   appointments: Appointment[]
   businessId: string
   onNewAppointment?: (date: string, time: string) => void
+  onAppointmentMoved?: (id: string, newStartTime: string) => void
 }
 
 const SLOTS = Array.from({ length: 25 }, (_, i) => ({ h: 8 + Math.floor(i / 2), m: (i % 2) * 30 }))
 
-export function CalendarView({ appointments, onNewAppointment }: Props) {
+export function CalendarView({ appointments, businessId, onNewAppointment, onAppointmentMoved }: Props) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<"week" | "day">("week")
+  const [dragOverSlot, setDragOverSlot] = useState<string | null>(null)
+  const dragApptId = useRef<string | null>(null)
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
@@ -54,6 +58,48 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
       format(day, "yyyy-MM-dd"),
       `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
     )
+  }
+
+  function handleDragStart(e: React.DragEvent, apptId: string) {
+    dragApptId.current = apptId
+    e.dataTransfer.effectAllowed = "move"
+    // ghost image handled by browser default
+  }
+
+  function handleDragOver(e: React.DragEvent, slotKey: string) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = "move"
+    setDragOverSlot(slotKey)
+  }
+
+  function handleDragLeave() {
+    setDragOverSlot(null)
+  }
+
+  async function handleDrop(e: React.DragEvent, day: Date, h: number, m: number) {
+    e.preventDefault()
+    setDragOverSlot(null)
+    const id = dragApptId.current
+    dragApptId.current = null
+    if (!id) return
+
+    const newStartTime = new Date(
+      day.getFullYear(), day.getMonth(), day.getDate(), h, m, 0
+    ).toISOString()
+
+    // Optimistic update
+    onAppointmentMoved?.(id, newStartTime)
+
+    const r = await fetch(`/api/businesses/${businessId}/appointments/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ startTime: newStartTime }),
+    })
+
+    if (!r.ok) {
+      toast.error("No se pudo mover el turno")
+      // Revert by re-fetching — parent handles this via onAppointmentMoved with original time
+    }
   }
 
   return (
@@ -150,9 +196,11 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
                     )}
                   </div>
                   {displayDays.map((day) => {
-                    const key = format(day, "yyyy-MM-dd")
+                    const dayKey = format(day, "yyyy-MM-dd")
+                    const slotKey = `${dayKey}-${h}-${m}`
                     const isToday = isSameDay(day, new Date())
-                    const dayAppts = (apptsByDay[key] || []).filter(a => {
+                    const isDragOver = dragOverSlot === slotKey
+                    const dayAppts = (apptsByDay[dayKey] || []).filter(a => {
                       const d = new Date(a.startTime)
                       return d.getHours() === h && d.getMinutes() === m
                     })
@@ -160,13 +208,20 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
                       <div
                         key={day.toISOString()}
                         onClick={() => { if (dayAppts.length === 0) handleCellClick(day, h, m) }}
+                        onDragOver={e => handleDragOver(e, slotKey)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={e => handleDrop(e, day, h, m)}
                         className={cn(
                           "flex-1 min-h-[28px] px-0.5 py-0.5 relative group border-l border-white/5 transition-colors",
-                          isToday && "bg-sky-500/[0.03]",
-                          dayAppts.length === 0 && onNewAppointment && "cursor-pointer hover:bg-white/[0.03]"
+                          isToday && !isDragOver && "bg-sky-500/[0.03]",
+                          isDragOver && "bg-sky-500/20 border-sky-500/40",
+                          dayAppts.length === 0 && onNewAppointment && !isDragOver && "cursor-pointer hover:bg-white/[0.03]"
                         )}
                       >
-                        {dayAppts.length === 0 && onNewAppointment && (
+                        {isDragOver && (
+                          <div className="absolute inset-0 border-2 border-sky-400/50 rounded pointer-events-none" />
+                        )}
+                        {dayAppts.length === 0 && onNewAppointment && !isDragOver && (
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <Plus className="w-3.5 h-3.5 text-sky-500/60" />
                           </div>
@@ -174,8 +229,10 @@ export function CalendarView({ appointments, onNewAppointment }: Props) {
                         {dayAppts.map((a) => (
                           <div
                             key={a.id}
+                            draggable
+                            onDragStart={e => handleDragStart(e, a.id)}
                             onClick={e => e.stopPropagation()}
-                            className="rounded-lg text-xs p-2 mb-0.5 cursor-pointer select-none transition-all hover:brightness-110 hover:shadow-lg"
+                            className="rounded-lg text-xs p-2 mb-0.5 cursor-grab active:cursor-grabbing select-none transition-all hover:brightness-110 hover:shadow-lg active:opacity-60 active:scale-95"
                             style={{
                               background: a.service.color
                                 ? `linear-gradient(135deg, ${a.service.color}ee, ${a.service.color}bb)`

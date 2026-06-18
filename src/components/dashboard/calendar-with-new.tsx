@@ -106,6 +106,11 @@ export function CalendarWithNew({ businessId, services, staff, clients }: Props)
         appointments={appts}
         businessId={businessId}
         onNewAppointment={handleNewAppointment}
+        onAppointmentMoved={(id, newStartTime) => {
+          setAppts(prev => prev.map(a =>
+            a.id === id ? { ...a, startTime: newStartTime } : a
+          ))
+        }}
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
