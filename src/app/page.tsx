@@ -146,46 +146,59 @@ function HelpAccordion() {
   const [openCat, setOpenCat] = useState<number | null>(0)
   const [openStep, setOpenStep] = useState<string | null>(null)
 
+  const catColors = [
+    { border: "border-sky-400/30", bg: "bg-sky-500/5", dot: "bg-sky-400", num: "bg-sky-500/20 text-sky-400" },
+    { border: "border-violet-400/30", bg: "bg-violet-500/5", dot: "bg-violet-400", num: "bg-violet-500/20 text-violet-400" },
+    { border: "border-emerald-400/30", bg: "bg-emerald-500/5", dot: "bg-emerald-400", num: "bg-emerald-500/20 text-emerald-400" },
+    { border: "border-amber-400/30", bg: "bg-amber-500/5", dot: "bg-amber-400", num: "bg-amber-500/20 text-amber-400" },
+    { border: "border-pink-400/30", bg: "bg-pink-500/5", dot: "bg-pink-400", num: "bg-pink-500/20 text-pink-400" },
+  ]
+
   return (
     <div className="space-y-3">
-      {helpItems.map((cat, ci) => (
-        <div key={cat.category} className="rounded-2xl border border-white/10 overflow-hidden">
-          <button
-            onClick={() => { setOpenCat(openCat === ci ? null : ci); setOpenStep(null) }}
-            className="w-full flex items-center gap-3 px-5 py-4 bg-white/[0.03] hover:bg-white/[0.06] transition-colors text-left"
-          >
-            <span className="text-xl">{cat.icon}</span>
-            <span className="flex-1 font-semibold text-white">{cat.category}</span>
-            <ChevronDown className={`w-4 h-4 text-white/40 transition-transform flex-shrink-0 ${openCat === ci ? "rotate-180" : ""}`} />
-          </button>
+      {helpItems.map((cat, ci) => {
+        const c = catColors[ci % catColors.length]
+        const isOpenCat = openCat === ci
+        return (
+          <div key={cat.category} className={`rounded-2xl border overflow-hidden transition-colors ${isOpenCat ? c.border : "border-white/10"}`}>
+            <button
+              onClick={() => { setOpenCat(isOpenCat ? null : ci); setOpenStep(null) }}
+              className={`w-full flex items-center gap-3 px-5 py-4 transition-colors text-left ${isOpenCat ? c.bg : "bg-white/[0.03] hover:bg-white/[0.06]"}`}
+            >
+              <span className="text-xl">{cat.icon}</span>
+              <span className="flex-1 font-semibold text-white">{cat.category}</span>
+              <span className={`w-2 h-2 rounded-full mr-1 ${isOpenCat ? c.dot : "bg-white/20"}`} />
+              <ChevronDown className={`w-4 h-4 text-white/40 transition-transform flex-shrink-0 ${isOpenCat ? "rotate-180" : ""}`} />
+            </button>
 
-          {openCat === ci && (
-            <div className="divide-y divide-white/5 bg-white/[0.015]">
-              {cat.steps.map((step, si) => {
-                const key = `${ci}-${si}`
-                const isOpen = openStep === key
-                return (
-                  <div key={step.title}>
-                    <button
-                      onClick={() => setOpenStep(isOpen ? null : key)}
-                      className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-white/[0.04] transition-colors text-left"
-                    >
-                      <span className="w-5 h-5 rounded-full bg-sky-500/20 text-sky-400 text-[10px] font-bold flex items-center justify-center flex-shrink-0">{si + 1}</span>
-                      <span className={`flex-1 text-sm font-medium ${isOpen ? "text-sky-300" : "text-white/80"}`}>{step.title}</span>
-                      <ChevronDown className={`w-3.5 h-3.5 text-white/30 transition-transform flex-shrink-0 ${isOpen ? "rotate-180 text-sky-400" : ""}`} />
-                    </button>
-                    {isOpen && (
-                      <div className="px-5 pb-4 pt-1">
-                        <p className="text-sm text-white/55 leading-relaxed pl-8">{step.content}</p>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      ))}
+            {isOpenCat && (
+              <div className="divide-y divide-white/5 bg-white/[0.015]">
+                {cat.steps.map((step, si) => {
+                  const key = `${ci}-${si}`
+                  const isOpen = openStep === key
+                  return (
+                    <div key={step.title}>
+                      <button
+                        onClick={() => setOpenStep(isOpen ? null : key)}
+                        className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-white/[0.04] transition-colors text-left"
+                      >
+                        <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center flex-shrink-0 ${c.num}`}>{si + 1}</span>
+                        <span className={`flex-1 text-sm font-medium ${isOpen ? "text-white" : "text-white/75"}`}>{step.title}</span>
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform flex-shrink-0 ${isOpen ? `rotate-180 ${c.dot.replace("bg-","text-")}` : "text-white/30"}`} />
+                      </button>
+                      {isOpen && (
+                        <div className="px-5 pb-4 pt-1">
+                          <p className="text-sm text-white/60 leading-relaxed pl-8">{step.content}</p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -319,7 +332,6 @@ export default function LandingPage() {
             <Link href="#pricing" className="hover:text-white transition-colors">Precios</Link>
             <Link href="#ayuda" className="hover:text-white transition-colors">Ayuda</Link>
             <Link href="/buscar" className="hover:text-white transition-colors">Buscar negocio</Link>
-            <Link href="/login" className="hover:text-white transition-colors">Ingresar</Link>
           </nav>
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-sm text-white/70 hover:text-white transition-colors px-3 py-1.5">
@@ -464,17 +476,17 @@ export default function LandingPage() {
         </section>
 
         {/* Stats */}
-        <section className="py-24 border-y border-white/5">
+        <section className="py-24 border-y border-white/5 bg-white/[0.02]">
           <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              ["5 min", "para configurar tu negocio"],
-              ["24/7", "reservas sin intervención"],
-              ["−40%", "reducción de ausencias"],
-              ["100%", "de tus datos, siempre"],
-            ].map(([num, label], i) => (
+              ["5 min", "para configurar tu negocio", "text-sky-400"],
+              ["24/7", "reservas sin intervención", "text-violet-400"],
+              ["−40%", "reducción de ausencias", "text-emerald-400"],
+              ["100%", "de tus datos, siempre", "text-amber-400"],
+            ].map(([num, label, color], i) => (
               <div key={label} className={`reveal reveal-delay-${i + 1}`}>
-                <div className="text-4xl font-bold gradient-text mb-2">{num}</div>
-                <div className="text-sm text-white/40">{label}</div>
+                <div className={`text-4xl font-bold ${color} mb-2`}>{num}</div>
+                <div className="text-sm text-white/60">{label}</div>
               </div>
             ))}
           </div>
@@ -488,21 +500,27 @@ export default function LandingPage() {
                 Todo lo que necesitas,<br />
                 <span className="gradient-text">nada que no uses</span>
               </h2>
-              <p className="text-white/40 text-lg max-w-xl mx-auto">Una plataforma completa diseñada para negocios de servicios.</p>
+              <p className="text-white/50 text-lg max-w-xl mx-auto">Una plataforma completa diseñada para negocios de servicios.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {features.map((f, i) => (
-                <div
-                  key={f.title}
-                  className={`reveal reveal-delay-${(i % 3) + 1} card-glow group p-6 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] transition-all cursor-default`}
-                >
-                  <div className="w-10 h-10 rounded-xl bg-sky-500/20 flex items-center justify-center mb-4 group-hover:bg-sky-500/30 transition-colors">
-                    <f.icon className="w-5 h-5 text-sky-400" />
+              {features.map((f, i) => {
+                const accents = ["sky","violet","emerald","amber","pink","sky","violet","emerald","amber","pink","sky","violet"]
+                const accent = accents[i % accents.length]
+                const iconBg: Record<string,string> = { sky:"bg-sky-500/15 group-hover:bg-sky-500/25", violet:"bg-violet-500/15 group-hover:bg-violet-500/25", emerald:"bg-emerald-500/15 group-hover:bg-emerald-500/25", amber:"bg-amber-500/15 group-hover:bg-amber-500/25", pink:"bg-pink-500/15 group-hover:bg-pink-500/25" }
+                const iconCol: Record<string,string> = { sky:"text-sky-400", violet:"text-violet-400", emerald:"text-emerald-400", amber:"text-amber-400", pink:"text-pink-400" }
+                return (
+                  <div
+                    key={f.title}
+                    className={`reveal reveal-delay-${(i % 3) + 1} card-glow group p-6 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] transition-all cursor-default`}
+                  >
+                    <div className={`w-10 h-10 rounded-xl ${iconBg[accent]} flex items-center justify-center mb-4 transition-colors`}>
+                      <f.icon className={`w-5 h-5 ${iconCol[accent]}`} />
+                    </div>
+                    <h3 className="font-semibold text-white mb-2">{f.title}</h3>
+                    <p className="text-sm text-white/50 leading-relaxed">{f.desc}</p>
                   </div>
-                  <h3 className="font-semibold text-white mb-2">{f.title}</h3>
-                  <p className="text-sm text-white/40 leading-relaxed">{f.desc}</p>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </section>
@@ -517,15 +535,18 @@ export default function LandingPage() {
             </div>
             <div className="space-y-16">
               {[
-                { num: "01", title: "Crea tu cuenta", desc: "Regístrate y configura tu negocio: nombre, servicios y equipo. Toma menos de 5 minutos." },
-                { num: "02", title: "Comparte tu link", desc: "Tus clientes acceden a tu página de reservas desde cualquier dispositivo y eligen horario." },
-                { num: "03", title: "Gestiona todo desde el panel", desc: "Calendario, clientes, pagos y reportes en un solo lugar. Sin planillas, sin papel." },
+                { num: "01", title: "Crea tu cuenta", desc: "Regístrate y configura tu negocio: nombre, servicios y equipo. Toma menos de 5 minutos.", color: "text-sky-400", dot: "bg-sky-400" },
+                { num: "02", title: "Comparte tu link", desc: "Tus clientes acceden a tu página de reservas desde cualquier dispositivo y eligen horario.", color: "text-violet-400", dot: "bg-violet-400" },
+                { num: "03", title: "Gestiona todo desde el panel", desc: "Calendario, clientes, pagos y reportes en un solo lugar. Sin planillas, sin papel.", color: "text-emerald-400", dot: "bg-emerald-400" },
               ].map((step, i) => (
                 <div key={step.num} className={`reveal reveal-delay-${i + 1} flex flex-col sm:flex-row items-center sm:items-start gap-6 text-left`}>
-                  <div className="text-6xl font-bold text-white/40 flex-shrink-0 w-24 text-center">{step.num}</div>
-                  <div>
+                  <div className={`text-6xl font-bold ${step.color} flex-shrink-0 w-24 text-center`}>{step.num}</div>
+                  <div className="pt-2">
+                    <div className={`inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest ${step.color} mb-2`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${step.dot}`} />Paso {i + 1}
+                    </div>
                     <h3 className="text-xl font-semibold text-white mb-2">{step.title}</h3>
-                    <p className="text-white/40 leading-relaxed">{step.desc}</p>
+                    <p className="text-white/50 leading-relaxed">{step.desc}</p>
                   </div>
                 </div>
               ))}
@@ -561,16 +582,16 @@ export default function LandingPage() {
                   )}
                   <div className="mb-6">
                     <h3 className="font-semibold text-white text-lg mb-1">{plan.name}</h3>
-                    <p className="text-sm text-white/40 mb-4">{plan.description}</p>
+                    <p className="text-sm text-white/55 mb-4">{plan.description}</p>
                     <div className="flex items-end gap-1">
-                      <span className="text-4xl font-bold text-white">${plan.price}</span>
+                      <span className={`text-4xl font-bold ${plan.highlight ? "text-sky-300" : "text-white"}`}>${plan.price}</span>
                       <span className="text-white/40 text-sm mb-1">/mes + IVA</span>
                     </div>
                   </div>
                   <ul className="space-y-3 flex-1 mb-6">
                     {plan.features.map((feat) => (
-                      <li key={feat} className="flex items-center gap-2 text-sm text-white/60">
-                        <Check className="w-4 h-4 text-sky-400 flex-shrink-0" />
+                      <li key={feat} className="flex items-center gap-2 text-sm text-white/70">
+                        <Check className={`w-4 h-4 flex-shrink-0 ${plan.highlight ? "text-sky-400" : "text-emerald-400"}`} />
                         {feat}
                       </li>
                     ))}

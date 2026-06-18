@@ -185,7 +185,7 @@ export default function OnboardingPage() {
           <div className="bg-[#2c2c30] border border-white/10 rounded-2xl p-6 space-y-5">
             <div>
               <h2 className="text-xl font-semibold text-white">Registra tu método de pago</h2>
-              <p className="text-sm text-white/40 mt-1">Tienes 30 días gratis. Guardá tu tarjeta ahora para que el cobro sea automático al vencer el periodo de prueba.</p>
+              <p className="text-sm text-white/40 mt-1">Tienes 30 días gratis. Guarda tu tarjeta ahora para que el cobro sea automático al vencer el periodo de prueba.</p>
             </div>
 
             <div className="bg-sky-500/10 border border-sky-400/20 rounded-xl p-4 space-y-1">
