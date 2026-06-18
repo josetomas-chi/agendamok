@@ -37,19 +37,28 @@ export default function ServicesPage() {
   const [catInput, setCatInput] = useState("")
 
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(d => {
-      setBusinessId(d.businessId)
-      loadServices(d.businessId)
-    })
+    fetch("/api/me/business")
+      .then(r => r.json())
+      .then(d => {
+        if (!d.businessId) { setLoading(false); return }
+        setBusinessId(d.businessId)
+        loadServices(d.businessId)
+      })
+      .catch(() => setLoading(false))
   }, [])
 
   async function loadServices(bid: string) {
     setLoading(true)
-    const r = await fetch(`/api/businesses/${bid}/services`)
-    const d = await r.json()
-    setServices(d.services || [])
-    setCategories(d.categories || [])
-    setLoading(false)
+    try {
+      const r = await fetch(`/api/businesses/${bid}/services`)
+      const d = await r.json()
+      setServices(d.services || [])
+      setCategories(d.categories || [])
+    } catch {
+      toast.error("Error al cargar los servicios")
+    } finally {
+      setLoading(false)
+    }
   }
 
   function openNew() {
