@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   Calendar, Users, Scissors, UserCheck, BarChart3,
-  Settings, CreditCard, Megaphone, MapPin, LogOut, LayoutDashboard, Star, Percent, Stethoscope, FileText,
+  Settings, CreditCard, Megaphone, MapPin, LogOut, LayoutDashboard, Star, Percent, Stethoscope, FileText, HelpCircle,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -23,6 +23,7 @@ const nav = [
   { href: "/dashboard/locations", label: "Sedes", icon: MapPin },
   { href: "/dashboard/quotes", label: "Presupuestos", icon: FileText },
   { href: "/dashboard/settings", label: "Configuración", icon: Settings },
+  { href: "/dashboard/help", label: "Ayuda", icon: HelpCircle },
 ]
 
 export function Sidebar() {
@@ -46,6 +47,7 @@ export function Sidebar() {
       <nav className="flex-1 py-3 px-3 space-y-0.5 overflow-hidden">
         {nav.map(({ href, label, icon: Icon }) => {
           const isActive = href === "/dashboard" ? pathname === href : pathname.startsWith(href)
+          const isHelp = href === "/dashboard/help"
           return (
             <Link
               key={href}
@@ -54,10 +56,12 @@ export function Sidebar() {
                 "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all",
                 isActive
                   ? "bg-sky-500/20 text-sky-300 border border-sky-400/20"
+                  : isHelp
+                  ? "text-amber-400/70 hover:bg-amber-500/10 hover:text-amber-300"
                   : "text-white/50 hover:bg-white/10 hover:text-white"
               )}
             >
-              <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-sky-400" : "")} />
+              <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-sky-400" : isHelp ? "text-amber-400/70" : "")} />
               {label}
             </Link>
           )
