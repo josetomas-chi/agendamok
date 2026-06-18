@@ -90,7 +90,7 @@ export function CalendarView({ appointments, businessId, onNewAppointment, onApp
     // Optimistic update
     onAppointmentMoved?.(id, newStartTime)
 
-    const r = await fetch(`/api/businesses/${businessId}/appointments/${id}`, {
+    const r = await fetch(`/api/businesses/${businessId}/appointments/${id}`, {  // uses [apptId] route
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ startTime: newStartTime }),
