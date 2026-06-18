@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { isClinicalCategory } from "@/lib/clinical"
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -21,6 +22,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params
 
   const body = await req.json()
+
+  // Auto-enable clinical records when category changes to a health category
+  if (body.category) {
+    const current = await prisma.business.findUnique({ where: { id }, select: { clinicalRecordEnabled: true } })
+    if (!current?.clinicalRecordEnabled && isClinicalCategory(body.category)) {
+      body.clinicalRecordEnabled = true
+    }
+  }
+
   const business = await prisma.business.update({ where: { id }, data: body })
   return NextResponse.json({ business })
 }

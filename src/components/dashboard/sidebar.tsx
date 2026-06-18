@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   Calendar, Users, Scissors, UserCheck, BarChart3,
-  Settings, CreditCard, Megaphone, MapPin, LogOut, LayoutDashboard, Star, Percent,
+  Settings, CreditCard, Megaphone, MapPin, LogOut, LayoutDashboard, Star, Percent, Stethoscope,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"

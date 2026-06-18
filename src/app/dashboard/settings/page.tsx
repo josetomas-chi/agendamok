@@ -11,13 +11,14 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin } from "lucide-react"
 
-type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string }
+type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean }
 type Subscription = { plan: string; status: string; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean; flowCustomerId: string | null; trialEndsAt: string | null }
 
 export default function SettingsPage() {
   const [business, setBusiness] = useState<Business | null>(null)
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [form, setForm] = useState({ name: "", description: "", website: "", phone: "", address: "", city: "", timezone: "", currency: "" })
+  const [clinicalEnabled, setClinicalEnabled] = useState(false)
   const [locating, setLocating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [subscribing, setSubscribing] = useState(false)
@@ -29,6 +30,7 @@ export default function SettingsPage() {
       setBusiness(biz.business)
       setSubscription(biz.subscription || null)
       setForm({ name: biz.business.name, description: biz.business.description || "", website: biz.business.website || "", phone: biz.business.phone || "", address: biz.business.address || "", city: biz.business.city || "", timezone: biz.business.timezone, currency: biz.business.currency })
+      setClinicalEnabled(biz.business.clinicalRecordEnabled ?? false)
     })
   }, [])
 
@@ -130,6 +132,29 @@ export default function SettingsPage() {
                 <div className="space-y-1.5"><Label>Teléfono</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+56 9 1234 5678" /></div>
                 <div className="space-y-1.5"><Label>Moneda</Label><Input value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} placeholder="CLP" /></div>
               </div>
+              {/* Clinical record toggle */}
+              <div className="flex items-center justify-between rounded-xl border border-white/10 p-4">
+                <div>
+                  <p className="text-sm font-medium text-white">Ficha clínica de pacientes</p>
+                  <p className="text-xs text-white/40 mt-0.5">Actívala si tu negocio pertenece al área de la salud</p>
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!business) return
+                    const next = !clinicalEnabled
+                    setClinicalEnabled(next)
+                    await fetch(`/api/businesses/${business.id}`, {
+                      method: "PATCH", headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ clinicalRecordEnabled: next }),
+                    })
+                    toast.success(next ? "Ficha clínica activada" : "Ficha clínica desactivada")
+                  }}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${clinicalEnabled ? "bg-sky-500" : "bg-white/10"}`}
+                >
+                  <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${clinicalEnabled ? "translate-x-5" : "translate-x-0.5"}`} />
+                </button>
+              </div>
+
               <Button onClick={handleSave} disabled={saving}>{saving ? "Guardando..." : "Guardar cambios"}</Button>
 
               {/* Location section */}

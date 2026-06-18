@@ -167,10 +167,11 @@ model Business {
   longitude   Float?
   timezone    String    @default("America/Argentina/Buenos_Aires")
   currency    String    @default("ARS")
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  isActive              Boolean   @default(true)
+  clinicalRecordEnabled Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
 
   owner                     User                       @relation("BusinessOwner", fields: [ownerId], references: [id])
   subscription              Subscription?
@@ -188,6 +189,7 @@ model Business {
   availabilityExceptions    AvailabilityException[]
   surveys                   SatisfactionSurvey[]
   commissions               CommissionRecord[]
+  clinicalRecords           ClinicalRecord[]
 
   @@index([slug])
   @@map("businesses")
@@ -373,9 +375,10 @@ model Client {
   updatedAt     DateTime      @updatedAt
   deletedAt     DateTime?
 
-  user         User?         @relation(fields: [userId], references: [id])
-  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
+  user            User?          @relation(fields: [userId], references: [id])
+  business        Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  appointments    Appointment[]
+  clinicalRecord  ClinicalRecord?
 
   @@index([businessId, email])
   @@map("clients")
@@ -522,6 +525,46 @@ model Campaign {
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@map("campaigns")
+}
+
+// ─── CLINICAL RECORDS ─────────────────────────────────────────────────────────
+
+model ClinicalRecord {
+  id           String   @id @default(cuid())
+  businessId   String
+  clientId     String   @unique
+  bloodType    String?
+  allergies    String?  @db.Text
+  conditions   String?  @db.Text  // chronic conditions
+  medications  String?  @db.Text
+  background   String?  @db.Text  // antecedentes familiares
+  notes        String?  @db.Text  // notas generales
+  customFields Json?               // { "Campo": "Valor", ... }
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  business Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client   Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  entries  ClinicalEntry[]
+
+  @@index([businessId])
+  @@map("clinical_records")
+}
+
+model ClinicalEntry {
+  id               String   @id @default(cuid())
+  clinicalRecordId String
+  appointmentId    String?  @unique
+  staffName        String?
+  notes            String   @db.Text
+  customFields     Json?    // { "Peso": "70kg", "Presión": "120/80", ... }
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  clinicalRecord ClinicalRecord @relation(fields: [clinicalRecordId], references: [id], onDelete: Cascade)
+
+  @@index([clinicalRecordId])
+  @@map("clinical_entries")
 }
 
 // ─── COMMISSIONS ──────────────────────────────────────────────────────────────

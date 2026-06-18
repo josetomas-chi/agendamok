@@ -10,7 +10,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { Plus, Search, Mail, Phone, Calendar, Tag, Upload, Download, CheckCircle, AlertCircle, X } from "lucide-react"
+import { Plus, Search, Mail, Phone, Calendar, Tag, Upload, CheckCircle, AlertCircle, Stethoscope } from "lucide-react"
+import Link from "next/link"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -36,6 +37,7 @@ type ImportState = "idle" | "preview" | "importing" | "done"
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [businessId, setBusinessId] = useState("")
+  const [clinicalEnabled, setClinicalEnabled] = useState(false)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [segment, setSegment] = useState("")
@@ -53,6 +55,9 @@ export default function ClientsPage() {
     fetch("/api/me/business").then(r => r.json()).then(d => {
       setBusinessId(d.businessId)
       loadClients(d.businessId, "", "")
+      fetch(`/api/businesses/${d.businessId}`).then(r => r.json()).then(b => {
+        setClinicalEnabled(b.business?.clinicalRecordEnabled ?? false)
+      })
     })
   }, [])
 
@@ -225,7 +230,16 @@ export default function ClientsPage() {
                   {SEGMENT_LABELS[c.segment]?.label}
                 </span>
               </span>
-              <Button size="sm" variant="ghost" onClick={() => setSelected(c)}>Ver</Button>
+              <div className="flex items-center gap-1">
+                {clinicalEnabled && (
+                  <Link href={`/dashboard/clinical/${c.id}`}>
+                    <Button size="sm" variant="ghost" className="gap-1 text-sky-400 hover:text-sky-300">
+                      <Stethoscope className="w-3.5 h-3.5" />
+                    </Button>
+                  </Link>
+                )}
+                <Button size="sm" variant="ghost" onClick={() => setSelected(c)}>Ver</Button>
+              </div>
             </div>
           ))}
         </div>
