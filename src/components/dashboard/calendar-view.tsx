@@ -16,6 +16,7 @@ type Appointment = {
   service: { name: string; color: string }
   staff: { id: string; color: string; user: { name: string | null; image: string | null } }
   client: { name: string }
+  payment?: { status: string } | null
 }
 
 type StaffMember = {
@@ -448,23 +449,37 @@ function ApptCard({ appt, compact, onDragStart, onApptClick }: {
   onApptClick?: (id: string) => void
 }) {
   const color = appt.service.color || "#38bdf8"
+  const isCompleted = appt.status === "COMPLETED"
+  const isPaid = appt.payment?.status === "PAID"
   return (
     <div
       draggable
       onDragStart={e => onDragStart(e, appt.id)}
       onClick={e => { e.stopPropagation(); onApptClick?.(appt.id) }}
-      className="rounded-lg text-xs p-2 cursor-pointer select-none transition-all hover:brightness-110 hover:shadow-lg active:opacity-60 active:scale-95 w-full"
+      className="rounded-lg text-xs p-2 cursor-pointer select-none transition-all hover:brightness-110 hover:shadow-lg active:opacity-60 active:scale-95 w-full relative"
       style={{
-        background: `linear-gradient(135deg, ${color}ee, ${color}99)`,
+        background: isCompleted
+          ? `linear-gradient(135deg, ${color}66, ${color}44)`
+          : `linear-gradient(135deg, ${color}ee, ${color}99)`,
         boxShadow: `0 2px 8px ${color}40`,
+        opacity: isCompleted ? 0.7 : 1,
       }}
     >
-      <div className="font-semibold text-white truncate leading-tight">{appt.client?.name ?? "Sin cliente"}</div>
+      <div className="font-semibold text-white truncate leading-tight pr-5">{appt.client?.name ?? "Sin cliente"}</div>
       {!compact && (
         <div className="text-white/75 truncate text-[10px] mt-0.5 leading-tight">{appt.service.name}</div>
       )}
       <div className="text-white/60 text-[10px] leading-tight">
         {format(new Date(appt.startTime), "HH:mm")} – {format(new Date(appt.endTime), "HH:mm")}
+      </div>
+      {/* Badges */}
+      <div className="absolute top-1.5 right-1.5 flex gap-0.5">
+        {isPaid && (
+          <span className="w-4 h-4 rounded-full bg-emerald-400 flex items-center justify-center text-[9px] font-bold text-white leading-none">$</span>
+        )}
+        {isCompleted && (
+          <span className="w-4 h-4 rounded-full bg-white/30 flex items-center justify-center text-[9px] font-bold text-white leading-none">✓</span>
+        )}
       </div>
     </div>
   )
