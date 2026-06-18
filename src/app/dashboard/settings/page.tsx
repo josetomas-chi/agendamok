@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin } from "lucide-react"
+import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff } from "lucide-react"
 
 type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean }
 type Subscription = { plan: string; status: string; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean; flowCustomerId: string | null; trialEndsAt: string | null }
@@ -23,6 +23,13 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [subscribing, setSubscribing] = useState(false)
 
+  // API Keys
+  type ApiKey = { id: string; name: string; key: string; isActive: boolean; lastUsedAt: string | null; createdAt: string }
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
+  const [newKeyName, setNewKeyName] = useState("")
+  const [creatingKey, setCreatingKey] = useState(false)
+  const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set())
+
   useEffect(() => {
     fetch("/api/me/business").then(r => r.json()).then(async d => {
       const r = await fetch(`/api/businesses/${d.businessId}`)
@@ -31,8 +38,44 @@ export default function SettingsPage() {
       setSubscription(biz.subscription || null)
       setForm({ name: biz.business.name, description: biz.business.description || "", website: biz.business.website || "", phone: biz.business.phone || "", address: biz.business.address || "", city: biz.business.city || "", timezone: biz.business.timezone, currency: biz.business.currency })
       setClinicalEnabled(biz.business.clinicalRecordEnabled ?? false)
+      // Load API keys
+      const kr = await fetch(`/api/businesses/${d.businessId}/api-keys`)
+      const kd = await kr.json()
+      setApiKeys(kd.keys || [])
     })
   }, [])
+
+  async function createApiKey() {
+    if (!business) return
+    setCreatingKey(true)
+    const r = await fetch(`/api/businesses/${business.id}/api-keys`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newKeyName || "Default" }),
+    })
+    if (r.ok) {
+      const d = await r.json()
+      setApiKeys(prev => [d.apiKey, ...prev])
+      setVisibleKeys(prev => new Set([...prev, d.apiKey.id]))
+      setNewKeyName("")
+      toast.success("API key creada")
+    }
+    setCreatingKey(false)
+  }
+
+  async function deleteApiKey(keyId: string) {
+    if (!business || !confirm("Eliminar esta API key?")) return
+    await fetch(`/api/businesses/${business.id}/api-keys/${keyId}`, { method: "DELETE" })
+    setApiKeys(prev => prev.filter(k => k.id !== keyId))
+    toast.success("API key eliminada")
+  }
+
+  function toggleKeyVisibility(keyId: string) {
+    setVisibleKeys(prev => {
+      const next = new Set(prev)
+      if (next.has(keyId)) next.delete(keyId); else next.add(keyId)
+      return next
+    })
+  }
 
   async function handleSave() {
     if (!business) return
@@ -116,6 +159,7 @@ export default function SettingsPage() {
         <TabsList>
           <TabsTrigger value="business" className="gap-2"><Building2 className="w-4 h-4" />Negocio</TabsTrigger>
           <TabsTrigger value="booking" className="gap-2"><Globe className="w-4 h-4" />Pagina de reservas</TabsTrigger>
+          <TabsTrigger value="api" className="gap-2"><Key className="w-4 h-4" />API</TabsTrigger>
           <TabsTrigger value="notifications" className="gap-2"><Bell className="w-4 h-4" />Notificaciones</TabsTrigger>
           <TabsTrigger value="billing" className="gap-2"><CreditCard className="w-4 h-4" />Plan y facturacion</TabsTrigger>
         </TabsList>
@@ -273,6 +317,86 @@ export default function SettingsPage() {
                 <div className="p-2 bg-muted/40 rounded-lg"><p className="font-medium text-foreground mb-0.5">data-label</p>Texto del boton</div>
                 <div className="p-2 bg-muted/40 rounded-lg"><p className="font-medium text-foreground mb-0.5">data-color</p>Color del boton (hex)</div>
                 <div className="p-2 bg-muted/40 rounded-lg"><p className="font-medium text-foreground mb-0.5">data-business</p>ID de tu negocio</div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* API */}
+        <TabsContent value="api" className="pt-4 space-y-5">
+          <Card>
+            <CardHeader>
+              <CardTitle>API Keys</CardTitle>
+              <CardDescription>Usa estas keys para conectar AgendaMok con tu propia web, app o sistemas externos.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Create new key */}
+              <div className="flex gap-2">
+                <Input value={newKeyName} onChange={e => setNewKeyName(e.target.value)} placeholder="Nombre de la key (ej: Mi web)" />
+                <Button onClick={createApiKey} disabled={creatingKey} className="gap-2 flex-shrink-0">
+                  <Plus className="w-4 h-4" /> {creatingKey ? "Creando..." : "Crear key"}
+                </Button>
+              </div>
+              {/* Keys list */}
+              {apiKeys.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No hay API keys. Crea una para empezar.</p>
+              ) : (
+                <div className="space-y-2">
+                  {apiKeys.map(k => (
+                    <div key={k.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <span className="font-medium text-sm">{k.name}</span>
+                        <div className="flex items-center gap-2">
+                          {k.lastUsedAt && <span className="text-xs text-white/30">Usado hace poco</span>}
+                          <button onClick={() => toggleKeyVisibility(k.id)} className="text-white/30 hover:text-white transition-colors">
+                            {visibleKeys.has(k.id) ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                          <button onClick={() => deleteApiKey(k.id)} className="text-white/30 hover:text-red-400 transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <code className="flex-1 text-xs bg-black/30 rounded-lg px-3 py-2 text-green-400 font-mono truncate">
+                          {visibleKeys.has(k.id) ? k.key : k.key.slice(0, 8) + "••••••••••••••••••••••••••••••••"}
+                        </code>
+                        <Button size="sm" variant="outline" className="h-8 px-2.5 flex-shrink-0"
+                          onClick={() => { navigator.clipboard.writeText(k.key); toast.success("Key copiada") }}>
+                          <Copy className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Endpoints reference */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Endpoints disponibles</CardTitle>
+              <CardDescription>Incluye el header <code className="text-sky-400">x-api-key: {"<tu key>"}</code> en cada request.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[
+                  { method: "GET", path: "/api/v1/services", desc: "Lista de servicios activos" },
+                  { method: "GET", path: "/api/v1/availability?serviceId=&date=", desc: "Slots disponibles para un servicio en una fecha" },
+                  { method: "GET", path: "/api/v1/appointments?from=&to=", desc: "Turnos en un rango de fechas (max 100)" },
+                  { method: "POST", path: "/api/v1/appointments", desc: "Crear un nuevo turno" },
+                  { method: "GET", path: "/api/v1/clients?q=", desc: "Buscar clientes" },
+                ].map(({ method, path, desc }) => (
+                  <div key={path} className="flex items-start gap-3 text-sm">
+                    <span className={`flex-shrink-0 text-xs font-bold px-2 py-0.5 rounded font-mono ${
+                      method === "GET" ? "bg-sky-500/20 text-sky-300" : "bg-green-500/20 text-green-300"
+                    }`}>{method}</span>
+                    <div>
+                      <code className="text-xs text-white/70 font-mono">{path}</code>
+                      <p className="text-xs text-white/40 mt-0.5">{desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

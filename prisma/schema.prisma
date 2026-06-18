@@ -199,6 +199,7 @@ model Business {
   commissions               CommissionRecord[]
   clinicalRecords           ClinicalRecord[]
   quotes                    Quote[]
+  apiKeys                   ApiKey[]
 
   @@index([slug])
   @@map("businesses")
@@ -675,4 +676,21 @@ model QuoteItem {
   service Service? @relation(fields: [serviceId], references: [id])
 
   @@map("quote_items")
+}
+
+// ─── API KEYS ─────────────────────────────────────────────────────────────────
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  businessId String
+  name       String    @default("Default")
+  key        String    @unique
+  isActive   Boolean   @default(true)
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("api_keys")
 }
