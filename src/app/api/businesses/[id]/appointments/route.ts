@@ -13,6 +13,7 @@ const schema = z.object({
   clientName: z.string().optional(),
   clientEmail: z.string().email().optional(),
   clientPhone: z.string().optional(),
+  locationId: z.string().cuid().optional(),
   startTime: z.string(), // ISO string from browser (local timezone)
   notes: z.string().optional(),
   status: z.enum(["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED", "NO_SHOW"]).default("CONFIRMED"),
@@ -153,6 +154,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         serviceId: data.serviceId,
         staffId: data.staffId,
         clientId,
+        locationId: data.locationId || null,
         startTime,
         endTime,
         status: data.status,

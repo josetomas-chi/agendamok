@@ -14,6 +14,7 @@ export default async function DashboardPage() {
       services: { where: { deletedAt: null, isActive: true }, select: { id: true, name: true, duration: true } },
       staff: { where: { deletedAt: null }, include: { user: { select: { name: true, image: true } } } },
       clients: { where: { deletedAt: null }, select: { id: true, name: true } },
+      locations: { where: { deletedAt: null, isActive: true }, select: { id: true, name: true } },
       _count: {
         select: {
           appointments: { where: { deletedAt: null, status: "CONFIRMED" } },
@@ -46,6 +47,7 @@ export default async function DashboardPage() {
         services={business.services}
         staff={business.staff.map((s: typeof business.staff[number]) => ({ id: s.id, color: s.color, user: { name: s.user.name, image: s.user.image } }))}
         clients={business.clients}
+        locations={business.locations}
       />
     </div>
   )

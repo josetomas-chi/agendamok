@@ -228,6 +228,7 @@ model Location {
   phone      String?
   timezone   String?
   isDefault  Boolean   @default(false)
+  isActive   Boolean   @default(true)
   capacity   Int       @default(1)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt

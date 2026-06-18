@@ -12,11 +12,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     where: { id: locationId },
     data: {
       name: body.name,
-      address: body.address || null,
-      city: body.city || null,
-      phone: body.phone || null,
-      timezone: body.timezone,
-      isActive: body.isActive,
+      address: body.address !== undefined ? (body.address || null) : undefined,
+      city: body.city !== undefined ? (body.city || null) : undefined,
+      country: body.country !== undefined ? (body.country || null) : undefined,
+      phone: body.phone !== undefined ? (body.phone || null) : undefined,
+      timezone: body.timezone || undefined,
+      isActive: body.isActive !== undefined ? body.isActive : undefined,
+      isDefault: body.isDefault !== undefined ? body.isDefault : undefined,
     },
   })
 

@@ -18,17 +18,19 @@ type Appointment = {
 type Service = { id: string; name: string; duration: number }
 type Staff = { id: string; color: string; user: { name: string | null; image: string | null } }
 type Client = { id: string; name: string }
+type Location = { id: string; name: string }
 
 interface Props {
   businessId: string
   services: Service[]
   staff: Staff[]
   clients: Client[]
+  locations?: Location[]
 }
 
-const DEFAULT_FORM = { serviceId: "", staffId: "", clientId: "", date: "", time: "", notes: "" }
+const DEFAULT_FORM = { serviceId: "", staffId: "", clientId: "", locationId: "", date: "", time: "", notes: "" }
 
-export function CalendarWithNew({ businessId, services, staff, clients }: Props) {
+export function CalendarWithNew({ businessId, services, staff, clients, locations = [] }: Props) {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(DEFAULT_FORM)
   const [saving, setSaving] = useState(false)
@@ -78,6 +80,7 @@ export function CalendarWithNew({ businessId, services, staff, clients }: Props)
         serviceId: form.serviceId,
         staffId: form.staffId,
         clientId: form.clientId || undefined,
+        locationId: form.locationId || undefined,
         startTime: new Date(`${form.date}T${form.time}`).toISOString(),
         notes: form.notes || undefined,
         status: "CONFIRMED",
@@ -177,6 +180,17 @@ export function CalendarWithNew({ businessId, services, staff, clients }: Props)
                 </div>
               </div>
             </div>
+            {locations.length > 0 && (
+              <div className="space-y-1.5">
+                <Label>Sede</Label>
+                <select value={form.locationId} onChange={e => setForm(f => ({ ...f, locationId: e.target.value }))}
+                  className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
+                  <option value="" style={{ backgroundColor: "#3a3a3c" }}>Sin sede específica</option>
+                  {locations.map(l => <option key={l.id} value={l.id} style={{ backgroundColor: "#3a3a3c" }}>{l.name}</option>)}
+                </select>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>Notas</Label>
               <Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Opcional..." />
