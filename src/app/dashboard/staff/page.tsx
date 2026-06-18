@@ -240,13 +240,8 @@ export default function StaffPage() {
                 <TabsContent value="exceptions" className="mt-0">
                   <ExceptionsEditor businessId={businessId} staffId={selected.id} />
                 </TabsContent>
-                <TabsContent value="info" className="mt-0 space-y-2 text-xs">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div><p className="text-muted-foreground mb-0.5">Email</p><p>{selected.user.email}</p></div>
-                    <div><p className="text-muted-foreground mb-0.5">Teléfono</p><p>{selected.user.phone || "—"}</p></div>
-                    <div><p className="text-muted-foreground mb-0.5">Comisión</p><p>{selected.commissionValue}{selected.commissionType === "PERCENTAGE" ? "%" : " (fijo)"}</p></div>
-                  </div>
-                  {selected.bio && <div><p className="text-muted-foreground mb-0.5">Bio</p><p>{selected.bio}</p></div>}
+                <TabsContent value="info" className="mt-0">
+                  <InfoEditor key={selected.id} member={selected} businessId={businessId} onSaved={() => loadStaff(businessId)} />
                 </TabsContent>
               </div>
             </Tabs>
@@ -424,6 +419,75 @@ function ExceptionsEditor({ businessId, staffId }: { businessId: string; staffId
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+function InfoEditor({ member, businessId, onSaved }: { member: StaffMember; businessId: string; onSaved: () => void }) {
+  const [form, setForm] = useState({
+    specialty: member.specialty || "",
+    bio: member.bio || "",
+    commissionType: member.commissionType || "PERCENTAGE",
+    commissionValue: member.commissionValue ?? 0,
+  })
+  const [saving, setSaving] = useState(false)
+
+  async function handleSave() {
+    setSaving(true)
+    const r = await fetch(`/api/businesses/${businessId}/staff/${member.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...form, commissionValue: Number(form.commissionValue) }),
+    })
+    if (r.ok) { toast.success("Datos actualizados"); onSaved() }
+    else toast.error("Error al guardar")
+    setSaving(false)
+  }
+
+  const inputCls = "w-full h-8 rounded-md border border-input px-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+  const inputStyle = { backgroundColor: "#3a3a3c", color: "#f4f4f5" }
+
+  return (
+    <div className="space-y-3 text-xs">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+        <div><p className="text-muted-foreground mb-0.5">Email</p><p>{member.user.email}</p></div>
+        <div><p className="text-muted-foreground mb-0.5">Teléfono</p><p>{member.user.phone || "—"}</p></div>
+      </div>
+
+      <div>
+        <label className="text-[10px] text-muted-foreground">Especialidad</label>
+        <input value={form.specialty} onChange={e => setForm(f => ({ ...f, specialty: e.target.value }))}
+          className={inputCls} style={inputStyle} placeholder="Kinesiología, Masajes..." />
+      </div>
+
+      <div>
+        <label className="text-[10px] text-muted-foreground">Bio</label>
+        <textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
+          rows={2} className="w-full rounded-md border border-input px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+          style={inputStyle} placeholder="Descripción del profesional..." />
+      </div>
+
+      <div>
+        <label className="text-[10px] text-muted-foreground">Comisión</label>
+        <div className="flex gap-2">
+          <select value={form.commissionType} onChange={e => setForm(f => ({ ...f, commissionType: e.target.value }))}
+            className={inputCls} style={{ ...inputStyle, width: "auto", flex: "0 0 auto" }}>
+            <option value="PERCENTAGE">%</option>
+            <option value="FIXED">Fijo $</option>
+          </select>
+          <input type="number" min={0} max={form.commissionType === "PERCENTAGE" ? 100 : undefined}
+            value={form.commissionValue} onChange={e => setForm(f => ({ ...f, commissionValue: +e.target.value }))}
+            className={inputCls} style={inputStyle} />
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-0.5">
+          {form.commissionType === "PERCENTAGE" ? `${form.commissionValue}% del valor del servicio` : `$${Number(form.commissionValue).toLocaleString("es-CL")} por servicio`}
+        </p>
+      </div>
+
+      <button onClick={handleSave} disabled={saving}
+        className="w-full h-8 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
+        {saving ? "Guardando..." : "Guardar cambios"}
+      </button>
     </div>
   )
 }
