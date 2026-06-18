@@ -455,7 +455,7 @@ export default function LandingPage() {
             </div>
 
             {/* Comparison table */}
-            <div className="reveal">
+            <div>
               <div className="text-center mb-10">
                 <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">
                   Todo incluido. <span className="gradient-text">Sin sorpresas.</span>
@@ -640,7 +640,7 @@ export default function LandingPage() {
             <div className="absolute w-[400px] h-[400px] rounded-full bg-sky-400/10 blur-[80px]" style={{animation: "ringPulse 4s ease-in-out infinite"}} />
           </div>
           <div className="relative max-w-4xl mx-auto px-4 text-center">
-            <div className="reveal">
+            <div>
               <h2 className="text-5xl sm:text-7xl font-bold tracking-tight mb-6 leading-tight cta-zoom">
                 Empieza hoy.<br />
                 <span className="gradient-text">Es gratis.</span>
