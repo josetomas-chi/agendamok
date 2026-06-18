@@ -2,15 +2,21 @@
 
 import Link from "next/link"
 import { useEffect } from "react"
-import { Check, X, Minus, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight } from "lucide-react"
+import { Check, X, Minus, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight, Star, Percent, MapPin, FileText, Stethoscope, Key } from "lucide-react"
 
 const features = [
-  { icon: Calendar, title: "Calendario inteligente", desc: "Vista semanal y diaria. Arrastra y suelta para mover turnos al instante." },
-  { icon: Globe, title: "Reservas online 24/7", desc: "Tus clientes reservan desde el celular, a cualquier hora, sin llamar." },
-  { icon: Users, title: "Gestión de equipo", desc: "Horarios, comisiones y acceso diferenciado por cada profesional." },
-  { icon: Bell, title: "Recordatorios automáticos", desc: "Email antes de cada turno. Menos ausencias, más ingresos." },
-  { icon: CreditCard, title: "Cobros y pagos", desc: "Acepta pagos online y lleva el control de cada transacción." },
-  { icon: BarChart3, title: "Reportes en tiempo real", desc: "Ingresos, ocupación y métricas clave en un solo lugar." },
+  { icon: Calendar, title: "Calendario inteligente", desc: "Vista semanal y diaria por profesional. Arrastra y suelta para mover turnos al instante." },
+  { icon: Globe, title: "Reservas online 24/7", desc: "Tus clientes reservan desde el celular a cualquier hora, sin llamar ni enviar mensajes." },
+  { icon: Users, title: "Gestión de equipo", desc: "Perfiles, horarios semanales, comisiones automáticas y acceso diferenciado por profesional." },
+  { icon: Bell, title: "Recordatorios automáticos", desc: "Email de confirmación y recordatorio antes de cada turno. Menos ausencias, más ingresos." },
+  { icon: CreditCard, title: "Cobros y pagos", desc: "POS integrado, historial de pagos por turno y control de caja en un solo lugar." },
+  { icon: BarChart3, title: "Reportes en tiempo real", desc: "Ingresos, ocupación, servicios más vendidos y métricas clave actualizadas al instante." },
+  { icon: Star, title: "Encuestas de satisfacción", desc: "Se envían automáticamente al completar un turno. Mide tu NPS y lee las reseñas de tus clientes." },
+  { icon: Percent, title: "Comisiones de staff", desc: "Calcula automáticamente las comisiones por servicio. Liquida con un clic y lleva el historial." },
+  { icon: Stethoscope, title: "Ficha clínica", desc: "Para negocios de salud: historial médico, alergias, notas de visita y campos personalizables." },
+  { icon: MapPin, title: "Múltiples sedes", desc: "Gestiona varias ubicaciones desde una sola cuenta. Asigna staff y servicios por sede." },
+  { icon: FileText, title: "Presupuestos y cotizaciones", desc: "Crea cotizaciones profesionales en segundos. El cliente acepta, rechaza o pide cambios." },
+  { icon: Key, title: "API pública", desc: "Conecta AgendaMok con tu web, app o sistema de gestión propio usando nuestra API REST." },
 ]
 
 const plans = [
