@@ -95,9 +95,9 @@ const comparisonRows: { feature: string; us: FeatureValue[]; them: FeatureValue[
 ]
 
 function CellValue({ val, isUs }: { val: FeatureValue; isUs: boolean }) {
-  if (val === true) return <Check className={`w-4 h-4 ${isUs ? "text-sky-400" : "text-white/25"}`} />
-  if (val === false) return <Minus className="w-4 h-4 text-white/10" />
-  return <span className={`text-[10px] text-center leading-tight ${isUs ? "text-sky-300" : "text-red-400/70"}`}>{val}</span>
+  if (val === true) return <Check className={`w-4 h-4 ${isUs ? "text-sky-400" : "text-white/40"}`} />
+  if (val === false) return <Minus className="w-4 h-4 text-white/20" />
+  return <span className={`text-[10px] text-center leading-tight ${isUs ? "text-sky-300" : "text-red-400/80"}`}>{val}</span>
 }
 
 function useScrollReveal() {
@@ -484,20 +484,20 @@ export default function LandingPage() {
                     <div className="text-sm font-bold text-white">$39.900</div>
                   </div>
                   {/* Competitor headers */}
-                  <div className="p-4 text-center border-l border-white/5">
-                    <div className="text-xs text-white/25 font-bold uppercase tracking-wider mb-1">Nuestra Competencia</div>
-                    <div className="text-xs text-white/25">Individual</div>
-                    <div className="text-sm font-bold text-white/30">$15.900</div>
+                  <div className="p-4 text-center border-l border-white/10 bg-white/[0.02]">
+                    <div className="text-xs text-white/40 font-bold uppercase tracking-wider mb-1">Nuestra Competencia</div>
+                    <div className="text-xs text-white/40">Individual</div>
+                    <div className="text-sm font-bold text-white/50">$15.900</div>
                   </div>
-                  <div className="p-4 text-center border-l border-white/5">
-                    <div className="text-xs text-white/25 font-bold uppercase tracking-wider mb-1">Nuestra Competencia</div>
-                    <div className="text-xs text-white/25">Básico</div>
-                    <div className="text-sm font-bold text-white/30">$34.900</div>
+                  <div className="p-4 text-center border-l border-white/10 bg-white/[0.02]">
+                    <div className="text-xs text-white/40 font-bold uppercase tracking-wider mb-1">Nuestra Competencia</div>
+                    <div className="text-xs text-white/40">Básico</div>
+                    <div className="text-sm font-bold text-white/50">$34.900</div>
                   </div>
-                  <div className="p-4 text-center border-l border-white/5">
-                    <div className="text-xs text-white/25 font-bold uppercase tracking-wider mb-1">Nuestra Competencia</div>
-                    <div className="text-xs text-white/25">Premium</div>
-                    <div className="text-sm font-bold text-white/30">$54.900</div>
+                  <div className="p-4 text-center border-l border-white/10 bg-white/[0.02]">
+                    <div className="text-xs text-white/40 font-bold uppercase tracking-wider mb-1">Nuestra Competencia</div>
+                    <div className="text-xs text-white/40">Premium</div>
+                    <div className="text-sm font-bold text-white/50">$54.900</div>
                   </div>
                 </div>
 
@@ -516,7 +516,7 @@ export default function LandingPage() {
                     ))}
                     {/* Competitor cols */}
                     {row.them.map((val, ci) => (
-                      <div key={ci} className="p-3 flex items-center justify-center border-l border-white/5">
+                      <div key={ci} className="p-3 flex items-center justify-center border-l border-white/10 bg-white/[0.02]">
                         <CellValue val={val} isUs={false} />
                       </div>
                     ))}
@@ -538,17 +538,17 @@ export default function LandingPage() {
                   <div className="p-4 text-center border-l border-white/10">
                     <span className="text-sky-400 font-bold">$39.900</span>
                   </div>
-                  <div className="p-4 text-center border-l border-white/5">
-                    <span className="text-white/30 font-bold">$15.900</span>
-                    <div className="text-[10px] text-red-400/70 mt-0.5">+ add-ons</div>
+                  <div className="p-4 text-center border-l border-white/10 bg-white/[0.02]">
+                    <span className="text-white/50 font-bold">$15.900</span>
+                    <div className="text-[10px] text-red-400/80 mt-0.5">+ add-ons</div>
                   </div>
-                  <div className="p-4 text-center border-l border-white/5">
-                    <span className="text-white/30 font-bold">$34.900</span>
-                    <div className="text-[10px] text-red-400/70 mt-0.5">+ add-ons</div>
+                  <div className="p-4 text-center border-l border-white/10 bg-white/[0.02]">
+                    <span className="text-white/50 font-bold">$34.900</span>
+                    <div className="text-[10px] text-red-400/80 mt-0.5">+ add-ons</div>
                   </div>
-                  <div className="p-4 text-center border-l border-white/5">
-                    <span className="text-white/30 font-bold">$54.900</span>
-                    <div className="text-[10px] text-red-400/70 mt-0.5">+ add-ons</div>
+                  <div className="p-4 text-center border-l border-white/10 bg-white/[0.02]">
+                    <span className="text-white/50 font-bold">$54.900</span>
+                    <div className="text-[10px] text-red-400/80 mt-0.5">+ add-ons</div>
                   </div>
                 </div>
               </div>
