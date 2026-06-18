@@ -79,6 +79,11 @@ enum ClientSegment {
   REGULAR
 }
 
+enum ExceptionType {
+  BLOCKED
+  CAPACITY_OVERRIDE
+}
+
 // ─── AUTH / USERS ─────────────────────────────────────────────────────────────
 
 model User {
@@ -175,6 +180,7 @@ model Business {
   campaigns                 Campaign[]
   notifications             NotificationTemplate[]
   googleCalendarIntegration GoogleCalendarIntegration?
+  availabilityExceptions    AvailabilityException[]
 
   @@index([slug])
   @@map("businesses")
@@ -285,15 +291,34 @@ model StaffMember {
   updatedAt       DateTime       @updatedAt
   deletedAt       DateTime?
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  locations    Location[]    @relation("StaffLocations")
-  services     Service[]     @relation("StaffServices")
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business     Business                @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  locations    Location[]              @relation("StaffLocations")
+  services     Service[]               @relation("StaffServices")
   schedules    WorkSchedule[]
   daysOff      DayOff[]
   appointments Appointment[]
+  exceptions   AvailabilityException[]
 
   @@map("staff_members")
+}
+
+model AvailabilityException {
+  id         String        @id @default(cuid())
+  businessId String
+  staffId    String
+  date       DateTime      @db.Date
+  startTime  String?       // "HH:MM" — null means full day
+  endTime    String?       // "HH:MM" — null means full day
+  type       ExceptionType @default(BLOCKED)
+  capacity   Int?          // only for CAPACITY_OVERRIDE
+  reason     String?
+  createdAt  DateTime      @default(now())
+
+  business Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  staff    StaffMember @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@map("availability_exceptions")
 }
 
 model WorkSchedule {

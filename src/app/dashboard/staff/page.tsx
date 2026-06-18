@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { Plus, Clock, Mail, Phone, Camera } from "lucide-react"
+import { Plus, Clock, Trash2, Ban, Users, Camera, Mail, Phone } from "lucide-react"
 
 const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
 const COLORS = ["#6366f1","#8b5cf6","#ec4899","#ef4444","#f97316","#22c55e","#14b8a6","#0ea5e9"]
@@ -230,10 +230,14 @@ export default function StaffPage() {
             <Tabs defaultValue="schedule">
               <TabsList className="w-full">
                 <TabsTrigger value="schedule" className="flex-1">Horarios</TabsTrigger>
+                <TabsTrigger value="exceptions" className="flex-1">Excepciones</TabsTrigger>
                 <TabsTrigger value="info" className="flex-1">Info</TabsTrigger>
               </TabsList>
               <TabsContent value="schedule" className="pt-4">
                 <ScheduleEditor schedules={selected.schedules} onSave={s => updateSchedule(selected.id, s)} />
+              </TabsContent>
+              <TabsContent value="exceptions" className="pt-4">
+                <ExceptionsEditor businessId={businessId} staffId={selected.id} />
               </TabsContent>
               <TabsContent value="info" className="pt-4 space-y-3 text-sm">
                 <div className="grid grid-cols-2 gap-3">
@@ -246,6 +250,168 @@ export default function StaffPage() {
             </Tabs>
           </DialogContent>
         </Dialog>
+      )}
+    </div>
+  )
+}
+
+type Exception = {
+  id: string; date: string; startTime: string | null; endTime: string | null
+  type: "BLOCKED" | "CAPACITY_OVERRIDE"; capacity: number | null; reason: string | null
+}
+
+function ExceptionsEditor({ businessId, staffId }: { businessId: string; staffId: string }) {
+  const [exceptions, setExceptions] = useState<Exception[]>([])
+  const [loading, setLoading] = useState(true)
+  const [form, setForm] = useState({
+    date: "", startTime: "", endTime: "", type: "BLOCKED" as "BLOCKED" | "CAPACITY_OVERRIDE",
+    capacity: 1, reason: "", fullDay: true,
+  })
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    load()
+  }, [staffId])
+
+  async function load() {
+    setLoading(true)
+    const r = await fetch(`/api/businesses/${businessId}/staff/${staffId}/exceptions`)
+    if (r.ok) { const d = await r.json(); setExceptions(d.exceptions || []) }
+    setLoading(false)
+  }
+
+  async function handleAdd() {
+    if (!form.date) { toast.error("Selecciona una fecha"); return }
+    if (form.type === "CAPACITY_OVERRIDE" && form.capacity < 1) { toast.error("Capacidad debe ser al menos 1"); return }
+    setSaving(true)
+    const body = {
+      date: form.date,
+      startTime: form.fullDay ? undefined : form.startTime || undefined,
+      endTime: form.fullDay ? undefined : form.endTime || undefined,
+      type: form.type,
+      capacity: form.type === "CAPACITY_OVERRIDE" ? form.capacity : undefined,
+      reason: form.reason || undefined,
+    }
+    const r = await fetch(`/api/businesses/${businessId}/staff/${staffId}/exceptions`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+    if (r.ok) {
+      toast.success("Excepción agregada")
+      setForm({ date: "", startTime: "", endTime: "", type: "BLOCKED", capacity: 1, reason: "", fullDay: true })
+      load()
+    } else toast.error("Error al guardar")
+    setSaving(false)
+  }
+
+  async function handleDelete(id: string) {
+    await fetch(`/api/businesses/${businessId}/staff/${staffId}/exceptions/${id}`, { method: "DELETE" })
+    toast.success("Excepción eliminada")
+    load()
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-muted-foreground">Bloquea días o reduce la capacidad para fechas específicas, sin afectar el resto.</p>
+
+      {/* Form */}
+      <div className="rounded-xl border border-white/10 p-4 space-y-3">
+        <p className="text-sm font-medium">Nueva excepción</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground">Fecha *</label>
+            <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+              className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground">Tipo</label>
+            <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as typeof form.type }))}
+              className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none"
+              style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
+              <option value="BLOCKED">Bloquear día/horario</option>
+              <option value="CAPACITY_OVERRIDE">Reducir capacidad</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button onClick={() => setForm(f => ({ ...f, fullDay: !f.fullDay }))}
+            className={`w-9 h-5 rounded-full transition-colors flex-shrink-0 ${form.fullDay ? "bg-primary" : "bg-muted-foreground/30"}`}>
+            <div className={`w-3.5 h-3.5 rounded-full bg-white mx-auto transition-transform ${form.fullDay ? "translate-x-1.5" : "-translate-x-1.5"}`} />
+          </button>
+          <span className="text-sm">Todo el día</span>
+        </div>
+
+        {!form.fullDay && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground">Desde</label>
+              <input type="time" value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
+                className="w-full h-9 rounded-md border border-input px-3 text-sm"
+                style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground">Hasta</label>
+              <input type="time" value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
+                className="w-full h-9 rounded-md border border-input px-3 text-sm"
+                style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }} />
+            </div>
+          </div>
+        )}
+
+        {form.type === "CAPACITY_OVERRIDE" && (
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground">Capacidad para este día</label>
+            <input type="number" min={1} max={20} value={form.capacity}
+              onChange={e => setForm(f => ({ ...f, capacity: Math.max(1, +e.target.value) }))}
+              className="w-full h-9 rounded-md border border-input px-3 text-sm"
+              style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }} />
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <label className="text-xs text-muted-foreground">Motivo (opcional)</label>
+          <input type="text" value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}
+            placeholder="Ej: Capacitación, vacaciones..."
+            className="w-full h-9 rounded-md border border-input px-3 text-sm"
+            style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }} />
+        </div>
+
+        <button onClick={handleAdd} disabled={saving}
+          className="w-full h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
+          {saving ? "Guardando..." : "Agregar excepción"}
+        </button>
+      </div>
+
+      {/* List */}
+      {loading ? (
+        <div className="h-16 bg-muted/20 animate-pulse rounded-xl" />
+      ) : exceptions.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-4">Sin excepciones configuradas</p>
+      ) : (
+        <div className="space-y-2">
+          {exceptions.map(ex => (
+            <div key={ex.id} className="flex items-center gap-3 p-3 rounded-xl border border-white/8 bg-white/3">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${ex.type === "BLOCKED" ? "bg-red-500/15" : "bg-amber-500/15"}`}>
+                {ex.type === "BLOCKED" ? <Ban className="w-4 h-4 text-red-400" /> : <Users className="w-4 h-4 text-amber-400" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">
+                  {new Date(ex.date).toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" })}
+                  {ex.startTime && ex.endTime && <span className="text-muted-foreground ml-1">· {ex.startTime}–{ex.endTime}</span>}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {ex.type === "BLOCKED" ? "Bloqueado" : `Capacidad: ${ex.capacity} personas`}
+                  {ex.reason && ` · ${ex.reason}`}
+                </p>
+              </div>
+              <button onClick={() => handleDelete(ex.id)} className="text-muted-foreground hover:text-red-400 transition-colors p-1">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )
