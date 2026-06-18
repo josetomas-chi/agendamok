@@ -64,6 +64,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const startTime = new Date(data.startTime)
     const endTime = addMinutes(startTime, service.duration)
 
+    // Check capacity: count overlapping confirmed appointments for same service+staff
+    const capacity = service.capacity ?? 1
+    if (capacity > 0) {
+      const overlapping = await prisma.appointment.count({
+        where: {
+          staffId: data.staffId,
+          serviceId: data.serviceId,
+          deletedAt: null,
+          status: { in: ["PENDING", "CONFIRMED"] },
+          startTime: { lt: endTime },
+          endTime: { gt: startTime },
+        },
+      })
+      if (overlapping >= capacity) {
+        return NextResponse.json(
+          { error: `Este horario ya está completo (capacidad máxima: ${capacity})` },
+          { status: 409 }
+        )
+      }
+    }
+
     let clientId = data.clientId
     if (!clientId && data.clientName) {
       const client = await prisma.client.upsert({

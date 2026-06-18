@@ -18,11 +18,12 @@ type Service = {
   id: string; name: string; description: string | null; duration: number
   price: number; color: string; isActive: boolean; category: Category | null
   bufferAfter: number; requiresDeposit: boolean; deposit: number | null
+  capacity: number
 }
 
 const COLORS = ["#6366f1","#8b5cf6","#ec4899","#ef4444","#f97316","#eab308","#22c55e","#14b8a6","#0ea5e9","#64748b"]
 
-const DEFAULT_FORM = { name: "", description: "", duration: 60, price: 0, color: "#6366f1", categoryId: "", bufferAfter: 0, requiresDeposit: false, deposit: 0, isActive: true }
+const DEFAULT_FORM = { name: "", description: "", duration: 60, price: 0, color: "#6366f1", categoryId: "", bufferAfter: 0, requiresDeposit: false, deposit: 0, isActive: true, capacity: 1 }
 
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([])
@@ -63,7 +64,7 @@ export default function ServicesPage() {
       name: s.name, description: s.description || "", duration: s.duration,
       price: s.price, color: s.color, categoryId: s.category?.id || "",
       bufferAfter: s.bufferAfter, requiresDeposit: s.requiresDeposit,
-      deposit: s.deposit || 0, isActive: s.isActive,
+      deposit: s.deposit || 0, isActive: s.isActive, capacity: s.capacity ?? 1,
     })
     setOpen(true)
   }
@@ -76,7 +77,7 @@ export default function ServicesPage() {
     const method = editing ? "PATCH" : "POST"
     const r = await fetch(url, {
       method, headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, price: Number(form.price), duration: Number(form.duration), bufferAfter: Number(form.bufferAfter), deposit: Number(form.deposit), categoryId: form.categoryId || null }),
+      body: JSON.stringify({ ...form, price: Number(form.price), duration: Number(form.duration), bufferAfter: Number(form.bufferAfter), deposit: Number(form.deposit), capacity: Number(form.capacity), categoryId: form.categoryId || null }),
     })
     if (r.ok) {
       toast.success(editing ? "Servicio actualizado" : "Servicio creado")
@@ -183,6 +184,11 @@ export default function ServicesPage() {
               <div className="space-y-2">
                 <Label>Tiempo entre sesiones (min)</Label>
                 <Input type="number" value={form.bufferAfter} onChange={e => setForm(f => ({ ...f, bufferAfter: +e.target.value }))} min={0} step={5} />
+              </div>
+              <div className="space-y-2">
+                <Label>Capacidad simultánea</Label>
+                <Input type="number" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: Math.max(1, +e.target.value) }))} min={1} max={20} />
+                <p className="text-xs text-muted-foreground">Personas que pueden reservar este servicio al mismo tiempo</p>
               </div>
               <div className="space-y-2">
                 <Label>Categoría</Label>

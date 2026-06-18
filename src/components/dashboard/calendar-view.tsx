@@ -270,24 +270,31 @@ export function CalendarView({ appointments, businessId, onNewAppointment, onApp
                             <Plus className="w-3.5 h-3.5 text-sky-500/60" />
                           </div>
                         )}
-                        {dayAppts.map((a) => (
-                          <div
-                            key={a.id}
-                            draggable
-                            onDragStart={e => handleDragStart(e, a.id)}
-                            onClick={e => e.stopPropagation()}
-                            className="rounded-lg text-xs p-2 mb-0.5 cursor-grab active:cursor-grabbing select-none transition-all hover:brightness-110 hover:shadow-lg active:opacity-60 active:scale-95"
-                            style={{
-                              background: a.service.color
-                                ? `linear-gradient(135deg, ${a.service.color}ee, ${a.service.color}bb)`
-                                : "linear-gradient(135deg, #38bdf8ee, #38bdf8bb)",
-                              boxShadow: `0 2px 8px ${a.service.color || "#38bdf8"}40`,
-                            }}
-                          >
-                            <div className="font-semibold text-white truncate leading-tight">{a.client?.name ?? "Sin cliente"}</div>
-                            <div className="text-white/75 truncate text-[10px] mt-0.5 leading-tight">{a.service.name}</div>
+                        {/* Multiple appointments side-by-side when capacity > 1 */}
+                        {dayAppts.length > 0 && (
+                          <div className={dayAppts.length > 1 ? "flex gap-0.5" : ""}>
+                            {dayAppts.map((a) => (
+                              <div
+                                key={a.id}
+                                draggable
+                                onDragStart={e => handleDragStart(e, a.id)}
+                                onClick={e => e.stopPropagation()}
+                                className="rounded-lg text-xs p-2 cursor-grab active:cursor-grabbing select-none transition-all hover:brightness-110 hover:shadow-lg active:opacity-60 active:scale-95"
+                                style={{
+                                  flex: dayAppts.length > 1 ? "1 1 0" : undefined,
+                                  minWidth: 0,
+                                  background: a.service.color
+                                    ? `linear-gradient(135deg, ${a.service.color}ee, ${a.service.color}bb)`
+                                    : "linear-gradient(135deg, #38bdf8ee, #38bdf8bb)",
+                                  boxShadow: `0 2px 8px ${a.service.color || "#38bdf8"}40`,
+                                }}
+                              >
+                                <div className="font-semibold text-white truncate leading-tight">{a.client?.name ?? "Sin cliente"}</div>
+                                <div className="text-white/75 truncate text-[10px] mt-0.5 leading-tight">{a.service.name}</div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        )}
                       </div>
                     )
                   })}
