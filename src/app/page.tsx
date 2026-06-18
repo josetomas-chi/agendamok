@@ -563,7 +563,7 @@ export default function LandingPage() {
         {/* Testimonials */}
         <section className="py-32 border-t border-white/5">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16 reveal">
+            <div className="text-center mb-16">
               <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
                 Lo que dicen <span className="gradient-text">nuestros clientes</span>
               </h2>
@@ -596,7 +596,7 @@ export default function LandingPage() {
                   stars: 5,
                 },
               ].map((t, i) => (
-                <div key={t.name} className={`reveal reveal-delay-${i + 1} card-glow p-6 rounded-2xl border border-white/10 bg-white/[0.03] flex flex-col gap-4`}>
+                <div key={t.name} className={`card-glow p-6 rounded-2xl border border-white/10 bg-white/[0.03] flex flex-col gap-4`}>
                   <div className="flex gap-0.5">
                     {Array.from({ length: t.stars }).map((_, s) => (
                       <Star key={s} className="w-4 h-4 fill-amber-400 text-amber-400" />
@@ -617,7 +617,7 @@ export default function LandingPage() {
             </div>
 
             {/* Social proof bar */}
-            <div className="mt-16 reveal flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16 text-center">
+            <div className="mt-16 flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16 text-center">
               {[
                 ["+1.200", "negocios activos"],
                 ["4.9 / 5", "calificación promedio"],
