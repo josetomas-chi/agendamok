@@ -167,9 +167,9 @@ export function CalendarView({ appointments, businessId, onNewAppointment, onApp
                 return (
                   <div
                     key={key}
-                    onClick={() => handleCellClick(day)}
+                    onClick={() => { setCurrentDate(day); setView("day") }}
                     className={cn(
-                      "border-b border-r border-white/5 p-1.5 cursor-pointer transition-colors group overflow-hidden",
+                      "border-b border-r border-white/5 p-1.5 cursor-pointer transition-colors group overflow-hidden relative",
                       !inMonth && "opacity-30",
                       "hover:bg-white/[0.03]"
                     )}
