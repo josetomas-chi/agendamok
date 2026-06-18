@@ -12,7 +12,7 @@ export default async function DashboardPage() {
     where: { ownerId: session.user.id },
     include: {
       services: { where: { deletedAt: null, isActive: true }, select: { id: true, name: true, duration: true } },
-      staff: { where: { deletedAt: null }, include: { user: { select: { name: true } } } },
+      staff: { where: { deletedAt: null }, include: { user: { select: { name: true, image: true } } } },
       clients: { where: { deletedAt: null }, select: { id: true, name: true } },
       _count: {
         select: {
@@ -44,7 +44,7 @@ export default async function DashboardPage() {
       <CalendarWithNew
         businessId={business.id}
         services={business.services}
-        staff={business.staff.map((s: typeof business.staff[number]) => ({ id: s.id, user: { name: s.user.name } }))}
+        staff={business.staff.map((s: typeof business.staff[number]) => ({ id: s.id, color: s.color, user: { name: s.user.name, image: s.user.image } }))}
         clients={business.clients}
       />
     </div>
