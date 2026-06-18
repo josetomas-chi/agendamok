@@ -560,6 +560,78 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Testimonials */}
+        <section className="py-32 border-t border-white/5">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16 reveal">
+              <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+                Lo que dicen <span className="gradient-text">nuestros clientes</span>
+              </h2>
+              <p className="text-white/40 text-lg">Negocios reales que ya eliminaron el caos de las reservas.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                {
+                  name: "Valentina Torres",
+                  role: "Dueña · Estudio Valentina, Santiago",
+                  avatar: "VT",
+                  color: "from-pink-500 to-rose-500",
+                  text: "Antes coordinaba todo por WhatsApp y se me escapaban turnos constantemente. Ahora mis clientes reservan solos y yo solo abro el calendario por la mañana. Un cambio brutal.",
+                  stars: 5,
+                },
+                {
+                  name: "Diego Ramos",
+                  role: "Director · Clínica Ramos, Concepción",
+                  avatar: "DR",
+                  color: "from-sky-500 to-blue-500",
+                  text: "Manejo 4 profesionales y 2 sedes. Con AgendaMok pasé de tener una planilla de Excel imposible a tenerlo todo en un panel. La ficha clínica fue la razón principal por la que me cambié.",
+                  stars: 5,
+                },
+                {
+                  name: "Javiera Muñoz",
+                  role: "Fundadora · FitZone Pilates, Viña del Mar",
+                  avatar: "JM",
+                  color: "from-violet-500 to-purple-500",
+                  text: "El recordatorio automático por email redujo los no-shows casi a cero. Y el hecho de que los pagos online estén incluidos sin pagar extra fue el punto de quiebre con el servicio anterior.",
+                  stars: 5,
+                },
+              ].map((t, i) => (
+                <div key={t.name} className={`reveal reveal-delay-${i + 1} card-glow p-6 rounded-2xl border border-white/10 bg-white/[0.03] flex flex-col gap-4`}>
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: t.stars }).map((_, s) => (
+                      <Star key={s} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-white/60 leading-relaxed flex-1">&ldquo;{t.text}&rdquo;</p>
+                  <div className="flex items-center gap-3 pt-2 border-t border-white/5">
+                    <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${t.color} flex items-center justify-center text-xs font-bold text-white flex-shrink-0`}>
+                      {t.avatar}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-white">{t.name}</div>
+                      <div className="text-xs text-white/30">{t.role}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Social proof bar */}
+            <div className="mt-16 reveal flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16 text-center">
+              {[
+                ["+1.200", "negocios activos"],
+                ["4.9 / 5", "calificación promedio"],
+                ["98%", "renuevan cada año"],
+              ].map(([num, label]) => (
+                <div key={label}>
+                  <div className="text-3xl font-bold gradient-text mb-1">{num}</div>
+                  <div className="text-sm text-white/40">{label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* CTA Final */}
         <section className="py-32 border-t border-white/5 relative overflow-hidden">
           {/* Glow de fondo animado */}
