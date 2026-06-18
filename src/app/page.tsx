@@ -452,9 +452,9 @@ export default function LandingPage() {
             <div className="reveal">
               <div className="text-center mb-10">
                 <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-                  ¿Por qué <span className="gradient-text">AgendaMok</span>?
+                  Todo incluido. <span className="gradient-text">Sin sorpresas.</span>
                 </h3>
-                <p className="text-white/40">Comparado con la competencia líder del mercado</p>
+                <p className="text-white/40 max-w-xl mx-auto">Nuestra competencia cobra cada funcionalidad por separado. Nosotros no. Lo que ves es lo que pagas.</p>
               </div>
 
               <div className="rounded-2xl border border-white/10 overflow-hidden">
@@ -479,17 +479,17 @@ export default function LandingPage() {
                   </div>
                   {/* Competitor headers */}
                   <div className="p-4 text-center border-l border-white/5">
-                    <div className="text-xs text-white/25 font-bold uppercase tracking-wider mb-1">Competencia</div>
+                    <div className="text-xs text-white/25 font-bold uppercase tracking-wider mb-1">Nuestra Competencia</div>
                     <div className="text-xs text-white/25">Individual</div>
                     <div className="text-sm font-bold text-white/30">$15.900</div>
                   </div>
                   <div className="p-4 text-center border-l border-white/5">
-                    <div className="text-xs text-white/25 font-bold uppercase tracking-wider mb-1">Competencia</div>
+                    <div className="text-xs text-white/25 font-bold uppercase tracking-wider mb-1">Nuestra Competencia</div>
                     <div className="text-xs text-white/25">Básico</div>
                     <div className="text-sm font-bold text-white/30">$34.900</div>
                   </div>
                   <div className="p-4 text-center border-l border-white/5">
-                    <div className="text-xs text-white/25 font-bold uppercase tracking-wider mb-1">Competencia</div>
+                    <div className="text-xs text-white/25 font-bold uppercase tracking-wider mb-1">Nuestra Competencia</div>
                     <div className="text-xs text-white/25">Premium</div>
                     <div className="text-sm font-bold text-white/30">$54.900</div>
                   </div>
@@ -519,7 +519,10 @@ export default function LandingPage() {
 
                 {/* Footer row: prices */}
                 <div className="grid grid-cols-[2fr,1fr,1fr,1fr,1fr,1fr,1fr] bg-white/5 border-t border-white/10">
-                  <div className="p-4 text-sm font-semibold text-white/60">Precio mensual + IVA</div>
+                  <div className="p-4 text-sm font-semibold text-white/60">
+                    Precio mensual + IVA
+                    <div className="text-[10px] text-sky-400/70 font-normal mt-0.5">Sin costos ocultos</div>
+                  </div>
                   <div className="p-4 text-center border-l border-white/10">
                     <span className="text-sky-400 font-bold">$9.900</span>
                   </div>
