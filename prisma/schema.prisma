@@ -308,6 +308,7 @@ model AvailabilityException {
   businessId String
   staffId    String
   date       DateTime      @db.Date
+  endDate    DateTime?     @db.Date  // null means single day (same as date)
   startTime  String?       // "HH:MM" — null means full day
   endTime    String?       // "HH:MM" — null means full day
   type       ExceptionType @default(BLOCKED)

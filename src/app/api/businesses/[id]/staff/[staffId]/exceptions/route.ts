@@ -5,6 +5,7 @@ import { z } from "zod"
 
 const schema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   startTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   endTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   type: z.enum(["BLOCKED", "CAPACITY_OVERRIDE"]),
@@ -40,6 +41,7 @@ export async function POST(req: Request, { params }: Params) {
         businessId: id,
         staffId,
         date: new Date(data.date),
+        endDate: data.endDate ? new Date(data.endDate) : null,
         startTime: data.startTime,
         endTime: data.endTime,
         type: data.type,

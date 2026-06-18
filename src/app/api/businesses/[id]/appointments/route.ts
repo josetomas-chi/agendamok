@@ -68,10 +68,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const apptDate = startTime.toISOString().slice(0, 10)
     const apptTimeStr = `${String(startTime.getUTCHours()).padStart(2, "0")}:${String(startTime.getUTCMinutes()).padStart(2, "0")}`
 
+    const apptDateObj = new Date(apptDate)
     const exceptions = await prisma.availabilityException.findMany({
       where: {
         staffId: data.staffId,
-        date: new Date(apptDate),
+        date: { lte: apptDateObj },
+        OR: [
+          { endDate: null },
+          { endDate: { gte: apptDateObj } },
+        ],
       },
     })
 

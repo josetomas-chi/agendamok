@@ -256,7 +256,7 @@ export default function StaffPage() {
 }
 
 type Exception = {
-  id: string; date: string; startTime: string | null; endTime: string | null
+  id: string; date: string; endDate: string | null; startTime: string | null; endTime: string | null
   type: "BLOCKED" | "CAPACITY_OVERRIDE"; capacity: number | null; reason: string | null
 }
 
@@ -264,7 +264,7 @@ function ExceptionsEditor({ businessId, staffId }: { businessId: string; staffId
   const [exceptions, setExceptions] = useState<Exception[]>([])
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({
-    date: "", startTime: "", endTime: "", type: "BLOCKED" as "BLOCKED" | "CAPACITY_OVERRIDE",
+    date: "", endDate: "", startTime: "", endTime: "", type: "BLOCKED" as "BLOCKED" | "CAPACITY_OVERRIDE",
     capacity: 1, reason: "", fullDay: true,
   })
   const [saving, setSaving] = useState(false)
@@ -286,6 +286,7 @@ function ExceptionsEditor({ businessId, staffId }: { businessId: string; staffId
     setSaving(true)
     const body = {
       date: form.date,
+      endDate: form.endDate || undefined,
       startTime: form.fullDay ? undefined : form.startTime || undefined,
       endTime: form.fullDay ? undefined : form.endTime || undefined,
       type: form.type,
@@ -298,7 +299,7 @@ function ExceptionsEditor({ businessId, staffId }: { businessId: string; staffId
     })
     if (r.ok) {
       toast.success("Excepción agregada")
-      setForm({ date: "", startTime: "", endTime: "", type: "BLOCKED", capacity: 1, reason: "", fullDay: true })
+      setForm({ date: "", endDate: "", startTime: "", endTime: "", type: "BLOCKED", capacity: 1, reason: "", fullDay: true })
       load()
     } else toast.error("Error al guardar")
     setSaving(false)
@@ -319,20 +320,27 @@ function ExceptionsEditor({ businessId, staffId }: { businessId: string; staffId
         <p className="text-sm font-medium">Nueva excepción</p>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <label className="text-xs text-muted-foreground">Fecha *</label>
+            <label className="text-xs text-muted-foreground">Desde *</label>
             <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
               className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
               style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-muted-foreground">Tipo</label>
-            <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as typeof form.type }))}
-              className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none"
-              style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
-              <option value="BLOCKED">Bloquear día/horario</option>
-              <option value="CAPACITY_OVERRIDE">Reducir capacidad</option>
-            </select>
+            <label className="text-xs text-muted-foreground">Hasta (opcional)</label>
+            <input type="date" value={form.endDate} min={form.date || undefined}
+              onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
+              className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }} />
           </div>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs text-muted-foreground">Tipo</label>
+          <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as typeof form.type }))}
+            className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none"
+            style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
+            <option value="BLOCKED">Bloquear día/horario</option>
+            <option value="CAPACITY_OVERRIDE">Reducir capacidad</option>
+          </select>
         </div>
 
         <div className="flex items-center gap-2">
@@ -398,7 +406,10 @@ function ExceptionsEditor({ businessId, staffId }: { businessId: string; staffId
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">
-                  {new Date(ex.date).toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" })}
+                  {new Date(ex.date).toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })}
+                  {ex.endDate && ex.endDate !== ex.date && (
+                    <span> → {new Date(ex.endDate).toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })}</span>
+                  )}
                   {ex.startTime && ex.endTime && <span className="text-muted-foreground ml-1">· {ex.startTime}–{ex.endTime}</span>}
                 </p>
                 <p className="text-xs text-muted-foreground">
