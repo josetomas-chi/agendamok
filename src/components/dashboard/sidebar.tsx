@@ -23,7 +23,6 @@ const nav = [
   { href: "/dashboard/locations", label: "Sedes", icon: MapPin },
   { href: "/dashboard/quotes", label: "Presupuestos", icon: FileText },
   { href: "/dashboard/settings", label: "Configuración", icon: Settings },
-  { href: "/dashboard/help", label: "Ayuda", icon: HelpCircle },
 ]
 
 export function Sidebar() {
@@ -69,7 +68,19 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-white/10">
+      <div className="p-3 border-t border-white/10 space-y-0.5">
+        <Link
+          href="/dashboard/help"
+          className={cn(
+            "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all w-full",
+            pathname.startsWith("/dashboard/help")
+              ? "bg-amber-500/20 text-amber-300 border border-amber-400/20"
+              : "text-amber-400/70 hover:bg-amber-500/10 hover:text-amber-300"
+          )}
+        >
+          <HelpCircle className="w-4 h-4 flex-shrink-0" />
+          Ayuda
+        </Link>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           className="flex items-center gap-3 px-3 py-2 w-full rounded-xl text-sm text-white/40 hover:bg-white/10 hover:text-white transition-all"
