@@ -186,30 +186,41 @@ export default function CommissionsPage() {
             </div>
           ) : (
             <div className="rounded-xl border border-white/8 overflow-hidden">
-              <div className="grid grid-cols-[1fr,auto,auto,auto] gap-3 px-4 py-2.5 bg-white/5 text-xs font-medium text-white/40 uppercase tracking-wide border-b border-white/8">
-                <span>Turno</span><span>Profesional</span><span>Comisión</span><span>Estado</span>
-              </div>
-              <div className="max-h-[400px] overflow-y-auto divide-y divide-white/5">
-                {filteredRecords.map(r => (
-                  <div key={r.id} className="grid grid-cols-[1fr,auto,auto,auto] gap-3 px-4 py-3 items-center hover:bg-white/[0.02]">
-                    <div>
-                      <p className="text-sm font-medium text-white">{r.appointment.client.name}</p>
-                      <p className="text-xs text-white/40">
-                        {r.appointment.service.name} · {format(new Date(r.appointment.startTime), "d MMM", { locale: es })}
-                      </p>
-                    </div>
-                    <span className="text-xs text-white/50">{r.staff.user.name}</span>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-sky-400">${Math.round(Number(r.amount)).toLocaleString("es-CL")}</p>
-                      <p className="text-[10px] text-white/30">
-                        {r.type === "PERCENTAGE" ? `${r.rate}%` : `$${r.rate} fijo`}
-                      </p>
-                    </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.isPaid ? "bg-green-500/20 text-green-400" : "bg-orange-500/20 text-orange-400"}`}>
-                      {r.isPaid ? "Pagado" : "Pendiente"}
-                    </span>
-                  </div>
-                ))}
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-white/5 border-b border-white/8 text-xs font-medium text-white/40 uppercase tracking-wide">
+                    <th className="text-left px-4 py-2.5">Turno</th>
+                    <th className="text-left px-4 py-2.5">Profesional</th>
+                    <th className="text-right px-4 py-2.5">Comisión</th>
+                    <th className="text-center px-4 py-2.5">Estado</th>
+                  </tr>
+                </thead>
+              </table>
+              <div className="max-h-[400px] overflow-y-auto">
+                <table className="w-full text-sm">
+                  <tbody className="divide-y divide-white/5">
+                    {filteredRecords.map(r => (
+                      <tr key={r.id} className="hover:bg-white/[0.02]">
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-white">{r.appointment.client.name}</p>
+                          <p className="text-xs text-white/40">
+                            {r.appointment.service.name} · {format(new Date(r.appointment.startTime), "d MMM", { locale: es })}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-white/50 whitespace-nowrap">{r.staff.user.name}</td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <p className="font-bold text-sky-400">${Math.round(Number(r.amount)).toLocaleString("es-CL")}</p>
+                          <p className="text-[10px] text-white/30">{r.type === "PERCENTAGE" ? `${r.rate}%` : `$${r.rate} fijo`}</p>
+                        </td>
+                        <td className="px-4 py-3 text-center whitespace-nowrap">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.isPaid ? "bg-green-500/20 text-green-400" : "bg-orange-500/20 text-orange-400"}`}>
+                            {r.isPaid ? "Pagado" : "Pendiente"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
