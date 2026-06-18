@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useMemo, useRef } from "react"
-import { format, startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth, isSameMonth, addMonths, subMonths } from "date-fns"
+import { format, startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth, isSameMonth, addMonths, subMonths, addWeeks, subWeeks } from "date-fns"
 import { es } from "date-fns/locale"
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import Image from "next/image"
 
 type Appointment = {
   id: string
@@ -13,23 +14,32 @@ type Appointment = {
   endTime: Date | string
   status: string
   service: { name: string; color: string }
-  staff: { user: { name: string | null } }
+  staff: { id: string; color: string; user: { name: string | null; image: string | null } }
   client: { name: string }
+}
+
+type StaffMember = {
+  id: string
+  color: string
+  user: { name: string | null; image: string | null }
 }
 
 interface Props {
   appointments: Appointment[]
+  staffMembers?: StaffMember[]
   businessId: string
-  onNewAppointment?: (date: string, time: string) => void
+  onNewAppointment?: (date: string, time: string, staffId?: string) => void
   onAppointmentMoved?: (id: string, newStartTime: string) => void
 }
 
-const SLOTS = Array.from({ length: 25 }, (_, i) => ({ h: 8 + Math.floor(i / 2), m: (i % 2) * 30 }))
+const SLOTS = Array.from({ length: 26 }, (_, i) => ({ h: 8 + Math.floor(i / 2), m: (i % 2) * 30 }))
 const WEEK_DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+const SLOT_H = 32 // px per 30-min slot
 
-export function CalendarView({ appointments, businessId, onNewAppointment, onAppointmentMoved }: Props) {
+export function CalendarView({ appointments, staffMembers = [], businessId, onNewAppointment, onAppointmentMoved }: Props) {
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [view, setView] = useState<"month" | "week" | "day">("week")
+  const [view, setView] = useState<"week" | "day">("day")
+  const [miniMonth, setMiniMonth] = useState(new Date())
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null)
   const dragApptId = useRef<string | null>(null)
 
@@ -38,12 +48,10 @@ export function CalendarView({ appointments, businessId, onNewAppointment, onApp
   const displayDays = view === "day" ? [currentDate] : weekDays
 
   function navigate(dir: 1 | -1) {
-    const d = new Date(currentDate)
-    if (view === "month") {
-      setCurrentDate(dir === 1 ? addMonths(d, 1) : subMonths(d, 1))
+    if (view === "week") {
+      setCurrentDate(d => dir === 1 ? addWeeks(d, 1) : subWeeks(d, 1))
     } else {
-      d.setDate(d.getDate() + dir * (view === "week" ? 7 : 1))
-      setCurrentDate(d)
+      setCurrentDate(d => { const n = new Date(d); n.setDate(n.getDate() + dir); return n })
     }
   }
 
@@ -57,20 +65,12 @@ export function CalendarView({ appointments, businessId, onNewAppointment, onApp
     return map
   }, [appointments])
 
-  // Month grid: 6 rows × 7 cols starting from Monday
-  const monthGrid = useMemo(() => {
-    const monthStart = startOfMonth(currentDate)
-    const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 })
-    return Array.from({ length: 42 }, (_, i) => addDays(gridStart, i))
-  }, [currentDate])
-
-  function handleCellClick(day: Date, hour = 9, minute = 0) {
-    if (!onNewAppointment) return
-    onNewAppointment(
-      format(day, "yyyy-MM-dd"),
-      `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
-    )
-  }
+  // Mini month grid
+  const miniGrid = useMemo(() => {
+    const ms = startOfMonth(miniMonth)
+    const gs = startOfWeek(ms, { weekStartsOn: 1 })
+    return Array.from({ length: 42 }, (_, i) => addDays(gs, i))
+  }, [miniMonth])
 
   function handleDragStart(e: React.DragEvent, apptId: string) {
     dragApptId.current = apptId
@@ -89,34 +89,46 @@ export function CalendarView({ appointments, businessId, onNewAppointment, onApp
     const id = dragApptId.current
     dragApptId.current = null
     if (!id) return
-
-    const newStartTime = new Date(
-      day.getFullYear(), day.getMonth(), day.getDate(), h, m, 0
-    ).toISOString()
-
+    const newStartTime = new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m, 0).toISOString()
     onAppointmentMoved?.(id, newStartTime)
-
     const r = await fetch(`/api/businesses/${businessId}/appointments/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ startTime: newStartTime }),
     })
     if (!r.ok) toast.error("No se pudo mover el turno")
   }
 
-  const headerTitle = view === "month"
-    ? format(currentDate, "MMMM yyyy", { locale: es })
-    : view === "week"
+  const headerTitle = view === "week"
     ? `${format(weekStart, "d MMM", { locale: es })} — ${format(addDays(weekStart, 6), "d MMM yyyy", { locale: es })}`
-    : format(currentDate, "EEEE d MMMM yyyy", { locale: es })
+    : format(currentDate, "EEEE d 'de' MMMM yyyy", { locale: es })
+
+  // Derive staff columns: use staffMembers prop, or fall back to unique staff from appointments
+  const staffCols: StaffMember[] = useMemo(() => {
+    if (staffMembers.length > 0) return staffMembers
+    const seen = new Set<string>()
+    const out: StaffMember[] = []
+    for (const a of appointments) {
+      if (!seen.has(a.staff.id)) {
+        seen.add(a.staff.id)
+        out.push({ id: a.staff.id, color: a.staff.color, user: a.staff.user })
+      }
+    }
+    return out
+  }, [staffMembers, appointments])
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-white/10" style={{ background: "#2c2c30" }}>
+    <div className="rounded-2xl overflow-hidden border border-white/10 flex flex-col" style={{ background: "#2c2c30" }}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/8" style={{ background: "#2c2c30" }}>
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/8 flex-shrink-0" style={{ background: "#2c2c30" }}>
         <div className="flex items-center gap-2">
           <button onClick={() => navigate(-1)} className="w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 transition-colors">
             <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => { setCurrentDate(new Date()); setMiniMonth(new Date()) }}
+            className="px-3 py-1 rounded-lg text-xs text-white/50 hover:text-white hover:bg-white/8 transition-colors border border-white/10"
+          >
+            Hoy
           </button>
           <button onClick={() => navigate(1)} className="w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 transition-colors">
             <ChevronRight className="w-4 h-4" />
@@ -125,19 +137,16 @@ export function CalendarView({ appointments, businessId, onNewAppointment, onApp
         </div>
         <div className="flex items-center gap-2">
           <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs">
-            {(["month", "week", "day"] as const).map((v, i) => (
+            {(["day", "week"] as const).map((v, i) => (
               <button key={v} onClick={() => setView(v)}
-                className={cn(
-                  "px-3 py-1.5 transition-colors",
-                  i > 0 && "border-l border-white/10",
-                  view === v ? "bg-sky-500 text-white font-medium" : "text-white/50 hover:text-white hover:bg-white/8"
-                )}>
-                {v === "month" ? "Mes" : v === "week" ? "Semana" : "Día"}
+                className={cn("px-3 py-1.5 transition-colors", i > 0 && "border-l border-white/10",
+                  view === v ? "bg-sky-500 text-white font-medium" : "text-white/50 hover:text-white hover:bg-white/8")}>
+                {v === "day" ? "Día" : "Semana"}
               </button>
             ))}
           </div>
           <button
-            onClick={() => onNewAppointment?.(format(new Date(), "yyyy-MM-dd"), "09:00")}
+            onClick={() => onNewAppointment?.(format(currentDate, "yyyy-MM-dd"), "09:00")}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white text-xs font-medium transition-colors"
           >
             <Plus className="w-3.5 h-3.5" /> Nuevo turno
@@ -145,180 +154,311 @@ export function CalendarView({ appointments, businessId, onNewAppointment, onApp
         </div>
       </div>
 
-      {/* MONTH VIEW */}
-      {view === "month" && (
-        <div className="overflow-x-auto">
-          <div className="min-w-[600px]">
-            {/* Day name headers */}
-            <div className="grid grid-cols-7 border-b border-white/8">
-              {WEEK_DAYS.map(d => (
-                <div key={d} className="py-2 text-center text-[10px] uppercase tracking-widest text-white/30 font-medium">
-                  {d}
+      {/* Body: mini calendar + main grid */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* LEFT: mini month calendar */}
+        <div className="w-52 flex-shrink-0 border-r border-white/8 p-3 flex flex-col gap-3" style={{ background: "#252528" }}>
+          {/* Mini month nav */}
+          <div className="flex items-center justify-between">
+            <button onClick={() => setMiniMonth(d => subMonths(d, 1))} className="w-6 h-6 rounded flex items-center justify-center text-white/40 hover:text-white hover:bg-white/8 transition-colors">
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-xs font-semibold text-white/70 capitalize">
+              {format(miniMonth, "MMMM yyyy", { locale: es })}
+            </span>
+            <button onClick={() => setMiniMonth(d => addMonths(d, 1))} className="w-6 h-6 rounded flex items-center justify-center text-white/40 hover:text-white hover:bg-white/8 transition-colors">
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Day-of-week headers */}
+          <div className="grid grid-cols-7 gap-0">
+            {WEEK_DAYS.map(d => (
+              <div key={d} className="text-center text-[9px] uppercase text-white/25 font-medium pb-1">{d[0]}</div>
+            ))}
+            {miniGrid.map(day => {
+              const key = format(day, "yyyy-MM-dd")
+              const inMonth = isSameMonth(day, miniMonth)
+              const isToday = isSameDay(day, new Date())
+              const isSelected = isSameDay(day, currentDate)
+              const hasAppts = (apptsByDay[key] || []).length > 0
+              return (
+                <button
+                  key={key}
+                  onClick={() => { setCurrentDate(day); setMiniMonth(day); setView("day") }}
+                  className={cn(
+                    "w-full aspect-square flex items-center justify-center text-[11px] rounded-full transition-colors relative",
+                    !inMonth && "text-white/15",
+                    inMonth && !isSelected && !isToday && "text-white/50 hover:bg-white/10",
+                    isToday && !isSelected && "text-sky-400 font-bold",
+                    isSelected && "bg-sky-500 text-white font-bold",
+                  )}
+                >
+                  {format(day, "d")}
+                  {hasAppts && !isSelected && (
+                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-sky-400/70" />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Staff legend */}
+          {staffCols.length > 0 && (
+            <div className="border-t border-white/8 pt-3 space-y-2">
+              <p className="text-[10px] uppercase text-white/25 font-medium tracking-wider">Profesionales</p>
+              {staffCols.map(s => (
+                <div key={s.id} className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+                  <span className="text-xs text-white/50 truncate">{s.user.name}</span>
                 </div>
               ))}
             </div>
-            {/* 6-week grid */}
-            <div className="grid grid-cols-7" style={{ gridAutoRows: "100px" }}>
-              {monthGrid.map((day) => {
-                const key = format(day, "yyyy-MM-dd")
-                const dayAppts = apptsByDay[key] || []
-                const isToday = isSameDay(day, new Date())
-                const inMonth = isSameMonth(day, currentDate)
-                return (
-                  <div
-                    key={key}
-                    onClick={() => { setCurrentDate(day); setView("day") }}
-                    className={cn(
-                      "border-b border-r border-white/5 p-1.5 cursor-pointer transition-colors group overflow-hidden relative",
-                      !inMonth && "opacity-30",
-                      "hover:bg-white/[0.03]"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold mb-1 mx-auto",
-                      isToday ? "bg-sky-500 text-white" : "text-white/60"
-                    )}>
-                      {format(day, "d")}
-                    </div>
-                    <div className="space-y-0.5">
-                      {dayAppts.slice(0, 3).map(a => (
-                        <div
-                          key={a.id}
-                          onClick={e => e.stopPropagation()}
-                          className="rounded text-[10px] px-1.5 py-0.5 truncate text-white font-medium leading-tight"
-                          style={{ backgroundColor: a.service.color || "#38bdf8" }}
-                        >
-                          {format(new Date(a.startTime), "HH:mm")} {a.client?.name ?? "Sin cliente"}
-                        </div>
-                      ))}
-                      {dayAppts.length > 3 && (
-                        <div className="text-[10px] text-white/40 px-1">+{dayAppts.length - 3} más</div>
-                      )}
-                    </div>
-                    {dayAppts.length === 0 && (
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                        <Plus className="w-3 h-3 text-sky-500/40" />
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+          )}
         </div>
-      )}
 
-      {/* WEEK / DAY VIEW */}
-      {view !== "month" && (
-        <div className="overflow-x-auto">
-          <div className="min-w-[600px] max-h-[620px] overflow-y-auto">
-            {/* Day headers */}
-            <div className="flex sticky top-0 z-10 border-b border-white/8" style={{ background: "#2c2c30" }}>
-              <div className="w-14 flex-shrink-0" />
-              {displayDays.map((day) => {
-                const isToday = isSameDay(day, new Date())
-                return (
-                  <div key={day.toISOString()} className="flex-1 py-3 text-center">
-                    <div className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
-                      {format(day, "EEE", { locale: es })}
-                    </div>
-                    <div className={cn(
-                      "text-base font-semibold mx-auto w-8 h-8 flex items-center justify-center rounded-full",
-                      isToday ? "bg-sky-500 text-white" : "text-white/70"
-                    )}>
-                      {format(day, "d")}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Time slots */}
-            <div>
-              {SLOTS.map(({ h, m }) => (
-                <div key={`${h}-${m}`} className="flex"
-                  style={{ borderBottom: m === 0 ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(255,255,255,0.03)" }}>
-                  <div className="w-14 flex-shrink-0 pr-3 flex items-start justify-end pt-1">
-                    {m === 0 && <span className="text-[10px] text-white/25 tabular-nums">{h}:00</span>}
-                  </div>
-                  {displayDays.map((day) => {
-                    const dayKey = format(day, "yyyy-MM-dd")
-                    const slotKey = `${dayKey}-${h}-${m}`
-                    const isToday = isSameDay(day, new Date())
-                    const isDragOver = dragOverSlot === slotKey
-                    const dayAppts = (apptsByDay[dayKey] || []).filter(a => {
-                      const d = new Date(a.startTime)
-                      return d.getHours() === h && d.getMinutes() === m
-                    })
-                    return (
-                      <div
-                        key={day.toISOString()}
-                        onClick={() => { if (dayAppts.length === 0) handleCellClick(day, h, m) }}
-                        onDragOver={e => handleDragOver(e, slotKey)}
-                        onDragLeave={() => setDragOverSlot(null)}
-                        onDrop={e => handleDrop(e, day, h, m)}
-                        className={cn(
-                          "flex-1 min-h-[28px] px-0.5 py-0.5 relative group border-l border-white/5 transition-colors",
-                          isToday && !isDragOver && "bg-sky-500/[0.03]",
-                          isDragOver && "bg-sky-500/20",
-                          dayAppts.length === 0 && onNewAppointment && !isDragOver && "cursor-pointer hover:bg-white/[0.03]"
-                        )}
-                      >
-                        {isDragOver && <div className="absolute inset-0 border-2 border-sky-400/50 rounded pointer-events-none" />}
-                        {dayAppts.length === 0 && onNewAppointment && !isDragOver && (
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Plus className="w-3.5 h-3.5 text-sky-500/60" />
-                          </div>
-                        )}
-                        {/* Multiple appointments side-by-side when capacity > 1 */}
-                        {dayAppts.length > 0 && (
-                          <div className={dayAppts.length > 1 ? "flex gap-0.5" : ""}>
-                            {dayAppts.map((a) => (
-                              <div
-                                key={a.id}
-                                draggable
-                                onDragStart={e => handleDragStart(e, a.id)}
-                                onClick={e => e.stopPropagation()}
-                                className="rounded-lg text-xs p-2 cursor-grab active:cursor-grabbing select-none transition-all hover:brightness-110 hover:shadow-lg active:opacity-60 active:scale-95"
-                                style={{
-                                  flex: dayAppts.length > 1 ? "1 1 0" : undefined,
-                                  minWidth: 0,
-                                  background: a.service.color
-                                    ? `linear-gradient(135deg, ${a.service.color}ee, ${a.service.color}bb)`
-                                    : "linear-gradient(135deg, #38bdf8ee, #38bdf8bb)",
-                                  boxShadow: `0 2px 8px ${a.service.color || "#38bdf8"}40`,
-                                }}
-                              >
-                                <div className="font-semibold text-white truncate leading-tight">{a.client?.name ?? "Sin cliente"}</div>
-                                <div className="text-white/75 truncate text-[10px] mt-0.5 leading-tight">{a.service.name}</div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* RIGHT: main calendar grid */}
+        <div className="flex-1 overflow-auto">
+          {view === "day" ? (
+            <DayStaffView
+              day={currentDate}
+              staffCols={staffCols}
+              apptsByDay={apptsByDay}
+              dragOverSlot={dragOverSlot}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragLeave={() => setDragOverSlot(null)}
+              onDrop={handleDrop}
+              onNewAppointment={onNewAppointment}
+            />
+          ) : (
+            <WeekView
+              displayDays={displayDays}
+              apptsByDay={apptsByDay}
+              dragOverSlot={dragOverSlot}
+              currentDate={currentDate}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragLeave={() => setDragOverSlot(null)}
+              onDrop={handleDrop}
+              onNewAppointment={onNewAppointment}
+              onDayClick={(day) => { setCurrentDate(day); setView("day") }}
+            />
+          )}
         </div>
-      )}
+      </div>
+    </div>
+  )
+}
 
-      {/* Legend */}
-      <div className="flex items-center gap-4 px-5 py-2.5 border-t border-white/8">
-        {[
-          { label: "Pendiente", hex: "#facc15" },
-          { label: "Confirmado", hex: "#22c55e" },
-          { label: "Completado", hex: "#3b82f6" },
-          { label: "Cancelado", hex: "#f87171" },
-          { label: "No se presentó", hex: "#fb923c" },
-        ].map((s) => (
-          <div key={s.label} className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.hex }} />
-            <span className="text-[11px] text-white/35">{s.label}</span>
+// ─── DAY VIEW: columns per staff ─────────────────────────────────────────────
+
+function DayStaffView({ day, staffCols, apptsByDay, dragOverSlot, onDragStart, onDragOver, onDragLeave, onDrop, onNewAppointment }: {
+  day: Date
+  staffCols: StaffMember[]
+  apptsByDay: Record<string, Appointment[]>
+  dragOverSlot: string | null
+  onDragStart: (e: React.DragEvent, id: string) => void
+  onDragOver: (e: React.DragEvent, key: string) => void
+  onDragLeave: () => void
+  onDrop: (e: React.DragEvent, day: Date, h: number, m: number) => void
+  onNewAppointment?: (date: string, time: string, staffId?: string) => void
+}) {
+  const dayKey = format(day, "yyyy-MM-dd")
+  const dayAppts = apptsByDay[dayKey] || []
+
+  const cols = staffCols.length > 0 ? staffCols : [null]
+
+  return (
+    <div className="min-w-[500px]">
+      {/* Staff headers */}
+      <div className="flex sticky top-0 z-10 border-b border-white/8" style={{ background: "#2c2c30" }}>
+        <div className="w-14 flex-shrink-0" />
+        {cols.map((s) => (
+          <div key={s?.id ?? "all"} className="flex-1 py-3 flex flex-col items-center gap-1 border-l border-white/8">
+            {s ? (
+              <>
+                {s.user.image ? (
+                  <Image src={s.user.image} alt={s.user.name || ""} width={32} height={32}
+                    className="w-8 h-8 rounded-full object-cover"
+                    style={{ outline: `2px solid ${s.color}`, outlineOffset: "1px" }} />
+                ) : (
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                    style={{ backgroundColor: s.color }}>
+                    {s.user.name?.[0] || "?"}
+                  </div>
+                )}
+                <span className="text-xs text-white/60 font-medium truncate max-w-[90px]">{s.user.name}</span>
+              </>
+            ) : (
+              <span className="text-xs text-white/40">Todos</span>
+            )}
           </div>
         ))}
+      </div>
+
+      {/* Time grid */}
+      {SLOTS.map(({ h, m }) => (
+        <div key={`${h}-${m}`} className="flex"
+          style={{ borderBottom: m === 0 ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(255,255,255,0.02)", minHeight: `${SLOT_H}px` }}>
+          <div className="w-14 flex-shrink-0 pr-3 flex items-start justify-end pt-1">
+            {m === 0 && <span className="text-[10px] text-white/25 tabular-nums">{h}:00</span>}
+          </div>
+          {cols.map((s) => {
+            const slotKey = `${dayKey}-${s?.id ?? "all"}-${h}-${m}`
+            const isDragOver = dragOverSlot === slotKey
+            const slotAppts = dayAppts.filter(a => {
+              const d = new Date(a.startTime)
+              const matchTime = d.getHours() === h && d.getMinutes() === m
+              const matchStaff = !s || a.staff.id === s.id
+              return matchTime && matchStaff
+            })
+            return (
+              <div
+                key={s?.id ?? "all"}
+                onClick={() => { if (slotAppts.length === 0 && onNewAppointment) onNewAppointment(dayKey, `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`, s?.id) }}
+                onDragOver={e => onDragOver(e, slotKey)}
+                onDragLeave={onDragLeave}
+                onDrop={e => onDrop(e, day, h, m)}
+                className={cn(
+                  "flex-1 px-1 py-0.5 border-l border-white/5 transition-colors group relative",
+                  isDragOver && "bg-sky-500/20",
+                  slotAppts.length === 0 && onNewAppointment && !isDragOver && "cursor-pointer hover:bg-white/[0.03]"
+                )}
+              >
+                {isDragOver && <div className="absolute inset-0 border-2 border-sky-400/50 rounded pointer-events-none" />}
+                {slotAppts.length === 0 && onNewAppointment && !isDragOver && (
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <Plus className="w-3 h-3 text-sky-500/50" />
+                  </div>
+                )}
+                {slotAppts.map(a => (
+                  <ApptCard key={a.id} appt={a} onDragStart={onDragStart} />
+                ))}
+              </div>
+            )
+          })}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── WEEK VIEW ────────────────────────────────────────────────────────────────
+
+function WeekView({ displayDays, apptsByDay, dragOverSlot, currentDate, onDragStart, onDragOver, onDragLeave, onDrop, onNewAppointment, onDayClick }: {
+  displayDays: Date[]
+  apptsByDay: Record<string, Appointment[]>
+  dragOverSlot: string | null
+  currentDate: Date
+  onDragStart: (e: React.DragEvent, id: string) => void
+  onDragOver: (e: React.DragEvent, key: string) => void
+  onDragLeave: () => void
+  onDrop: (e: React.DragEvent, day: Date, h: number, m: number) => void
+  onNewAppointment?: (date: string, time: string) => void
+  onDayClick: (day: Date) => void
+}) {
+  return (
+    <div className="min-w-[600px]">
+      {/* Day headers */}
+      <div className="flex sticky top-0 z-10 border-b border-white/8" style={{ background: "#2c2c30" }}>
+        <div className="w-14 flex-shrink-0" />
+        {displayDays.map(day => {
+          const isToday = isSameDay(day, new Date())
+          const isSelected = isSameDay(day, currentDate)
+          return (
+            <button key={day.toISOString()} onClick={() => onDayClick(day)}
+              className="flex-1 py-3 text-center hover:bg-white/[0.03] transition-colors">
+              <div className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
+                {format(day, "EEE", { locale: es })}
+              </div>
+              <div className={cn(
+                "text-sm font-semibold mx-auto w-7 h-7 flex items-center justify-center rounded-full transition-colors",
+                isToday && !isSelected ? "text-sky-400" : "",
+                isSelected ? "bg-sky-500 text-white" : "text-white/70"
+              )}>
+                {format(day, "d")}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Slots */}
+      {SLOTS.map(({ h, m }) => (
+        <div key={`${h}-${m}`} className="flex"
+          style={{ borderBottom: m === 0 ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(255,255,255,0.02)", minHeight: `${SLOT_H}px` }}>
+          <div className="w-14 flex-shrink-0 pr-3 flex items-start justify-end pt-1">
+            {m === 0 && <span className="text-[10px] text-white/25 tabular-nums">{h}:00</span>}
+          </div>
+          {displayDays.map(day => {
+            const dayKey = format(day, "yyyy-MM-dd")
+            const slotKey = `${dayKey}-${h}-${m}`
+            const isToday = isSameDay(day, new Date())
+            const isDragOver = dragOverSlot === slotKey
+            const slotAppts = (apptsByDay[dayKey] || []).filter(a => {
+              const d = new Date(a.startTime)
+              return d.getHours() === h && d.getMinutes() === m
+            })
+            return (
+              <div
+                key={day.toISOString()}
+                onClick={() => { if (slotAppts.length === 0 && onNewAppointment) onNewAppointment(dayKey, `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`) }}
+                onDragOver={e => onDragOver(e, slotKey)}
+                onDragLeave={onDragLeave}
+                onDrop={e => onDrop(e, day, h, m)}
+                className={cn(
+                  "flex-1 px-0.5 py-0.5 border-l border-white/5 transition-colors group relative",
+                  isToday && !isDragOver && "bg-sky-500/[0.03]",
+                  isDragOver && "bg-sky-500/20",
+                  slotAppts.length === 0 && onNewAppointment && !isDragOver && "cursor-pointer hover:bg-white/[0.03]"
+                )}
+              >
+                {isDragOver && <div className="absolute inset-0 border-2 border-sky-400/50 rounded pointer-events-none" />}
+                {slotAppts.length === 0 && onNewAppointment && !isDragOver && (
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <Plus className="w-3 h-3 text-sky-500/50" />
+                  </div>
+                )}
+                {slotAppts.length > 0 && (
+                  <div className={slotAppts.length > 1 ? "flex gap-0.5" : ""}>
+                    {slotAppts.map(a => <ApptCard key={a.id} appt={a} compact onDragStart={onDragStart} />)}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── APPOINTMENT CARD ─────────────────────────────────────────────────────────
+
+function ApptCard({ appt, compact, onDragStart }: {
+  appt: Appointment
+  compact?: boolean
+  onDragStart: (e: React.DragEvent, id: string) => void
+}) {
+  const color = appt.service.color || "#38bdf8"
+  return (
+    <div
+      draggable
+      onDragStart={e => onDragStart(e, appt.id)}
+      onClick={e => e.stopPropagation()}
+      className="rounded-lg text-xs p-2 cursor-grab active:cursor-grabbing select-none transition-all hover:brightness-110 hover:shadow-lg active:opacity-60 active:scale-95 w-full"
+      style={{
+        background: `linear-gradient(135deg, ${color}ee, ${color}99)`,
+        boxShadow: `0 2px 8px ${color}40`,
+      }}
+    >
+      <div className="font-semibold text-white truncate leading-tight">{appt.client?.name ?? "Sin cliente"}</div>
+      {!compact && (
+        <div className="text-white/75 truncate text-[10px] mt-0.5 leading-tight">{appt.service.name}</div>
+      )}
+      <div className="text-white/60 text-[10px] leading-tight">
+        {format(new Date(appt.startTime), "HH:mm")} – {format(new Date(appt.endTime), "HH:mm")}
       </div>
     </div>
   )
