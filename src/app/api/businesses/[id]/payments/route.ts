@@ -12,7 +12,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const payment = await prisma.payment.upsert({
     where: { appointmentId },
     update: { method, status: "PAID", paidAt: new Date(), amount },
-    create: { appointmentId, method, status: "PAID", paidAt: new Date(), amount },
+    create: { appointmentId, method, status: "PAID", paidAt: new Date(), amount, currency: "CLP" },
   })
 
   await prisma.appointment.update({ where: { id: appointmentId }, data: { status: "COMPLETED" } })

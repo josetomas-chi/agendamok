@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
-import { Phone, Mail, Clock, User, X } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { Phone, Mail, Clock, User, X, Pencil, Trash2, CheckCircle, DollarSign } from "lucide-react"
 import { CalendarView } from "./calendar-view"
+import { ApptDetailDialog } from "./appt-detail-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,10 +12,11 @@ import { toast } from "sonner"
 
 type Appointment = {
   id: string; startTime: Date | string; endTime: Date | string; status: string
-  service: { name: string; color: string }
+  service: { name: string; color: string; price: number | null }
   staff: { id: string; color: string; user: { name: string | null; image: string | null } }
   client: { name: string; email: string | null; phone: string | null }
   notes: string | null
+  payment: { status: string; method: string; amount: number } | null
 }
 
 type Service = { id: string; name: string; duration: number }
@@ -38,7 +40,13 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
   const [saving, setSaving] = useState(false)
   const [appts, setAppts] = useState<Appointment[]>([])
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null)
-  const popupRef = useRef<HTMLDivElement>(null)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editForm, setEditForm] = useState({ date: "", time: "", staffId: "", notes: "" })
+  const [editSaving, setEditSaving] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
+  const [payOpen, setPayOpen] = useState(false)
+  const [payForm, setPayForm] = useState({ method: "CASH", amount: "" })
+  const [paying, setPaying] = useState(false)
 
   const fetchAppts = useCallback(async (signal?: AbortSignal) => {
     const from = new Date()
@@ -107,6 +115,106 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
     setSaving(false)
   }
 
+  function openEdit(appt: Appointment) {
+    const start = new Date(appt.startTime)
+    setEditForm({
+      date: start.toISOString().split("T")[0],
+      time: `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`,
+      staffId: appt.staff.id,
+      notes: appt.notes || "",
+    })
+    setEditOpen(true)
+  }
+
+  async function handleEdit() {
+    if (!selectedAppt || !editForm.date || !editForm.time) return
+    setEditSaving(true)
+    const startTime = new Date(`${editForm.date}T${editForm.time}`).toISOString()
+    const r = await fetch(`/api/businesses/${businessId}/appointments/${selectedAppt.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        startTime,
+        staffId: editForm.staffId || undefined,
+        notes: editForm.notes || undefined,
+      }),
+    })
+    if (r.ok) {
+      toast.success("Turno actualizado")
+      setEditOpen(false)
+      setSelectedAppt(null)
+      fetchAppts()
+    } else {
+      const d = await r.json()
+      toast.error(d.error || "Error al actualizar")
+    }
+    setEditSaving(false)
+  }
+
+  async function handleCancel() {
+    if (!selectedAppt) return
+    if (!confirm("¿Cancelar este turno? Esta acción no se puede deshacer.")) return
+    setCancelling(true)
+    const r = await fetch(`/api/businesses/${businessId}/appointments/${selectedAppt.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "CANCELLED" }),
+    })
+    if (r.ok) {
+      toast.success("Turno cancelado")
+      setAppts(prev => prev.filter(a => a.id !== selectedAppt.id))
+      setSelectedAppt(null)
+    } else {
+      toast.error("Error al cancelar")
+    }
+    setCancelling(false)
+  }
+
+  async function handleComplete() {
+    if (!selectedAppt) return
+    const r = await fetch(`/api/businesses/${businessId}/appointments/${selectedAppt.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "COMPLETED" }),
+    })
+    if (r.ok) {
+      toast.success("Turno marcado como completado")
+      setAppts(prev => prev.map(a => a.id === selectedAppt.id ? { ...a, status: "COMPLETED" } : a))
+      setSelectedAppt(prev => prev ? { ...prev, status: "COMPLETED" } : null)
+    } else {
+      toast.error("Error al actualizar")
+    }
+  }
+
+  function openPay(appt: Appointment) {
+    setPayForm({
+      method: "CASH",
+      amount: appt.service.price != null ? String(appt.service.price) : "",
+    })
+    setPayOpen(true)
+  }
+
+  async function handlePay() {
+    if (!selectedAppt || !payForm.amount) return
+    setPaying(true)
+    const r = await fetch(`/api/businesses/${businessId}/payments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ appointmentId: selectedAppt.id, method: payForm.method, amount: Number(payForm.amount) }),
+    })
+    if (r.ok) {
+      const { payment } = await r.json()
+      toast.success("Pago registrado")
+      setPayOpen(false)
+      const updated = { ...selectedAppt, status: "COMPLETED", payment: { status: "PAID", method: payment.method, amount: Number(payment.amount) } }
+      setAppts(prev => prev.map(a => a.id === selectedAppt.id ? updated : a))
+      setSelectedAppt(updated)
+    } else {
+      toast.error("Error al registrar el pago")
+    }
+    setPaying(false)
+  }
+
   function formatTime(dt: Date | string) {
     return new Date(dt).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
   }
@@ -129,64 +237,132 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
         }}
       />
 
-      {/* Appointment detail popup */}
-      {selectedAppt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedAppt(null)}>
-          <div
-            ref={popupRef}
-            className="bg-[#2c2c30] border border-white/10 rounded-2xl p-5 w-full max-w-sm shadow-2xl"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: selectedAppt.service.color }} />
-                <h3 className="font-semibold text-white">{selectedAppt.service.name}</h3>
-              </div>
-              <button onClick={() => setSelectedAppt(null)} className="text-white/40 hover:text-white transition-colors">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      <ApptDetailDialog
+        appt={selectedAppt}
+        cancelling={cancelling}
+        onClose={() => setSelectedAppt(null)}
+        onEdit={openEdit}
+        onPay={openPay}
+        onComplete={handleComplete}
+        onCancel={handleCancel}
+      />
 
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 text-sm">
-                <Clock className="w-4 h-4 text-white/40 flex-shrink-0" />
-                <span className="text-white/70">
-                  {formatTime(selectedAppt.startTime)} – {formatTime(selectedAppt.endTime)}
-                </span>
+      {/* Edit appointment dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Modificar turno</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            {selectedAppt && (
+              <div className="flex items-center gap-2 text-sm text-white/50 bg-white/[0.03] rounded-xl px-3 py-2">
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: selectedAppt.service.color }} />
+                {selectedAppt.service.name} · {selectedAppt.client.name}
               </div>
-
-              <div className="border-t border-white/5 pt-3 space-y-2.5">
-                <div className="flex items-center gap-3 text-sm">
-                  <User className="w-4 h-4 text-white/40 flex-shrink-0" />
-                  <span className="text-white font-medium">{selectedAppt.client.name}</span>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Fecha</Label>
+                <Input type="date" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Hora</Label>
+                <div className="flex gap-1.5">
+                  <select
+                    value={editForm.time.split(":")[0] || ""}
+                    onChange={e => setEditForm(f => ({ ...f, time: `${e.target.value}:${f.time.split(":")[1] || "00"}` }))}
+                    className="flex-1 h-9 rounded-md border border-input px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}
+                  >
+                    {Array.from({ length: 15 }, (_, i) => i + 7).map(h => (
+                      <option key={h} value={String(h).padStart(2, "0")} style={{ backgroundColor: "#3a3a3c" }}>{String(h).padStart(2, "0")}h</option>
+                    ))}
+                  </select>
+                  <select
+                    value={editForm.time.split(":")[1] || "00"}
+                    onChange={e => setEditForm(f => ({ ...f, time: `${f.time.split(":")[0] || "09"}:${e.target.value}` }))}
+                    className="flex-1 h-9 rounded-md border border-input px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}
+                  >
+                    <option value="00" style={{ backgroundColor: "#3a3a3c" }}>:00</option>
+                    <option value="30" style={{ backgroundColor: "#3a3a3c" }}>:30</option>
+                  </select>
                 </div>
-                {selectedAppt.client.phone && (
-                  <a href={`tel:${selectedAppt.client.phone}`} className="flex items-center gap-3 text-sm group">
-                    <Phone className="w-4 h-4 text-white/40 flex-shrink-0" />
-                    <span className="text-sky-400 group-hover:text-sky-300 transition-colors">{selectedAppt.client.phone}</span>
-                  </a>
-                )}
-                {selectedAppt.client.email && (
-                  <a href={`mailto:${selectedAppt.client.email}`} className="flex items-center gap-3 text-sm group">
-                    <Mail className="w-4 h-4 text-white/40 flex-shrink-0" />
-                    <span className="text-sky-400 group-hover:text-sky-300 transition-colors">{selectedAppt.client.email}</span>
-                  </a>
-                )}
-                {selectedAppt.notes && (
-                  <div className="mt-2 bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-xs text-white/50">
-                    {selectedAppt.notes}
-                  </div>
-                )}
               </div>
-
-              <div className="flex items-center gap-2 pt-1 border-t border-white/5 text-xs text-white/30">
-                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: selectedAppt.staff.user.image ? undefined : selectedAppt.staff.color }} />
-                {selectedAppt.staff.user.name}
-              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Profesional</Label>
+              <select
+                value={editForm.staffId}
+                onChange={e => setEditForm(f => ({ ...f, staffId: e.target.value }))}
+                className="w-full h-9 rounded-md border border-input px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}
+              >
+                {staff.map(s => (
+                  <option key={s.id} value={s.id} style={{ backgroundColor: "#3a3a3c" }}>{s.user.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Notas</Label>
+              <Input value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} placeholder="Opcional..." />
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button className="flex-1" onClick={handleEdit} disabled={editSaving}>
+                {editSaving ? "Guardando..." : "Guardar cambios"}
+              </Button>
+              <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Pay dialog */}
+      <Dialog open={payOpen} onOpenChange={setPayOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Registrar cobro</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            {selectedAppt && (
+              <div className="flex items-center gap-2 text-sm text-white/50 bg-white/[0.03] rounded-xl px-3 py-2">
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: selectedAppt.service.color }} />
+                {selectedAppt.service.name} · {selectedAppt.client.name}
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label>Método de pago</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {([["CASH", "Efectivo"], ["CARD", "Tarjeta"], ["TRANSFER", "Transferencia"]] as const).map(([val, label]) => (
+                  <button
+                    key={val}
+                    onClick={() => setPayForm(f => ({ ...f, method: val }))}
+                    className={`py-2.5 rounded-xl border text-xs font-medium transition-colors ${payForm.method === val ? "bg-violet-500/20 border-violet-400/40 text-violet-300" : "bg-white/[0.03] border-white/10 text-white/50 hover:text-white hover:border-white/20"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Monto ($)</Label>
+              <Input
+                type="number"
+                value={payForm.amount}
+                onChange={e => setPayForm(f => ({ ...f, amount: e.target.value }))}
+                placeholder="0"
+              />
+            </div>
+            <p className="text-xs text-white/30">El turno se marcará automáticamente como completado al registrar el pago.</p>
+            <div className="flex gap-2 pt-1">
+              <Button className="flex-1 bg-violet-600 hover:bg-violet-500" onClick={handlePay} disabled={paying || !payForm.amount}>
+                {paying ? "Registrando..." : "Confirmar cobro"}
+              </Button>
+              <Button variant="outline" onClick={() => setPayOpen(false)}>Cancelar</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
@@ -278,3 +454,8 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
     </>
   )
 }
+
+
+
+
+
