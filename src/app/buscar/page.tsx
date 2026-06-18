@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Search, MapPin, Navigation, Star, Phone, ChevronRight } from "lucide-react"
+import { Search, MapPin, Navigation, Clock, ChevronRight, Tag } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -9,19 +9,19 @@ const CATEGORIES = [
   "Peluquería", "Barbería", "Kinesiología", "Psicología", "Nutrición",
   "Odontología", "Medicina General", "Fisioterapia", "Yoga", "Pilates",
   "Estética", "Manicura", "Tatuaje", "Veterinaria", "Entrenamiento Personal",
-  "Masajes", "Quiropraxia", "Fonoaudiología", "Dermatología", "Otro",
+  "Masajes", "Quiropraxia", "Fonoaudiología", "Dermatología",
 ]
 
+type Service = { id: string; name: string; duration: number; price: number; color: string; description: string | null }
 type Business = {
   id: string; name: string; slug: string; category: string
   description: string | null; logo: string | null
   address: string | null; city: string | null; phone: string | null
   latitude: number | null; longitude: number | null
-  distance: number | null
+  distance: number | null; services: Service[]
 }
 
 export default function BuscarPage() {
-  const [query, setQuery] = useState("")
   const [category, setCategory] = useState("")
   const [results, setResults] = useState<Business[]>([])
   const [loading, setLoading] = useState(false)
@@ -34,7 +34,8 @@ export default function BuscarPage() {
     setLoading(true)
     setSearched(true)
     const params = new URLSearchParams()
-    if (cat ?? category) params.set("category", cat ?? category)
+    const useCat = cat ?? category
+    if (useCat) params.set("category", useCat)
     if (lat !== undefined) params.set("lat", String(lat))
     if (lng !== undefined) params.set("lng", String(lng))
     params.set("radius", "30")
@@ -54,15 +55,8 @@ export default function BuscarPage() {
         setLocating(false)
         search(lat, lng, category)
       },
-      () => {
-        setLocError("No se pudo obtener tu ubicación. Revisa los permisos del navegador.")
-        setLocating(false)
-      }
+      () => { setLocError("No se pudo obtener tu ubicación."); setLocating(false) }
     )
-  }
-
-  function handleSearch() {
-    search(coords?.lat, coords?.lng, category)
   }
 
   useEffect(() => {
@@ -71,74 +65,59 @@ export default function BuscarPage() {
   }, [category])
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#1c1c1e" }}>
+    <div className="min-h-screen bg-[#f5f5f7] text-[#1c1c1e]">
       {/* Header */}
-      <div className="border-b border-white/10" style={{ backgroundColor: "#2c2c30" }}>
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-white text-xs font-bold">A</span>
             </div>
-            <span className="font-bold text-sm">AgendaMok</span>
+            <span className="font-bold text-sm hidden sm:block">AgendaMok</span>
           </Link>
-          <Link href="/auth/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Soy un negocio →
+
+          {/* Search bar inline */}
+          <div className="flex-1 flex items-center gap-2 max-w-2xl">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <select
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                className="w-full h-10 rounded-xl border border-gray-200 pl-9 pr-4 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
+              >
+                <option value="">Todos los rubros</option>
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <button
+              onClick={useMyLocation}
+              disabled={locating}
+              className={`h-10 px-4 rounded-xl border text-sm flex items-center gap-2 transition-colors whitespace-nowrap ${
+                coords ? "border-green-400 bg-green-50 text-green-700" : "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100"
+              } disabled:opacity-50`}
+            >
+              <Navigation className="w-4 h-4" />
+              {locating ? "..." : coords ? "Ubicación activa" : "Mi ubicación"}
+            </button>
+          </div>
+
+          <Link href="/auth/login" className="text-xs text-gray-500 hover:text-gray-800 transition-colors flex-shrink-0 hidden sm:block">
+            Soy negocio →
           </Link>
         </div>
+        {locError && <p className="text-center text-xs text-red-500 pb-2">{locError}</p>}
       </div>
 
-      {/* Hero */}
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center">
-        <h1 className="text-3xl font-bold mb-2">Encuentra profesionales cerca tuyo</h1>
-        <p className="text-muted-foreground mb-8">Busca por rubro y reserva un turno en segundos</p>
-
-        {/* Search bar */}
-        <div className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto mb-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Buscar rubro o nombre..."
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleSearch()}
-              className="w-full h-11 rounded-xl border border-white/10 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}
-            />
-          </div>
-          <button
-            onClick={useMyLocation}
-            disabled={locating}
-            className="h-11 px-4 rounded-xl border border-white/10 flex items-center gap-2 text-sm hover:bg-white/5 transition-colors disabled:opacity-50 whitespace-nowrap"
-            style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}
-          >
-            <Navigation className="w-4 h-4 text-primary" />
-            {locating ? "Localizando..." : coords ? "Ubicación activa" : "Usar mi ubicación"}
+      {/* Category pills */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-5xl mx-auto px-4 py-2 flex gap-2 overflow-x-auto scrollbar-hide">
+          <button onClick={() => setCategory("")}
+            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0 ${!category ? "bg-primary text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+            Todos
           </button>
-          <button
-            onClick={handleSearch}
-            className="h-11 px-6 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            Buscar
-          </button>
-        </div>
-
-        {coords && (
-          <p className="text-xs text-green-400 flex items-center justify-center gap-1 mb-2">
-            <MapPin className="w-3 h-3" /> Ubicación detectada — mostrando negocios en radio de 30 km
-          </p>
-        )}
-        {locError && <p className="text-xs text-red-400 mb-2">{locError}</p>}
-
-        {/* Category pills */}
-        <div className="flex flex-wrap gap-2 justify-center mt-4">
           {CATEGORIES.map(cat => (
             <button key={cat} onClick={() => setCategory(category === cat ? "" : cat)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
-                category === cat
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "border-white/10 text-muted-foreground hover:border-white/30 hover:text-foreground"
-              }`}>
+              className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0 ${category === cat ? "bg-primary text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
               {cat}
             </button>
           ))}
@@ -146,82 +125,155 @@ export default function BuscarPage() {
       </div>
 
       {/* Results */}
-      <div className="max-w-4xl mx-auto px-4 pb-16">
+      <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
         {loading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 rounded-2xl animate-pulse" style={{ backgroundColor: "#2c2c30" }} />
+          <>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl h-56 animate-pulse" />
             ))}
-          </div>
+          </>
         )}
 
         {!loading && searched && results.length === 0 && (
-          <div className="text-center py-16 text-muted-foreground">
-            <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl" style={{ backgroundColor: "#2c2c30" }}>
-              🔍
-            </div>
-            <p className="font-medium">No encontramos resultados</p>
+          <div className="text-center py-20 text-gray-400">
+            <div className="text-4xl mb-3">🔍</div>
+            <p className="font-medium text-gray-600">No encontramos resultados</p>
             <p className="text-sm mt-1">Intenta con otro rubro o amplía el radio de búsqueda</p>
+          </div>
+        )}
+
+        {!loading && !searched && (
+          <div className="text-center py-20 text-gray-400">
+            <div className="text-4xl mb-3">📍</div>
+            <p className="font-medium text-gray-600">Selecciona un rubro para comenzar</p>
+            <p className="text-sm mt-1">También puedes activar tu ubicación para ver negocios cercanos</p>
           </div>
         )}
 
         {!loading && results.length > 0 && (
           <>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-gray-500">
               {results.length} {results.length === 1 ? "resultado" : "resultados"}
               {category && ` · ${category}`}
               {coords && " · ordenados por cercanía"}
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {results.map(b => (
-                <Link key={b.id} href={`/book/${b.slug}`}
-                  className="group rounded-2xl border border-white/10 p-4 flex gap-4 hover:border-primary/40 hover:bg-white/2 transition-all"
-                  style={{ backgroundColor: "#2c2c30" }}>
-                  {/* Logo */}
-                  <div className="w-14 h-14 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center text-white font-bold text-xl"
-                    style={{ backgroundColor: "#3a3a3c" }}>
-                    {b.logo
-                      ? <Image src={b.logo} alt={b.name} width={56} height={56} className="object-cover w-full h-full" />
-                      : b.name[0].toUpperCase()
-                    }
-                  </div>
 
-                  {/* Info */}
+            {results.map(biz => (
+              <BusinessCard key={biz.id} biz={biz} />
+            ))}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function BusinessCard({ biz }: { biz: Business }) {
+  const [showAll, setShowAll] = useState(false)
+  const visibleServices = showAll ? biz.services : biz.services.slice(0, 3)
+
+  return (
+    <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
+      <div className="flex">
+        {/* Left: photo */}
+        <div className="w-56 flex-shrink-0 relative bg-gray-100 hidden sm:block">
+          {biz.logo ? (
+            <Image src={biz.logo} alt={biz.name} fill className="object-cover" sizes="224px" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 min-h-[180px]">
+              <span className="text-5xl font-bold text-primary/30">{biz.name[0]}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Right: info + services */}
+        <div className="flex-1 min-w-0">
+          {/* Business info strip */}
+          <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center gap-3">
+            {/* Mobile logo */}
+            <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 sm:hidden bg-gray-100 flex items-center justify-center">
+              {biz.logo
+                ? <Image src={biz.logo} alt={biz.name} width={40} height={40} className="object-cover w-full h-full" />
+                : <span className="font-bold text-primary">{biz.name[0]}</span>
+              }
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm uppercase tracking-wide truncate">{biz.name}</p>
+              <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500 flex-wrap">
+                <span className="text-primary font-medium">{biz.category}</span>
+                {(biz.address || biz.city) && (
+                  <span className="flex items-center gap-0.5">
+                    <MapPin className="w-3 h-3" />
+                    {[biz.address, biz.city].filter(Boolean).join(", ")}
+                  </span>
+                )}
+                {biz.distance !== null && (
+                  <span className="font-medium text-green-600">
+                    {biz.distance < 1 ? `${Math.round(biz.distance * 1000)} m` : `${biz.distance.toFixed(1)} km`}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Services list */}
+          <div className="divide-y divide-gray-50">
+            {biz.services.length === 0 ? (
+              <div className="px-5 py-4 text-sm text-gray-400">Sin servicios publicados</div>
+            ) : (
+              visibleServices.map(svc => (
+                <div key={svc.id} className="px-5 py-3 flex items-center gap-3">
+                  <div className="w-1 h-10 rounded-full flex-shrink-0" style={{ backgroundColor: svc.color }} />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="font-semibold truncate group-hover:text-primary transition-colors">{b.name}</p>
-                        <p className="text-xs text-primary/80 font-medium">{b.category}</p>
-                      </div>
-                      {b.distance !== null && (
-                        <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {b.distance < 1 ? `${Math.round(b.distance * 1000)} m` : `${b.distance.toFixed(1)} km`}
+                    <p className="text-sm font-semibold uppercase tracking-wide truncate">{svc.name}</p>
+                    <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{svc.duration} min</span>
+                      {svc.description && (
+                        <span className="flex items-center gap-1 truncate max-w-[160px]">
+                          <Tag className="w-3 h-3 flex-shrink-0" />{svc.description}
                         </span>
                       )}
                     </div>
-                    {(b.city || b.address) && (
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                        {[b.address, b.city].filter(Boolean).join(", ")}
-                      </p>
-                    )}
-                    {b.description && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{b.description}</p>
-                    )}
                   </div>
-
-                  <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 self-center group-hover:text-primary transition-colors" />
-                </Link>
-              ))}
-            </div>
-          </>
-        )}
-
-        {!searched && !loading && (
-          <div className="text-center py-8 text-muted-foreground text-sm">
-            Selecciona un rubro o usa tu ubicación para comenzar
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-sm font-bold text-gray-700">
+                      ${Number(svc.price).toLocaleString("es-CL")}
+                    </span>
+                    <Link
+                      href={`/book/${biz.slug}?serviceId=${svc.id}`}
+                      className="px-4 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary/90 transition-colors"
+                    >
+                      Agendar
+                    </Link>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-        )}
+
+          {/* Show more / Ver perfil */}
+          {biz.services.length > 3 && (
+            <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
+              <button
+                onClick={() => setShowAll(v => !v)}
+                className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"
+              >
+                {showAll ? "Ver menos" : `Ver todos los servicios (${biz.services.length})`}
+                <ChevronRight className={`w-4 h-4 transition-transform ${showAll ? "rotate-90" : ""}`} />
+              </button>
+              <Link href={`/book/${biz.slug}`} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+                Ver perfil →
+              </Link>
+            </div>
+          )}
+          {biz.services.length <= 3 && biz.services.length > 0 && (
+            <div className="px-5 py-2.5 border-t border-gray-100">
+              <Link href={`/book/${biz.slug}`} className="text-xs text-gray-400 hover:text-primary transition-colors">
+                Ver perfil completo →
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

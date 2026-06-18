@@ -28,7 +28,12 @@ export async function GET(req: Request) {
       id: true, name: true, slug: true, category: true,
       description: true, logo: true, address: true, city: true,
       phone: true, latitude: true, longitude: true,
-      _count: { select: { appointments: true } },
+      services: {
+        where: { isActive: true, deletedAt: null },
+        select: { id: true, name: true, duration: true, price: true, color: true, description: true },
+        orderBy: { price: "asc" },
+        take: 5,
+      },
     },
   })
 
