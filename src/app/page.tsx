@@ -89,7 +89,7 @@ const comparisonRows: { feature: string; us: FeatureValue[]; them: FeatureValue[
   { feature: "Encuestas de satisfacción", us: [false, true, true], them: [false, false, true] },
   { feature: "Comisiones de staff", us: [false, true, true], them: [false, true, true] },
   { feature: "Ficha clínica personalizable", us: [false, false, true], them: [false, false, true] },
-  { feature: "WhatsApp automático", us: ["Add-on $4.900/mes", "Add-on $4.900/mes", "Add-on $4.900/mes"], them: ["$5.000/mes extra", "$5.000/mes extra", "$5.000/mes extra"] },
+  { feature: "WhatsApp automático", us: ["Módulo extra $4.900/mes · 50 msgs/cliente", "Módulo extra $4.900/mes · 50 msgs/cliente", "Módulo extra $4.900/mes · 50 msgs/cliente"], them: ["$5.000/mes · 50 msgs/cliente", "$5.000/mes · 50 msgs/cliente", "$5.000/mes · 50 msgs/cliente"] },
   { feature: "Múltiples sedes", us: [false, false, true], them: [false, false, true] },
   { feature: "API access", us: [false, false, true], them: [false, false, true] },
 ]
