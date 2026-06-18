@@ -9,15 +9,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Building2, Bell, CreditCard, Link2, Globe, Copy } from "lucide-react"
+import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin } from "lucide-react"
 
-type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; timezone: string; currency: string }
+type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string }
 type Subscription = { plan: string; status: string; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean; flowCustomerId: string | null; trialEndsAt: string | null }
 
 export default function SettingsPage() {
   const [business, setBusiness] = useState<Business | null>(null)
   const [subscription, setSubscription] = useState<Subscription | null>(null)
-  const [form, setForm] = useState({ name: "", description: "", website: "", timezone: "", currency: "" })
+  const [form, setForm] = useState({ name: "", description: "", website: "", phone: "", address: "", city: "", timezone: "", currency: "" })
+  const [locating, setLocating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [subscribing, setSubscribing] = useState(false)
 
@@ -27,7 +28,7 @@ export default function SettingsPage() {
       const biz = await r.json()
       setBusiness(biz.business)
       setSubscription(biz.subscription || null)
-      setForm({ name: biz.business.name, description: biz.business.description || "", website: biz.business.website || "", timezone: biz.business.timezone, currency: biz.business.currency })
+      setForm({ name: biz.business.name, description: biz.business.description || "", website: biz.business.website || "", phone: biz.business.phone || "", address: biz.business.address || "", city: biz.business.city || "", timezone: biz.business.timezone, currency: biz.business.currency })
     })
   }, [])
 
@@ -41,6 +42,23 @@ export default function SettingsPage() {
     if (r.ok) toast.success("Cambios guardados")
     else toast.error("Error al guardar")
     setSaving(false)
+  }
+
+  async function useMyLocation() {
+    if (!business) return
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      async pos => {
+        const { latitude, longitude } = pos.coords
+        await fetch(`/api/businesses/${business.id}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ latitude, longitude }),
+        })
+        toast.success("Ubicación guardada")
+        setLocating(false)
+      },
+      () => { toast.error("No se pudo obtener la ubicación"); setLocating(false) }
+    )
   }
 
   const [origin, setOrigin] = useState("")
@@ -109,9 +127,40 @@ export default function SettingsPage() {
                 <div className="col-span-2 space-y-1.5"><Label>Nombre del negocio</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
                 <div className="col-span-2 space-y-1.5"><Label>Descripcion</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="Cuenta de que trata tu negocio..." /></div>
                 <div className="space-y-1.5"><Label>Sitio web</Label><Input value={form.website} onChange={e => setForm(f => ({ ...f, website: e.target.value }))} placeholder="https://..." /></div>
+                <div className="space-y-1.5"><Label>Teléfono</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+56 9 1234 5678" /></div>
                 <div className="space-y-1.5"><Label>Moneda</Label><Input value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} placeholder="CLP" /></div>
               </div>
               <Button onClick={handleSave} disabled={saving}>{saving ? "Guardando..." : "Guardar cambios"}</Button>
+
+              {/* Location section */}
+              <div className="border-t border-white/10 pt-4 space-y-3">
+                <div>
+                  <p className="text-sm font-medium flex items-center gap-2"><MapPin className="w-4 h-4 text-primary" />Ubicación del negocio</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Necesaria para aparecer en búsquedas por cercanía en <strong>agendamok.com/buscar</strong></p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Dirección</Label>
+                    <Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Av. Providencia 1234" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Ciudad</Label>
+                    <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder="Santiago" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" className="gap-2" onClick={useMyLocation} disabled={locating}>
+                    <Navigation className="w-4 h-4" />
+                    {locating ? "Obteniendo ubicación..." : business?.latitude ? "Actualizar coordenadas GPS" : "Fijar mi ubicación GPS"}
+                  </Button>
+                  {business?.latitude && (
+                    <p className="text-xs text-green-400 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> Coordenadas guardadas ({business.latitude.toFixed(4)}, {business.longitude?.toFixed(4)})
+                    </p>
+                  )}
+                </div>
+                <Button variant="secondary" onClick={handleSave} disabled={saving} size="sm">Guardar dirección</Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

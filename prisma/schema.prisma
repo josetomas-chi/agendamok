@@ -160,6 +160,11 @@ model Business {
   description String?   @db.Text
   logo        String?
   website     String?
+  phone       String?
+  address     String?
+  city        String?
+  latitude    Float?
+  longitude   Float?
   timezone    String    @default("America/Argentina/Buenos_Aires")
   currency    String    @default("ARS")
   isActive    Boolean   @default(true)
