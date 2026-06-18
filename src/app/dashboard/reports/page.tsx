@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts"
-import { TrendingUp, Users, CheckCircle, XCircle, AlertCircle } from "lucide-react"
+import { TrendingUp, Users, CheckCircle, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
+import { startOfMonth, endOfMonth, subMonths, addMonths, format } from "date-fns"
+import { es } from "date-fns/locale"
 
 type Stats = {
   revenueByMonth: { month: string; revenue: number }[]
@@ -17,17 +19,46 @@ const COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"]
 export default function ReportsPage() {
   const [data, setData] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [businessId, setBusinessId] = useState("")
+  const [refDate, setRefDate] = useState(() => new Date())
+  const [mode, setMode] = useState<"month" | "custom">("month")
+  const [customFrom, setCustomFrom] = useState("")
+  const [customTo, setCustomTo] = useState("")
 
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(async d => {
-      const r = await fetch(`/api/businesses/${d.businessId}/reports`)
-      const stats = await r.json()
-      setData(stats)
-      setLoading(false)
-    })
+    fetch("/api/me/business").then(r => r.json()).then(d => setBusinessId(d.businessId))
   }, [])
 
-  if (loading) return (
+  useEffect(() => {
+    if (!businessId) return
+    loadData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessId, refDate, mode, customFrom, customTo])
+
+  async function loadData() {
+    setLoading(true)
+    let from: Date, to: Date
+    if (mode === "custom" && customFrom && customTo) {
+      from = new Date(customFrom)
+      to = new Date(customTo)
+      to.setHours(23, 59, 59, 999)
+    } else {
+      from = startOfMonth(refDate)
+      to = endOfMonth(refDate)
+    }
+    try {
+      const r = await fetch(`/api/businesses/${businessId}/reports?from=${from.toISOString()}&to=${to.toISOString()}`)
+      const stats = await r.json()
+      setData(stats)
+    } catch { /* ignore */ }
+    setLoading(false)
+  }
+
+  const periodLabel = mode === "custom" && customFrom && customTo
+    ? `${customFrom} → ${customTo}`
+    : format(refDate, "MMMM yyyy", { locale: es })
+
+  if (!businessId || (loading && !data)) return (
     <div className="space-y-6">
       <div className="page-header"><div><h1 className="page-title">Reportes</h1></div></div>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -42,7 +73,7 @@ export default function ReportsPage() {
   const { monthStats, revenueByMonth, topServices, topClients } = data
 
   const kpis = [
-    { label: "Ingresos del mes", value: `$${monthStats.revenue.toLocaleString("es-AR")}`, icon: TrendingUp },
+    { label: "Ingresos del período", value: `$${monthStats.revenue.toLocaleString("es-CL")}`, icon: TrendingUp },
     { label: "Turnos completados", value: monthStats.completed, icon: CheckCircle },
     { label: "Tasa de ocupación", value: `${monthStats.occupancyRate}%`, icon: Users },
     { label: "Tasa de ausentismo", value: `${monthStats.noShowRate}%`, icon: AlertCircle },
@@ -60,7 +91,46 @@ export default function ReportsPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Reportes</h1>
-          <p className="page-subtitle">Estadísticas del mes actual</p>
+          <p className="page-subtitle capitalize">{periodLabel}</p>
+        </div>
+
+        {/* Period selector */}
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-white/10 overflow-hidden text-xs">
+            <button onClick={() => setMode("month")}
+              className={`px-3 py-1.5 transition-colors ${mode === "month" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+              Mensual
+            </button>
+            <button onClick={() => setMode("custom")}
+              className={`px-3 py-1.5 transition-colors ${mode === "custom" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+              Personalizado
+            </button>
+          </div>
+
+          {mode === "month" ? (
+            <div className="flex items-center gap-1">
+              <button onClick={() => setRefDate(d => subMonths(d, 1))}
+                className="w-7 h-7 rounded-md border border-white/10 flex items-center justify-center hover:bg-white/5 transition-colors">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-sm font-medium w-32 text-center capitalize">
+                {format(refDate, "MMM yyyy", { locale: es })}
+              </span>
+              <button onClick={() => setRefDate(d => addMonths(d, 1))}
+                disabled={startOfMonth(addMonths(refDate, 1)) > startOfMonth(new Date())}
+                className="w-7 h-7 rounded-md border border-white/10 flex items-center justify-center hover:bg-white/5 transition-colors disabled:opacity-30">
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+                className="h-7 rounded-md border border-white/10 px-2 text-xs bg-transparent" />
+              <span className="text-xs text-muted-foreground">→</span>
+              <input type="date" value={customTo} min={customFrom} onChange={e => setCustomTo(e.target.value)}
+                className="h-7 rounded-md border border-white/10 px-2 text-xs bg-transparent" />
+            </div>
+          )}
         </div>
       </div>
 
@@ -93,10 +163,10 @@ export default function ReportsPage() {
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={revenueByMonth} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v.toLocaleString("es-AR")}`} />
-                <Tooltip formatter={(v) => [`$${Number(v).toLocaleString("es-AR")}`, "Ingresos"]} />
+                <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v.toLocaleString("es-CL")}`} />
+                <Tooltip formatter={(v) => [`$${Number(v).toLocaleString("es-CL")}`, "Ingresos"]} />
                 <Bar dataKey="revenue" fill="#6366f1" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

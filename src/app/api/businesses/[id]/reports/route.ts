@@ -8,9 +8,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
 
+  const { searchParams } = new URL(req.url)
+  const fromParam = searchParams.get("from")
+  const toParam = searchParams.get("to")
+
   const now = new Date()
-  const monthStart = startOfMonth(now)
-  const monthEnd = endOfMonth(now)
+  const monthStart = fromParam ? new Date(fromParam) : startOfMonth(now)
+  const monthEnd = toParam ? new Date(toParam) : endOfMonth(now)
 
   // Revenue by month (last 6 months)
   const revenueByMonth = await Promise.all(
