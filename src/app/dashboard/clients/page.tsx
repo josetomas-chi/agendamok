@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import * as XLSX from "xlsx"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -92,7 +93,6 @@ export default function ClientsPage() {
     if (!file) return
     e.target.value = ""
 
-    const XLSX = await import("xlsx")
     const buffer = await file.arrayBuffer()
     const wb = XLSX.read(buffer, { type: "array" })
     const ws = wb.Sheets[wb.SheetNames[0]]
