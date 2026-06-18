@@ -1,8 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect } from "react"
-import { Check, X, Minus, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight, Star, Percent, MapPin, FileText, Stethoscope, Key } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Check, X, Minus, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight, Star, Percent, MapPin, FileText, Stethoscope, Key, ChevronDown } from "lucide-react"
 
 const features = [
   { icon: Calendar, title: "Calendario inteligente", desc: "Vista semanal y diaria por profesional. Arrastra y suelta para mover turnos al instante." },
@@ -76,6 +76,54 @@ const plans = [
   },
 ]
 
+const helpItems = [
+  {
+    category: "Primeros pasos",
+    icon: "🚀",
+    steps: [
+      { title: "Crear tu cuenta", content: "Ingresa a agendamok.cl y hacé clic en «Empezar gratis». Completá tu email y contraseña — no necesitás tarjeta de crédito. En menos de 1 minuto tenés acceso al panel." },
+      { title: "Configurar los datos de tu negocio", content: "En el panel, ve a Configuración → Negocio. Allí completás el nombre, dirección, teléfono y categoría. También podés subir tu logo y escribir una descripción que verán tus clientes al reservar." },
+      { title: "Configurar tu página de reservas pública", content: "En Configuración → Página de reservas encontrás tu link único (ej: agendamok.cl/book/mi-negocio). Podés personalizar el mensaje de bienvenida y el horario de atención general. Compartí ese link en Instagram, WhatsApp o Google." },
+    ],
+  },
+  {
+    category: "Servicios y profesionales",
+    icon: "✂️",
+    steps: [
+      { title: "Agregar tus servicios", content: "En el menú lateral ve a Servicios → Nuevo servicio. Completá el nombre (ej: «Corte de cabello»), duración en minutos, precio y color identificador. Podés crear todos los que necesites y agruparlos por categorías." },
+      { title: "Agregar profesionales (staff)", content: "Ve a Staff → Agregar profesional. Completá nombre y email — el profesional recibirá una invitación para crear su acceso. Desde su perfil podés asignarle los servicios que ofrece, definir su horario semanal y configurar sus comisiones." },
+      { title: "Configurar horarios de atención", content: "En el perfil de cada profesional encontrás la sección Horario semanal. Marcá los días que trabaja y el rango de horas. También podés agregar excepciones (feriados, vacaciones) en Excepciones de disponibilidad." },
+    ],
+  },
+  {
+    category: "Cobros y pagos",
+    icon: "💳",
+    steps: [
+      { title: "Activar cobros online a tus clientes", content: "Ve a Configuración → Cobros online. Necesitás una cuenta en Flow.cl. Ingresá tu API Key y Secret Key de producción (las encontrás en tu panel Flow → Integración) y activá el toggle. A partir de ese momento, tus clientes podrán pagar al reservar y el dinero llega directamente a tu cuenta." },
+      { title: "Usar el POS para cobros en el local", content: "En el módulo Pagos del panel encontrás el POS. Seleccioná el turno, elegí el método (efectivo, tarjeta, transferencia) y confirmá el pago. El historial queda registrado automáticamente." },
+      { title: "Configurar comisiones del staff", content: "En el perfil de cada profesional podés definir el tipo de comisión: porcentaje por servicio o monto fijo. El sistema calcula automáticamente cuánto le corresponde a cada uno al final del mes. Podés liquidar con un clic desde el módulo Reportes → Comisiones." },
+    ],
+  },
+  {
+    category: "Clientes y comunicación",
+    icon: "👥",
+    steps: [
+      { title: "Gestionar tu base de clientes (CRM)", content: "En el módulo Clientes tenés el historial completo de cada persona: turnos pasados, pagos, notas y datos de contacto. Podés buscar por nombre o email, agregar etiquetas y exportar la lista." },
+      { title: "Recordatorios automáticos por email", content: "AgendaMok envía automáticamente un email de confirmación cuando el cliente reserva y un recordatorio 24 horas antes del turno. No requiere configuración adicional — funciona desde el momento en que activás tu cuenta." },
+      { title: "Enviar campañas de email marketing", content: "En el módulo Marketing podés crear campañas para enviar promociones, novedades o felicitaciones de cumpleaños a tu base de clientes. Configurá el asunto, el mensaje y elegí a quién enviarlo." },
+    ],
+  },
+  {
+    category: "Preguntas frecuentes",
+    icon: "❓",
+    steps: [
+      { title: "¿Puedo importar mis clientes desde otro sistema?", content: "Sí. En el módulo Clientes encontrás el botón «Importar». Podés subir un archivo CSV o Excel con las columnas nombre, email y teléfono. El sistema detecta duplicados automáticamente." },
+      { title: "¿Qué pasa cuando termina el período de prueba?", content: "Al vencer los 30 días gratis, si tenés una tarjeta registrada se cobra automáticamente el plan que seleccionaste ($9.900/mes para Starter). Si no tenés tarjeta, tu cuenta pasa a modo lectura — podés ver tus datos pero no recibir nuevas reservas hasta que completes el pago." },
+      { title: "¿Puedo cancelar en cualquier momento?", content: "Sí, sin penalidades. En Configuración → Plan y facturación encontrás el botón «Cancelar suscripción». Tu cuenta seguirá activa hasta el final del período pagado." },
+    ],
+  },
+]
+
 type FeatureValue = boolean | string
 
 const comparisonRows: { feature: string; us: FeatureValue[]; them: FeatureValue[] }[] = [
@@ -93,6 +141,54 @@ const comparisonRows: { feature: string; us: FeatureValue[]; them: FeatureValue[
   { feature: "Múltiples sedes", us: [false, false, true], them: [false, false, true] },
   { feature: "API access", us: [false, false, true], them: [false, false, true] },
 ]
+
+function HelpAccordion() {
+  const [openCat, setOpenCat] = useState<number | null>(0)
+  const [openStep, setOpenStep] = useState<string | null>(null)
+
+  return (
+    <div className="space-y-3">
+      {helpItems.map((cat, ci) => (
+        <div key={cat.category} className="rounded-2xl border border-white/10 overflow-hidden">
+          <button
+            onClick={() => { setOpenCat(openCat === ci ? null : ci); setOpenStep(null) }}
+            className="w-full flex items-center gap-3 px-5 py-4 bg-white/[0.03] hover:bg-white/[0.06] transition-colors text-left"
+          >
+            <span className="text-xl">{cat.icon}</span>
+            <span className="flex-1 font-semibold text-white">{cat.category}</span>
+            <ChevronDown className={`w-4 h-4 text-white/40 transition-transform flex-shrink-0 ${openCat === ci ? "rotate-180" : ""}`} />
+          </button>
+
+          {openCat === ci && (
+            <div className="divide-y divide-white/5 bg-white/[0.015]">
+              {cat.steps.map((step, si) => {
+                const key = `${ci}-${si}`
+                const isOpen = openStep === key
+                return (
+                  <div key={step.title}>
+                    <button
+                      onClick={() => setOpenStep(isOpen ? null : key)}
+                      className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-white/[0.04] transition-colors text-left"
+                    >
+                      <span className="w-5 h-5 rounded-full bg-sky-500/20 text-sky-400 text-[10px] font-bold flex items-center justify-center flex-shrink-0">{si + 1}</span>
+                      <span className={`flex-1 text-sm font-medium ${isOpen ? "text-sky-300" : "text-white/80"}`}>{step.title}</span>
+                      <ChevronDown className={`w-3.5 h-3.5 text-white/30 transition-transform flex-shrink-0 ${isOpen ? "rotate-180 text-sky-400" : ""}`} />
+                    </button>
+                    {isOpen && (
+                      <div className="px-5 pb-4 pt-1">
+                        <p className="text-sm text-white/55 leading-relaxed pl-8">{step.content}</p>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
 
 function CellValue({ val, isUs }: { val: FeatureValue; isUs: boolean }) {
   if (val === true) return <Check className={`w-4 h-4 ${isUs ? "text-sky-400" : "text-white/60"}`} />
@@ -221,6 +317,7 @@ export default function LandingPage() {
           <nav className="hidden md:flex items-center gap-8 text-sm text-white/60">
             <Link href="#features" className="hover:text-white transition-colors">Funciones</Link>
             <Link href="#pricing" className="hover:text-white transition-colors">Precios</Link>
+            <Link href="#ayuda" className="hover:text-white transition-colors">Ayuda</Link>
             <Link href="/buscar" className="hover:text-white transition-colors">Buscar negocio</Link>
             <Link href="/login" className="hover:text-white transition-colors">Ingresar</Link>
           </nav>
@@ -667,6 +764,19 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* Help / Instructivos */}
+        <section id="ayuda" className="py-32 border-t border-white/5">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+                Centro de <span className="gradient-text">ayuda</span>
+              </h2>
+              <p className="text-white/40 text-lg max-w-xl mx-auto">Todo lo que necesitás saber para configurar y aprovechar AgendaMok al máximo.</p>
+            </div>
+            <HelpAccordion />
           </div>
         </section>
 
