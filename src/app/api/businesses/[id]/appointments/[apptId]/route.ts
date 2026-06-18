@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { addMinutes } from "date-fns"
+import { addMinutes, addDays } from "date-fns"
+import { sendSurveyRequest } from "@/lib/email"
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string; apptId: string }> }) {
   const session = await auth()
@@ -23,6 +24,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     body.startTime = startTime
   }
 
+  const prevAppt = await prisma.appointment.findUnique({ where: { id: apptId }, select: { status: true } })
+
   const appointment = await prisma.appointment.update({
     where: { id: apptId },
     data: body,
@@ -30,8 +33,31 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       service: { select: { name: true, color: true } },
       staff: { include: { user: { select: { name: true } } } },
       client: { select: { name: true, email: true, phone: true } },
+      business: { select: { name: true } },
     },
   })
+
+  // Send satisfaction survey when appointment is marked COMPLETED for the first time
+  if (body.status === "COMPLETED" && prevAppt?.status !== "COMPLETED" && appointment.client.email) {
+    const existing = await prisma.satisfactionSurvey.findUnique({ where: { appointmentId: apptId } })
+    if (!existing) {
+      const survey = await prisma.satisfactionSurvey.create({
+        data: {
+          businessId: id,
+          appointmentId: apptId,
+          expiresAt: addDays(new Date(), 7),
+        },
+      })
+      const baseUrl = process.env.NEXTAUTH_URL || "https://agendamok.cl"
+      sendSurveyRequest({
+        clientName: appointment.client.name,
+        clientEmail: appointment.client.email,
+        businessName: appointment.business.name,
+        surveyUrl: `${baseUrl}/survey/${survey.token}`,
+      }).catch(() => {})
+    }
+  }
+
   return NextResponse.json({ appointment })
 }
 

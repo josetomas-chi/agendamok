@@ -72,6 +72,27 @@ export async function sendInvite({
   })
 }
 
+export async function sendSurveyRequest({
+  clientName, clientEmail, businessName, surveyUrl,
+}: {
+  clientName: string; clientEmail: string; businessName: string; surveyUrl: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `¿Cómo fue tu experiencia en ${businessName}?`,
+    html: base(`
+      <h1>¿Cómo fue tu visita?</h1>
+      <p>Hola <strong>${clientName}</strong>, gracias por visitarnos en <strong>${businessName}</strong>.</p>
+      <p>Tu opinión nos ayuda a mejorar. Solo toma 30 segundos:</p>
+      <a href="${surveyUrl}" class="btn">Dejar mi opinión</a>
+      <p style="margin-top:16px;font-size:13px;color:#9ca3af">Este link expira en 7 días.</p>
+    `),
+  })
+}
+
 export async function sendBookingReminder({
   clientName, clientEmail, businessName,
   serviceName, date, time,

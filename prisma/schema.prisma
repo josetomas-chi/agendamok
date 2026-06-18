@@ -186,6 +186,7 @@ model Business {
   notifications             NotificationTemplate[]
   googleCalendarIntegration GoogleCalendarIntegration?
   availabilityExceptions    AvailabilityException[]
+  surveys                   SatisfactionSurvey[]
 
   @@index([slug])
   @@map("businesses")
@@ -404,6 +405,7 @@ model Appointment {
   client        Client            @relation(fields: [clientId], references: [id])
   payment       Payment?
   notifications NotificationLog[]
+  survey        SatisfactionSurvey?
 
   @@index([businessId, startTime])
   @@index([staffId, startTime])
@@ -517,6 +519,26 @@ model Campaign {
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@map("campaigns")
+}
+
+// ─── SATISFACTION SURVEYS ─────────────────────────────────────────────────────
+
+model SatisfactionSurvey {
+  id            String    @id @default(cuid())
+  businessId    String
+  appointmentId String    @unique
+  token         String    @unique @default(cuid())
+  rating        Int?      // 1–5, null = not yet answered
+  comment       String?   @db.Text
+  answeredAt    DateTime?
+  sentAt        DateTime  @default(now())
+  expiresAt     DateTime
+
+  business    Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("satisfaction_surveys")
 }
 
 // ─── INTEGRATIONS ─────────────────────────────────────────────────────────────
