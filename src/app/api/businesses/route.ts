@@ -20,9 +20,14 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { businessName, category, slug, plan } = schema.parse(body)
 
-    const existing = await prisma.business.findUnique({ where: { slug } })
-    if (existing) {
+    const existingSlug = await prisma.business.findUnique({ where: { slug } })
+    if (existingSlug) {
       return NextResponse.json({ error: "Ese slug ya está en uso" }, { status: 400 })
+    }
+
+    const existingOwner = await prisma.business.findUnique({ where: { ownerId: session.user.id } })
+    if (existingOwner) {
+      return NextResponse.json({ error: "already_exists", businessId: existingOwner.id }, { status: 409 })
     }
 
     const business = await prisma.business.create({

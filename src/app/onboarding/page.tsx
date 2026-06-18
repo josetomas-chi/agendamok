@@ -38,10 +38,12 @@ export default function OnboardingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, plan: "STARTER" }),
       })
-      if (!res.ok) {
-        const d = await res.json()
-        throw new Error(d.error || "Error")
+      const d = await res.json()
+      if (res.status === 409 && d.error === "already_exists") {
+        router.push("/dashboard")
+        return
       }
+      if (!res.ok) throw new Error(d.error || "Error")
       setStep(3)
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Error al crear el negocio")
