@@ -164,6 +164,7 @@ export default function LandingPage() {
           <nav className="hidden md:flex items-center gap-8 text-sm text-white/60">
             <Link href="#features" className="hover:text-white transition-colors">Funciones</Link>
             <Link href="#pricing" className="hover:text-white transition-colors">Precios</Link>
+            <Link href="/buscar" className="hover:text-white transition-colors">Buscar negocio</Link>
             <Link href="/login" className="hover:text-white transition-colors">Ingresar</Link>
           </nav>
           <div className="flex items-center gap-3">
@@ -208,8 +209,8 @@ export default function LandingPage() {
                 Empezar gratis
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link href="/book/demo" className="inline-flex items-center justify-center px-8 py-4 border border-white/20 hover:border-white/40 hover:bg-white/5 transition-all rounded-full text-base text-white/80">
-                Ver demo en vivo
+              <Link href="/buscar" className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-white/20 hover:border-white/40 hover:bg-white/5 transition-all rounded-full text-base text-white/80">
+                Buscar un negocio
               </Link>
             </div>
 
