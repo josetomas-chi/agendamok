@@ -535,7 +535,7 @@ export default function SettingsPage() {
                 </Button>
               )}
               {subscription?.cancelAtPeriodEnd && (
-                <p className="text-xs text-amber-400">Tu plan se cancela al fin del periodo. Hasta entonces podés seguir usándolo.</p>
+                <p className="text-xs text-amber-400">Tu plan se cancela al fin del periodo. Hasta entonces puedes seguir usándolo.</p>
               )}
             </CardContent>
           </Card>
@@ -585,7 +585,7 @@ export default function SettingsPage() {
           </div>
 
           <p className="text-xs text-white/30">
-            Pagos procesados de forma segura a través de Flow. Tu tarjeta se registra una vez y los cobros son automáticos cada mes. Podés cancelar en cualquier momento desde esta pantalla.
+            Pagos procesados de forma segura a través de Flow. Tu tarjeta se registra una vez y los cobros son automáticos cada mes. Puedes cancelar en cualquier momento desde esta pantalla.
           </p>
         </TabsContent>
 
