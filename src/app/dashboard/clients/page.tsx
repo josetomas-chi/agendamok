@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import * as XLSX from "xlsx"
+import Papa from "papaparse"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -93,18 +93,27 @@ export default function ClientsPage() {
     if (!file) return
     e.target.value = ""
 
-    const buffer = await file.arrayBuffer()
-    const wb = XLSX.read(buffer, { type: "array" })
-    const ws = wb.Sheets[wb.SheetNames[0]]
-    const raw: Record<string, string>[] = XLSX.utils.sheet_to_json(ws, { defval: "" })
-
-    // Normalize column names (case-insensitive, handle spanish headers)
     const normalize = (key: string) => key.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim()
     const colMap: Record<string, string> = {
       nombre: "name", name: "name",
       email: "email", correo: "email",
-      telefono: "phone", teléfono: "phone", phone: "phone", cel: "phone", celular: "phone",
+      telefono: "phone", phone: "phone", cel: "phone", celular: "phone",
       notas: "notes", notes: "notes", observaciones: "notes",
+    }
+
+    const isExcel = file.name.endsWith(".xlsx") || file.name.endsWith(".xls")
+    let raw: Record<string, string>[] = []
+
+    if (isExcel) {
+      const { read, utils } = await import("xlsx")
+      const buffer = await file.arrayBuffer()
+      const wb = read(buffer, { type: "array" })
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      raw = utils.sheet_to_json(ws, { defval: "" })
+    } else {
+      const text = await file.text()
+      const result = Papa.parse<Record<string, string>>(text, { header: true, skipEmptyLines: true })
+      raw = result.data
     }
 
     const rows: ImportRow[] = raw.map(r => {
