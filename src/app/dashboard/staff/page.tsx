@@ -476,7 +476,7 @@ function InfoEditor({ member, businessId, onSaved }: { member: StaffMember; busi
             <option value="FIXED">Fijo $</option>
           </select>
           <input type="number" min={0} max={form.commissionType === "PERCENTAGE" ? 100 : undefined}
-            value={form.commissionValue} onChange={e => setForm(f => ({ ...f, commissionValue: +e.target.value }))}
+            value={form.commissionValue} onChange={e => setForm(f => ({ ...f, commissionValue: parseInt(e.target.value) || 0 }))}
             className={inputCls} style={inputStyle} />
         </div>
         <p className="text-[10px] text-muted-foreground mt-0.5">
