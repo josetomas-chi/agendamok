@@ -287,39 +287,77 @@ export default function LandingPage() {
                   <div className="flex-1 mx-4 h-5 rounded-md bg-white/5 text-xs text-white/30 flex items-center justify-center">agendamok.cl/dashboard</div>
                 </div>
                 <div className="grid grid-cols-4 gap-px bg-white/5 p-px">
-                  <div className="bg-[#242426] col-span-1 p-4 space-y-2">
-                    {["Inicio","Turnos","Clientes","Staff","Servicios","Reportes"].map(item => (
-                      <div key={item} className={`text-xs px-3 py-2 rounded-lg ${item === "Turnos" ? "bg-sky-500/40 text-sky-300 font-medium" : "text-white/30 hover:text-white/50"}`}>{item}</div>
+                  {/* Sidebar */}
+                  <div className="bg-[#1e1e20] col-span-1 p-3 flex flex-col gap-1">
+                    <div className="text-[10px] font-bold text-white/20 px-2 pt-1 pb-2 tracking-widest uppercase">AgendaMok</div>
+                    {[
+                      { label: "Inicio", icon: "⌂" },
+                      { label: "Calendario", icon: "▦", active: true },
+                      { label: "Clientes", icon: "◎" },
+                      { label: "Staff", icon: "◈" },
+                      { label: "Reportes", icon: "▲" },
+                      { label: "Pagos", icon: "◇" },
+                    ].map(item => (
+                      <div key={item.label} className={`text-xs px-2.5 py-2 rounded-lg flex items-center gap-2 ${item.active ? "bg-sky-500/20 text-sky-300 font-semibold" : "text-white/35"}`}>
+                        <span className="text-[11px]">{item.icon}</span>{item.label}
+                      </div>
                     ))}
                   </div>
-                  <div className="bg-[#2c2c2e] col-span-3 p-4">
-                    <div className="grid grid-cols-3 gap-3 mb-4">
+
+                  {/* Main content */}
+                  <div className="bg-[#242426] col-span-3 p-4 space-y-3">
+
+                    {/* KPI row */}
+                    <div className="grid grid-cols-4 gap-2">
                       {[
-                        { label: "Turnos hoy", val: "12", sub: "+3 vs ayer", color: "text-sky-400" },
-                        { label: "Este mes", val: "$284K", sub: "+18% ↑", color: "text-green-400" },
-                        { label: "Clientes", val: "48", sub: "4 nuevos", color: "text-purple-400" },
-                      ].map(({ label, val, sub, color }) => (
-                        <div key={label} className="bg-white/[0.06] rounded-xl p-3 border border-white/5">
-                          <div className="text-[10px] text-white/40 mb-1 uppercase tracking-wide">{label}</div>
-                          <div className={`text-2xl font-bold ${color} mb-0.5`}>{val}</div>
-                          <div className="text-[10px] text-white/30">{sub}</div>
+                        { label: "Ingresos del mes", val: "$1.847.300", sub: "↑ 23% vs mes anterior", color: "text-emerald-400", subColor: "text-emerald-400/70" },
+                        { label: "Turnos completados", val: "214", sub: "↑ 31 más que junio", color: "text-sky-400", subColor: "text-sky-400/60" },
+                        { label: "Ticket promedio", val: "$8.630", sub: "Por servicio", color: "text-violet-400", subColor: "text-white/30" },
+                        { label: "Nuevos clientes", val: "38", sub: "↑ 12 este mes", color: "text-amber-400", subColor: "text-amber-400/60" },
+                      ].map(({ label, val, sub, color, subColor }) => (
+                        <div key={label} className="bg-white/[0.05] rounded-xl p-2.5 border border-white/[0.07]">
+                          <div className="text-[9px] text-white/35 mb-1 uppercase tracking-wide leading-tight">{label}</div>
+                          <div className={`text-base font-bold ${color} leading-tight`}>{val}</div>
+                          <div className={`text-[9px] mt-0.5 ${subColor}`}>{sub}</div>
                         </div>
                       ))}
                     </div>
-                    <div className="bg-white/[0.04] rounded-xl p-3 space-y-2.5 border border-white/5">
-                      <div className="text-[10px] text-white/30 uppercase tracking-wide mb-2">Próximos turnos</div>
-                      {[
-                        ["10:00","María González","Corte + color","#6366f1"],
-                        ["11:30","Carlos Reyes","Barba","#10b981"],
-                        ["13:00","Ana Torres","Manicure","#ec4899"],
-                      ].map(([time, name, service, color]) => (
-                        <div key={name} className="flex items-center gap-3 text-xs py-1">
-                          <span className="text-white/30 w-10 font-mono">{time}</span>
-                          <div className="w-2 h-2 rounded-full flex-shrink-0 shadow-sm" style={{background: color, boxShadow: `0 0 6px ${color}`}} />
-                          <span className="text-white/80 flex-1 font-medium">{name}</span>
-                          <span className="text-white/30 text-[10px] px-2 py-0.5 rounded-full bg-white/5">{service}</span>
+
+                    {/* Mini chart + appointments */}
+                    <div className="grid grid-cols-5 gap-2">
+                      {/* Bar chart */}
+                      <div className="col-span-2 bg-white/[0.03] rounded-xl p-2.5 border border-white/[0.06]">
+                        <div className="text-[9px] text-white/30 uppercase tracking-wide mb-2">Ingresos — últimas 4 semanas</div>
+                        <div className="flex items-end gap-1 h-10">
+                          {[45, 62, 38, 80, 55, 71, 90].map((h, i) => (
+                            <div key={i} className="flex-1 rounded-sm" style={{ height: `${h}%`, background: i === 6 ? "rgb(56 189 248)" : "rgba(56,189,248,0.25)" }} />
+                          ))}
                         </div>
-                      ))}
+                        <div className="flex justify-between text-[8px] text-white/20 mt-1">
+                          <span>S1</span><span>S2</span><span>S3</span><span>S4</span>
+                        </div>
+                      </div>
+
+                      {/* Upcoming appointments */}
+                      <div className="col-span-3 bg-white/[0.03] rounded-xl p-2.5 border border-white/[0.06]">
+                        <div className="text-[9px] text-white/30 uppercase tracking-wide mb-2">Turnos de hoy — 7 pendientes</div>
+                        {[
+                          { time: "09:30", name: "Valentina Mora", service: "Relleno rubio + keratina", staff: "Karina R.", color: "#38bdf8", amount: "$42.000" },
+                          { time: "11:00", name: "Ignacio Soto", service: "Corte + barba clásica", staff: "Tomás V.", color: "#a78bfa", amount: "$18.500" },
+                          { time: "12:30", name: "Gabriela Núñez", service: "Uñas gel permanente", staff: "Paula M.", color: "#f472b6", amount: "$24.000" },
+                          { time: "14:00", name: "Sebastián Lagos", service: "Masaje deportivo 60 min", staff: "Diego F.", color: "#34d399", amount: "$35.000" },
+                        ].map(({ time, name, service, staff, color, amount }) => (
+                          <div key={name} className="flex items-center gap-2 py-1 border-b border-white/[0.04] last:border-0">
+                            <span className="text-[9px] text-white/30 w-8 font-mono flex-shrink-0">{time}</span>
+                            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color, boxShadow: `0 0 5px ${color}` }} />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[10px] text-white/80 font-medium leading-tight truncate">{name}</div>
+                              <div className="text-[9px] text-white/30 truncate">{service} · {staff}</div>
+                            </div>
+                            <span className="text-[9px] font-semibold text-emerald-400 flex-shrink-0">{amount}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
