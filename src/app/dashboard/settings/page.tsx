@@ -9,9 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff } from "lucide-react"
+import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote } from "lucide-react"
 
 type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean }
+type PaymentSettings = { onlinePaymentsEnabled: boolean; hasCredentials: boolean }
 type Subscription = { plan: string; status: string; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean; flowCustomerId: string | null; trialEndsAt: string | null }
 
 export default function SettingsPage() {
@@ -22,6 +23,12 @@ export default function SettingsPage() {
   const [locating, setLocating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [subscribing, setSubscribing] = useState(false)
+
+  // Payment settings (business Flow credentials)
+  const [paySettings, setPaySettings] = useState<PaymentSettings>({ onlinePaymentsEnabled: false, hasCredentials: false })
+  const [payForm, setPayForm] = useState({ flowApiKey: "", flowSecretKey: "" })
+  const [savingPay, setSavingPay] = useState(false)
+  const [showPaySecret, setShowPaySecret] = useState(false)
 
   // API Keys
   type ApiKey = { id: string; name: string; key: string; isActive: boolean; lastUsedAt: string | null; createdAt: string }
@@ -42,6 +49,12 @@ export default function SettingsPage() {
       const kr = await fetch(`/api/businesses/${d.businessId}/api-keys`)
       const kd = await kr.json()
       setApiKeys(kd.keys || [])
+      // Load payment settings
+      const pr = await fetch(`/api/businesses/${d.businessId}/payment-settings`)
+      if (pr.ok) {
+        const pd = await pr.json()
+        setPaySettings(pd)
+      }
     })
   }, [])
 
@@ -75,6 +88,39 @@ export default function SettingsPage() {
       if (next.has(keyId)) next.delete(keyId); else next.add(keyId)
       return next
     })
+  }
+
+  async function savePaymentSettings() {
+    if (!business) return
+    setSavingPay(true)
+    const body: Record<string, unknown> = { onlinePaymentsEnabled: paySettings.onlinePaymentsEnabled }
+    if (payForm.flowApiKey) body.flowApiKey = payForm.flowApiKey
+    if (payForm.flowSecretKey) body.flowSecretKey = payForm.flowSecretKey
+    const r = await fetch(`/api/businesses/${business.id}/payment-settings`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+    if (r.ok) {
+      const d = await r.json()
+      setPaySettings(d)
+      setPayForm({ flowApiKey: "", flowSecretKey: "" })
+      toast.success("Configuración de cobros guardada")
+    } else {
+      toast.error("Error al guardar")
+    }
+    setSavingPay(false)
+  }
+
+  async function clearPaymentCredentials() {
+    if (!business || !confirm("¿Eliminar las credenciales de Flow? Esto deshabilitará los cobros online.")) return
+    const r = await fetch(`/api/businesses/${business.id}/payment-settings`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clearCredentials: true }),
+    })
+    if (r.ok) {
+      setPaySettings({ onlinePaymentsEnabled: false, hasCredentials: false })
+      toast.success("Credenciales eliminadas")
+    }
   }
 
   async function handleSave() {
@@ -180,6 +226,7 @@ export default function SettingsPage() {
           <TabsTrigger value="booking" className="gap-2"><Globe className="w-4 h-4" />Pagina de reservas</TabsTrigger>
           <TabsTrigger value="api" className="gap-2"><Key className="w-4 h-4" />API</TabsTrigger>
           <TabsTrigger value="notifications" className="gap-2"><Bell className="w-4 h-4" />Notificaciones</TabsTrigger>
+          <TabsTrigger value="payments" className="gap-2"><Banknote className="w-4 h-4" />Cobros online</TabsTrigger>
           <TabsTrigger value="billing" className="gap-2"><CreditCard className="w-4 h-4" />Plan y facturacion</TabsTrigger>
         </TabsList>
 
@@ -540,6 +587,87 @@ export default function SettingsPage() {
           <p className="text-xs text-white/30">
             Pagos procesados de forma segura a través de Flow. Tu tarjeta se registra una vez y los cobros son automáticos cada mes. Podés cancelar en cualquier momento desde esta pantalla.
           </p>
+        </TabsContent>
+
+        {/* Cobros online tab */}
+        <TabsContent value="payments" className="pt-4 space-y-5">
+          <Card className="bg-[#2c2c30] border-white/10">
+            <CardHeader>
+              <CardTitle className="text-base">Cobros online a tus clientes</CardTitle>
+              <CardDescription className="text-white/40">
+                Permite que tus clientes paguen su turno al reservar online. Necesitás una cuenta en{" "}
+                <a href="https://www.flow.cl" target="_blank" rel="noopener noreferrer" className="text-sky-400 underline">Flow.cl</a>{" "}
+                con las credenciales de producción de tu comercio.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+
+              {/* Status */}
+              <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.03] border border-white/10">
+                <div>
+                  <p className="text-sm font-medium text-white">Cobros online</p>
+                  <p className="text-xs text-white/40 mt-0.5">
+                    {paySettings.hasCredentials ? "Credenciales configuradas" : "Sin credenciales — configura abajo"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setPaySettings(s => ({ ...s, onlinePaymentsEnabled: !s.onlinePaymentsEnabled }))}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${paySettings.onlinePaymentsEnabled && paySettings.hasCredentials ? "bg-sky-500" : "bg-white/10"}`}
+                  disabled={!paySettings.hasCredentials}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${paySettings.onlinePaymentsEnabled && paySettings.hasCredentials ? "translate-x-5" : "translate-x-0"}`} />
+                </button>
+              </div>
+
+              {/* Credentials form */}
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-white/80">Credenciales Flow de tu comercio</p>
+                <div>
+                  <Label className="text-white/50 text-xs mb-1.5 block">API Key</Label>
+                  <Input
+                    value={payForm.flowApiKey}
+                    onChange={e => setPayForm(f => ({ ...f, flowApiKey: e.target.value }))}
+                    placeholder={paySettings.hasCredentials ? "••••••••••••••••••••• (ya configurada)" : "Tu API Key de Flow"}
+                    className="bg-[#3a3a3c] border-white/10 text-white placeholder:text-white/25"
+                  />
+                </div>
+                <div>
+                  <Label className="text-white/50 text-xs mb-1.5 block">Secret Key</Label>
+                  <div className="relative">
+                    <Input
+                      type={showPaySecret ? "text" : "password"}
+                      value={payForm.flowSecretKey}
+                      onChange={e => setPayForm(f => ({ ...f, flowSecretKey: e.target.value }))}
+                      placeholder={paySettings.hasCredentials ? "••••••••••••••••••••• (ya configurada)" : "Tu Secret Key de Flow"}
+                      className="bg-[#3a3a3c] border-white/10 text-white placeholder:text-white/25 pr-10"
+                    />
+                    <button type="button" onClick={() => setShowPaySecret(s => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white transition-colors">
+                      {showPaySecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <Button onClick={savePaymentSettings} disabled={savingPay} className="flex-1">
+                  {savingPay ? "Guardando..." : "Guardar configuración"}
+                </Button>
+                {paySettings.hasCredentials && (
+                  <Button variant="outline" onClick={clearPaymentCredentials} className="text-red-400 border-red-400/20 hover:bg-red-500/10">
+                    Eliminar credenciales
+                  </Button>
+                )}
+              </div>
+
+              <div className="bg-sky-500/5 border border-sky-400/20 rounded-xl p-4 text-xs text-white/50 space-y-1">
+                <p className="font-medium text-sky-300">¿Cómo obtener tus credenciales?</p>
+                <p>1. Ingresa a tu cuenta de Flow.cl → Panel de comercio → Integración</p>
+                <p>2. Copia tu <strong className="text-white/70">API Key</strong> y <strong className="text-white/70">Secret Key</strong> de producción</p>
+                <p>3. Pégalos arriba y guarda. Tus clientes podrán pagar al reservar y el dinero llega directamente a tu cuenta Flow.</p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

@@ -177,6 +177,9 @@ model Business {
   currency    String    @default("ARS")
   isActive              Boolean   @default(true)
   clinicalRecordEnabled Boolean   @default(false)
+  flowApiKey            String?
+  flowSecretKey         String?
+  onlinePaymentsEnabled Boolean   @default(false)
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   deletedAt             DateTime?

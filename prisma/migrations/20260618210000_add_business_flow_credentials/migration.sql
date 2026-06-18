@@ -1,0 +1,3 @@
+ALTER TABLE "businesses" ADD COLUMN IF NOT EXISTS "flowApiKey" TEXT;
+ALTER TABLE "businesses" ADD COLUMN IF NOT EXISTS "flowSecretKey" TEXT;
+ALTER TABLE "businesses" ADD COLUMN IF NOT EXISTS "onlinePaymentsEnabled" BOOLEAN NOT NULL DEFAULT false;

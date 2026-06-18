@@ -11,10 +11,12 @@ type Staff = { id: string; color: string; user: { name: string | null; image: st
 type Business = {
   id: string; name: string; category: string; description: string | null
   logo: string | null; phone: string | null; address: string | null; city: string | null
+  onlinePaymentsEnabled: boolean
   services: Service[]; staff: Staff[]
 }
 
 type Step = "service" | "staff" | "datetime" | "form" | "confirmed"
+type PayMethod = "online" | "local"
 
 export default function BookingPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -33,6 +35,7 @@ export default function BookingPage() {
   const today = startOfToday()
 
   const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "" })
+  const [payMethod, setPayMethod] = useState<PayMethod>("local")
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -56,7 +59,7 @@ export default function BookingPage() {
   }, [selectedDate, selectedService, selectedStaff, slug])
 
   async function handleConfirm() {
-    if (!selectedService || !selectedStaff || !selectedDate || !selectedTime) return
+    if (!selectedService || !selectedDate || !selectedTime) return
     if (!form.name || !form.email) return
     setSubmitting(true)
     const startTime = new Date(`${selectedDate}T${selectedTime}`).toISOString()
@@ -65,7 +68,7 @@ export default function BookingPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         serviceId: selectedService.id,
-        staffId: selectedStaff.id,
+        staffId: selectedStaff?.id,
         startTime,
         clientName: form.name,
         clientEmail: form.email,
@@ -73,12 +76,36 @@ export default function BookingPage() {
         notes: form.notes || undefined,
       }),
     })
-    if (r.ok) {
-      setStep("confirmed")
-    } else {
+    if (!r.ok) {
       const d = await r.json()
       alert(d.error || "Error al confirmar")
+      setSubmitting(false)
+      return
     }
+
+    if (payMethod === "online" && business?.onlinePaymentsEnabled) {
+      const apptData = await r.json()
+      const payR = await fetch(`/api/book/${slug}/pay`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          appointmentId: apptData.appointment?.id,
+          amount: selectedService.price,
+          email: form.email,
+          serviceName: selectedService.name,
+        }),
+      })
+      if (payR.ok) {
+        const payData = await payR.json()
+        if (payData.url) {
+          window.location.href = `${payData.url}?token=${payData.token}`
+          return
+        }
+      }
+      // Fall through to confirmed if payment redirect fails
+    }
+
+    setStep("confirmed")
     setSubmitting(false)
   }
 
@@ -291,6 +318,28 @@ export default function BookingPage() {
                 {selectedDate && format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })} a las {selectedTime}
               </div>
             </div>
+            {business?.onlinePaymentsEnabled && selectedService && Number(selectedService.price) > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm text-white/50">¿Cómo quieres pagar?</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { value: "local" as PayMethod, label: "Pagar en el local", sub: "Efectivo, tarjeta o transferencia" },
+                    { value: "online" as PayMethod, label: "Pagar ahora", sub: `$${Number(selectedService.price).toLocaleString("es-CL")} — tarjeta online` },
+                  ]).map(opt => (
+                    <button key={opt.value} onClick={() => setPayMethod(opt.value)}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        payMethod === opt.value
+                          ? "border-sky-400/60 bg-sky-500/10"
+                          : "border-white/10 bg-white/[0.03] hover:border-white/20"
+                      }`}>
+                      <p className={`text-sm font-medium ${payMethod === opt.value ? "text-sky-300" : "text-white/80"}`}>{opt.label}</p>
+                      <p className="text-xs text-white/40 mt-0.5">{opt.sub}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-3">
               {[
                 { key: "name", label: "Nombre *", type: "text", placeholder: "Tu nombre" },
@@ -316,7 +365,12 @@ export default function BookingPage() {
             </div>
             <button onClick={handleConfirm} disabled={submitting || !form.name || !form.email}
               className="w-full py-3 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2">
-              {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Confirmando...</> : "Confirmar turno"}
+              {submitting
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> {payMethod === "online" ? "Redirigiendo al pago..." : "Confirmando..."}</>
+                : payMethod === "online" && business?.onlinePaymentsEnabled
+                  ? `Pagar $${Number(selectedService?.price).toLocaleString("es-CL")} ahora`
+                  : "Confirmar turno"
+              }
             </button>
           </div>
         )}

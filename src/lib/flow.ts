@@ -115,3 +115,82 @@ export function verifyWebhookSignature(params: Record<string, string>): boolean 
   const expected = sign(rest)
   return expected === s
 }
+
+// ─── Business-owned Flow credentials ─────────────────────────────────────────
+// These functions use credentials stored per-business (Option A model).
+
+function signWith(params: Record<string, string>, secret: string): string {
+  const keys = Object.keys(params).sort()
+  const toSign = keys.map(k => `${k}${params[k]}`).join("")
+  return crypto.createHmac("sha256", secret).update(toSign).digest("hex")
+}
+
+async function businessFlowRequest(
+  apiKey: string,
+  secretKey: string,
+  endpoint: string,
+  data: Record<string, string>
+) {
+  const params: Record<string, string> = { ...data, apiKey }
+  params.s = signWith(params, secretKey)
+  const res = await fetch(`${API_URL}${endpoint}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(params).toString(),
+  })
+  const text = await res.text()
+  if (!res.ok) throw new Error(`Flow error ${res.status}: ${text}`)
+  return JSON.parse(text)
+}
+
+async function businessFlowGet(
+  apiKey: string,
+  secretKey: string,
+  endpoint: string,
+  data: Record<string, string>
+) {
+  const params: Record<string, string> = { ...data, apiKey }
+  params.s = signWith(params, secretKey)
+  const qs = new URLSearchParams(params).toString()
+  const res = await fetch(`${API_URL}${endpoint}?${qs}`)
+  return res.json()
+}
+
+export async function businessCreatePayment(
+  apiKey: string,
+  secretKey: string,
+  params: {
+    commerceOrder: string
+    subject: string
+    amount: number
+    email: string
+    urlReturn: string
+    urlConfirmation: string
+  }
+) {
+  return businessFlowRequest(apiKey, secretKey, "/payment/create", {
+    commerceOrder: params.commerceOrder,
+    subject: params.subject,
+    amount: String(params.amount),
+    email: params.email,
+    urlReturn: params.urlReturn,
+    urlConfirmation: params.urlConfirmation,
+    paymentMethod: "9",
+  })
+}
+
+export async function businessGetPaymentStatus(
+  apiKey: string,
+  secretKey: string,
+  token: string
+) {
+  return businessFlowGet(apiKey, secretKey, "/payment/getStatus", { token })
+}
+
+export function verifyBusinessWebhook(
+  secretKey: string,
+  params: Record<string, string>
+): boolean {
+  const { s, ...rest } = params
+  return signWith(rest, secretKey) === s
+}
