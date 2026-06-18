@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { Plus, Search, Mail, Phone, Calendar, DollarSign, Tag } from "lucide-react"
+import { Plus, Search, Mail, Phone, Calendar, Tag, Upload, Download, CheckCircle, AlertCircle, X } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -29,6 +29,9 @@ const SEGMENT_LABELS: Record<string, { label: string; color: string }> = {
   AT_RISK: { label: "En riesgo", color: "bg-orange-500/30 text-orange-200" },
 }
 
+type ImportRow = { name: string; email: string; phone: string; notes: string; _error?: string }
+type ImportState = "idle" | "preview" | "importing" | "done"
+
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [businessId, setBusinessId] = useState("")
@@ -39,6 +42,11 @@ export default function ClientsPage() {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "" })
   const [saving, setSaving] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
+  const [importState, setImportState] = useState<ImportState>("idle")
+  const [importRows, setImportRows] = useState<ImportRow[]>([])
+  const [importResult, setImportResult] = useState<{ created: number; skipped: number } | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetch("/api/me/business").then(r => r.json()).then(d => {
@@ -79,6 +87,67 @@ export default function ClientsPage() {
     setSaving(false)
   }
 
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ""
+
+    const XLSX = await import("xlsx")
+    const buffer = await file.arrayBuffer()
+    const wb = XLSX.read(buffer, { type: "array" })
+    const ws = wb.Sheets[wb.SheetNames[0]]
+    const raw: Record<string, string>[] = XLSX.utils.sheet_to_json(ws, { defval: "" })
+
+    // Normalize column names (case-insensitive, handle spanish headers)
+    const normalize = (key: string) => key.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim()
+    const colMap: Record<string, string> = {
+      nombre: "name", name: "name",
+      email: "email", correo: "email",
+      telefono: "phone", teléfono: "phone", phone: "phone", cel: "phone", celular: "phone",
+      notas: "notes", notes: "notes", observaciones: "notes",
+    }
+
+    const rows: ImportRow[] = raw.map(r => {
+      const mapped: ImportRow = { name: "", email: "", phone: "", notes: "" }
+      for (const [k, v] of Object.entries(r)) {
+        const field = colMap[normalize(k)]
+        if (field) (mapped as Record<string, string>)[field] = String(v).trim()
+      }
+      if (!mapped.name) mapped._error = "Sin nombre"
+      return mapped
+    }).filter(r => r.name || r._error)
+
+    setImportRows(rows)
+    setImportState("preview")
+    setImportOpen(true)
+  }
+
+  async function handleImport() {
+    setImportState("importing")
+    const validRows = importRows.filter(r => !r._error)
+    const r = await fetch(`/api/businesses/${businessId}/clients/import`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rows: validRows }),
+    })
+    const d = await r.json()
+    if (r.ok) {
+      setImportResult({ created: d.created, skipped: d.skipped })
+      setImportState("done")
+      loadClients(businessId, search, segment)
+    } else {
+      toast.error(d.error || "Error al importar")
+      setImportState("preview")
+    }
+  }
+
+  function resetImport() {
+    setImportOpen(false)
+    setImportState("idle")
+    setImportRows([])
+    setImportResult(null)
+  }
+
   const totalSpend = (c: Client) => c.appointments.reduce((sum, a) => sum + (a.payment ? Number(a.payment.amount) : 0), 0)
 
   return (
@@ -88,7 +157,13 @@ export default function ClientsPage() {
           <h1 className="page-title">Clientes</h1>
           <p className="page-subtitle">{clients.length} clientes en total</p>
         </div>
-        <Button onClick={() => setOpen(true)} className="gap-2"><Plus className="w-4 h-4" /> Nuevo cliente</Button>
+        <div className="flex gap-2">
+          <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileChange} />
+          <Button variant="outline" onClick={() => fileRef.current?.click()} className="gap-2">
+            <Upload className="w-4 h-4" /> Importar
+          </Button>
+          <Button onClick={() => setOpen(true)} className="gap-2"><Plus className="w-4 h-4" /> Nuevo cliente</Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -214,6 +289,82 @@ export default function ClientsPage() {
           </DialogContent>
         </Dialog>
       )}
+      {/* Import dialog */}
+      <Dialog open={importOpen} onOpenChange={v => { if (!v) resetImport() }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="w-4 h-4" />
+              {importState === "done" ? "Importación completada" : "Previsualizar importación"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {importState === "done" && importResult && (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <CheckCircle className="w-16 h-16 text-green-400" />
+              <div className="text-center">
+                <p className="text-xl font-bold">{importResult.created} clientes importados</p>
+                {importResult.skipped > 0 && (
+                  <p className="text-sm text-muted-foreground mt-1">{importResult.skipped} omitidos por email duplicado</p>
+                )}
+              </div>
+              <Button onClick={resetImport}>Cerrar</Button>
+            </div>
+          )}
+
+          {(importState === "preview" || importState === "importing") && (
+            <>
+              <div className="text-sm text-muted-foreground">
+                {importRows.filter(r => !r._error).length} filas válidas ·{" "}
+                {importRows.filter(r => r._error).length > 0 && (
+                  <span className="text-orange-400">{importRows.filter(r => r._error).length} con error (se omitirán)</span>
+                )}
+              </div>
+
+              <div className="overflow-auto flex-1 border border-white/10 rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="bg-white/5 text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2 text-left">#</th>
+                      <th className="px-3 py-2 text-left">Nombre</th>
+                      <th className="px-3 py-2 text-left">Email</th>
+                      <th className="px-3 py-2 text-left">Teléfono</th>
+                      <th className="px-3 py-2 text-left">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {importRows.map((row, i) => (
+                      <tr key={i} className={row._error ? "opacity-50" : ""}>
+                        <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
+                        <td className="px-3 py-2 font-medium">{row.name || "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{row.email || "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{row.phone || "—"}</td>
+                        <td className="px-3 py-2">
+                          {row._error
+                            ? <span className="flex items-center gap-1 text-orange-400 text-xs"><AlertCircle className="w-3 h-3" />{row._error}</span>
+                            : <span className="flex items-center gap-1 text-green-400 text-xs"><CheckCircle className="w-3 h-3" />OK</span>
+                          }
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <Button className="flex-1" onClick={handleImport} disabled={importState === "importing" || importRows.filter(r => !r._error).length === 0}>
+                  {importState === "importing" ? "Importando..." : `Importar ${importRows.filter(r => !r._error).length} clientes`}
+                </Button>
+                <Button variant="outline" onClick={resetImport} disabled={importState === "importing"}>Cancelar</Button>
+              </div>
+
+              <p className="text-xs text-muted-foreground text-center">
+                Columnas aceptadas: <strong>nombre</strong>, <strong>email</strong>, <strong>teléfono</strong> (o phone/cel), <strong>notas</strong>
+              </p>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
