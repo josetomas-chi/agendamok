@@ -49,7 +49,7 @@ export default function RegisterPage() {
 
         <div className="rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-sm p-6 shadow-xl shadow-black/20">
           <h1 className="text-lg font-semibold text-white mb-1">Crear cuenta</h1>
-          <p className="text-sm text-white/40 mb-6">3 meses gratis · Sin tarjeta al inicio</p>
+          <p className="text-sm text-white/40 mb-6">30 días gratis · Sin tarjeta al inicio</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">

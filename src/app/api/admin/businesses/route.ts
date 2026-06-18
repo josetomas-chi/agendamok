@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
               create: {
                 plan: plan || "FREE",
                 status: "TRIALING",
-                trialEndsAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+                trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
               },
             },
           },

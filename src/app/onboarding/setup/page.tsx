@@ -249,14 +249,14 @@ export default function SetupPage() {
             <CardHeader>
               <CardTitle>Registra tu método de pago</CardTitle>
               <CardDescription>
-                Tienes 3 meses gratis. Guarda tu tarjeta ahora para que el cobro sea automático cuando termine el periodo de prueba.
+                Tienes 30 días gratis. Guarda tu tarjeta ahora para que el cobro sea automático cuando termine el periodo de prueba.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium text-indigo-800">Plan Inicial</span>
-                  <Badge className="bg-indigo-600">3 meses gratis</Badge>
+                  <Badge className="bg-indigo-600">30 días gratis</Badge>
                 </div>
                 <p className="text-xs text-indigo-700">A partir del día 91 se cobra $4.990/mes automáticamente. Puedes cancelar cuando quieras.</p>
               </div>

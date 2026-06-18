@@ -185,13 +185,13 @@ export default function OnboardingPage() {
           <div className="bg-[#2c2c30] border border-white/10 rounded-2xl p-6 space-y-5">
             <div>
               <h2 className="text-xl font-semibold text-white">Registra tu método de pago</h2>
-              <p className="text-sm text-white/40 mt-1">Tienes 3 meses gratis. Guardá tu tarjeta ahora para que el cobro sea automático al vencer el periodo de prueba.</p>
+              <p className="text-sm text-white/40 mt-1">Tienes 30 días gratis. Guardá tu tarjeta ahora para que el cobro sea automático al vencer el periodo de prueba.</p>
             </div>
 
             <div className="bg-sky-500/10 border border-sky-400/20 rounded-xl p-4 space-y-1">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium text-sky-300">Plan Starter</span>
-                <span className="text-xs bg-sky-500 text-white px-2 py-0.5 rounded-full font-semibold">3 meses gratis</span>
+                <span className="text-xs bg-sky-500 text-white px-2 py-0.5 rounded-full font-semibold">30 días gratis</span>
               </div>
               <p className="text-xs text-white/40">A partir del día 91 se cobra $9.900/mes + IVA automáticamente. Podés cancelar cuando quieras.</p>
             </div>

@@ -34,7 +34,7 @@ const plans = [
       "Recordatorios por email",
       "500 emails marketing/mes",
     ],
-    cta: "Empezar — 3 meses gratis",
+    cta: "Empezar — 30 días gratis",
     href: "/register?plan=starter",
     highlight: false,
   },
@@ -271,7 +271,7 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            <p className="mt-8 text-sm text-white/30">3 meses gratis en todos los planes · Sin tarjeta al inicio</p>
+            <p className="mt-8 text-sm text-white/30">30 días gratis en todos los planes · Sin tarjeta al inicio</p>
 
             {/* Dashboard preview */}
             <div className="mt-20 relative">
@@ -405,7 +405,7 @@ export default function LandingPage() {
               <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
                 Precios <span className="gradient-text">simples y claros</span>
               </h2>
-              <p className="text-white/40 text-lg">3 meses gratis en todos los planes · Sin tarjeta al inicio · Cancela cuando quieras.</p>
+              <p className="text-white/40 text-lg">30 días gratis en todos los planes · Sin tarjeta al inicio · Cancela cuando quieras.</p>
             </div>
 
             {/* Plan cards */}
