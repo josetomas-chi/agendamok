@@ -7,7 +7,7 @@ const schema = z.object({
   businessName: z.string().min(2),
   category: z.string().min(1),
   slug: z.string().min(2).regex(/^[a-z0-9-]+$/),
-  plan: z.enum(["FREE", "PRO", "ENTERPRISE"]).default("FREE"),
+  plan: z.enum(["STARTER", "NEGOCIO", "PRO"]).default("STARTER"),
 })
 
 export async function POST(req: Request) {
