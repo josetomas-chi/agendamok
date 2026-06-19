@@ -25,6 +25,10 @@ function SettingsContent() {
   const [dailySummary, setDailySummary] = useState(false)
   const [savingNotif, setSavingNotif] = useState(false)
 
+  // Brand color
+  const [brandColor, setBrandColor] = useState("#38bdf8")
+  const [savingColor, setSavingColor] = useState(false)
+
   // Google Calendar
   const [gcal, setGcal] = useState<{ connected: boolean; connectedAt: string | null }>({ connected: false, connectedAt: null })
   const [gcalLoading, setGcalLoading] = useState(false)
@@ -62,6 +66,7 @@ function SettingsContent() {
       setClinicalEnabled(biz.business.clinicalRecordEnabled ?? false)
       setCancellationHours(biz.business.cancellationHoursNotice?.toString() ?? "")
       setDailySummary(biz.business.dailySummaryEnabled ?? false)
+      setBrandColor(biz.business.primaryColor || "#38bdf8")
       // Load Google Calendar status
       const gcalR = await fetch("/api/integrations/google-calendar/status")
       if (gcalR.ok) setGcal(await gcalR.json())
@@ -340,6 +345,46 @@ function SettingsContent() {
               </div>
               <Button variant="outline" className="gap-2" onClick={() => window.open(bookingUrl, "_blank")}>
                 <Link2 className="w-4 h-4" />Ver mi pagina de reservas
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Brand color */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Color de marca</CardTitle>
+              <CardDescription>Este color se usará en los botones y elementos destacados de tu página de reservas.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4">
+                <input
+                  type="color"
+                  value={brandColor}
+                  onChange={e => setBrandColor(e.target.value)}
+                  className="w-12 h-12 rounded-xl border border-white/10 cursor-pointer bg-transparent p-0.5"
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{brandColor.toUpperCase()}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Haz clic en el círculo para cambiar el color</p>
+                </div>
+                <div className="w-20 h-10 rounded-xl flex items-center justify-center text-white text-xs font-semibold" style={{ background: brandColor }}>
+                  Preview
+                </div>
+              </div>
+              <Button
+                onClick={async () => {
+                  if (!business) return
+                  setSavingColor(true)
+                  await fetch(`/api/businesses/${business.id}`, {
+                    method: "PATCH", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ primaryColor: brandColor }),
+                  })
+                  setSavingColor(false)
+                  toast.success("Color guardado")
+                }}
+                disabled={savingColor}
+              >
+                {savingColor ? "Guardando..." : "Guardar color"}
               </Button>
             </CardContent>
           </Card>
