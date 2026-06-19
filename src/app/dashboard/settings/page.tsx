@@ -241,15 +241,17 @@ function SettingsContent() {
       </div>
 
       <Tabs defaultValue="business">
-        <TabsList>
-          <TabsTrigger value="business" className="gap-2"><Building2 className="w-4 h-4" />Negocio</TabsTrigger>
-          <TabsTrigger value="booking" className="gap-2"><Globe className="w-4 h-4" />Pagina de reservas</TabsTrigger>
-          <TabsTrigger value="api" className="gap-2"><Key className="w-4 h-4" />API</TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-2"><Bell className="w-4 h-4" />Notificaciones</TabsTrigger>
-          <TabsTrigger value="payments" className="gap-2"><Banknote className="w-4 h-4" />Cobros online</TabsTrigger>
-          <TabsTrigger value="billing" className="gap-2"><CreditCard className="w-4 h-4" />Plan y facturacion</TabsTrigger>
-          <TabsTrigger value="integrations" className="gap-2"><Link2 className="w-4 h-4" />Integraciones</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="w-max min-w-full">
+            <TabsTrigger value="business" className="gap-2"><Building2 className="w-4 h-4" />Negocio</TabsTrigger>
+            <TabsTrigger value="booking" className="gap-2"><Globe className="w-4 h-4" />Pagina de reservas</TabsTrigger>
+            <TabsTrigger value="api" className="gap-2"><Key className="w-4 h-4" />API</TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-2"><Bell className="w-4 h-4" />Notificaciones</TabsTrigger>
+            <TabsTrigger value="payments" className="gap-2"><Banknote className="w-4 h-4" />Cobros online</TabsTrigger>
+            <TabsTrigger value="billing" className="gap-2"><CreditCard className="w-4 h-4" />Plan y facturacion</TabsTrigger>
+            <TabsTrigger value="integrations" className="gap-2"><Link2 className="w-4 h-4" />Integraciones</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Business info */}
         <TabsContent value="business" className="pt-4">
