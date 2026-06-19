@@ -363,16 +363,16 @@ export default function SettingsPage() {
                 <pre className="bg-gray-950 text-green-400 text-xs rounded-lg p-4 overflow-x-auto whitespace-pre-wrap font-mono leading-relaxed">
 {`<script
   src="${origin}/widget.js"
-  data-business="${business?.slug}"
-  data-label="Reservar turno"
-  data-color="#6366f1"
+  data-slug="${business?.slug}"
+  data-label="Reservar hora"
+  data-color="#0ea5e9"
 ></script>`}
                 </pre>
                 <Button
                   size="sm" variant="secondary"
                   className="absolute top-2 right-2 h-7 text-xs gap-1"
                   onClick={() => {
-                    navigator.clipboard.writeText(`<script\n  src="${origin}/widget.js"\n  data-business="${business?.slug}"\n  data-label="Reservar turno"\n  data-color="#6366f1"\n></script>`)
+                    navigator.clipboard.writeText(`<script\n  src="${origin}/widget.js"\n  data-slug="${business?.slug}"\n  data-label="Reservar hora"\n  data-color="#0ea5e9"\n></script>`)
                     toast.success("Codigo copiado")
                   }}
                 >
@@ -382,7 +382,7 @@ export default function SettingsPage() {
               <div className="grid grid-cols-3 gap-3 text-xs text-muted-foreground">
                 <div className="p-2 bg-muted/40 rounded-lg"><p className="font-medium text-foreground mb-0.5">data-label</p>Texto del boton</div>
                 <div className="p-2 bg-muted/40 rounded-lg"><p className="font-medium text-foreground mb-0.5">data-color</p>Color del boton (hex)</div>
-                <div className="p-2 bg-muted/40 rounded-lg"><p className="font-medium text-foreground mb-0.5">data-business</p>ID de tu negocio</div>
+                <div className="p-2 bg-muted/40 rounded-lg"><p className="font-medium text-foreground mb-0.5">data-slug</p>ID de tu negocio</div>
               </div>
             </CardContent>
           </Card>
