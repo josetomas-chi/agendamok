@@ -303,49 +303,68 @@ function DayStaffView({ day, staffCols, apptsByDay, dragOverSlot, onDragStart, o
       </div>
 
       {/* Time grid */}
-      {SLOTS.map(({ h, m }) => (
-        <div key={`${h}-${m}`} className="flex"
-          style={{ borderBottom: m === 0 ? "1px solid rgba(255,255,255,0.07)" : "1px dashed rgba(255,255,255,0.025)", minHeight: `${SLOT_H}px` }}>
-          <div className="w-14 flex-shrink-0 pr-3 flex items-center justify-end">
-            {m === 0 && <span className="text-[10px] font-medium text-white/30 tabular-nums -translate-y-1/2">{h}:00</span>}
-          </div>
-          {cols.map((s, colIdx) => {
-            const slotKey = `${dayKey}-${s?.id ?? "all"}-${h}-${m}`
-            const isDragOver = dragOverSlot === slotKey
-            const slotAppts = dayAppts.filter(a => {
-              const d = new Date(a.startTime)
-              const matchTime = d.getHours() === h && d.getMinutes() === m
-              const matchStaff = !s || a.staff.id === s.id
-              return matchTime && matchStaff
-            })
-            return (
-              <div
-                key={s?.id ?? "all"}
-                onClick={() => { if (slotAppts.length === 0 && onNewAppointment) onNewAppointment(dayKey, `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`, s?.id) }}
-                onDragOver={e => onDragOver(e, slotKey)}
-                onDragLeave={onDragLeave}
-                onDrop={e => onDrop(e, day, h, m)}
-                className={cn(
-                  "flex-1 px-1.5 py-1 border-l border-white/5 transition-colors group relative",
-                  isDragOver && "bg-sky-500/20",
-                  slotAppts.length === 0 && onNewAppointment && !isDragOver && "cursor-pointer hover:bg-white/[0.04]"
-                )}
-                style={colIdx % 2 === 1 && !isDragOver ? { background: "rgba(255,255,255,0.012)" } : undefined}
-              >
-                {isDragOver && <div className="absolute inset-0 border-2 border-sky-400/50 rounded pointer-events-none" />}
-                {slotAppts.length === 0 && onNewAppointment && !isDragOver && (
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    <Plus className="w-3 h-3 text-sky-500/50" />
-                  </div>
-                )}
-                {slotAppts.map(a => (
-                  <ApptCard key={a.id} appt={a} onDragStart={onDragStart} onApptClick={onAppointmentClick} />
-                ))}
-              </div>
-            )
-          })}
+      <div className="flex">
+        {/* Hour labels column */}
+        <div className="w-14 flex-shrink-0 relative" style={{ height: SLOTS.length * SLOT_H }}>
+          {SLOTS.filter(s => s.m === 0).map(({ h }) => (
+            <div key={h} className="absolute right-3 text-[10px] font-medium text-white/30 tabular-nums -translate-y-1/2"
+              style={{ top: (h - 8) * 2 * SLOT_H }}>
+              {h}:00
+            </div>
+          ))}
         </div>
-      ))}
+
+        {/* Staff columns */}
+        {cols.map((s, colIdx) => {
+          const colAppts = dayAppts.filter(a => !s || a.staff.id === s.id)
+          return (
+            <div key={s?.id ?? "all"} className="flex-1 relative border-l border-white/5"
+              style={{
+                height: SLOTS.length * SLOT_H,
+                background: colIdx % 2 === 1 ? "rgba(255,255,255,0.012)" : undefined,
+              }}>
+              {/* Slot lines + click zones */}
+              {SLOTS.map(({ h, m }) => {
+                const slotKey = `${dayKey}-${s?.id ?? "all"}-${h}-${m}`
+                const isDragOver = dragOverSlot === slotKey
+                return (
+                  <div key={slotKey}
+                    onClick={() => onNewAppointment?.(dayKey, `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`, s?.id)}
+                    onDragOver={e => onDragOver(e, slotKey)}
+                    onDragLeave={onDragLeave}
+                    onDrop={e => onDrop(e, day, h, m)}
+                    className={cn("absolute w-full cursor-pointer group", isDragOver && "bg-sky-500/20")}
+                    style={{
+                      top: ((h - 8) * 2 + m / 30) * SLOT_H,
+                      height: SLOT_H,
+                      borderBottom: m === 0 ? "1px solid rgba(255,255,255,0.07)" : "1px dashed rgba(255,255,255,0.025)",
+                    }}>
+                    {isDragOver && <div className="absolute inset-0 border-2 border-sky-400/50 rounded pointer-events-none" />}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                      <Plus className="w-3 h-3 text-sky-500/40" />
+                    </div>
+                  </div>
+                )
+              })}
+
+              {/* Appointments absolutely positioned by time */}
+              {colAppts.map(a => {
+                const start = new Date(a.startTime)
+                const end = new Date(a.endTime)
+                const startMins = (start.getHours() - 8) * 60 + start.getMinutes()
+                const durMins = Math.max(30, (end.getTime() - start.getTime()) / 60000)
+                const top = (startMins / 30) * SLOT_H
+                const height = (durMins / 30) * SLOT_H - 4
+                return (
+                  <div key={a.id} className="absolute left-1 right-1 z-10" style={{ top: top + 2, height }}>
+                    <ApptCard appt={a} onDragStart={onDragStart} onApptClick={onAppointmentClick} height={height} />
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })}
+      </div>
 
       {/* Staff footer — sticky bottom */}
       <div className="flex sticky bottom-0 z-10 border-t border-white/8" style={{ background: "#2c2c30" }}>
@@ -469,9 +488,10 @@ function WeekView({ displayDays, apptsByDay, dragOverSlot, currentDate, onDragSt
 
 // ─── APPOINTMENT CARD ─────────────────────────────────────────────────────────
 
-function ApptCard({ appt, compact, onDragStart, onApptClick }: {
+function ApptCard({ appt, compact, height, onDragStart, onApptClick }: {
   appt: Appointment
   compact?: boolean
+  height?: number
   onDragStart: (e: React.DragEvent, id: string) => void
   onApptClick?: (id: string) => void
 }) {
@@ -483,7 +503,7 @@ function ApptCard({ appt, compact, onDragStart, onApptClick }: {
       draggable
       onDragStart={e => onDragStart(e, appt.id)}
       onClick={e => { e.stopPropagation(); onApptClick?.(appt.id) }}
-      className="rounded-lg text-xs p-2 cursor-pointer select-none transition-all hover:brightness-110 hover:shadow-lg active:opacity-60 active:scale-95 w-full relative"
+      className="rounded-lg text-xs p-2 cursor-pointer select-none transition-all hover:brightness-110 hover:shadow-lg active:opacity-60 active:scale-95 w-full h-full relative overflow-hidden"
       style={{
         background: isCompleted
           ? `linear-gradient(135deg, ${color}66, ${color}44)`
@@ -493,12 +513,14 @@ function ApptCard({ appt, compact, onDragStart, onApptClick }: {
       }}
     >
       <div className="font-semibold text-white truncate leading-tight pr-5">{appt.client?.name ?? "Sin cliente"}</div>
-      {!compact && (
+      {(height === undefined || height > 44) && (
         <div className="text-white/75 truncate text-[10px] mt-0.5 leading-tight">{appt.service.name}</div>
       )}
-      <div className="text-white/60 text-[10px] leading-tight">
-        {format(new Date(appt.startTime), "HH:mm")} – {format(new Date(appt.endTime), "HH:mm")}
-      </div>
+      {(height === undefined || height > 36) && (
+        <div className="text-white/60 text-[10px] leading-tight mt-0.5">
+          {format(new Date(appt.startTime), "HH:mm")} – {format(new Date(appt.endTime), "HH:mm")}
+        </div>
+      )}
       {/* Badges */}
       <div className="absolute top-1.5 right-1.5 flex gap-0.5">
         {isPaid && (
