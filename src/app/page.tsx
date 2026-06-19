@@ -351,22 +351,30 @@ export default function LandingPage() {
       `}</style>
 
       {/* Nav */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-[#5a5a62]/80 backdrop-blur-xl">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/8 backdrop-blur-xl" style={{ background: "rgba(40,40,44,0.88)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="font-bold text-xl text-white tracking-tight">
-            Agenda<span className="text-sky-400">Mok</span>
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #0ea5e9, #38bdf8)", boxShadow: "0 0 12px rgba(56,189,248,0.4)" }}>
+              <Calendar className="w-3.5 h-3.5 text-white" />
+            </div>
+            <span className="font-bold text-[17px] tracking-tight text-white">
+              Agenda<span className="text-sky-400">Mok</span>
+            </span>
           </Link>
-          <nav className="hidden md:flex items-center gap-8 text-sm text-white/60">
+
+          <nav className="hidden md:flex items-center gap-8 text-sm text-white/55">
             <Link href="#features" className="hover:text-white transition-colors">Funciones</Link>
             <Link href="#pricing" className="hover:text-white transition-colors">Precios</Link>
             <Link href="#ayuda" className="hover:text-white transition-colors">Ayuda</Link>
             <Link href="/buscar" className="hover:text-white transition-colors">Buscar negocio</Link>
           </nav>
+
           <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm text-white/70 hover:text-white transition-colors px-3 py-1.5">
+            <Link href="/login" className="text-sm text-white/60 hover:text-white transition-colors px-3 py-1.5">
               Ingresar
             </Link>
-            <Link href="/register" className="text-sm font-medium bg-sky-500 hover:bg-sky-400 transition-colors px-4 py-2 rounded-full">
+            <Link href="/register" className="text-sm font-semibold bg-sky-500 hover:bg-sky-400 transition-all px-5 py-2 rounded-full" style={{ boxShadow: "0 0 16px rgba(56,189,248,0.35)" }}>
               Empezar gratis
             </Link>
           </div>
