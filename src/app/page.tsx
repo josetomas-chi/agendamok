@@ -799,19 +799,6 @@ export default function LandingPage() {
               ))}
             </div>
 
-            {/* Social proof bar */}
-            <div className="mt-16 flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16 text-center">
-              {[
-                ["+1.200", "negocios activos"],
-                ["4.9 / 5", "calificación promedio"],
-                ["98%", "renuevan cada año"],
-              ].map(([num, label]) => (
-                <div key={label}>
-                  <div className="text-3xl font-bold gradient-text mb-1">{num}</div>
-                  <div className="text-sm text-white/40">{label}</div>
-                </div>
-              ))}
-            </div>
           </div>
         </section>
 
