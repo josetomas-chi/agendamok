@@ -106,7 +106,16 @@ export default function PaymentsPage() {
           {loading ? (
             <div className="p-4 space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-14 bg-muted animate-pulse rounded-lg" />)}</div>
           ) : appointments.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground text-sm">No hay turnos para hoy</div>
+            <div className="flex flex-col items-center justify-center py-16 select-none">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="mb-3 opacity-20">
+                <rect x="6" y="10" width="36" height="32" rx="5" stroke="white" strokeWidth="2"/>
+                <path d="M6 18h36" stroke="white" strokeWidth="2"/>
+                <circle cx="24" cy="30" r="6" stroke="white" strokeWidth="2"/>
+                <path d="M24 27v3l2 2" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              <p className="text-white/50 font-medium text-sm">Sin movimientos hoy</p>
+              <p className="text-white/25 text-xs mt-1">Los cobros del día aparecerán aquí</p>
+            </div>
           ) : (
             appointments.map((a, i) => (
               <div key={a.id} className={`flex items-center gap-4 px-4 py-3.5 ${i !== appointments.length - 1 ? "border-b" : ""}`}>

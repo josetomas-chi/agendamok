@@ -199,10 +199,17 @@ export default function ClientsPage() {
       {loading ? (
         <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-muted animate-pulse rounded-xl" />)}</div>
       ) : clients.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground">
-          <div className="text-4xl mb-3">👥</div>
-          <p className="font-medium">No se encontraron clientes</p>
-          <p className="text-sm mt-1">{search ? "Probá con otra búsqueda" : "Los clientes aparecen cuando reservan un turno"}</p>
+        <div className="flex flex-col items-center justify-center py-24 select-none">
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none" className="mb-5 opacity-20">
+            <circle cx="28" cy="26" r="12" stroke="white" strokeWidth="2.5"/>
+            <path d="M8 60c0-11 9-18 20-18s20 7 20 18" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+            <circle cx="52" cy="28" r="8" stroke="white" strokeWidth="2" opacity=".6"/>
+            <path d="M46 56c0-7 5-12 12-12" stroke="white" strokeWidth="2" strokeLinecap="round" opacity=".6"/>
+          </svg>
+          <p className="text-white/70 font-semibold text-base">{search ? "Sin resultados" : "Aún no hay clientes"}</p>
+          <p className="text-white/30 text-sm mt-1.5 max-w-xs text-center">
+            {search ? `No encontramos a nadie con "${search}"` : "Los clientes aparecen automáticamente cuando reservan un turno"}
+          </p>
         </div>
       ) : (
         <div className="rounded-xl border border-white/10 overflow-hidden">

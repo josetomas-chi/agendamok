@@ -162,10 +162,17 @@ export default function AppointmentsPage() {
       {loading ? (
         <div className="space-y-2">{[...Array(6)].map((_, i) => <div key={i} className="h-16 bg-muted animate-pulse rounded-xl" />)}</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground">
-          <div className="text-4xl mb-3">📅</div>
-          <p className="font-medium">No hay turnos</p>
-          <p className="text-sm mt-1">Los turnos aparecerán aquí cuando los clientes reserven</p>
+        <div className="flex flex-col items-center justify-center py-24 select-none">
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none" className="mb-5 opacity-20">
+            <rect x="8" y="16" width="56" height="48" rx="8" stroke="white" strokeWidth="2.5"/>
+            <path d="M8 28h56" stroke="white" strokeWidth="2.5"/>
+            <rect x="22" y="8" width="4" height="14" rx="2" fill="white"/>
+            <rect x="46" y="8" width="4" height="14" rx="2" fill="white"/>
+            <rect x="20" y="38" width="10" height="10" rx="2" fill="white" opacity=".4"/>
+            <rect x="36" y="38" width="10" height="10" rx="2" fill="white" opacity=".4"/>
+          </svg>
+          <p className="text-white/70 font-semibold text-base">La agenda está libre</p>
+          <p className="text-white/30 text-sm mt-1.5 max-w-xs text-center">Todavía no hay turnos en este período</p>
         </div>
       ) : (
         <div className="rounded-xl border border-white/10 overflow-hidden">
