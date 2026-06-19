@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { Camera, Menu } from "lucide-react"
+import { Camera, Menu, Search } from "lucide-react"
 import { toast } from "sonner"
 import Image from "next/image"
 
@@ -82,12 +82,23 @@ export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
         </div>
       </div>
 
-      {/* AgendaMok brand */}
-      <div className="flex items-center gap-2">
-        <span className="text-[11px] text-white/25 tracking-wide">Potenciado por</span>
-        <span className="text-[13px] font-bold tracking-tight" style={{ color: "rgba(255,255,255,0.55)" }}>
-          Agenda<span style={{ color: "#38bdf8" }}>Mok</span>
-        </span>
+      <div className="flex items-center gap-3">
+        {/* Cmd+K search hint */}
+        <button
+          onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }))}
+          className="hidden md:flex items-center gap-2 h-8 px-3 rounded-lg border border-white/8 bg-white/[0.04] text-white/25 hover:text-white/50 hover:border-white/15 transition-all text-xs"
+        >
+          <Search className="w-3.5 h-3.5" />
+          <span>Buscar</span>
+          <kbd className="ml-1 text-[10px] bg-white/8 px-1.5 py-0.5 rounded">⌘K</kbd>
+        </button>
+
+        {/* AgendaMok brand */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[13px] font-bold tracking-tight" style={{ color: "rgba(255,255,255,0.55)" }}>
+            Agenda<span style={{ color: "#38bdf8" }}>Mok</span>
+          </span>
+        </div>
       </div>
     </header>
   )
