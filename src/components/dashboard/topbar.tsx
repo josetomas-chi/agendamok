@@ -38,19 +38,21 @@ export function TopBar() {
   }
 
   return (
-    <header className="h-14 flex items-center justify-between px-6 border-b border-white/10 bg-[#3a3a3c]/60 backdrop-blur-sm flex-shrink-0">
+    <header className="h-14 flex items-center justify-between px-6 flex-shrink-0"
+      style={{ background: "#232326", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
       {/* Business logo + name */}
       <div className="flex items-center gap-3">
         <div className="relative group">
           <button
             onClick={() => inputRef.current?.click()}
-            className="w-9 h-9 rounded-xl overflow-hidden border border-white/15 flex items-center justify-center bg-white/10 hover:bg-white/15 transition-colors"
+            className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center transition-all hover:ring-2 hover:ring-sky-400/40"
+            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
             title="Cambiar logo del negocio"
           >
             {business?.logo ? (
               <Image src={business.logo} alt="Logo" width={36} height={36} className="object-cover w-full h-full" />
             ) : (
-              <span className="text-sm font-bold text-white/60">
+              <span className="text-sm font-bold text-white/50">
                 {business?.name?.[0]?.toUpperCase() ?? "?"}
               </span>
             )}
@@ -58,28 +60,25 @@ export function TopBar() {
               <Camera className="w-3.5 h-3.5 text-white" />
             </div>
           </button>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={e => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f) }}
-          />
+          <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f) }} />
         </div>
         <div>
-          <p className="text-sm font-semibold text-white leading-none">
-            {business?.name ?? <span className="w-28 h-3.5 bg-white/10 rounded animate-pulse inline-block" />}
+          <p className="text-sm font-semibold text-white leading-none tracking-tight">
+            {business?.name ?? <span className="skeleton w-28 h-3.5 rounded inline-block" />}
           </p>
-          <p className="text-[11px] text-white/40 leading-none mt-0.5">
+          <p className="text-[11px] text-white/35 leading-none mt-1">
             {uploading ? "Subiendo logo..." : "Tu negocio"}
           </p>
         </div>
       </div>
 
       {/* AgendaMok brand */}
-      <div className="flex items-center gap-1.5">
-        <span className="text-xs text-white/30">Potenciado por</span>
-        <span className="text-xs font-bold text-white/60">Agenda<span className="text-sky-400">Mok</span></span>
+      <div className="flex items-center gap-2">
+        <span className="text-[11px] text-white/25 tracking-wide">Potenciado por</span>
+        <span className="text-[13px] font-bold tracking-tight" style={{ color: "rgba(255,255,255,0.55)" }}>
+          Agenda<span style={{ color: "#38bdf8" }}>Mok</span>
+        </span>
       </div>
     </header>
   )
