@@ -414,8 +414,9 @@ model Appointment {
   status        AppointmentStatus @default(PENDING)
   notes         String?           @db.Text
   internalNotes String?           @db.Text
-  googleEventId String?
-  cancelToken   String?           @unique
+  googleEventId           String?
+  cancelToken             String?           @unique
+  whatsappReminderSentAt  DateTime?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
   deletedAt     DateTime?
