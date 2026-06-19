@@ -759,8 +759,8 @@ export default function LandingPage() {
               ))}
             </div>
 
-            {/* Comparison table */}
-            <div>
+            {/* Comparison table — desktop only */}
+            <div className="hidden md:block">
               <div className="text-center mb-10">
                 <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">
                   Todo incluido. <span className="gradient-text">Sin sorpresas.</span>
