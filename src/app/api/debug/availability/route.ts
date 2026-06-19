@@ -105,5 +105,10 @@ export async function GET(req: Request) {
     existingAppts: existingAppts.map((a: { staffId: string; startTime: Date; endTime: Date }) => ({ staffId: a.staffId, start: format(new Date(a.startTime), "HH:mm"), end: format(new Date(a.endTime), "HH:mm") })),
     slots,
     nowUTC: new Date().toISOString(),
+    tzDebug: {
+      tzOffsetMs: (await import("@date-fns/tz")).tzOffset("America/Santiago", parsedDate),
+      sample_09h_asUTC: new Date(setMinutes(setHours(new Date(parsedDate), 9), 0)).toISOString(),
+      sample_09h_convertedToUTC: (await import("@/lib/timezone")).chileLocalToUTC(setMinutes(setHours(new Date(parsedDate), 9), 0)).toISOString(),
+    },
   })
 }
