@@ -4,10 +4,10 @@ const TZ = "America/Santiago"
 
 /**
  * Returns offset in ms for America/Santiago on the given date.
- * tzOffset returns a negative value for west-of-UTC timezones (e.g. -14400000 for UTC-4).
+ * tzOffset returns minutes (e.g. -240 for UTC-4) — multiply by 60000 to get ms.
  */
 function getOffsetMs(date: Date): number {
-  return tzOffset(TZ, date)
+  return tzOffset(TZ, date) * 60 * 1000
 }
 
 /**
