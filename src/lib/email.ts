@@ -128,6 +128,30 @@ export async function sendSurveyRequest({
   })
 }
 
+export async function sendClientOtp({
+  email, code,
+}: {
+  email: string; code: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+
+  await resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: `Tu código de acceso: ${code}`,
+    html: base(`
+      <h1>Tu código de acceso</h1>
+      <p class="subtitle">Usa este código para acceder a tu historial de turnos en AgendaMok.</p>
+      <div style="text-align:center;margin:32px 0">
+        <div style="display:inline-block;background:rgba(14,165,233,0.1);border:1.5px solid rgba(14,165,233,0.3);border-radius:16px;padding:20px 40px">
+          <span style="font-size:40px;font-weight:800;letter-spacing:0.15em;color:#38bdf8;font-variant-numeric:tabular-nums">${code}</span>
+        </div>
+      </div>
+      <p class="subtitle" style="font-size:13px">El código expira en <strong style="color:#fff">10 minutos</strong>. Si no solicitaste este acceso, ignora este mensaje.</p>
+    `),
+  })
+}
+
 export async function sendNewBookingAlert({
   ownerEmail, ownerName, businessName,
   clientName, clientEmail, clientPhone,
