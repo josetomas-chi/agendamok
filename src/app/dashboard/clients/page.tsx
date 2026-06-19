@@ -213,42 +213,56 @@ export default function ClientsPage() {
         </div>
       ) : (
         <div className="rounded-xl border border-white/10 overflow-hidden">
-          <div className="grid grid-cols-[1fr,auto,auto,auto,auto] gap-4 px-4 py-2.5 border-b border-white/10 bg-white/5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            <span>Cliente</span><span>Turnos</span><span>Gasto total</span><span>Segmento</span><span></span>
-          </div>
-          {clients.map(c => (
-            <div key={c.id} className="grid grid-cols-[1fr,auto,auto,auto,auto] gap-4 px-4 py-3.5 border-b border-white/10 last:border-0 items-center hover:bg-white/5 transition-colors">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm flex-shrink-0">
-                  {c.name[0].toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <p className="font-medium truncate">{c.name}</p>
-                  <div className="flex gap-2 text-xs text-muted-foreground">
-                    {c.email && <span className="flex items-center gap-1 truncate"><Mail className="w-3 h-3" />{c.email}</span>}
-                    {c.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{c.phone}</span>}
-                  </div>
-                </div>
-              </div>
-              <span className="text-sm font-medium text-center">{c._count.appointments}</span>
-              <span className="text-sm font-medium text-center">${totalSpend(c).toLocaleString("es-AR")}</span>
-              <span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SEGMENT_LABELS[c.segment]?.color}`}>
-                  {SEGMENT_LABELS[c.segment]?.label}
-                </span>
-              </span>
-              <div className="flex items-center gap-1">
-                {clinicalEnabled && (
-                  <Link href={`/dashboard/clinical/${c.id}`}>
-                    <Button size="sm" variant="ghost" className="gap-1 text-sky-400 hover:text-sky-300">
-                      <Stethoscope className="w-3.5 h-3.5" />
-                    </Button>
-                  </Link>
-                )}
-                <Button size="sm" variant="ghost" onClick={() => setSelected(c)}>Ver</Button>
-              </div>
-            </div>
-          ))}
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/10 bg-white/5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                <th className="text-left px-4 py-2.5">Cliente</th>
+                <th className="text-center px-4 py-2.5">Turnos</th>
+                <th className="text-right px-4 py-2.5">Gasto total</th>
+                <th className="text-center px-4 py-2.5">Segmento</th>
+                <th className="px-4 py-2.5"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/8">
+              {clients.map(c => (
+                <tr key={c.id} className="hover:bg-white/5 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm flex-shrink-0">
+                        {c.name[0].toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{c.name}</p>
+                        <div className="flex gap-2 text-xs text-muted-foreground">
+                          {c.email && <span className="flex items-center gap-1 truncate"><Mail className="w-3 h-3" />{c.email}</span>}
+                          {c.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{c.phone}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-center font-medium">{c._count.appointments}</td>
+                  <td className="px-4 py-3 text-right font-medium">${totalSpend(c).toLocaleString("es-AR")}</td>
+                  <td className="px-4 py-3 text-center">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SEGMENT_LABELS[c.segment]?.color}`}>
+                      {SEGMENT_LABELS[c.segment]?.label}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1 justify-end">
+                      {clinicalEnabled && (
+                        <Link href={`/dashboard/clinical/${c.id}`}>
+                          <Button size="sm" variant="ghost" className="gap-1 text-sky-400 hover:text-sky-300">
+                            <Stethoscope className="w-3.5 h-3.5" />
+                          </Button>
+                        </Link>
+                      )}
+                      <Button size="sm" variant="ghost" onClick={() => setSelected(c)}>Ver</Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
