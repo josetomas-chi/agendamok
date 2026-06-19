@@ -282,7 +282,7 @@ No pidas profesional — el sistema asigna automáticamente.`
     const calledGetServices = toolUses.some(tu => tu.name === "get_services")
     const calledGetAvailability = toolUses.some(tu => tu.name === "get_availability")
     const toolChoice = (calledGetServices && !calledGetAvailability)
-      ? { type: "any" as const }
+      ? { type: "tool" as const, name: "get_availability" }
       : { type: "auto" as const }
 
     response = await anthropic.messages.create({
