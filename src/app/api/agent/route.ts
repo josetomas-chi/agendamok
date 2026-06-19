@@ -277,11 +277,20 @@ No pidas profesional — el sistema asigna automáticamente.`
     anthropicMessages.push({ role: "assistant", content: response.content })
     anthropicMessages.push({ role: "user", content: toolResults })
 
+    // If the last tool call was get_services, force another tool call (must be get_availability)
+    // This prevents the model from responding with text before checking availability
+    const calledGetServices = toolUses.some(tu => tu.name === "get_services")
+    const calledGetAvailability = toolUses.some(tu => tu.name === "get_availability")
+    const toolChoice = (calledGetServices && !calledGetAvailability)
+      ? { type: "any" as const }
+      : { type: "auto" as const }
+
     response = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 1024,
       system: systemPrompt,
       tools,
+      tool_choice: toolChoice,
       messages: anthropicMessages,
     })
   }
