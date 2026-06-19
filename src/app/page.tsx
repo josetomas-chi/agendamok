@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
-import { Check, X, Minus, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight, Star, Percent, MapPin, FileText, Stethoscope, Key, ChevronDown, Rocket, Scissors, HelpCircle, type LucideIcon } from "lucide-react"
+import { Check, X, Minus, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight, Star, Percent, MapPin, FileText, Stethoscope, Key, ChevronDown, Rocket, Scissors, HelpCircle, Menu, type LucideIcon } from "lucide-react"
 
 const features = [
   { icon: Calendar, title: "Calendario inteligente", desc: "Vista semanal y diaria por profesional. Arrastra y suelta para mover turnos al instante." },
@@ -269,6 +269,7 @@ function useScrollReveal() {
 
 export default function LandingPage() {
   useScrollReveal()
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
     <div className="flex flex-col min-h-screen bg-[#52525a] text-white">
@@ -394,7 +395,7 @@ export default function LandingPage() {
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/8 backdrop-blur-xl" style={{ background: "rgba(40,40,44,0.88)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group">
+          <Link href="/" className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #0ea5e9, #38bdf8)", boxShadow: "0 0 12px rgba(56,189,248,0.4)" }}>
               <Calendar className="w-3.5 h-3.5 text-white" />
             </div>
@@ -411,14 +412,49 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm text-white/60 hover:text-white transition-colors px-3 py-1.5">
+            <Link href="/login" className="hidden md:block text-sm text-white/60 hover:text-white transition-colors px-3 py-1.5">
               Ingresar
             </Link>
-            <Link href="/register" className="text-sm font-semibold bg-sky-500 hover:bg-sky-400 transition-all px-5 py-2 rounded-full" style={{ boxShadow: "0 0 16px rgba(56,189,248,0.35)" }}>
+            <Link href="/register" className="hidden md:block text-sm font-semibold bg-sky-500 hover:bg-sky-400 transition-all px-5 py-2 rounded-full" style={{ boxShadow: "0 0 16px rgba(56,189,248,0.35)" }}>
               Empezar gratis
             </Link>
+            <button
+              className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl text-white/70 hover:text-white hover:bg-white/8 transition-colors"
+              onClick={() => setMobileOpen(o => !o)}
+              aria-label="Menú"
+            >
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu */}
+        {mobileOpen && (
+          <div className="md:hidden border-t border-white/8 px-4 py-4 flex flex-col gap-1" style={{ background: "rgba(36,36,40,0.98)" }}>
+            {[
+              { label: "Funciones", href: "#features" },
+              { label: "Precios", href: "#pricing" },
+              { label: "Ayuda", href: "#ayuda" },
+              { label: "Buscar negocio", href: "/buscar" },
+            ].map(({ label, href }) => (
+              <Link key={label} href={href} onClick={() => setMobileOpen(false)}
+                className="px-3 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
+                {label}
+              </Link>
+            ))}
+            <div className="mt-3 pt-3 border-t border-white/8 flex flex-col gap-2">
+              <Link href="/login" onClick={() => setMobileOpen(false)}
+                className="px-3 py-3 text-sm text-white/60 hover:text-white rounded-xl transition-colors text-center">
+                Ingresar
+              </Link>
+              <Link href="/register" onClick={() => setMobileOpen(false)}
+                className="py-3 text-sm font-semibold bg-sky-500 hover:bg-sky-400 transition-all rounded-full text-center"
+                style={{ boxShadow: "0 0 16px rgba(56,189,248,0.3)" }}>
+                Empezar gratis
+              </Link>
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="flex-1">
