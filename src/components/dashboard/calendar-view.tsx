@@ -36,7 +36,7 @@ interface Props {
 
 const SLOTS = Array.from({ length: 26 }, (_, i) => ({ h: 8 + Math.floor(i / 2), m: (i % 2) * 30 }))
 const WEEK_DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
-const SLOT_H = 36 // px per 30-min slot
+const SLOT_H = 30 // px per 30-min slot
 
 export function CalendarView({ appointments, staffMembers = [], businessId, onNewAppointment, onAppointmentMoved, onAppointmentClick }: Props) {
   const [currentDate, setCurrentDate] = useState(new Date())
