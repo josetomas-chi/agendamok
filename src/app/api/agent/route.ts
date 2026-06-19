@@ -206,17 +206,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Faltan parámetros" }, { status: 400 })
   }
 
-  const today = new Date().toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "America/Santiago" })
+  const nowChile = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Santiago" }))
+  const today = nowChile.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+  const todayISO = `${nowChile.getFullYear()}-${String(nowChile.getMonth()+1).padStart(2,"0")}-${String(nowChile.getDate()).padStart(2,"0")}`
 
-  const systemPrompt = `Eres el asistente de reservas de ${businessName}. Hoy es ${today}.
+  // Pre-calculate next 14 days with weekday names so the model doesn't have to infer dates
+  const DAYS_ES = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"]
+  const upcomingDays = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(nowChile)
+    d.setDate(nowChile.getDate() + i)
+    const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`
+    return `${DAYS_ES[d.getDay()]} ${d.getDate()} → ${iso}`
+  }).join("\n")
+
+  const systemPrompt = `Eres el asistente de reservas de ${businessName}. Hoy es ${today} (${todayISO}).
+
+CALENDARIO — próximos 14 días (usa SIEMPRE estas fechas exactas al llamar get_availability):
+${upcomingDays}
 
 REGLAS CRÍTICAS — nunca las violes:
 - JAMÁS menciones un horario o fecha disponible sin haber llamado primero a get_availability y obtenido slots reales.
 - Si get_availability devuelve slots vacíos [], esa fecha NO tiene disponibilidad. Si viene un campo "debug", incluye su contenido EXACTO en tu respuesta.
 - Nunca reutilices una fecha de un servicio anterior. Cuando el cliente pide un servicio diferente, pregunta la fecha de nuevo desde cero.
-- Cuando el cliente mencione un día como "lunes", convierte siempre a fecha exacta YYYY-MM-DD antes de llamar get_availability. Hoy es ${today}.
+- Cuando el cliente mencione un día como "el lunes", busca ese día en el CALENDARIO de arriba y usa la fecha YYYY-MM-DD exacta. No calcules la fecha por tu cuenta.
 - Solo ofrece horarios que aparezcan literalmente en el array de slots devuelto por get_availability.
-- Nunca inventes, asumas ni sugiereas horarios de memoria.
+- Nunca inventes, asumas ni sugieras horarios de memoria.
 
 Flujo correcto:
 1. Saluda y pregunta qué servicio necesita
