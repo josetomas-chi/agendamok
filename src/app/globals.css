@@ -135,11 +135,16 @@
     @apply flex items-center justify-between mb-8;
   }
   .page-title {
-    @apply text-3xl font-bold text-foreground tracking-[-0.03em] leading-none;
+    font-size: 2rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.04em !important;
+    line-height: 1 !important;
+    color: white !important;
   }
   .page-subtitle {
-    @apply text-sm mt-1.5;
-    color: oklch(0.72 0.01 260);
-    letter-spacing: 0.01em;
+    font-size: 0.8125rem !important;
+    margin-top: 0.5rem !important;
+    color: oklch(0.65 0.01 260) !important;
+    letter-spacing: 0.02em !important;
   }
 }
