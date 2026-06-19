@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   Calendar, Users, Scissors, UserCheck, BarChart3,
-  Settings, CreditCard, Megaphone, MapPin, LogOut, LayoutDashboard, Star, Percent, FileText, HelpCircle,
+  Settings, CreditCard, Megaphone, MapPin, LogOut, LayoutDashboard, Star, Percent, FileText, HelpCircle, X,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -44,7 +44,7 @@ const groups = [
   },
 ]
 
-export function Sidebar() {
+export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname()
 
   function isActive(href: string) {
@@ -54,8 +54,8 @@ export function Sidebar() {
   return (
     <aside className="w-56 flex flex-col flex-shrink-0 h-screen" style={{ background: "#2a2a2e" }}>
       {/* Logo */}
-      <div className="h-14 flex items-center px-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-        <Link href="/dashboard" className="flex items-center gap-2.5">
+      <div className="h-14 flex items-center px-4 gap-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <Link href="/dashboard" className="flex items-center gap-2.5 flex-1" onClick={onClose}>
           <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center flex-shrink-0"
             style={{ boxShadow: "0 0 12px rgba(14,165,233,0.5)" }}>
             <Calendar className="w-3.5 h-3.5 text-white" />
@@ -64,6 +64,9 @@ export function Sidebar() {
             Agenda<span className="text-sky-400">Mok</span>
           </span>
         </Link>
+        <button onClick={onClose} className="md:hidden p-1 text-white/30 hover:text-white/70 transition-colors">
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Nav groups */}
@@ -80,6 +83,7 @@ export function Sidebar() {
                   <Link
                     key={href}
                     href={href}
+                    onClick={onClose}
                     className={cn(
                       "relative flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150",
                       active

@@ -1,13 +1,13 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { Camera } from "lucide-react"
+import { Camera, Menu } from "lucide-react"
 import { toast } from "sonner"
 import Image from "next/image"
 
 type Business = { id: string; name: string; logo: string | null }
 
-export function TopBar() {
+export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
   const [business, setBusiness] = useState<Business | null>(null)
   const [uploading, setUploading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -40,6 +40,15 @@ export function TopBar() {
   return (
     <header className="h-14 flex items-center justify-between px-6 flex-shrink-0"
       style={{ background: "#232326", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+      {/* Hamburger — mobile only */}
+      <button
+        onClick={onMenuClick}
+        className="md:hidden p-2 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/[0.06] transition-all mr-1"
+        aria-label="Abrir menú"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+
       {/* Business logo + name */}
       <div className="flex items-center gap-3">
         <div className="relative group">
