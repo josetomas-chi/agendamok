@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Check, X, Minus, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight, Star, Percent, MapPin, FileText, Stethoscope, Key, ChevronDown, Rocket, Scissors, HelpCircle, type LucideIcon } from "lucide-react"
 
 const features = [
@@ -207,6 +207,46 @@ function CellValue({ val, isUs }: { val: FeatureValue; isUs: boolean }) {
   if (val === true) return <Check className={`w-4 h-4 ${isUs ? "text-sky-400" : "text-white/60"}`} />
   if (val === false) return <Minus className="w-4 h-4 text-white/30" />
   return <span className={`text-[10px] text-center leading-tight ${isUs ? "text-sky-300" : "text-red-400"}`}>{val}</span>
+}
+
+function useCountUp(target: number, duration = 1200) {
+  const [value, setValue] = useState(0)
+  const ref = useRef<HTMLSpanElement>(null)
+  const started = useRef(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !started.current) {
+        started.current = true
+        const start = performance.now()
+        const tick = (now: number) => {
+          const p = Math.min((now - start) / duration, 1)
+          const ease = 1 - Math.pow(1 - p, 3)
+          setValue(Math.round(ease * target))
+          if (p < 1) requestAnimationFrame(tick)
+        }
+        requestAnimationFrame(tick)
+      }
+    }, { threshold: 0.5 })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [target, duration])
+  return { value, ref }
+}
+
+function StatCard({ num, suffix, label, sub }: { num: number; suffix: string; label: string; sub: string }) {
+  const { value, ref } = useCountUp(num, 1000)
+  return (
+    <div className="text-center">
+      <div className="text-5xl sm:text-6xl font-bold tracking-tight mb-2">
+        <span ref={ref} className="gradient-text">{value}</span>
+        <span className="gradient-text">{suffix}</span>
+      </div>
+      <div className="text-white font-medium mb-1">{label}</div>
+      <div className="text-sm text-white/40">{sub}</div>
+    </div>
+  )
 }
 
 function useScrollReveal() {
@@ -528,6 +568,18 @@ export default function LandingPage() {
         </section>
 
         {/* Features */}
+        {/* Stats */}
+        <section className="py-24 border-t border-white/5">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
+              <StatCard num={5}  suffix=" min" label="Para configurar" sub="Desde cero hasta tu primer turno" />
+              <StatCard num={24} suffix="/7"  label="Disponible"      sub="Tus clientes reservan a cualquier hora" />
+              <StatCard num={0}  suffix="%"   label="Comisión"        sub="Por reserva online. Sin letra chica." />
+              <StatCard num={30} suffix=" días" label="Gratis"        sub="Sin tarjeta de crédito al inicio" />
+            </div>
+          </div>
+        </section>
+
         <section id="features" className="py-32">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-20 reveal">
