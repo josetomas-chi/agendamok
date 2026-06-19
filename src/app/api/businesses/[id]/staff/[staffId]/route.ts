@@ -16,7 +16,7 @@ export async function PATCH(req: Request, { params }: Params) {
   })
   if (!member) return NextResponse.json({ error: "No encontrado" }, { status: 404 })
 
-  const { image, color, specialty, bio, commissionType, commissionValue } = body
+  const { image, color, specialty, bio, commissionType, commissionValue, serviceIds } = body
 
   if (image !== undefined) {
     await prisma.user.update({ where: { id: member.userId }, data: { image } })
@@ -28,6 +28,9 @@ export async function PATCH(req: Request, { params }: Params) {
   if (bio !== undefined) staffUpdate.bio = bio
   if (commissionType !== undefined) staffUpdate.commissionType = commissionType
   if (commissionValue !== undefined) staffUpdate.commissionValue = commissionValue
+  if (serviceIds !== undefined) {
+    staffUpdate.services = { set: (serviceIds as string[]).map((id: string) => ({ id })) }
+  }
 
   if (Object.keys(staffUpdate).length > 0) {
     await prisma.staffMember.update({ where: { id: staffId }, data: staffUpdate })

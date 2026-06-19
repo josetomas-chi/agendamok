@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { Plus, Clock, Trash2, Ban, Users, Camera, Mail, Phone } from "lucide-react"
+import { Plus, Clock, Trash2, Ban, Users, Camera, Mail, Phone, Check } from "lucide-react"
 
 const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
 const COLORS = ["#6366f1","#8b5cf6","#ec4899","#ef4444","#f97316","#22c55e","#14b8a6","#0ea5e9"]
@@ -24,6 +24,62 @@ type StaffMember = {
 }
 
 const DEFAULT_FORM = { name: "", email: "", phone: "", bio: "", specialty: "", color: "#8b5cf6", commissionType: "PERCENTAGE", commissionValue: 0 }
+
+function ServicesEditor({ businessId, staffId, assignedIds, onSaved }: {
+  businessId: string; staffId: string; assignedIds: string[]; onSaved: () => void
+}) {
+  const [allServices, setAllServices] = useState<{ id: string; name: string; duration: number }[]>([])
+  const [selected, setSelected] = useState<Set<string>>(new Set(assignedIds))
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    fetch(`/api/businesses/${businessId}/services`).then(r => r.json()).then(d => {
+      setAllServices(d.services || [])
+    })
+  }, [businessId])
+
+  async function save() {
+    setSaving(true)
+    await fetch(`/api/businesses/${businessId}/staff/${staffId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ serviceIds: Array.from(selected) }),
+    })
+    toast.success("Servicios actualizados")
+    setSaving(false)
+    onSaved()
+  }
+
+  function toggle(id: string) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-muted-foreground">Seleccioná los servicios que puede realizar este profesional.</p>
+      <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+        {allServices.map(s => (
+          <button key={s.id} onClick={() => toggle(s.id)}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all ${selected.has(s.id) ? "border-sky-400/50 bg-sky-500/10" : "border-white/8 bg-white/[0.03] hover:bg-white/[0.06]"}`}>
+            <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border transition-colors ${selected.has(s.id) ? "bg-sky-500 border-sky-500" : "border-white/20"}`}>
+              {selected.has(s.id) && <Check className="w-2.5 h-2.5 text-white" />}
+            </div>
+            <span className="flex-1 text-sm text-white/80">{s.name}</span>
+            <span className="text-xs text-white/30">{s.duration} min</span>
+          </button>
+        ))}
+        {allServices.length === 0 && <p className="text-xs text-white/30 text-center py-4">No hay servicios creados</p>}
+      </div>
+      <Button size="sm" onClick={save} disabled={saving} className="w-full">
+        {saving ? "Guardando..." : "Guardar servicios"}
+      </Button>
+    </div>
+  )
+}
 
 export default function StaffPage() {
   const [staff, setStaff] = useState<StaffMember[]>([])
@@ -230,12 +286,16 @@ export default function StaffPage() {
             <Tabs defaultValue="schedule">
               <TabsList className="w-full rounded-none border-b border-white/10 bg-transparent h-9">
                 <TabsTrigger value="schedule" className="flex-1 text-xs h-full rounded-none">Horarios</TabsTrigger>
+                <TabsTrigger value="services" className="flex-1 text-xs h-full rounded-none">Servicios</TabsTrigger>
                 <TabsTrigger value="exceptions" className="flex-1 text-xs h-full rounded-none">Excepciones</TabsTrigger>
                 <TabsTrigger value="info" className="flex-1 text-xs h-full rounded-none">Info</TabsTrigger>
               </TabsList>
               <div className="px-5 pb-5 pt-3">
                 <TabsContent value="schedule" className="mt-0">
                   <ScheduleEditor schedules={selected.schedules} onSave={s => updateSchedule(selected.id, s)} />
+                </TabsContent>
+                <TabsContent value="services" className="mt-0">
+                  <ServicesEditor businessId={businessId} staffId={selected.id} assignedIds={selected.services.map(s => s.id)} onSaved={() => loadStaff(businessId)} />
                 </TabsContent>
                 <TabsContent value="exceptions" className="mt-0">
                   <ExceptionsEditor businessId={businessId} staffId={selected.id} />
