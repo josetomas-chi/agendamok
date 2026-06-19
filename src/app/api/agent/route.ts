@@ -213,8 +213,8 @@ async function runTool(name: string, input: Record<string, string>): Promise<str
         clientName: input.clientName, clientEmail: input.clientEmail,
         businessName: business?.name || "", serviceName: service.name,
         staffName: staff?.user.name || "Sin asignar",
-        date: format(startTime, "EEEE d 'de' MMMM yyyy", { locale: es }),
-        time: format(startTime, "HH:mm"), duration: service.duration,
+        date: format(utcToChileLocal(startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
+        time: format(utcToChileLocal(startTime), "HH:mm"), duration: service.duration,
       }).catch(() => {})
 
       return JSON.stringify({ success: true, appointmentId: appointment.id, date: format(startTime, "EEEE d 'de' MMMM", { locale: es }), time: input.time, staffName: staff?.user.name })

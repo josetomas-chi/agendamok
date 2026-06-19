@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { parseISO, addMinutes, setHours, setMinutes, format } from "date-fns"
-import { chileLocalToUTC } from "@/lib/timezone"
+import { chileLocalToUTC, utcToChileLocal } from "@/lib/timezone"
 import { es } from "date-fns/locale"
 import { sendBookingConfirmation } from "@/lib/email"
 
@@ -118,8 +118,8 @@ export async function POST(req: Request) {
       businessName: business?.name || "",
       serviceName: service.name,
       staffName: staff?.user.name || "Sin asignar",
-      date: format(startTime, "EEEE d 'de' MMMM yyyy", { locale: es }),
-      time: format(startTime, "HH:mm"),
+      date: format(utcToChileLocal(startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
+      time: format(utcToChileLocal(startTime), "HH:mm"),
       duration: service.duration,
     }).catch(() => {})
 
