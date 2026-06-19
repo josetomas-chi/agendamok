@@ -112,7 +112,6 @@ async function runTool(name: string, input: Record<string, string>): Promise<str
         if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
           return JSON.stringify({ slots: [], error: `Formato de fecha inválido: "${input.date}". Usa YYYY-MM-DD.` })
         }
-        console.log(`[agent] date coerced from "${input.date}" → "${dateStr}"`)
       }
 
       const date = parseISO(dateStr)
@@ -171,7 +170,6 @@ async function runTool(name: string, input: Record<string, string>): Promise<str
       }
 
       const sortedSlots = Array.from(availableSlots).sort()
-      console.log(`[availability] date=${input.date} serviceId=${input.serviceId} staffIds=${JSON.stringify(staffIds)} slots=${JSON.stringify(sortedSlots)}`)
       return JSON.stringify({ slots: sortedSlots, _count: sortedSlots.length })
     }
 
@@ -289,7 +287,6 @@ No pidas profesional — el sistema asigna automáticamente.`
     const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
       toolUses.map(async (tu) => {
         const result = await runTool(tu.name, tu.input as Record<string, string>)
-        console.log(`[agent] tool=${tu.name} input=${JSON.stringify(tu.input)} result=${result}`)
         return { type: "tool_result" as const, tool_use_id: tu.id, content: result }
       })
     )
