@@ -7,6 +7,9 @@ import { sendBookingConfirmation } from "@/lib/email"
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+// Chile is UTC-4 year-round (no DST for standard time)
+const CHILE_OFFSET_MS = 4 * 60 * 60 * 1000
+
 const tools: Anthropic.Tool[] = [
   {
     name: "get_services",
@@ -134,14 +137,19 @@ async function runTool(name: string, input: Record<string, string>): Promise<str
         if (offStaffIds.has(schedule.staffId)) continue
         const [startH, startM] = schedule.startTime.split(":").map(Number)
         const [endH, endM] = schedule.endTime.split(":").map(Number)
-        const scheduleStart = setMinutes(setHours(new Date(date), startH), startM)
-        const scheduleEnd   = setMinutes(setHours(new Date(date), endH), endM)
+        // Schedule times are Chile local — convert to UTC for DB comparisons
+        const scheduleStart = new Date(setMinutes(setHours(new Date(date), startH), startM).getTime() + CHILE_OFFSET_MS)
+        const scheduleEnd   = new Date(setMinutes(setHours(new Date(date), endH), endM).getTime() + CHILE_OFFSET_MS)
         const staffAppts = existingAppts.filter((a: { staffId: string }) => a.staffId === schedule.staffId)
         let cursor = new Date(scheduleStart)
         while (addMinutes(cursor, slotDuration) <= scheduleEnd) {
           const slotEnd = addMinutes(cursor, slotDuration)
           const hasConflict = staffAppts.some((appt: { startTime: Date; endTime: Date }) => cursor < new Date(appt.endTime) && slotEnd > new Date(appt.startTime))
-          if (!hasConflict && cursor > new Date()) availableSlots.add(format(cursor, "HH:mm"))
+          if (!hasConflict && cursor > new Date()) {
+            // Display slot in Chile local time
+            const chileTime = new Date(cursor.getTime() - CHILE_OFFSET_MS)
+            availableSlots.add(format(chileTime, "HH:mm"))
+          }
           cursor = addMinutes(cursor, 30)
         }
       }
@@ -154,7 +162,8 @@ async function runTool(name: string, input: Record<string, string>): Promise<str
       if (!service) return JSON.stringify({ error: "Servicio no encontrado" })
 
       const [hours, minutes] = input.time.split(":").map(Number)
-      const startTime = setMinutes(setHours(parseISO(input.date), hours), minutes)
+      // input.time is Chile local — convert to UTC for storage
+      const startTime = new Date(setMinutes(setHours(parseISO(input.date), hours), minutes).getTime() + CHILE_OFFSET_MS)
       const endTime = addMinutes(startTime, service.duration)
 
       let resolvedStaffId = input.staffId || null
