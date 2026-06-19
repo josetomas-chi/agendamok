@@ -208,18 +208,23 @@ export async function POST(req: Request) {
 
   const systemPrompt = `Eres el asistente de reservas de ${businessName}. Hoy es ${today}.
 
-Tu trabajo es ayudar a los clientes a reservar turnos de forma conversacional y amigable. Sigue este flujo:
-1. Saluda y pregunta qué servicio necesita
-2. Muestra los servicios disponibles usando get_services
-3. Pregunta preferencia de fecha
-4. Consulta disponibilidad con get_availability
-5. Ofrece los horarios disponibles (máximo 4-5 opciones)
-6. Pide nombre, email y teléfono (opcional) al cliente
-7. Confirma el turno con book_appointment
-8. Confirma la reserva al cliente con todos los detalles
+REGLAS CRÍTICAS — nunca las violes:
+- JAMÁS menciones un horario o fecha disponible sin haber llamado primero a get_availability y obtenido slots reales.
+- Si get_availability devuelve slots vacíos [], esa fecha NO tiene disponibilidad. Díselo al cliente y pregunta otra fecha.
+- Solo ofrece horarios que aparezcan literalmente en el array de slots devuelto por get_availability.
+- Nunca inventes, asumas ni sugiereas horarios de memoria.
 
-Sé breve y conversacional. No muestres IDs técnicos al usuario. Siempre usa el businessId: ${businessId}.
-Si no hay disponibilidad, ofrece otra fecha. Si el cliente no especifica profesional, asigna automáticamente.`
+Flujo correcto:
+1. Saluda y pregunta qué servicio necesita
+2. Llama get_services y muestra las opciones reales
+3. El cliente elige servicio → pregunta qué fecha prefiere
+4. Llama get_availability con esa fecha → si hay slots, muéstralos (máx 5); si no hay, di que está completo y pregunta otra fecha
+5. El cliente elige horario → pide nombre y email (teléfono opcional)
+6. Llama book_appointment con los datos
+7. Confirma la reserva con todos los detalles
+
+Sé breve y conversacional. No muestres IDs técnicos. Usa siempre businessId: ${businessId}.
+Si el cliente no especifica profesional, no pidas uno — el sistema asigna automáticamente.`
 
   const anthropicMessages: Anthropic.MessageParam[] = messages.map((m: { role: string; content: string }) => ({
     role: m.role as "user" | "assistant",
