@@ -36,7 +36,7 @@ interface Props {
 
 const SLOTS = Array.from({ length: 26 }, (_, i) => ({ h: 8 + Math.floor(i / 2), m: (i % 2) * 30 }))
 const WEEK_DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
-const SLOT_H = 32 // px per 30-min slot
+const SLOT_H = 48 // px per 30-min slot
 
 export function CalendarView({ appointments, staffMembers = [], businessId, onNewAppointment, onAppointmentMoved, onAppointmentClick }: Props) {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -305,11 +305,11 @@ function DayStaffView({ day, staffCols, apptsByDay, dragOverSlot, onDragStart, o
       {/* Time grid */}
       {SLOTS.map(({ h, m }) => (
         <div key={`${h}-${m}`} className="flex"
-          style={{ borderBottom: m === 0 ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(255,255,255,0.02)", minHeight: `${SLOT_H}px` }}>
-          <div className="w-14 flex-shrink-0 pr-3 flex items-start justify-end pt-1">
-            {m === 0 && <span className="text-[10px] text-white/25 tabular-nums">{h}:00</span>}
+          style={{ borderBottom: m === 0 ? "1px solid rgba(255,255,255,0.07)" : "1px dashed rgba(255,255,255,0.025)", minHeight: `${SLOT_H}px` }}>
+          <div className="w-14 flex-shrink-0 pr-3 flex items-center justify-end">
+            {m === 0 && <span className="text-[10px] font-medium text-white/30 tabular-nums -translate-y-1/2">{h}:00</span>}
           </div>
-          {cols.map((s) => {
+          {cols.map((s, colIdx) => {
             const slotKey = `${dayKey}-${s?.id ?? "all"}-${h}-${m}`
             const isDragOver = dragOverSlot === slotKey
             const slotAppts = dayAppts.filter(a => {
@@ -326,10 +326,11 @@ function DayStaffView({ day, staffCols, apptsByDay, dragOverSlot, onDragStart, o
                 onDragLeave={onDragLeave}
                 onDrop={e => onDrop(e, day, h, m)}
                 className={cn(
-                  "flex-1 px-1 py-0.5 border-l border-white/5 transition-colors group relative",
+                  "flex-1 px-1.5 py-1 border-l border-white/5 transition-colors group relative",
                   isDragOver && "bg-sky-500/20",
-                  slotAppts.length === 0 && onNewAppointment && !isDragOver && "cursor-pointer hover:bg-white/[0.03]"
+                  slotAppts.length === 0 && onNewAppointment && !isDragOver && "cursor-pointer hover:bg-white/[0.04]"
                 )}
+                style={colIdx % 2 === 1 && !isDragOver ? { background: "rgba(255,255,255,0.012)" } : undefined}
               >
                 {isDragOver && <div className="absolute inset-0 border-2 border-sky-400/50 rounded pointer-events-none" />}
                 {slotAppts.length === 0 && onNewAppointment && !isDragOver && (
