@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { CheckCircle, XCircle, Loader2, Calendar } from "lucide-react"
 
 type State = "loading" | "success" | "error"
 
-export default function CancelarPage() {
+function CancelarContent() {
   const params = useSearchParams()
   const token = params.get("token")
   const [state, setState] = useState<State>("loading")
@@ -77,5 +77,17 @@ export default function CancelarPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function CancelarPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#28282c]">
+        <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
+      </div>
+    }>
+      <CancelarContent />
+    </Suspense>
   )
 }
