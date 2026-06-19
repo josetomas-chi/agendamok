@@ -25,7 +25,11 @@ const METHODS = [
 ]
 
 const METHOD_LABELS: Record<string, string> = { CASH: "Efectivo", CARD: "Tarjeta", TRANSFER: "Transferencia", ONLINE: "Online" }
-const PAYMENT_STATUS: Record<string, string> = { PAID: "bg-green-500/15 text-green-300", PENDING: "bg-yellow-500/15 text-yellow-300", REFUNDED: "bg-red-500/15 text-red-300" }
+const PAYMENT_STATUS: Record<string, string> = {
+  PAID: "bg-emerald-500/15 text-emerald-300 border border-emerald-400/30",
+  PENDING: "bg-amber-400/20 text-amber-300 border border-amber-400/40 shadow-[0_0_8px_rgba(251,191,36,0.15)]",
+  REFUNDED: "bg-red-500/20 text-red-400 border border-red-400/30",
+}
 
 export default function PaymentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([])

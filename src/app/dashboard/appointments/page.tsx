@@ -24,11 +24,11 @@ type Staff = { id: string; user: { name: string | null } }
 type Client = { id: string; name: string }
 
 const STATUS = {
-  PENDING:   { label: "Pendiente",      color: "bg-yellow-500/15 text-yellow-300 border-yellow-400/20" },
-  CONFIRMED: { label: "Confirmado",     color: "bg-green-500/15 text-green-300 border-green-400/20" },
-  COMPLETED: { label: "Completado",     color: "bg-blue-500/15 text-blue-300 border-blue-400/20" },
-  CANCELLED: { label: "Cancelado",      color: "bg-red-500/15 text-red-300 border-red-400/20" },
-  NO_SHOW:   { label: "No se presentó", color: "bg-orange-500/15 text-orange-300 border-orange-400/20" },
+  PENDING:   { label: "Pendiente",      color: "bg-amber-400/20 text-amber-300 border-amber-400/40 shadow-[0_0_8px_rgba(251,191,36,0.15)]" },
+  CONFIRMED: { label: "Confirmado",     color: "bg-emerald-500/20 text-emerald-300 border-emerald-400/40" },
+  COMPLETED: { label: "Completado",     color: "bg-white/8 text-white/40 border-white/10" },
+  CANCELLED: { label: "Cancelado",      color: "bg-red-500/20 text-red-400 border-red-400/30" },
+  NO_SHOW:   { label: "No se presentó", color: "bg-orange-500/25 text-orange-300 border-orange-400/50 shadow-[0_0_8px_rgba(249,115,22,0.2)]" },
 }
 
 const DEFAULT_FORM = { serviceId: "", staffId: "", clientId: "", date: "", time: "", notes: "" }

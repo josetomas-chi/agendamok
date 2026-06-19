@@ -213,7 +213,7 @@ export default function CommissionsPage() {
                           <p className="text-[10px] text-white/30">{r.type === "PERCENTAGE" ? `${r.rate}%` : `$${r.rate} fijo`}</p>
                         </td>
                         <td className="px-4 py-3 text-center whitespace-nowrap">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.isPaid ? "bg-green-500/20 text-green-400" : "bg-orange-500/20 text-orange-400"}`}>
+                          <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${r.isPaid ? "bg-emerald-500/15 text-emerald-300 border-emerald-400/30" : "bg-orange-500/25 text-orange-300 border-orange-400/50 shadow-[0_0_8px_rgba(249,115,22,0.2)]"}`}>
                             {r.isPaid ? "Pagado" : "Pendiente"}
                           </span>
                         </td>
