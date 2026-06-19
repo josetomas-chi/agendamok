@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { parseISO, addMinutes, setHours, setMinutes, format } from "date-fns"
+import { chileLocalToUTC, utcToChileLocal } from "@/lib/timezone"
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -82,14 +83,15 @@ export async function GET(req: Request) {
     if (offStaffIds.has(schedule.staffId)) continue
     const [startH, startM] = schedule.startTime.split(":").map(Number)
     const [endH, endM] = schedule.endTime.split(":").map(Number)
-    const scheduleStart = setMinutes(setHours(new Date(parsedDate), startH), startM)
-    const scheduleEnd   = setMinutes(setHours(new Date(parsedDate), endH), endM)
+    const scheduleStart = chileLocalToUTC(setMinutes(setHours(new Date(parsedDate), startH), startM))
+    const scheduleEnd   = chileLocalToUTC(setMinutes(setHours(new Date(parsedDate), endH), endM))
     const staffAppts = existingAppts.filter((a: { staffId: string }) => a.staffId === schedule.staffId)
     let cursor = new Date(scheduleStart)
     while (addMinutes(cursor, slotDuration) <= scheduleEnd) {
       const slotEnd = addMinutes(cursor, slotDuration)
       const hasConflict = staffAppts.some((a: { startTime: Date; endTime: Date }) => cursor < new Date(a.endTime) && slotEnd > new Date(a.startTime))
-      slots.push(`${format(cursor, "HH:mm")} — conflict=${hasConflict} past=${cursor <= new Date()}`)
+      const chileDisplay = format(utcToChileLocal(cursor), "HH:mm")
+      slots.push(`${chileDisplay} (${format(cursor, "HH:mm")} UTC) — conflict=${hasConflict} past=${cursor <= new Date()}`)
       cursor = addMinutes(cursor, 30)
     }
   }

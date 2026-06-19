@@ -266,11 +266,11 @@ Si el cliente no especifica profesional, no pidas uno — el sistema asigna auto
   while (response.stop_reason === "tool_use") {
     const toolUses = response.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use")
     const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
-      toolUses.map(async (tu) => ({
-        type: "tool_result" as const,
-        tool_use_id: tu.id,
-        content: await runTool(tu.name, tu.input as Record<string, string>),
-      }))
+      toolUses.map(async (tu) => {
+        const result = await runTool(tu.name, tu.input as Record<string, string>)
+        console.log(`[agent] tool=${tu.name} input=${JSON.stringify(tu.input)} result=${result}`)
+        return { type: "tool_result" as const, tool_use_id: tu.id, content: result }
+      })
     )
 
     anthropicMessages.push({ role: "assistant", content: response.content })
