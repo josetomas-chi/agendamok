@@ -77,7 +77,11 @@ export async function sendBookingConfirmation({
         <div class="row"><span class="label">Hora</span><span class="value">${time} hrs</span></div>
         <div class="row"><span class="label">Duración</span><span class="value">${duration} min</span></div>
       </div>
-      ${cancelUrl ? `<hr class="divider"/><p style="color:rgba(255,255,255,0.3);font-size:13px;margin:0">¿No puedes asistir? <a href="${cancelUrl}" class="btn-cancel">Cancelar mi turno</a></p>` : ""}
+      <hr class="divider"/>
+      <p style="color:rgba(255,255,255,0.3);font-size:13px;margin:0 0 6px">
+        <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.vercel.app"}/mis-turnos?email=${encodeURIComponent(clientEmail)}" style="color:rgba(56,189,248,0.7);text-decoration:none">Ver todos mis turnos</a>
+        ${cancelUrl ? ` &nbsp;·&nbsp; <a href="${cancelUrl}" class="btn-cancel">Cancelar este turno</a>` : ""}
+      </p>
     `),
   })
 }
