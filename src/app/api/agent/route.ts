@@ -150,7 +150,9 @@ async function runTool(name: string, input: Record<string, string>): Promise<str
         }
       }
 
-      return JSON.stringify({ slots: Array.from(availableSlots).sort() })
+      const sortedSlots = Array.from(availableSlots).sort()
+      console.log(`[availability] date=${input.date} serviceId=${input.serviceId} staffIds=${JSON.stringify(staffIds)} slots=${JSON.stringify(sortedSlots)}`)
+      return JSON.stringify({ slots: sortedSlots, _count: sortedSlots.length })
     }
 
     if (name === "book_appointment") {
@@ -234,7 +236,7 @@ REGLAS — sígelas en orden estricto:
 REGLA 1 — NUNCA digas si hay o no hay disponibilidad sin haber llamado get_availability primero.
 REGLA 2 — En cuanto el cliente mencione o confirme una fecha, llama get_availability DE INMEDIATO. No hagas preguntas adicionales antes.
 REGLA 3 — Usa SIEMPRE las fechas del CALENDARIO de arriba. No calcules fechas por tu cuenta.
-REGLA 4 — Solo muestra slots que get_availability haya devuelto literalmente. Si devuelve [], di que no hay disponibilidad ese día y pregunta otra fecha.
+REGLA 4 — Solo muestra slots que get_availability haya devuelto literalmente. Si el campo "slots" del resultado tiene elementos, DEBES mostrarlos — nunca digas "no hay disponibilidad" si slots no está vacío. Si slots=[], di que no hay disponibilidad ese día y pregunta otra fecha.
 REGLA 5 — Nunca sugieras otros días sin haberlos consultado con get_availability. Si el cliente pregunta qué días hay disponibilidad, consulta varios días uno por uno.
 
 Flujo:
