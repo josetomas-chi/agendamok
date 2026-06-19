@@ -4,13 +4,42 @@ import { parseISO, addMinutes, setHours, setMinutes, format } from "date-fns"
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
-  const businessId = searchParams.get("businessId")
-  const serviceId = searchParams.get("serviceId")
+  const slug = searchParams.get("slug")
+  let businessId = searchParams.get("businessId")
+  const serviceSlug = searchParams.get("serviceName")
+  let serviceId = searchParams.get("serviceId")
   const date = searchParams.get("date") // YYYY-MM-DD
   const staffId = searchParams.get("staffId") ?? undefined
 
-  if (!businessId || !serviceId || !date) {
-    return NextResponse.json({ error: "Faltan parámetros: businessId, serviceId, date" }, { status: 400 })
+  // Resolve by slug if no businessId
+  if (!businessId && slug) {
+    const biz = await prisma.business.findUnique({ where: { slug }, select: { id: true } })
+    if (!biz) return NextResponse.json({ error: `No business with slug=${slug}` })
+    businessId = biz.id
+  }
+
+  // Resolve serviceId by name if not provided
+  if (!serviceId && serviceSlug && businessId) {
+    const svc = await prisma.service.findFirst({ where: { businessId, name: { contains: serviceSlug, mode: "insensitive" } }, select: { id: true, name: true } })
+    if (!svc) return NextResponse.json({ error: `No service matching "${serviceSlug}"` })
+    serviceId = svc.id
+  }
+
+  if (!businessId) {
+    // List all businesses
+    const bizList = await prisma.business.findMany({ select: { id: true, name: true, slug: true } })
+    return NextResponse.json({ businesses: bizList })
+  }
+
+  if (!serviceId) {
+    // List all services + staff for this business
+    const services = await prisma.service.findMany({ where: { businessId }, select: { id: true, name: true } })
+    const staff = await prisma.staffMember.findMany({ where: { businessId }, include: { user: { select: { name: true } }, services: { select: { id: true, name: true } } } })
+    return NextResponse.json({ businessId, services, staff: staff.map((s: { id: string; user: { name: string }; services: { id: string; name: string }[] }) => ({ id: s.id, name: s.user.name, services: s.services })) })
+  }
+
+  if (!date) {
+    return NextResponse.json({ error: "Falta date (YYYY-MM-DD)" }, { status: 400 })
   }
 
   const service = await prisma.service.findUnique({
