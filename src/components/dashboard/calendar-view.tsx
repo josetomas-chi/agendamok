@@ -36,7 +36,7 @@ interface Props {
 
 const SLOTS = Array.from({ length: 26 }, (_, i) => ({ h: 8 + Math.floor(i / 2), m: (i % 2) * 30 }))
 const WEEK_DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
-const SLOT_H = 48 // px per 30-min slot
+const SLOT_H = 36 // px per 30-min slot
 
 export function CalendarView({ appointments, staffMembers = [], businessId, onNewAppointment, onAppointmentMoved, onAppointmentClick }: Props) {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -307,7 +307,7 @@ function DayStaffView({ day, staffCols, apptsByDay, dragOverSlot, onDragStart, o
         {/* Hour labels column */}
         <div className="w-14 flex-shrink-0 relative" style={{ height: SLOTS.length * SLOT_H }}>
           {SLOTS.filter(s => s.m === 0).map(({ h }) => (
-            <div key={h} className="absolute right-3 text-[10px] font-medium text-white/30 tabular-nums -translate-y-1/2"
+            <div key={h} className="absolute right-3 text-[10px] font-medium text-white/30 tabular-nums"
               style={{ top: (h - 8) * 2 * SLOT_H }}>
               {h}:00
             </div>
