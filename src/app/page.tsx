@@ -332,11 +332,12 @@ export default function LandingPage() {
           background-color: rgba(255,255,255,0.08) !important;
         }
         @keyframes featureReveal {
-          0%   { border-color: rgba(56,189,248,0.7); box-shadow: 0 0 30px rgba(56,189,248,0.4); }
-          100% { border-color: rgba(255,255,255,0.06); box-shadow: none; }
+          0%   { box-shadow: 0 0 0 1px rgba(56,189,248,0.9), 0 0 28px rgba(56,189,248,0.5); }
+          60%  { box-shadow: 0 0 0 1px rgba(56,189,248,0.4), 0 0 12px rgba(56,189,248,0.2); }
+          100% { box-shadow: none; }
         }
         .feature-card.revealed {
-          animation: featureReveal 1.2s cubic-bezier(0.16,1,0.3,1) 0.3s both;
+          animation: featureReveal 1.6s ease-out 0.2s both;
         }
         @keyframes zoomPulse {
           0%, 100% { transform: scale(1); letter-spacing: -0.02em; }
