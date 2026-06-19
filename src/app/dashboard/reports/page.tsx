@@ -166,7 +166,12 @@ export default function ReportsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v.toLocaleString("es-CL")}`} />
-                <Tooltip formatter={(v) => [`$${Number(v).toLocaleString("es-CL")}`, "Ingresos"]} />
+                <Tooltip
+                  formatter={(v) => [`$${Number(v).toLocaleString("es-CL")}`, "Ingresos"]}
+                  contentStyle={{ background: "#1a1a1e", border: "1px solid #3a3a3c", borderRadius: 8, color: "#38bdf8" }}
+                  labelStyle={{ color: "#a1a1aa" }}
+                  cursor={{ fill: "#ffffff08" }}
+                />
                 <Bar dataKey="revenue" fill="#6366f1" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -188,7 +193,7 @@ export default function ReportsPage() {
                     {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
                   <Legend iconType="circle" iconSize={8} />
-                  <Tooltip />
+                  <Tooltip contentStyle={{ background: "#1a1a1e", border: "1px solid #3a3a3c", borderRadius: 8, color: "#38bdf8" }} labelStyle={{ color: "#a1a1aa" }} />
                 </PieChart>
               </ResponsiveContainer>
             )}
