@@ -4,7 +4,7 @@ import { z } from "zod"
 import { parseISO, addMinutes, setHours, setMinutes, format } from "date-fns"
 import { chileLocalToUTC, utcToChileLocal } from "@/lib/timezone"
 import { es } from "date-fns/locale"
-import { sendBookingConfirmation } from "@/lib/email"
+import { sendBookingConfirmation, sendNewBookingAlert } from "@/lib/email"
 import { randomBytes } from "crypto"
 
 const schema = z.object({
@@ -114,20 +114,43 @@ export async function POST(req: Request) {
       where: { id: resolvedStaffId },
       include: { user: { select: { name: true } } },
     })
-    const business = await prisma.business.findUnique({ where: { id: data.businessId }, select: { name: true } })
+    const business = await prisma.business.findUnique({
+      where: { id: data.businessId },
+      select: { name: true, owner: { select: { name: true, email: true } } },
+    })
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://agendamok.cl"
+    const localDate = format(utcToChileLocal(startTime), "EEEE d 'de' MMMM yyyy", { locale: es })
+    const localTime = format(utcToChileLocal(startTime), "HH:mm")
+    const staffName = staff?.user.name || "Sin asignar"
+    const businessName = business?.name || ""
+
     sendBookingConfirmation({
       clientName: data.clientName,
       clientEmail: data.clientEmail,
-      businessName: business?.name || "",
+      businessName,
       serviceName: service.name,
-      staffName: staff?.user.name || "Sin asignar",
-      date: format(utcToChileLocal(startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
-      time: format(utcToChileLocal(startTime), "HH:mm"),
+      staffName,
+      date: localDate,
+      time: localTime,
       duration: service.duration,
       cancelUrl: `${baseUrl}/cancelar?token=${cancelToken}`,
     }).catch(() => {})
+
+    if (business?.owner?.email) {
+      sendNewBookingAlert({
+        ownerEmail: business.owner.email,
+        ownerName: business.owner.name || "Hola",
+        businessName,
+        clientName: data.clientName,
+        clientEmail: data.clientEmail,
+        clientPhone: data.clientPhone,
+        serviceName: service.name,
+        staffName,
+        date: localDate,
+        time: localTime,
+      }).catch(() => {})
+    }
 
     return NextResponse.json({ appointment }, { status: 201 })
   } catch (error) {

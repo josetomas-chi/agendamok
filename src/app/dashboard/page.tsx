@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { CalendarWithNew } from "@/components/dashboard/calendar-with-new"
 import { StatsCards } from "@/components/dashboard/stats-cards"
+import { SetupChecklist } from "@/components/dashboard/setup-checklist"
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -13,7 +14,13 @@ export default async function DashboardPage() {
     where: { ownerId: session.user.id },
     include: {
       services: { where: { deletedAt: null, isActive: true }, select: { id: true, name: true, duration: true } },
-      staff: { where: { deletedAt: null }, include: { user: { select: { name: true, image: true } } } },
+      staff: {
+        where: { deletedAt: null },
+        include: {
+          user: { select: { name: true, image: true } },
+          schedules: { where: { isWorking: true }, select: { id: true }, take: 1 },
+        },
+      },
       clients: { where: { deletedAt: null }, select: { id: true, name: true } },
       locations: { where: { deletedAt: null, isActive: true }, select: { id: true, name: true } },
       _count: {
@@ -34,6 +41,11 @@ export default async function DashboardPage() {
     where: { businessId: business.id, deletedAt: null, startTime: { gte: todayStart, lte: todayEnd } },
   })
 
+  const hasServices = business.services.length > 0
+  const hasStaff = business.staff.length > 0
+  const hasSchedule = business.staff.some((s: typeof business.staff[number]) => s.schedules.length > 0)
+  const isNewBusiness = !hasServices || !hasStaff || !hasSchedule
+
   return (
     <div className="space-y-6">
       <StatsCards
@@ -42,6 +54,15 @@ export default async function DashboardPage() {
         totalStaff={business._count.staff}
         todayCount={todayCount}
       />
+
+      {isNewBusiness && (
+        <SetupChecklist
+          hasServices={hasServices}
+          hasStaff={hasStaff}
+          hasSchedule={hasSchedule}
+          slug={business.slug}
+        />
+      )}
 
       <CalendarWithNew
         businessId={business.id}

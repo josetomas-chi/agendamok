@@ -128,6 +128,93 @@ export async function sendSurveyRequest({
   })
 }
 
+export async function sendNewBookingAlert({
+  ownerEmail, ownerName, businessName,
+  clientName, clientEmail, clientPhone,
+  serviceName, staffName, date, time,
+}: {
+  ownerEmail: string; ownerName: string; businessName: string
+  clientName: string; clientEmail: string; clientPhone?: string
+  serviceName: string; staffName: string; date: string; time: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+
+  await resend.emails.send({
+    from: FROM,
+    to: ownerEmail,
+    subject: `Nueva reserva — ${clientName} · ${serviceName}`,
+    html: base(`
+      <h1>Nueva reserva recibida 🎉</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${ownerName}</strong>, <strong style="color:#38bdf8">${clientName}</strong> acaba de reservar en <strong style="color:#fff">${businessName}</strong>.</p>
+      <div class="box">
+        <div class="row"><span class="label">Cliente</span><span class="value">${clientName}</span></div>
+        <div class="row"><span class="label">Email</span><span class="value">${clientEmail}</span></div>
+        ${clientPhone ? `<div class="row"><span class="label">Teléfono</span><span class="value">${clientPhone}</span></div>` : ""}
+        <div class="row"><span class="label">Servicio</span><span class="value">${serviceName}</span></div>
+        <div class="row"><span class="label">Profesional</span><span class="value">${staffName}</span></div>
+        <div class="row"><span class="label">Fecha</span><span class="value">${date}</span></div>
+        <div class="row"><span class="label">Hora</span><span class="value">${time} hrs</span></div>
+      </div>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.vercel.app"}/dashboard/appointments" class="btn">Ver en el dashboard →</a>
+    `),
+  })
+}
+
+export async function sendCancellationAlert({
+  ownerEmail, ownerName, businessName,
+  clientName, serviceName, date, time,
+}: {
+  ownerEmail: string; ownerName: string; businessName: string
+  clientName: string; serviceName: string; date: string; time: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+
+  await resend.emails.send({
+    from: FROM,
+    to: ownerEmail,
+    subject: `Turno cancelado — ${clientName} · ${serviceName}`,
+    html: base(`
+      <h1>Turno cancelado ❌</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${ownerName}</strong>, <strong style="color:#38bdf8">${clientName}</strong> canceló su turno en <strong style="color:#fff">${businessName}</strong>.</p>
+      <div class="box">
+        <div class="row"><span class="label">Cliente</span><span class="value">${clientName}</span></div>
+        <div class="row"><span class="label">Servicio</span><span class="value">${serviceName}</span></div>
+        <div class="row"><span class="label">Fecha</span><span class="value">${date}</span></div>
+        <div class="row"><span class="label">Hora</span><span class="value">${time} hrs</span></div>
+      </div>
+      <p style="color:rgba(255,255,255,0.4);font-size:13px;margin-top:12px">El horario quedó disponible para nuevas reservas.</p>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.vercel.app"}/dashboard/appointments" class="btn" style="margin-top:8px">Ver agenda →</a>
+    `),
+  })
+}
+
+export async function sendDailySummary({
+  ownerEmail, ownerName, businessName, date, appointments,
+}: {
+  ownerEmail: string; ownerName: string; businessName: string; date: string
+  appointments: { time: string; clientName: string; serviceName: string; staffName: string }[]
+}) {
+  if (!process.env.RESEND_API_KEY) return
+
+  const rows = appointments.map(a =>
+    `<div class="row"><span class="label">${a.time}</span><span class="value">${a.clientName} · ${a.serviceName}<br/><span style="color:rgba(255,255,255,0.3);font-size:12px">${a.staffName}</span></span></div>`
+  ).join("")
+
+  await resend.emails.send({
+    from: FROM,
+    to: ownerEmail,
+    subject: `${appointments.length} turno${appointments.length !== 1 ? "s" : ""} para hoy — ${businessName}`,
+    html: base(`
+      <h1>Tu agenda de hoy 📋</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${ownerName}</strong>, esto es lo que tienes para hoy en <strong style="color:#38bdf8">${businessName}</strong>:</p>
+      <div class="box">
+        ${appointments.length ? rows : '<p style="color:rgba(255,255,255,0.3);text-align:center;font-size:14px;padding:8px 0">Sin turnos agendados para hoy</p>'}
+      </div>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.vercel.app"}/dashboard" class="btn">Abrir dashboard →</a>
+    `),
+  })
+}
+
 export async function sendBookingReminder({
   clientName, clientEmail, businessName,
   serviceName, date, time,

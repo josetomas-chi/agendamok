@@ -14,6 +14,7 @@ export async function sendWhatsAppReminder({
   serviceName,
   date,
   time,
+  customBody,
 }: {
   to: string
   clientName: string
@@ -21,6 +22,7 @@ export async function sendWhatsAppReminder({
   serviceName: string
   date: string
   time: string
+  customBody?: string
 }) {
   if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) return
 
@@ -30,9 +32,8 @@ export async function sendWhatsAppReminder({
   if (phone.startsWith("56") && !phone.startsWith("+")) phone = "+" + phone
   if (!phone.startsWith("+")) phone = "+56" + phone
 
-  await client.messages.create({
-    from: FROM,
-    to: `whatsapp:${phone}`,
-    body: `Hola ${clientName} 👋\n\nTe recordamos que mañana tienes un turno en *${businessName}*:\n\n📋 *${serviceName}*\n📅 ${date}\n🕐 ${time} hrs\n\n_AgendaMok — Sistema de reservas online_`,
-  })
+  const body = customBody ??
+    `Hola ${clientName} 👋\n\nTe recordamos que mañana tienes un turno en *${businessName}*:\n\n📋 *${serviceName}*\n📅 ${date}\n🕐 ${time} hrs\n\n_AgendaMok — Sistema de reservas online_`
+
+  await client.messages.create({ from: FROM, to: `whatsapp:${phone}`, body })
 }

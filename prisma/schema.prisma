@@ -179,8 +179,12 @@ model Business {
   clinicalRecordEnabled Boolean   @default(false)
   flowApiKey            String?
   flowSecretKey         String?
-  onlinePaymentsEnabled Boolean   @default(false)
-  createdAt             DateTime  @default(now())
+  onlinePaymentsEnabled       Boolean   @default(false)
+  cancellationHoursNotice     Int?
+  coverImage                  String?
+  primaryColor                String?
+  dailySummaryEnabled         Boolean   @default(false)
+  createdAt                   DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   deletedAt             DateTime?
 
@@ -415,8 +419,10 @@ model Appointment {
   notes         String?           @db.Text
   internalNotes String?           @db.Text
   googleEventId           String?
-  cancelToken             String?           @unique
-  whatsappReminderSentAt  DateTime?
+  cancelToken              String?           @unique
+  whatsappReminderSentAt   DateTime?
+  whatsappReminder1hSentAt DateTime?
+  emailReminder1hSentAt    DateTime?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
   deletedAt     DateTime?

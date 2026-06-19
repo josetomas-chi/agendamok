@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { format, addDays, startOfToday, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
-import { Check, ChevronLeft, ChevronRight, Clock, MapPin, Calendar, User, Loader2 } from "lucide-react"
+import { Check, ChevronLeft, ChevronRight, Clock, MapPin, Calendar, User, Loader2, Download, Share2 } from "lucide-react"
 import { ChatWidget } from "@/components/booking/chat-widget"
 
 type Service = { id: string; name: string; description: string | null; duration: number; price: number; color: string }
@@ -106,6 +106,30 @@ export default function BookingClient({ slug }: { slug: string }) {
 
     setStep("confirmed")
     setSubmitting(false)
+  }
+
+  function downloadIcs() {
+    if (!selectedDate || !selectedTime || !selectedService || !business) return
+    const [h, m] = selectedTime.split(":").map(Number)
+    const dtStart = parseISO(selectedDate)
+    dtStart.setHours(h, m, 0, 0)
+    const dtEnd = new Date(dtStart.getTime() + selectedService.duration * 60000)
+    const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"
+    const ics = [
+      "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//AgendaMok//ES",
+      "BEGIN:VEVENT",
+      `DTSTART:${fmt(dtStart)}`,
+      `DTEND:${fmt(dtEnd)}`,
+      `SUMMARY:${selectedService.name} en ${business.name}`,
+      `DESCRIPTION:Turno reservado via AgendaMok`,
+      business.address ? `LOCATION:${business.address}` : "",
+      "END:VEVENT", "END:VCALENDAR",
+    ].filter(Boolean).join("\r\n")
+    const blob = new Blob([ics], { type: "text/calendar" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url; a.download = "turno.ics"; a.click()
+    URL.revokeObjectURL(url)
   }
 
   function resetBooking() {
@@ -376,41 +400,94 @@ export default function BookingClient({ slug }: { slug: string }) {
         )}
 
         {step === "confirmed" && (
-          <div className="text-center space-y-5 py-8">
-            <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto">
-              <Check className="w-10 h-10 text-green-400" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold">Turno confirmado!</h2>
-              <p className="text-white/50 mt-1">Te enviamos la confirmacion a {form.email}</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-left space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: selectedService?.color }} />
-                <span className="font-medium">{selectedService?.name}</span>
-              </div>
-              {selectedStaff && (
-                <div className="flex items-center gap-2 text-sm text-white/50">
-                  <User className="w-3.5 h-3.5" /> {selectedStaff.user.name}
-                </div>
-              )}
-              <div className="flex items-center gap-2 text-sm text-white/50">
-                <Calendar className="w-3.5 h-3.5" />
-                {selectedDate && format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })} a las {selectedTime}
-              </div>
-              {(business.address || business.city) && (
-                <div className="flex items-center gap-2 text-sm text-white/50">
-                  <MapPin className="w-3.5 h-3.5" />
-                  {[business.address, business.city].filter(Boolean).join(", ")}
-                </div>
-              )}
-            </div>
-            <button onClick={resetBooking} className="text-sm text-sky-400 hover:text-sky-300 transition-colors">
-              Reservar otro turno
-            </button>
+          <ConfirmedView
+            form={form}
+            business={business}
+            selectedService={selectedService}
+            selectedStaff={selectedStaff}
+            selectedDate={selectedDate}
+            selectedTime={selectedTime}
+            onReset={resetBooking}
+            onDownloadIcs={downloadIcs}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ConfirmedView({ form, business, selectedService, selectedStaff, selectedDate, selectedTime, onReset, onDownloadIcs }: {
+  form: { name: string; email: string }
+  business: { name: string; address: string | null; city: string | null; slug?: string }
+  selectedService: { name: string; color: string; duration: number } | null
+  selectedStaff: { user: { name: string | null } } | null
+  selectedDate: string
+  selectedTime: string
+  onReset: () => void
+  onDownloadIcs: () => void
+}) {
+  const dateLabel = selectedDate
+    ? format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })
+    : ""
+
+  const waText = encodeURIComponent(
+    `Reservé un turno en ${business.name} — ${selectedService?.name} el ${dateLabel} a las ${selectedTime} hs 🗓️`
+  )
+
+  return (
+    <div className="text-center space-y-6 py-6">
+      <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto animate-bounce-once">
+        <Check className="w-10 h-10 text-emerald-400" />
+      </div>
+      <div>
+        <h2 className="text-xl font-bold text-white">¡Turno confirmado!</h2>
+        <p className="text-white/40 mt-1 text-sm">Te enviamos la confirmación a {form.email}</p>
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-left space-y-3">
+        <div className="flex items-center gap-2 text-sm">
+          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: selectedService?.color }} />
+          <span className="font-medium text-white">{selectedService?.name}</span>
+        </div>
+        {selectedStaff && (
+          <div className="flex items-center gap-2 text-sm text-white/50">
+            <User className="w-3.5 h-3.5" /> {selectedStaff.user.name}
+          </div>
+        )}
+        <div className="flex items-center gap-2 text-sm text-white/50">
+          <Calendar className="w-3.5 h-3.5" />
+          {dateLabel} a las {selectedTime}
+        </div>
+        {(business.address || business.city) && (
+          <div className="flex items-center gap-2 text-sm text-white/50">
+            <MapPin className="w-3.5 h-3.5" />
+            {[business.address, business.city].filter(Boolean).join(", ")}
           </div>
         )}
       </div>
+
+      <div className="flex flex-col sm:flex-row gap-3">
+        <button
+          onClick={onDownloadIcs}
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 text-white/70 hover:bg-white/5 transition-colors text-sm font-medium"
+        >
+          <Download className="w-4 h-4" />
+          Agregar al calendario
+        </button>
+        <a
+          href={`https://wa.me/?text=${waText}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 text-white/70 hover:bg-white/5 transition-colors text-sm font-medium"
+        >
+          <Share2 className="w-4 h-4" />
+          Compartir
+        </a>
+      </div>
+
+      <button onClick={onReset} className="text-sm text-sky-400 hover:text-sky-300 transition-colors">
+        Reservar otro turno →
+      </button>
     </div>
   )
 }
