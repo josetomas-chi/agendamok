@@ -586,22 +586,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Stats */}
-        <section className="py-24 border-y border-white/5 bg-white/[0.02]">
-          <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {[
-              ["5 min", "para configurar tu negocio", "text-sky-400"],
-              ["24/7", "reservas sin intervención", "text-violet-400"],
-              ["−40%", "reducción de ausencias", "text-emerald-400"],
-              ["100%", "de tus datos, siempre", "text-amber-400"],
-            ].map(([num, label, color], i) => (
-              <div key={label} className={`reveal reveal-delay-${i + 1}`}>
-                <div className={`text-4xl font-bold ${color} mb-2`}>{num}</div>
-                <div className="text-sm text-white/60">{label}</div>
-              </div>
-            ))}
-          </div>
-        </section>
 
         {/* Features */}
         {/* Stats */}
