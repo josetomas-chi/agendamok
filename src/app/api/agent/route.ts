@@ -108,11 +108,13 @@ async function runTool(name: string, input: Record<string, string>): Promise<str
         staffIds = staffList.map((s: { id: string }) => s.id)
       }
 
-      if (staffIds.length === 0) return JSON.stringify({ slots: [] })
+      if (staffIds.length === 0) return JSON.stringify({ slots: [], debug: "No hay profesionales con ese servicio asignado" })
 
       const schedules = await prisma.workSchedule.findMany({
         where: { staffId: { in: staffIds }, dayOfWeek, isWorking: true },
       })
+
+      if (schedules.length === 0) return JSON.stringify({ slots: [], debug: `Ningún profesional trabaja ese día (dayOfWeek=${dayOfWeek}, staffIds=${staffIds.join(",")})` })
 
       const dayStart = new Date(date); dayStart.setHours(0, 0, 0, 0)
       const dayEnd = new Date(date); dayEnd.setHours(23, 59, 59, 999)
@@ -210,7 +212,7 @@ export async function POST(req: Request) {
 
 REGLAS CRÍTICAS — nunca las violes:
 - JAMÁS menciones un horario o fecha disponible sin haber llamado primero a get_availability y obtenido slots reales.
-- Si get_availability devuelve slots vacíos [], esa fecha NO tiene disponibilidad. Díselo al cliente y pregunta otra fecha.
+- Si get_availability devuelve slots vacíos [], esa fecha NO tiene disponibilidad. Si viene un campo "debug", úsalo para entender el motivo pero NO lo muestres al usuario — en cambio explica con palabras simples (ej: "parece que ese profesional no trabaja ese día").
 - Solo ofrece horarios que aparezcan literalmente en el array de slots devuelto por get_availability.
 - Nunca inventes, asumas ni sugiereas horarios de memoria.
 
