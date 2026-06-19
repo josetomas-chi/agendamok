@@ -26,8 +26,8 @@ export function StatsCards({ totalAppointments, totalClients, totalStaff, todayC
               <s.icon className="w-5 h-5 text-sky-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{s.value}</p>
-              <p className="text-sm text-muted-foreground">{s.label}</p>
+              <p className="text-4xl font-bold tracking-tight leading-none">{s.value}</p>
+              <p className="text-xs text-muted-foreground mt-1.5 uppercase tracking-widest font-medium">{s.label}</p>
             </div>
           </CardContent>
         </Card>

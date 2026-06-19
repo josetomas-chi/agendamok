@@ -106,8 +106,8 @@ export default function CommissionsPage() {
               <Icon className={`w-5 h-5 ${color}`} />
             </div>
             <div>
-              <p className={`text-2xl font-bold ${color}`}>${Math.round(value).toLocaleString("es-CL")}</p>
-              <p className="text-xs text-white/40">{label}</p>
+              <p className={`text-3xl font-bold tracking-tight leading-none ${color}`}>${Math.round(value).toLocaleString("es-CL")}</p>
+              <p className="text-[11px] text-white/40 mt-1.5 uppercase tracking-widest font-medium">{label}</p>
             </div>
           </div>
         ))}

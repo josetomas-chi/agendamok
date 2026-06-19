@@ -132,12 +132,14 @@
 
 @layer utilities {
   .page-header {
-    @apply flex items-center justify-between mb-6;
+    @apply flex items-center justify-between mb-8;
   }
   .page-title {
-    @apply text-2xl font-bold text-foreground tracking-tight;
+    @apply text-3xl font-bold text-foreground tracking-[-0.03em] leading-none;
   }
   .page-subtitle {
-    @apply text-sm text-muted-foreground mt-0.5;
+    @apply text-sm mt-1.5;
+    color: oklch(0.72 0.01 260);
+    letter-spacing: 0.01em;
   }
 }
