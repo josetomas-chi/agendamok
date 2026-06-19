@@ -119,7 +119,7 @@ export function CalendarView({ appointments, staffMembers = [], businessId, onNe
   }, [staffMembers, appointments])
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-white/10 flex flex-col" style={{ background: "#2c2c30" }}>
+    <div className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "#28282c", boxShadow: "0 0 0 1px rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.4)" }}>
       {/* Toolbar */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/8 flex-shrink-0" style={{ background: "#2c2c30" }}>
         <div className="flex items-center gap-2">
