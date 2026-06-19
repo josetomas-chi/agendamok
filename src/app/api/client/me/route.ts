@@ -30,7 +30,7 @@ export async function GET() {
 
   const appointments = await prisma.appointment.findMany({
     where: {
-      clientId: { in: clients.map(c => c.id) },
+      clientId: { in: clients.map((c: { id: string }) => c.id) },
       deletedAt: null,
       status: { not: "CANCELLED" },
     },
