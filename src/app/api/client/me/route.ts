@@ -21,7 +21,7 @@ export async function GET() {
   const email = await getClientEmail()
   if (!email) return NextResponse.json({ error: "No autenticado" }, { status: 401 })
 
-  const clients = await prisma.client.findMany({
+  const clients: { id: string; name: string }[] = await prisma.client.findMany({
     where: { email, deletedAt: null },
     select: { id: true, name: true },
   })
@@ -30,7 +30,7 @@ export async function GET() {
 
   const appointments = await prisma.appointment.findMany({
     where: {
-      clientId: { in: clients.map(c => c.id) },
+      clientId: { in: clients.map((c: { id: string }) => c.id) },
       deletedAt: null,
       status: { not: "CANCELLED" },
     },
