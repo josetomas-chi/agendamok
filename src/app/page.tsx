@@ -283,6 +283,33 @@ export default function LandingPage() {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-8px); }
         }
+        @keyframes heroWord {
+          from { opacity: 0; transform: translateY(24px); filter: blur(6px); }
+          to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
+        }
+        .hero-word {
+          display: inline-block;
+          opacity: 0;
+          animation: heroWord 0.75s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        .hw0 { animation-delay: 0.05s; }
+        .hw1 { animation-delay: 0.18s; }
+        .hw2 { animation-delay: 0.30s; }
+        .hw3 { animation-delay: 0.42s; }
+        .hw4 { animation-delay: 0.54s; }
+        .hero-badge { opacity: 0; animation: heroWord 0.5s cubic-bezier(0.16,1,0.3,1) 0s both; }
+        .hero-sub   { opacity: 0; animation: heroWord 0.65s cubic-bezier(0.16,1,0.3,1) 0.6s both; }
+        .hero-ctas  { opacity: 0; animation: heroWord 0.65s cubic-bezier(0.16,1,0.3,1) 0.75s both; }
+        .hero-note  { opacity: 0; animation: heroWord 0.5s cubic-bezier(0.16,1,0.3,1) 0.88s both; }
+        .mockup-reveal {
+          opacity: 0;
+          transform: scale(0.92) translateY(32px) !important;
+          transition: opacity 1.1s cubic-bezier(0.16,1,0.3,1) 0.2s, transform 1.1s cubic-bezier(0.16,1,0.3,1) 0.2s !important;
+        }
+        .mockup-reveal.revealed {
+          opacity: 1 !important;
+          transform: scale(1) translateY(0) !important;
+        }
         .cta-btn-wrap {
           position: relative;
           display: inline-flex;
@@ -354,23 +381,30 @@ export default function LandingPage() {
           </div>
 
           <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-24">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-xs text-white/60 mb-8">
+            <div className="hero-badge inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-xs text-white/60 mb-8">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
               Nuevo: Recordatorios automáticos por email
             </div>
 
             <h1 className="text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] mb-8">
-              <span className="text-white/90">El verdadero</span>
+              <span className="text-white/90">
+                <span className="hero-word hw0">El </span>
+                <span className="hero-word hw1">verdadero</span>
+              </span>
               <br />
-              <span className="gradient-text">Copiloto de tu negocio.</span>
+              <span className="gradient-text">
+                <span className="hero-word hw2">Copiloto </span>
+                <span className="hero-word hw3">de tu </span>
+                <span className="hero-word hw4">negocio.</span>
+              </span>
             </h1>
 
-            <p className="max-w-2xl mx-auto text-lg sm:text-xl text-white/50 mb-12 leading-relaxed">
+            <p className="hero-sub max-w-2xl mx-auto text-lg sm:text-xl text-white/50 mb-12 leading-relaxed">
               La plataforma de reservas online para peluquerías, clínicas, gimnasios y cualquier negocio con turnos.
               Configura en 5 minutos.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="hero-ctas flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/register" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-sky-500 hover:bg-sky-400 transition-all rounded-full text-base font-semibold group">
                 Empezar gratis
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -380,10 +414,10 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            <p className="mt-8 text-sm text-white/30">30 días gratis en todos los planes · Sin tarjeta al inicio</p>
+            <p className="hero-note mt-8 text-sm text-white/30">30 días gratis en todos los planes · Sin tarjeta al inicio</p>
 
             {/* Dashboard preview */}
-            <div className="mt-20 relative">
+            <div className="mockup-reveal reveal mt-20 relative">
               <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#3a3a3c] to-transparent z-10" />
               {/* Retroiluminación */}
               <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-sky-500/40 via-sky-400/20 to-sky-500/40 blur-xl" />
