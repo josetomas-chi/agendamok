@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sendCancellationAlert } from "@/lib/email"
+import { deleteCalendarEvent } from "@/lib/google-calendar"
 import { utcToChileLocal } from "@/lib/timezone"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -14,7 +15,7 @@ export async function GET(req: Request) {
     include: {
       service: { select: { name: true } },
       client: { select: { name: true } },
-      business: { select: { name: true, cancellationHoursNotice: true, owner: { select: { name: true, email: true } } } },
+      business: { select: { id: true, name: true, cancellationHoursNotice: true, owner: { select: { name: true, email: true } } } },
     },
   })
 
@@ -40,6 +41,11 @@ export async function GET(req: Request) {
     where: { id: appointment.id },
     data: { status: "CANCELLED" },
   })
+
+  // Remove from Google Calendar
+  if (appointment.googleEventId) {
+    deleteCalendarEvent(appointment.business.id, appointment.googleEventId).catch(() => {})
+  }
 
   const local = utcToChileLocal(appointment.startTime)
   const date = format(local, "EEEE d 'de' MMMM yyyy", { locale: es })

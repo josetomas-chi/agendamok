@@ -5,6 +5,7 @@ import { parseISO, addMinutes, setHours, setMinutes, format } from "date-fns"
 import { chileLocalToUTC, utcToChileLocal } from "@/lib/timezone"
 import { es } from "date-fns/locale"
 import { sendBookingConfirmation, sendNewBookingAlert } from "@/lib/email"
+import { createCalendarEvent } from "@/lib/google-calendar"
 import { randomBytes } from "crypto"
 
 const schema = z.object({
@@ -135,6 +136,17 @@ export async function POST(req: Request) {
       time: localTime,
       duration: service.duration,
       cancelUrl: `${baseUrl}/cancelar?token=${cancelToken}`,
+    }).catch(() => {})
+
+    // Sync to Google Calendar (async, don't block response)
+    createCalendarEvent({
+      businessId: data.businessId,
+      appointmentId: appointment.id,
+      summary: `${serviceName} — ${data.clientName}`,
+      description: `Cliente: ${data.clientName}\nEmail: ${data.clientEmail}${data.clientPhone ? `\nTel: ${data.clientPhone}` : ""}\nServicio: ${serviceName} (${service.duration} min)`,
+      location: business?.address ?? undefined,
+      startTime,
+      endTime,
     }).catch(() => {})
 
     if (business?.owner?.email) {
