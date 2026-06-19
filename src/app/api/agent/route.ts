@@ -204,7 +204,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Faltan parámetros" }, { status: 400 })
   }
 
-  const today = format(new Date(), "EEEE d 'de' MMMM yyyy", { locale: es })
+  const today = new Date().toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "America/Santiago" })
 
   const systemPrompt = `Eres el asistente de reservas de ${businessName}. Hoy es ${today}.
 
