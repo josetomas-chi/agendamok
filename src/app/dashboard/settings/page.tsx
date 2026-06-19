@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote } from "lucide-react"
 
-type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean }
+type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean }
 type PaymentSettings = { onlinePaymentsEnabled: boolean; hasCredentials: boolean }
 type Subscription = { plan: string; status: string; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean; flowCustomerId: string | null; trialEndsAt: string | null }
 
@@ -20,6 +20,9 @@ export default function SettingsPage() {
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [form, setForm] = useState({ name: "", description: "", website: "", phone: "", address: "", city: "", timezone: "", currency: "" })
   const [clinicalEnabled, setClinicalEnabled] = useState(false)
+  const [cancellationHours, setCancellationHours] = useState<string>("")
+  const [dailySummary, setDailySummary] = useState(false)
+  const [savingNotif, setSavingNotif] = useState(false)
   const [locating, setLocating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [subscribing, setSubscribing] = useState(false)
@@ -45,6 +48,8 @@ export default function SettingsPage() {
       setSubscription(biz.subscription || null)
       setForm({ name: biz.business.name, description: biz.business.description || "", website: biz.business.website || "", phone: biz.business.phone || "", address: biz.business.address || "", city: biz.business.city || "", timezone: biz.business.timezone, currency: biz.business.currency })
       setClinicalEnabled(biz.business.clinicalRecordEnabled ?? false)
+      setCancellationHours(biz.business.cancellationHoursNotice?.toString() ?? "")
+      setDailySummary(biz.business.dailySummaryEnabled ?? false)
       // Load API keys
       const kr = await fetch(`/api/businesses/${d.businessId}/api-keys`)
       const kd = await kr.json()
@@ -469,30 +474,99 @@ export default function SettingsPage() {
         </TabsContent>
 
         {/* Notifications */}
-        <TabsContent value="notifications" className="pt-4">
+        <TabsContent value="notifications" className="pt-4 space-y-4">
+          {/* Status */}
           <Card>
-            <CardHeader><CardTitle>Notificaciones automaticas</CardTitle><CardDescription>Configura que mensajes reciben tus clientes</CardDescription></CardHeader>
+            <CardHeader><CardTitle>Notificaciones automáticas</CardTitle><CardDescription>Mensajes que se envían sin intervención manual</CardDescription></CardHeader>
             <CardContent className="space-y-3">
               {[
-                { label: "Confirmacion de cita", desc: "Email al confirmar una reserva", active: true },
-                { label: "Recordatorio 24h antes", desc: "Email y WhatsApp el dia anterior", active: true },
-                { label: "Recordatorio 1h antes", desc: "WhatsApp una hora antes de la cita", active: false },
-                { label: "Follow-up post-cita", desc: "Email pidiendo resena tras el servicio", active: false },
+                { label: "Confirmación de turno", desc: "Email al cliente cuando se confirma la reserva", active: true },
+                { label: "Recordatorio 24h antes", desc: "WhatsApp + email el día anterior al turno", active: true },
+                { label: "Recordatorio 1h antes", desc: "WhatsApp + email una hora antes del turno", active: true },
+                { label: "Alerta de nueva reserva al negocio", desc: "Email al dueño cuando un cliente reserva", active: true },
+                { label: "Alerta de cancelación al negocio", desc: "Email al dueño cuando un cliente cancela", active: true },
               ].map(n => (
                 <div key={n.label} className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <p className="font-medium text-sm">{n.label}</p>
                     <p className="text-xs text-muted-foreground">{n.desc}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={n.active ? "default" : "secondary"}>{n.active ? "Activo" : "Inactivo"}</Badge>
-                    <Button size="sm" variant="ghost">Editar</Button>
-                  </div>
+                  <Badge variant="default" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Activo</Badge>
                 </div>
               ))}
-              <p className="text-xs text-muted-foreground pt-2">Las integraciones de email (Resend) y WhatsApp (Twilio) se configuran en las variables de entorno.</p>
             </CardContent>
           </Card>
+
+          {/* Daily summary */}
+          <Card>
+            <CardHeader><CardTitle>Resumen diario</CardTitle><CardDescription>Recibe un email cada mañana con los turnos del día</CardDescription></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <p className="font-medium text-sm">Resumen matutino</p>
+                  <p className="text-xs text-muted-foreground">Llega a las 8 AM con la agenda del día</p>
+                </div>
+                <button
+                  onClick={() => setDailySummary(v => !v)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${dailySummary ? "bg-sky-500" : "bg-slate-600"}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${dailySummary ? "translate-x-6" : "translate-x-1"}`} />
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Cancellation policy */}
+          <Card>
+            <CardHeader><CardTitle>Política de cancelación</CardTitle><CardDescription>Define hasta cuánto tiempo antes puede cancelar un cliente</CardDescription></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="cancellation-hours">Horas mínimas de anticipación</Label>
+                  <p className="text-xs text-muted-foreground mb-2">El link de cancelación del email se bloqueará si ya pasó este plazo</p>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="cancellation-hours"
+                      type="number"
+                      min="1"
+                      max="168"
+                      placeholder="Ej: 24"
+                      value={cancellationHours}
+                      onChange={e => setCancellationHours(e.target.value)}
+                      className="w-28"
+                    />
+                    <span className="text-sm text-muted-foreground">horas antes</span>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">Dejar vacío = sin límite de cancelación (el cliente puede cancelar hasta el último momento)</p>
+            </CardContent>
+          </Card>
+
+          <Button
+            onClick={async () => {
+              if (!business) return
+              setSavingNotif(true)
+              try {
+                await fetch(`/api/businesses/${business.id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    dailySummaryEnabled: dailySummary,
+                    cancellationHoursNotice: cancellationHours ? parseInt(cancellationHours) : null,
+                  }),
+                })
+                toast.success("Configuración guardada")
+              } catch {
+                toast.error("Error al guardar")
+              } finally {
+                setSavingNotif(false)
+              }
+            }}
+            disabled={savingNotif}
+          >
+            {savingNotif ? "Guardando..." : "Guardar configuración"}
+          </Button>
         </TabsContent>
 
         {/* Billing */}
