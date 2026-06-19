@@ -93,9 +93,29 @@ async function runTool(name: string, input: Record<string, string>): Promise<str
         where: { id: input.serviceId },
         select: { duration: true, bufferAfter: true },
       })
-      if (!service) return JSON.stringify({ slots: [] })
+      if (!service) return JSON.stringify({ slots: [], error: `Servicio ${input.serviceId} no encontrado` })
 
-      const date = parseISO(input.date)
+      // If date is not YYYY-MM-DD, try to extract day number and find the next matching date
+      let dateStr = input.date
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        const dayNum = parseInt(dateStr.replace(/\D/g, ""))
+        if (dayNum) {
+          const nowChile = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Santiago" }))
+          for (let i = 0; i < 30; i++) {
+            const d = new Date(nowChile); d.setDate(nowChile.getDate() + i)
+            if (d.getDate() === dayNum) {
+              dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`
+              break
+            }
+          }
+        }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+          return JSON.stringify({ slots: [], error: `Formato de fecha inválido: "${input.date}". Usa YYYY-MM-DD.` })
+        }
+        console.log(`[agent] date coerced from "${input.date}" → "${dateStr}"`)
+      }
+
+      const date = parseISO(dateStr)
       const dayOfWeek = date.getDay()
 
       let staffIds: string[]
