@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { Check, X, Minus, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight, Star, Percent, MapPin, FileText, Stethoscope, Key, ChevronDown } from "lucide-react"
+import { Check, X, Minus, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight, Star, Percent, MapPin, FileText, Stethoscope, Key, ChevronDown, Rocket, Scissors, HelpCircle, type LucideIcon } from "lucide-react"
 
 const features = [
   { icon: Calendar, title: "Calendario inteligente", desc: "Vista semanal y diaria por profesional. Arrastra y suelta para mover turnos al instante." },
@@ -76,10 +76,10 @@ const plans = [
   },
 ]
 
-const helpItems = [
+const helpItems: { category: string; icon: LucideIcon; steps: { title: string; content: string }[] }[] = [
   {
     category: "Primeros pasos",
-    icon: "🚀",
+    icon: Rocket,
     steps: [
       { title: "Crear tu cuenta", content: "Ingresa a agendamok.cl y haz clic en «Empezar gratis». Completa tu email y contraseña — no necesitas tarjeta de crédito. En menos de 1 minuto tienes acceso al panel." },
       { title: "Configurar los datos de tu negocio", content: "En el panel, ve a Configuración → Negocio. Allí completas el nombre, dirección, teléfono y categoría. También puedes subir tu logo y escribir una descripción que verán tus clientes al reservar." },
@@ -88,7 +88,7 @@ const helpItems = [
   },
   {
     category: "Servicios y profesionales",
-    icon: "✂️",
+    icon: Scissors,
     steps: [
       { title: "Agregar tus servicios", content: "En el menú lateral ve a Servicios → Nuevo servicio. Completa el nombre (ej: «Corte de cabello»), duración en minutos, precio y color identificador. Puedes crear todos los que necesites y agruparlos por categorías." },
       { title: "Agregar profesionales (staff)", content: "Ve a Staff → Agregar profesional. Completa nombre y email — el profesional recibirá una invitación para crear su acceso. Desde su perfil puedes asignarle los servicios que ofrece, definir su horario semanal y configurar sus comisiones." },
@@ -97,7 +97,7 @@ const helpItems = [
   },
   {
     category: "Cobros y pagos",
-    icon: "💳",
+    icon: CreditCard,
     steps: [
       { title: "Activar cobros online a tus clientes", content: "Ve a Configuración → Cobros online. Necesitas una cuenta en Flow.cl. Ingresa tu API Key y Secret Key de producción (las encuentras en tu panel Flow → Integración) y activa el toggle. A partir de ese momento, tus clientes podrán pagar al reservar y el dinero llega directamente a tu cuenta." },
       { title: "Usar el POS para cobros en el local", content: "En el módulo Pagos del panel encuentras el POS. Selecciona el turno, elige el método (efectivo, tarjeta, transferencia) y confirma el pago. El historial queda registrado automáticamente." },
@@ -106,7 +106,7 @@ const helpItems = [
   },
   {
     category: "Clientes y comunicación",
-    icon: "👥",
+    icon: Users,
     steps: [
       { title: "Gestionar tu base de clientes (CRM)", content: "En el módulo Clientes tienes el historial completo de cada persona: turnos pasados, pagos, notas y datos de contacto. Puedes buscar por nombre o email, agregar etiquetas y exportar la lista." },
       { title: "Recordatorios automáticos por email", content: "AgendaMok envía automáticamente un email de confirmación cuando el cliente reserva y un recordatorio 24 horas antes del turno. No requiere configuración adicional — funciona desde el momento en que activas tu cuenta." },
@@ -115,7 +115,7 @@ const helpItems = [
   },
   {
     category: "Preguntas frecuentes",
-    icon: "❓",
+    icon: HelpCircle,
     steps: [
       { title: "¿Puedo importar mis clientes desde otro sistema?", content: "Sí. En el módulo Clientes encuentras el botón «Importar». Puedes subir un archivo CSV o Excel con las columnas nombre, email y teléfono. El sistema detecta duplicados automáticamente." },
       { title: "¿Qué pasa cuando termina el período de prueba?", content: "Al vencer los 30 días gratis, si tienes una tarjeta registrada se cobra automáticamente el plan que seleccionaste ($9.900/mes para Starter). Si no tienes tarjeta, tu cuenta pasa a modo lectura — puedes ver tus datos pero no recibir nuevas reservas hasta que completes el pago." },
@@ -165,7 +165,7 @@ function HelpAccordion() {
               onClick={() => { setOpenCat(isOpenCat ? null : ci); setOpenStep(null) }}
               className={`w-full flex items-center gap-3 px-5 py-4 transition-colors text-left ${isOpenCat ? c.bg : "bg-white/[0.03] hover:bg-white/[0.06]"}`}
             >
-              <span className="text-xl">{cat.icon}</span>
+              <cat.icon className="w-4 h-4 text-white/50 flex-shrink-0" />
               <span className="flex-1 font-semibold text-white">{cat.category}</span>
               <span className={`w-2 h-2 rounded-full mr-1 ${isOpenCat ? c.dot : "bg-white/20"}`} />
               <ChevronDown className={`w-4 h-4 text-white/40 transition-transform flex-shrink-0 ${isOpenCat ? "rotate-180" : ""}`} />
