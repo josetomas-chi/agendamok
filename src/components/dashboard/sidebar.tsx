@@ -42,6 +42,12 @@ const groups = [
       { href: "/dashboard/surveys", label: "Encuestas", icon: Star },
     ],
   },
+  {
+    label: "Cuenta",
+    items: [
+      { href: "/dashboard/settings", label: "Configuración", icon: Settings },
+    ],
+  },
 ]
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
