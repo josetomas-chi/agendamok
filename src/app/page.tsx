@@ -284,25 +284,25 @@ export default function LandingPage() {
           50% { transform: translateY(-8px); }
         }
         @keyframes heroWord {
-          from { opacity: 0; transform: translateY(24px); filter: blur(6px); }
-          to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
+          from { opacity: 0; transform: translateY(50px) scale(0.96); }
+          to   { opacity: 1; transform: translateY(0)    scale(1); }
         }
         @keyframes heroGrad {
-          from { opacity: 0; transform: translateY(28px); }
-          to   { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; transform: translateY(55px) scale(0.96); }
+          to   { opacity: 1; transform: translateY(0)    scale(1); }
         }
         .hero-word {
           display: inline-block;
           opacity: 0;
-          animation: heroWord 0.75s cubic-bezier(0.16,1,0.3,1) both;
+          animation: heroWord 1s cubic-bezier(0.16,1,0.3,1) both;
         }
-        .hw0 { animation-delay: 0.05s; }
-        .hw1 { animation-delay: 0.20s; }
-        .hw2 { display: block; opacity: 0; animation: heroGrad 0.75s cubic-bezier(0.16,1,0.3,1) 0.34s both; }
-        .hero-badge { opacity: 0; animation: heroWord 0.5s cubic-bezier(0.16,1,0.3,1) 0s both; }
-        .hero-sub   { opacity: 0; animation: heroWord 0.65s cubic-bezier(0.16,1,0.3,1) 0.6s both; }
-        .hero-ctas  { opacity: 0; animation: heroWord 0.65s cubic-bezier(0.16,1,0.3,1) 0.75s both; }
-        .hero-note  { opacity: 0; animation: heroWord 0.5s cubic-bezier(0.16,1,0.3,1) 0.88s both; }
+        .hw0 { animation-delay: 0.1s; }
+        .hw1 { animation-delay: 0.35s; }
+        .hw2 { display: block; opacity: 0; animation: heroGrad 1s cubic-bezier(0.16,1,0.3,1) 0.6s both; }
+        .hero-badge { opacity: 0; animation: heroWord 0.7s cubic-bezier(0.16,1,0.3,1) 0s both; }
+        .hero-sub   { opacity: 0; animation: heroWord 0.8s cubic-bezier(0.16,1,0.3,1) 0.9s both; }
+        .hero-ctas  { opacity: 0; animation: heroWord 0.8s cubic-bezier(0.16,1,0.3,1) 1.1s both; }
+        .hero-note  { opacity: 0; animation: heroWord 0.6s cubic-bezier(0.16,1,0.3,1) 1.3s both; }
         .mockup-reveal {
           opacity: 0;
           transform: scale(0.92) translateY(32px) !important;
