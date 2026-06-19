@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { TopBar } from "@/components/dashboard/topbar"
 import { CommandPalette } from "@/components/dashboard/command-palette"
+import { BottomNav } from "@/components/dashboard/bottom-nav"
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -31,10 +32,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <TopBar onMenuClick={() => setSidebarOpen(o => !o)} />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
           <div className="p-4 md:p-6 page-enter">{children}</div>
         </main>
       </div>
+      <BottomNav />
     </div>
   )
 }
