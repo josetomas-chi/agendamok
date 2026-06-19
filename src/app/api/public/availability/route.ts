@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { format, parseISO, addMinutes, setHours, setMinutes } from "date-fns"
+import { chileLocalToUTC, utcToChileLocal } from "@/lib/timezone"
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -77,8 +78,8 @@ export async function GET(req: Request) {
     const [startH, startM] = schedule.startTime.split(":").map(Number)
     const [endH, endM] = schedule.endTime.split(":").map(Number)
 
-    const scheduleStart = setMinutes(setHours(new Date(date), startH), startM)
-    const scheduleEnd = setMinutes(setHours(new Date(date), endH), endM)
+    const scheduleStart = chileLocalToUTC(setMinutes(setHours(new Date(date), startH), startM))
+    const scheduleEnd   = chileLocalToUTC(setMinutes(setHours(new Date(date), endH), endM))
 
     const staffAppts = existingAppts.filter((a: { staffId: string; startTime: Date; endTime: Date }) => a.staffId === schedule.staffId)
 
@@ -98,7 +99,7 @@ export async function GET(req: Request) {
       const isInPast = cursor <= now
 
       if (!hasConflict && !isInPast) {
-        availableSlots.add(format(cursor, "HH:mm"))
+        availableSlots.add(format(utcToChileLocal(cursor), "HH:mm"))
       }
 
       cursor = addMinutes(cursor, 30) // 30-min intervals

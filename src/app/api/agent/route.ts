@@ -4,11 +4,9 @@ import { prisma } from "@/lib/prisma"
 import { parseISO, addMinutes, setHours, setMinutes, format } from "date-fns"
 import { es } from "date-fns/locale"
 import { sendBookingConfirmation } from "@/lib/email"
+import { chileLocalToUTC, utcToChileLocal } from "@/lib/timezone"
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-
-// Chile is UTC-4 year-round (no DST for standard time)
-const CHILE_OFFSET_MS = 4 * 60 * 60 * 1000
 
 const tools: Anthropic.Tool[] = [
   {
@@ -138,17 +136,15 @@ async function runTool(name: string, input: Record<string, string>): Promise<str
         const [startH, startM] = schedule.startTime.split(":").map(Number)
         const [endH, endM] = schedule.endTime.split(":").map(Number)
         // Schedule times are Chile local — convert to UTC for DB comparisons
-        const scheduleStart = new Date(setMinutes(setHours(new Date(date), startH), startM).getTime() + CHILE_OFFSET_MS)
-        const scheduleEnd   = new Date(setMinutes(setHours(new Date(date), endH), endM).getTime() + CHILE_OFFSET_MS)
+        const scheduleStart = chileLocalToUTC(setMinutes(setHours(new Date(date), startH), startM))
+        const scheduleEnd   = chileLocalToUTC(setMinutes(setHours(new Date(date), endH), endM))
         const staffAppts = existingAppts.filter((a: { staffId: string }) => a.staffId === schedule.staffId)
         let cursor = new Date(scheduleStart)
         while (addMinutes(cursor, slotDuration) <= scheduleEnd) {
           const slotEnd = addMinutes(cursor, slotDuration)
           const hasConflict = staffAppts.some((appt: { startTime: Date; endTime: Date }) => cursor < new Date(appt.endTime) && slotEnd > new Date(appt.startTime))
           if (!hasConflict && cursor > new Date()) {
-            // Display slot in Chile local time
-            const chileTime = new Date(cursor.getTime() - CHILE_OFFSET_MS)
-            availableSlots.add(format(chileTime, "HH:mm"))
+            availableSlots.add(format(utcToChileLocal(cursor), "HH:mm"))
           }
           cursor = addMinutes(cursor, 30)
         }
@@ -163,7 +159,7 @@ async function runTool(name: string, input: Record<string, string>): Promise<str
 
       const [hours, minutes] = input.time.split(":").map(Number)
       // input.time is Chile local — convert to UTC for storage
-      const startTime = new Date(setMinutes(setHours(parseISO(input.date), hours), minutes).getTime() + CHILE_OFFSET_MS)
+      const startTime = chileLocalToUTC(setMinutes(setHours(parseISO(input.date), hours), minutes))
       const endTime = addMinutes(startTime, service.duration)
 
       let resolvedStaffId = input.staffId || null

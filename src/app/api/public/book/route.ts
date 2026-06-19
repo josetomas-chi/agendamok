@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { parseISO, addMinutes, setHours, setMinutes, format } from "date-fns"
+import { chileLocalToUTC } from "@/lib/timezone"
 import { es } from "date-fns/locale"
 import { sendBookingConfirmation } from "@/lib/email"
 
@@ -48,7 +49,8 @@ export async function POST(req: Request) {
 
     const [hours, minutes] = data.time.split(":").map(Number)
     const baseDate = parseISO(data.date)
-    const startTime = setMinutes(setHours(baseDate, hours), minutes)
+    // data.time is Chile local — convert to UTC for storage
+    const startTime = chileLocalToUTC(setMinutes(setHours(baseDate, hours), minutes))
     const endTime = addMinutes(startTime, service.duration)
 
     // Resolve staff
