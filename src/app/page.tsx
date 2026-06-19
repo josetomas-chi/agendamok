@@ -495,7 +495,7 @@ export default function LandingPage() {
 
             {/* Dashboard preview */}
             <div className="mockup-reveal reveal mt-20 relative">
-              <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#3a3a3c] to-transparent z-10" />
+              <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#52525a] to-transparent z-10" />
               {/* Retroiluminación */}
               <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-sky-500/40 via-sky-400/20 to-sky-500/40 blur-xl" />
               <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-sky-400/20 via-white/5 to-sky-400/20" />
