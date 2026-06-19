@@ -345,6 +345,32 @@ function DayStaffView({ day, staffCols, apptsByDay, dragOverSlot, onDragStart, o
           })}
         </div>
       ))}
+
+      {/* Staff footer — sticky bottom */}
+      <div className="flex sticky bottom-0 z-10 border-t border-white/8" style={{ background: "#2c2c30" }}>
+        <div className="w-14 flex-shrink-0" />
+        {cols.map((s) => (
+          <div key={s?.id ?? "all"} className="flex-1 py-3 flex flex-col items-center gap-1 border-l border-white/8">
+            {s ? (
+              <>
+                {s.user.image ? (
+                  <Image src={s.user.image} alt={s.user.name || ""} width={32} height={32}
+                    className="w-8 h-8 rounded-full object-cover"
+                    style={{ outline: `2px solid ${s.color}`, outlineOffset: "1px" }} />
+                ) : (
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                    style={{ backgroundColor: s.color }}>
+                    {s.user.name?.[0] || "?"}
+                  </div>
+                )}
+                <span className="text-xs text-white/60 font-medium truncate max-w-[90px]">{s.user.name}</span>
+              </>
+            ) : (
+              <span className="text-xs text-white/40">Todos</span>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
