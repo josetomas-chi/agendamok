@@ -67,10 +67,10 @@ export function Sidebar() {
       </div>
 
       {/* Nav groups */}
-      <nav className="flex-1 py-4 px-3 space-y-5 overflow-y-auto">
+      <nav className="flex-1 py-3 px-3 space-y-3 overflow-hidden">
         {groups.map((group) => (
           <div key={group.label}>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25 px-2 mb-1.5">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/25 px-2 mb-1">
               {group.label}
             </p>
             <div className="space-y-0.5">
@@ -81,7 +81,7 @@ export function Sidebar() {
                     key={href}
                     href={href}
                     className={cn(
-                      "relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-all duration-150",
+                      "relative flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150",
                       active
                         ? "text-white"
                         : "text-white/40 hover:text-white/80 hover:bg-white/[0.05]"
