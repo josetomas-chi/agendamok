@@ -530,7 +530,7 @@ export default function LandingPage() {
             <p className="hero-note mt-8 text-sm text-white/30">30 días gratis en todos los planes · Sin tarjeta al inicio</p>
 
             {/* Dashboard preview */}
-            <div className="mockup-reveal reveal mt-20 relative origin-top scale-[0.62] sm:scale-100 -mb-[38%] sm:mb-0">
+            <div className="mockup-reveal reveal mt-20 relative origin-top scale-[0.72] sm:scale-100 -mb-[28%] sm:mb-0">
               <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#52525a] to-transparent z-10" />
               {/* Retroiluminación */}
               <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-sky-500/40 via-sky-400/20 to-sky-500/40 blur-xl" />
@@ -555,7 +555,7 @@ export default function LandingPage() {
                       { label: "Pagos", icon: "◇" },
                     ].map(item => (
                       <div key={item.label} className={`text-xs px-2.5 py-2 rounded-lg flex items-center gap-2 ${item.active ? "bg-sky-500/20 text-sky-300 font-semibold" : "text-white/35"}`}>
-                        <span className="text-[11px]">{item.icon}</span>{item.label}
+                        <span className="text-[11px] flex-shrink-0">{item.icon}</span><span className="truncate">{item.label}</span>
                       </div>
                     ))}
                   </div>
