@@ -25,10 +25,11 @@ function base(content: string) {
 
 export async function sendBookingConfirmation({
   clientName, clientEmail, businessName,
-  serviceName, staffName, date, time, duration,
+  serviceName, staffName, date, time, duration, cancelUrl,
 }: {
   clientName: string; clientEmail: string; businessName: string
   serviceName: string; staffName: string; date: string; time: string; duration: number
+  cancelUrl?: string
 }) {
   if (!process.env.RESEND_API_KEY) return
 
@@ -46,7 +47,7 @@ export async function sendBookingConfirmation({
         <div class="row"><span class="label">Hora</span><span>${time}hs</span></div>
         <div class="row"><span class="label">Duración</span><span>${duration} min</span></div>
       </div>
-      <p>Si necesitas cancelar o reprogramar, comunícate directamente con el negocio.</p>
+      ${cancelUrl ? `<p style="margin-top:20px;font-size:13px;color:#9ca3af">¿Necesitas cancelar? <a href="${cancelUrl}" style="color:#ef4444">Cancelar mi turno</a></p>` : ""}
     `),
   })
 }

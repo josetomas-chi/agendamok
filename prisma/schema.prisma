@@ -415,6 +415,7 @@ model Appointment {
   notes         String?           @db.Text
   internalNotes String?           @db.Text
   googleEventId String?
+  cancelToken   String?           @unique
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
   deletedAt     DateTime?

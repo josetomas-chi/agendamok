@@ -5,6 +5,7 @@ import { parseISO, addMinutes, setHours, setMinutes, format } from "date-fns"
 import { chileLocalToUTC, utcToChileLocal } from "@/lib/timezone"
 import { es } from "date-fns/locale"
 import { sendBookingConfirmation } from "@/lib/email"
+import { randomBytes } from "crypto"
 
 const schema = z.object({
   businessId: z.string().cuid(),
@@ -94,6 +95,8 @@ export async function POST(req: Request) {
       })
     }
 
+    const cancelToken = randomBytes(32).toString("hex")
+
     const appointment = await prisma.appointment.create({
       data: {
         businessId: data.businessId,
@@ -103,6 +106,7 @@ export async function POST(req: Request) {
         startTime,
         endTime,
         status: "CONFIRMED",
+        cancelToken,
       },
     })
 
@@ -112,6 +116,7 @@ export async function POST(req: Request) {
     })
     const business = await prisma.business.findUnique({ where: { id: data.businessId }, select: { name: true } })
 
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://agendamok.cl"
     sendBookingConfirmation({
       clientName: data.clientName,
       clientEmail: data.clientEmail,
@@ -121,6 +126,7 @@ export async function POST(req: Request) {
       date: format(utcToChileLocal(startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
       time: format(utcToChileLocal(startTime), "HH:mm"),
       duration: service.duration,
+      cancelUrl: `${baseUrl}/cancelar?token=${cancelToken}`,
     }).catch(() => {})
 
     return NextResponse.json({ appointment }, { status: 201 })
