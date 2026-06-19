@@ -34,7 +34,7 @@ export async function GET(req: Request) {
     },
   })
 
-  const mapped = appointments.map(a => {
+  const mapped = appointments.map((a: typeof appointments[number]) => {
     const local = utcToChileLocal(a.startTime)
     return {
       id: a.id,
