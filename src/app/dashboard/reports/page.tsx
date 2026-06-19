@@ -20,13 +20,18 @@ export default function ReportsPage() {
   const [data, setData] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
   const [businessId, setBusinessId] = useState("")
+  const [brandColor, setBrandColor] = useState("#6366f1")
   const [refDate, setRefDate] = useState(() => new Date())
   const [mode, setMode] = useState<"month" | "custom">("month")
   const [customFrom, setCustomFrom] = useState("")
   const [customTo, setCustomTo] = useState("")
 
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(d => setBusinessId(d.businessId))
+    fetch("/api/me/business").then(r => r.json()).then(async d => {
+      setBusinessId(d.businessId)
+      const biz = await fetch(`/api/businesses/${d.businessId}`).then(r => r.json())
+      if (biz.business?.primaryColor) setBrandColor(biz.business.primaryColor)
+    })
   }, [])
 
   useEffect(() => {
@@ -214,7 +219,7 @@ export default function ReportsPage() {
                   labelStyle={{ color: "#a1a1aa" }}
                   cursor={{ fill: "#ffffff08" }}
                 />
-                <Bar dataKey="revenue" fill="#6366f1" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="revenue" fill={brandColor} radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
