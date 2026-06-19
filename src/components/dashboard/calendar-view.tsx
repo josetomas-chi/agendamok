@@ -121,45 +121,50 @@ export function CalendarView({ appointments, staffMembers = [], businessId, onNe
   return (
     <div className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "#28282c", boxShadow: "0 0 0 1px rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.4)" }}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/8 flex-shrink-0" style={{ background: "#2c2c30" }}>
-        <div className="flex items-center gap-2">
-          <button onClick={() => navigate(-1)} className="w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 transition-colors">
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => { setCurrentDate(new Date()); setMiniMonth(new Date()) }}
-            className="px-3 py-1 rounded-lg text-xs text-white/50 hover:text-white hover:bg-white/8 transition-colors border border-white/10"
-          >
-            Hoy
-          </button>
-          <button onClick={() => navigate(1)} className="w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 transition-colors">
-            <ChevronRight className="w-4 h-4" />
-          </button>
-          <h2 className="font-semibold text-sm text-white ml-1 capitalize">{headerTitle}</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs">
-            {(["day", "week"] as const).map((v, i) => (
-              <button key={v} onClick={() => setView(v)}
-                className={cn("px-3 py-1.5 transition-colors", i > 0 && "border-l border-white/10",
-                  view === v ? "bg-sky-500 text-white font-medium" : "text-white/50 hover:text-white hover:bg-white/8")}>
-                {v === "day" ? "Día" : "Semana"}
-              </button>
-            ))}
+      <div className="flex flex-col gap-2 px-3 md:px-5 py-3 border-b border-white/8 flex-shrink-0" style={{ background: "#2c2c30" }}>
+        <div className="flex items-center justify-between gap-2">
+          {/* Navigation */}
+          <div className="flex items-center gap-1">
+            <button onClick={() => navigate(-1)} className="w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 transition-colors">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => { setCurrentDate(new Date()); setMiniMonth(new Date()) }}
+              className="px-3 py-1 rounded-lg text-xs text-white/50 hover:text-white hover:bg-white/8 transition-colors border border-white/10"
+            >
+              Hoy
+            </button>
+            <button onClick={() => navigate(1)} className="w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 transition-colors">
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            onClick={() => onNewAppointment?.(format(currentDate, "yyyy-MM-dd"), "09:00")}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white text-xs font-medium transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" /> Nuevo turno
-          </button>
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs">
+              {(["day", "week"] as const).map((v, i) => (
+                <button key={v} onClick={() => setView(v)}
+                  className={cn("px-2.5 py-1.5 transition-colors", i > 0 && "border-l border-white/10",
+                    view === v ? "bg-sky-500 text-white font-medium" : "text-white/50 hover:text-white hover:bg-white/8")}>
+                  {v === "day" ? "Día" : "Semana"}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => onNewAppointment?.(format(currentDate, "yyyy-MM-dd"), "09:00")}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white text-xs font-medium transition-colors whitespace-nowrap"
+            >
+              <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Nuevo turno</span><span className="sm:hidden">Nuevo</span>
+            </button>
+          </div>
         </div>
+        {/* Date title — full row on mobile */}
+        <h2 className="font-semibold text-sm text-white capitalize">{headerTitle}</h2>
       </div>
 
       {/* Body: mini calendar + main grid */}
       <div className="flex flex-1 overflow-hidden">
-        {/* LEFT: mini month calendar */}
-        <div className="w-52 flex-shrink-0 border-r border-white/8 p-3 flex flex-col gap-3" style={{ background: "#252528" }}>
+        {/* LEFT: mini month calendar — hidden on mobile */}
+        <div className="hidden md:flex w-52 flex-shrink-0 border-r border-white/8 p-3 flex-col gap-3" style={{ background: "#252528" }}>
           {/* Mini month nav */}
           <div className="flex items-center justify-between">
             <button onClick={() => setMiniMonth(d => subMonths(d, 1))} className="w-6 h-6 rounded flex items-center justify-center text-white/40 hover:text-white hover:bg-white/8 transition-colors">
