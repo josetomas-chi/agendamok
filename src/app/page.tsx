@@ -142,6 +142,38 @@ const comparisonRows: { feature: string; us: FeatureValue[]; them: FeatureValue[
   { feature: "API access", us: [false, false, true], them: [false, false, true] },
 ]
 
+const faqItems = [
+  { q: "¿Necesito tarjeta de crédito para el período de prueba?", a: "No. Los 30 días gratis no requieren ningún método de pago. Solo te pedimos email y contraseña." },
+  { q: "¿Puedo cancelar en cualquier momento?", a: "Sí, sin penalidades ni trámites. Cancela desde Configuración → Plan y tu cuenta sigue activa hasta el final del período pagado." },
+  { q: "¿Cuánto tiempo toma configurar el sistema?", a: "La mayoría de los negocios están operativos en menos de 5 minutos: cuenta, servicios, staff y link de reservas listo." },
+  { q: "¿Cobran comisión por cada reserva online?", a: "No. AgendaMok no cobra nada por reserva. Pagás solo el plan mensual, sin sorpresas." },
+  { q: "¿Funciona para cualquier tipo de negocio con turnos?", a: "Sí. Peluquerías, clínicas, centros estéticos, gimnasios, estudios de tatuajes, psicólogos — cualquier negocio que trabaje con citas." },
+]
+
+function FaqAccordion() {
+  const [open, setOpen] = useState<number | null>(null)
+  return (
+    <div className="space-y-2">
+      {faqItems.map((item, i) => (
+        <div key={i} className={`rounded-2xl border transition-colors overflow-hidden ${open === i ? "border-white/20 bg-white/[0.04]" : "border-white/8 bg-white/[0.02]"}`}>
+          <button
+            onClick={() => setOpen(open === i ? null : i)}
+            className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-white/[0.03] transition-colors"
+          >
+            <span className={`text-sm font-medium ${open === i ? "text-white" : "text-white/75"}`}>{item.q}</span>
+            <ChevronDown className={`w-4 h-4 flex-shrink-0 text-white/40 transition-transform ${open === i ? "rotate-180" : ""}`} />
+          </button>
+          {open === i && (
+            <div className="px-5 pb-4">
+              <p className="text-sm text-white/50 leading-relaxed">{item.a}</p>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function HelpAccordion() {
   const [openCat, setOpenCat] = useState<number | null>(0)
   const [openStep, setOpenStep] = useState<string | null>(null)
@@ -907,14 +939,20 @@ export default function LandingPage() {
 
         {/* Help / Instructivos */}
         <section id="ayuda" className="py-32 border-t border-white/5">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-14 reveal">
               <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
-                Centro de <span className="gradient-text">ayuda</span>
+                Preguntas <span className="gradient-text">frecuentes</span>
               </h2>
-              <p className="text-white/40 text-lg max-w-xl mx-auto">Todo lo que necesitás saber para configurar y aprovechar AgendaMok al máximo.</p>
+              <p className="text-white/40 text-lg">Las dudas más comunes antes de empezar.</p>
             </div>
-            <HelpAccordion />
+            <FaqAccordion />
+            <div className="mt-10 text-center">
+              <Link href="/ayuda" className="inline-flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300 transition-colors">
+                Ver el centro de ayuda completo
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </div>
         </section>
 
