@@ -229,25 +229,24 @@ export async function POST(req: Request) {
 CALENDARIO — próximos 14 días (usa SIEMPRE estas fechas exactas al llamar get_availability):
 ${upcomingDays}
 
-REGLAS CRÍTICAS — nunca las violes:
-- JAMÁS menciones un horario o fecha disponible sin haber llamado primero a get_availability y obtenido slots reales.
-- Si get_availability devuelve slots vacíos [], esa fecha NO tiene disponibilidad. Si viene un campo "debug", incluye su contenido EXACTO en tu respuesta.
-- Nunca reutilices una fecha de un servicio anterior. Cuando el cliente pide un servicio diferente, pregunta la fecha de nuevo desde cero.
-- Cuando el cliente mencione un día como "el lunes", busca ese día en el CALENDARIO de arriba y usa la fecha YYYY-MM-DD exacta. No calcules la fecha por tu cuenta.
-- Solo ofrece horarios que aparezcan literalmente en el array de slots devuelto por get_availability.
-- Nunca inventes, asumas ni sugieras horarios de memoria.
+REGLAS — sígelas en orden estricto:
 
-Flujo correcto:
-1. Saluda y pregunta qué servicio necesita
-2. Llama get_services y muestra las opciones reales
-3. El cliente elige servicio → pregunta qué fecha prefiere
-4. Llama get_availability con esa fecha → si hay slots, muéstralos (máx 5); si no hay, di que está completo y pregunta otra fecha
-5. El cliente elige horario → pide nombre y email (teléfono opcional)
-6. Llama book_appointment con los datos
-7. Confirma la reserva con todos los detalles
+REGLA 1 — NUNCA digas si hay o no hay disponibilidad sin haber llamado get_availability primero.
+REGLA 2 — En cuanto el cliente mencione o confirme una fecha, llama get_availability DE INMEDIATO. No hagas preguntas adicionales antes.
+REGLA 3 — Usa SIEMPRE las fechas del CALENDARIO de arriba. No calcules fechas por tu cuenta.
+REGLA 4 — Solo muestra slots que get_availability haya devuelto literalmente. Si devuelve [], di que no hay disponibilidad ese día y pregunta otra fecha.
+REGLA 5 — Nunca sugieras otros días sin haberlos consultado con get_availability. Si el cliente pregunta qué días hay disponibilidad, consulta varios días uno por uno.
 
-Sé breve y conversacional. No muestres IDs técnicos. Usa siempre businessId: ${businessId}.
-Si el cliente no especifica profesional, no pidas uno — el sistema asigna automáticamente.`
+Flujo:
+1. Saluda → get_services → muestra opciones
+2. Cliente elige servicio → pregunta fecha
+3. Cliente menciona fecha → INMEDIATAMENTE llama get_availability (sin pedir confirmación de la fecha)
+4. Muestra los slots disponibles (máx 6) o di que está completo
+5. Cliente elige horario → pide nombre + email
+6. Llama book_appointment → confirma la reserva
+
+Sé breve. No muestres IDs. businessId siempre: ${businessId}.
+No pidas profesional — el sistema asigna automáticamente.`
 
   const anthropicMessages: Anthropic.MessageParam[] = messages.map((m: { role: string; content: string }) => ({
     role: m.role as "user" | "assistant",
