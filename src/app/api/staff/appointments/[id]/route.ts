@@ -2,7 +2,8 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -15,12 +16,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 
   const appointment = await prisma.appointment.findFirst({
-    where: { id: params.id, staffId: staffMember.id, deletedAt: null },
+    where: { id: id, staffId: staffMember.id, deletedAt: null },
   })
   if (!appointment) return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 })
 
   const updated = await prisma.appointment.update({
-    where: { id: params.id },
+    where: { id: id },
     data: { status },
   })
 
