@@ -5,6 +5,7 @@ import { useParams } from "next/navigation"
 import { format, addDays, startOfToday, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 import { Check, ChevronLeft, ChevronRight, Clock, MapPin, Calendar, User, Loader2 } from "lucide-react"
+import { ChatWidget } from "@/components/booking/chat-widget"
 
 type Service = { id: string; name: string; description: string | null; duration: number; price: number; color: string }
 type Staff = { id: string; color: string; user: { name: string | null; image: string | null } }
@@ -137,6 +138,7 @@ export default function BookingPage() {
 
   return (
     <div className="min-h-screen bg-[#1c1c1e] text-[#f4f4f5]">
+      <ChatWidget businessId={business.id} businessName={business.name} />
       <div className="border-b border-white/10 bg-[#2c2c30]">
         <div className="max-w-2xl mx-auto px-4 py-5 flex items-center gap-4">
           {business.logo ? (
