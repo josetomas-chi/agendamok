@@ -287,16 +287,18 @@ export default function LandingPage() {
           from { opacity: 0; transform: translateY(24px); filter: blur(6px); }
           to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
         }
+        @keyframes heroGrad {
+          from { opacity: 0; transform: translateY(28px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
         .hero-word {
           display: inline-block;
           opacity: 0;
           animation: heroWord 0.75s cubic-bezier(0.16,1,0.3,1) both;
         }
         .hw0 { animation-delay: 0.05s; }
-        .hw1 { animation-delay: 0.18s; }
-        .hw2 { animation-delay: 0.30s; }
-        .hw3 { animation-delay: 0.42s; }
-        .hw4 { animation-delay: 0.54s; }
+        .hw1 { animation-delay: 0.20s; }
+        .hw2 { display: block; opacity: 0; animation: heroGrad 0.75s cubic-bezier(0.16,1,0.3,1) 0.34s both; }
         .hero-badge { opacity: 0; animation: heroWord 0.5s cubic-bezier(0.16,1,0.3,1) 0s both; }
         .hero-sub   { opacity: 0; animation: heroWord 0.65s cubic-bezier(0.16,1,0.3,1) 0.6s both; }
         .hero-ctas  { opacity: 0; animation: heroWord 0.65s cubic-bezier(0.16,1,0.3,1) 0.75s both; }
@@ -388,15 +390,11 @@ export default function LandingPage() {
 
             <h1 className="text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] mb-8">
               <span className="text-white/90">
-                <span className="hero-word hw0">El </span>
+                <span className="hero-word hw0">El</span>{" "}
                 <span className="hero-word hw1">verdadero</span>
               </span>
               <br />
-              <span className="gradient-text">
-                <span className="hero-word hw2">Copiloto </span>
-                <span className="hero-word hw3">de tu </span>
-                <span className="hero-word hw4">negocio.</span>
-              </span>
+              <span className="hero-word hw2 gradient-text">Copiloto de tu negocio.</span>
             </h1>
 
             <p className="hero-sub max-w-2xl mx-auto text-lg sm:text-xl text-white/50 mb-12 leading-relaxed">
