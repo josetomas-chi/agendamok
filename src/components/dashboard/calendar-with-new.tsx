@@ -249,7 +249,7 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
 
       {/* Edit appointment dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm" accent="sky">
           <DialogHeader>
             <DialogTitle>Modificar turno</DialogTitle>
           </DialogHeader>
@@ -319,7 +319,7 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
 
       {/* Pay dialog */}
       <Dialog open={payOpen} onOpenChange={setPayOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm" accent="violet">
           <DialogHeader>
             <DialogTitle>Registrar cobro</DialogTitle>
           </DialogHeader>
@@ -365,7 +365,7 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
       </Dialog>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" accent="sky">
           <DialogHeader>
             <DialogTitle>Nuevo turno</DialogTitle>
           </DialogHeader>

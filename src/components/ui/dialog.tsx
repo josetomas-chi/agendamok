@@ -39,39 +39,55 @@ function DialogOverlay({
   )
 }
 
+const ACCENT_COLORS: Record<string, string> = {
+  sky:    "#38bdf8",
+  violet: "#a78bfa",
+  emerald:"#34d399",
+  red:    "#f87171",
+  amber:  "#fbbf24",
+}
+
 function DialogContent({
   className,
   children,
   showCloseButton = true,
+  accent,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
+  accent?: "sky" | "violet" | "emerald" | "red" | "amber"
 }) {
+  const accentColor = accent ? ACCENT_COLORS[accent] : null
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-2xl bg-popover p-0 text-sm text-popover-foreground duration-100 outline-none overflow-hidden sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
+        style={{ boxShadow: "0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)" }}
         {...props}
       >
-        {children}
+        {accentColor && (
+          <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${accentColor}, transparent)` }} />
+        )}
+        <div className="p-5 grid gap-4">
+          {children}
+        </div>
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
             render={
               <Button
                 variant="ghost"
-                className="absolute top-2 right-2"
+                className="absolute top-3 right-3"
                 size="icon-sm"
               />
             }
           >
-            <XIcon
-            />
+            <XIcon />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         )}
