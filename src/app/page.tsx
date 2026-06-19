@@ -333,7 +333,7 @@ export default function LandingPage() {
           background: linear-gradient(135deg, #fff 0%, #e0f2fe 100%);
           transition: transform 0.25s, box-shadow 0.25s;
           box-shadow: 0 0 30px rgba(56,189,248,0.4), 0 4px 20px rgba(0,0,0,0.3);
-          animation: floatUp 3s ease-in-out infinite;
+
         }
         .cta-btn::before {
           content: '';
@@ -837,7 +837,7 @@ export default function LandingPage() {
           </div>
           <div className="relative max-w-4xl mx-auto px-4 text-center">
             <div>
-              <h2 className="text-5xl sm:text-7xl font-bold tracking-tight mb-6 leading-tight cta-zoom">
+              <h2 className="text-5xl sm:text-7xl font-bold tracking-tight mb-6 leading-tight">
                 Empieza hoy.<br />
                 <span className="gradient-text">Es gratis.</span>
               </h2>
