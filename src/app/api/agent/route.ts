@@ -94,10 +94,8 @@ async function runTool(name: string, input: Record<string, string>): Promise<str
       })
       if (!service) return JSON.stringify({ slots: [] })
 
-      // Work in Chile time: treat date as Chile local midnight
-      const CHILE_OFFSET_MS = 4 * 60 * 60 * 1000
-      const date = new Date(new Date(`${input.date}T00:00:00Z`).getTime() + CHILE_OFFSET_MS)
-      const dayOfWeek = date.getUTCDay()
+      const date = parseISO(input.date)
+      const dayOfWeek = date.getDay()
 
       let staffIds: string[]
       if (input.staffId) {
@@ -118,8 +116,8 @@ async function runTool(name: string, input: Record<string, string>): Promise<str
 
       if (schedules.length === 0) return JSON.stringify({ slots: [], debug: `Sin horario para dayOfWeek=${dayOfWeek} (0=Dom,1=Lun,2=Mar,3=Mié,4=Jue,5=Vie,6=Sáb). staffIds encontrados: ${staffIds.join(",")}. Schedules en DB: ${JSON.stringify(await prisma.workSchedule.findMany({ where: { staffId: { in: staffIds } }, select: { dayOfWeek: true, isWorking: true, staffId: true } }))}` })
 
-      const dayStart = new Date(`${input.date}T00:00:00Z`)
-      const dayEnd = new Date(`${input.date}T23:59:59Z`)
+      const dayStart = new Date(date); dayStart.setHours(0, 0, 0, 0)
+      const dayEnd = new Date(date); dayEnd.setHours(23, 59, 59, 999)
 
       const existingAppts = await prisma.appointment.findMany({
         where: { staffId: { in: staffIds }, startTime: { gte: dayStart, lte: dayEnd }, status: { in: ["PENDING", "CONFIRMED"] }, deletedAt: null },
@@ -136,9 +134,8 @@ async function runTool(name: string, input: Record<string, string>): Promise<str
         if (offStaffIds.has(schedule.staffId)) continue
         const [startH, startM] = schedule.startTime.split(":").map(Number)
         const [endH, endM] = schedule.endTime.split(":").map(Number)
-        // Build slot times as Chile local time (UTC+offset trick)
-        const scheduleStart = new Date(new Date(`${input.date}T${String(startH).padStart(2,"0")}:${String(startM).padStart(2,"0")}:00Z`).getTime() + CHILE_OFFSET_MS)
-        const scheduleEnd   = new Date(new Date(`${input.date}T${String(endH).padStart(2,"0")}:${String(endM).padStart(2,"0")}:00Z`).getTime() + CHILE_OFFSET_MS)
+        const scheduleStart = setMinutes(setHours(new Date(date), startH), startM)
+        const scheduleEnd   = setMinutes(setHours(new Date(date), endH), endM)
         const staffAppts = existingAppts.filter((a: { staffId: string }) => a.staffId === schedule.staffId)
         let cursor = new Date(scheduleStart)
         while (addMinutes(cursor, slotDuration) <= scheduleEnd) {
@@ -156,9 +153,8 @@ async function runTool(name: string, input: Record<string, string>): Promise<str
       const service = await prisma.service.findUnique({ where: { id: input.serviceId, businessId: input.businessId } })
       if (!service) return JSON.stringify({ error: "Servicio no encontrado" })
 
-      // Parse date+time as Chile local time (America/Santiago = UTC-4)
-      const CHILE_OFFSET_MS = 4 * 60 * 60 * 1000
-      const startTime = new Date(new Date(`${input.date}T${input.time}:00Z`).getTime() + CHILE_OFFSET_MS)
+      const [hours, minutes] = input.time.split(":").map(Number)
+      const startTime = setMinutes(setHours(parseISO(input.date), hours), minutes)
       const endTime = addMinutes(startTime, service.duration)
 
       let resolvedStaffId = input.staffId || null
@@ -216,7 +212,9 @@ export async function POST(req: Request) {
 
 REGLAS CRÍTICAS — nunca las violes:
 - JAMÁS menciones un horario o fecha disponible sin haber llamado primero a get_availability y obtenido slots reales.
-- Si get_availability devuelve slots vacíos [], esa fecha NO tiene disponibilidad. Si viene un campo "debug", incluye su contenido EXACTO en tu respuesta al usuario para que pueda diagnosticar el problema.
+- Si get_availability devuelve slots vacíos [], esa fecha NO tiene disponibilidad. Si viene un campo "debug", incluye su contenido EXACTO en tu respuesta.
+- Nunca reutilices una fecha de un servicio anterior. Cuando el cliente pide un servicio diferente, pregunta la fecha de nuevo desde cero.
+- Cuando el cliente mencione un día como "lunes", convierte siempre a fecha exacta YYYY-MM-DD antes de llamar get_availability. Hoy es ${today}.
 - Solo ofrece horarios que aparezcan literalmente en el array de slots devuelto por get_availability.
 - Nunca inventes, asumas ni sugiereas horarios de memoria.
 
