@@ -30,7 +30,7 @@ export async function GET() {
 
   const appointments = await prisma.appointment.findMany({
     where: {
-      clientId: { in: clients.map((c: { id: string }) => c.id) },
+      clientId: { in: clients.map(c => c.id) },
       deletedAt: null,
       status: { not: "CANCELLED" },
     },
@@ -43,7 +43,8 @@ export async function GET() {
     },
   })
 
-  const mapped = appointments.map(a => {
+  type Appt = (typeof appointments)[number]
+  const mapped = appointments.map((a: Appt) => {
     const local = utcToChileLocal(a.startTime)
     return {
       id: a.id,
