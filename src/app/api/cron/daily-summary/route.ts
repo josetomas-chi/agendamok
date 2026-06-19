@@ -45,7 +45,7 @@ export async function GET(req: Request) {
         ownerName: biz.owner.name || "Hola",
         businessName: biz.name,
         date: format(today, "EEEE d 'de' MMMM", { locale: es }),
-        appointments: biz.appointments.map(a => ({
+        appointments: biz.appointments.map((a: typeof biz.appointments[number]) => ({
           time: format(utcToChileLocal(a.startTime), "HH:mm"),
           clientName: a.client.name,
           serviceName: a.service.name,
