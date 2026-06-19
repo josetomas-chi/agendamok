@@ -38,7 +38,7 @@ export default function TerminosPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">4. Planes y pagos</h2>
-            <p>AgendaMok opera bajo un modelo de suscripción mensual o anual. Los precios se muestran en el sitio web e incluyen IVA cuando corresponda. El pago se procesa a través de Flow u otras pasarelas autorizadas.</p>
+            <p>AgendaMok opera bajo un modelo de suscripción mensual o anual. Los precios se muestran en el sitio web y no incluyen IVA, el que se agregará según corresponda a la legislación tributaria vigente. El pago se procesa a través de Flow u otras pasarelas autorizadas.</p>
             <ul className="list-disc list-inside space-y-2 mt-3">
               <li>Los cargos son recurrentes hasta que canceles tu suscripción.</li>
               <li>No realizamos reembolsos por períodos ya facturados, salvo fallas atribuibles a AgendaMok.</li>
