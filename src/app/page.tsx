@@ -271,9 +271,8 @@ function StatCard({ num, suffix, label, sub }: { num: number; suffix: string; la
   const { value, ref } = useCountUp(num, 1000)
   return (
     <div className="text-center">
-      <div className="text-5xl sm:text-6xl font-bold tracking-tight mb-2">
-        <span ref={ref} className="gradient-text">{value}</span>
-        <span className="gradient-text">{suffix}</span>
+      <div className="text-5xl sm:text-6xl font-bold tracking-tight mb-2 whitespace-nowrap gradient-text">
+        <span ref={ref}>{value}</span>{suffix}
       </div>
       <div className="text-white font-medium mb-1">{label}</div>
       <div className="text-sm text-white/40">{sub}</div>
