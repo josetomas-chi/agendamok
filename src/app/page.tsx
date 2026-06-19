@@ -859,7 +859,7 @@ export default function LandingPage() {
 
       <footer className="border-t border-white/5 py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-white/30">
-          <p>© 2025 AgendaMok. Todos los derechos reservados.</p>
+          <p>© 2026 AgendaMok. Todos los derechos reservados.</p>
           <div className="flex gap-6">
             <Link href="/privacy" className="hover:text-white/60 transition-colors">Privacidad</Link>
             <Link href="/terms" className="hover:text-white/60 transition-colors">Términos</Link>
