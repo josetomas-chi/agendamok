@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts"
-import { TrendingUp, Users, CheckCircle, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
+import { TrendingUp, Users, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Download } from "lucide-react"
 import { startOfMonth, endOfMonth, subMonths, addMonths, format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -58,6 +58,43 @@ export default function ReportsPage() {
     ? `${customFrom} → ${customTo}`
     : format(refDate, "MMMM yyyy", { locale: es })
 
+  async function exportCsv() {
+    let from: Date, to: Date
+    if (mode === "custom" && customFrom && customTo) {
+      from = new Date(customFrom); to = new Date(customTo); to.setHours(23, 59, 59, 999)
+    } else {
+      from = startOfMonth(refDate); to = endOfMonth(refDate)
+    }
+    const r = await fetch(`/api/businesses/${businessId}/appointments?from=${from.toISOString()}&to=${to.toISOString()}&limit=2000`)
+    const { appointments } = await r.json()
+    if (!appointments?.length) return
+
+    const rows = [
+      ["Fecha", "Hora", "Cliente", "Email", "Teléfono", "Servicio", "Profesional", "Estado", "Monto", "Método pago"].join(","),
+      ...appointments.map((a: { startTime: string; client: { name: string; email: string | null; phone: string | null }; service: { name: string }; staff: { user: { name: string | null } }; status: string; payment: { amount: number; method: string } | null }) => [
+        format(new Date(a.startTime), "dd/MM/yyyy"),
+        format(new Date(a.startTime), "HH:mm"),
+        `"${a.client.name}"`,
+        a.client.email || "",
+        a.client.phone || "",
+        `"${a.service.name}"`,
+        `"${a.staff.user.name || ""}"`,
+        a.status,
+        a.payment ? a.payment.amount : "",
+        a.payment ? a.payment.method : "",
+      ].join(","))
+    ].join("\n")
+
+    const bom = "﻿"
+    const blob = new Blob([bom + rows], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `reporte-${periodLabel.replace(/\s/g, "-")}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   if (!businessId || (loading && !data)) return (
     <div className="space-y-6">
       <div className="page-header"><div><h1 className="page-title">Reportes</h1></div></div>
@@ -96,7 +133,12 @@ export default function ReportsPage() {
 
         {/* Period selector */}
         <div className="flex items-center gap-2">
+          <button onClick={exportCsv}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-xs text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
+            <Download className="w-3.5 h-3.5" /> Exportar CSV
+          </button>
           <div className="flex rounded-lg border border-white/10 overflow-hidden text-xs">
+
             <button onClick={() => setMode("month")}
               className={`px-3 py-1.5 transition-colors ${mode === "month" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
               Mensual
