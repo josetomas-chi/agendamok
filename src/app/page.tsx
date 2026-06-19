@@ -331,6 +331,13 @@ export default function LandingPage() {
           border-color: rgba(56,189,248,0.6);
           background-color: rgba(255,255,255,0.08) !important;
         }
+        @keyframes featureReveal {
+          0%   { border-color: rgba(56,189,248,0.7); box-shadow: 0 0 30px rgba(56,189,248,0.4); }
+          100% { border-color: rgba(255,255,255,0.06); box-shadow: none; }
+        }
+        .feature-card.revealed {
+          animation: featureReveal 1.2s cubic-bezier(0.16,1,0.3,1) 0.3s both;
+        }
         @keyframes zoomPulse {
           0%, 100% { transform: scale(1); letter-spacing: -0.02em; }
           50% { transform: scale(1.06); letter-spacing: 0.01em; }
@@ -645,40 +652,20 @@ export default function LandingPage() {
               </h2>
               <p className="text-white/50 text-lg max-w-xl mx-auto">Una plataforma completa diseñada para negocios de servicios.</p>
             </div>
-            {/* Hero features — 3 large cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              {features.slice(0, 3).map((f, i) => {
-                const accents = ["sky", "violet", "emerald"]
-                const accent = accents[i]
-                const iconBg: Record<string,string> = { sky:"bg-sky-500/15", violet:"bg-violet-500/15", emerald:"bg-emerald-500/15" }
-                const iconCol: Record<string,string> = { sky:"text-sky-400", violet:"text-violet-400", emerald:"text-emerald-400" }
-                const border: Record<string,string> = { sky:"hover:border-sky-400/30", violet:"hover:border-violet-400/30", emerald:"hover:border-emerald-400/30" }
-                return (
-                  <div key={f.title} className={`reveal reveal-delay-${i+1} card-glow group p-8 rounded-2xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.07] ${border[accent]} transition-all cursor-default`}>
-                    <div className={`w-12 h-12 rounded-2xl ${iconBg[accent]} flex items-center justify-center mb-6`}>
-                      <f.icon className={`w-6 h-6 ${iconCol[accent]}`} />
-                    </div>
-                    <h3 className="font-semibold text-lg text-white mb-3">{f.title}</h3>
-                    <p className="text-sm text-white/50 leading-relaxed">{f.desc}</p>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Secondary features — smaller grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {features.slice(3).map((f, i) => {
-                const accents = ["amber","pink","sky","violet","emerald","amber","pink","sky","violet"]
+            {/* All features — unified grid, equal-height cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {features.map((f, i) => {
+                const accents = ["sky","violet","emerald","amber","pink","sky","violet","emerald","amber","pink","sky","violet"]
                 const accent = accents[i % accents.length]
-                const iconBg: Record<string,string> = { sky:"bg-sky-500/10", violet:"bg-violet-500/10", emerald:"bg-emerald-500/10", amber:"bg-amber-500/10", pink:"bg-pink-500/10" }
+                const iconBg: Record<string,string> = { sky:"bg-sky-500/12", violet:"bg-violet-500/12", emerald:"bg-emerald-500/12", amber:"bg-amber-500/12", pink:"bg-pink-500/12" }
                 const iconCol: Record<string,string> = { sky:"text-sky-400", violet:"text-violet-400", emerald:"text-emerald-400", amber:"text-amber-400", pink:"text-pink-400" }
                 return (
-                  <div key={f.title} className={`reveal reveal-delay-${(i % 3) + 1} group p-5 rounded-2xl border border-white/8 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/15 transition-all cursor-default`}>
-                    <div className={`w-8 h-8 rounded-xl ${iconBg[accent]} flex items-center justify-center mb-3`}>
-                      <f.icon className={`w-4 h-4 ${iconCol[accent]}`} />
+                  <div key={f.title} className={`feature-card reveal reveal-delay-${(i % 3) + 1} card-glow group p-6 rounded-2xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.07] transition-all cursor-default flex flex-col h-full`}>
+                    <div className={`w-10 h-10 rounded-xl ${iconBg[accent]} flex items-center justify-center mb-4 flex-shrink-0`}>
+                      <f.icon className={`w-5 h-5 ${iconCol[accent]}`} />
                     </div>
-                    <h3 className="font-medium text-white/90 mb-1.5 text-sm">{f.title}</h3>
-                    <p className="text-xs text-white/40 leading-relaxed">{f.desc}</p>
+                    <h3 className="font-semibold text-white mb-2">{f.title}</h3>
+                    <p className="text-sm text-white/45 leading-relaxed">{f.desc}</p>
                   </div>
                 )
               })}
