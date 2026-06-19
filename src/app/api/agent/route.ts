@@ -108,13 +108,13 @@ async function runTool(name: string, input: Record<string, string>): Promise<str
         staffIds = staffList.map((s: { id: string }) => s.id)
       }
 
-      if (staffIds.length === 0) return JSON.stringify({ slots: [], debug: "No hay profesionales con ese servicio asignado" })
+      if (staffIds.length === 0) return JSON.stringify({ slots: [], debug: `No hay profesionales con servicio ${input.serviceId} en negocio ${input.businessId}` })
 
       const schedules = await prisma.workSchedule.findMany({
         where: { staffId: { in: staffIds }, dayOfWeek, isWorking: true },
       })
 
-      if (schedules.length === 0) return JSON.stringify({ slots: [], debug: `Ningún profesional trabaja ese día (dayOfWeek=${dayOfWeek}, staffIds=${staffIds.join(",")})` })
+      if (schedules.length === 0) return JSON.stringify({ slots: [], debug: `Sin horario para dayOfWeek=${dayOfWeek} (0=Dom,1=Lun,2=Mar,3=Mié,4=Jue,5=Vie,6=Sáb). staffIds encontrados: ${staffIds.join(",")}. Schedules en DB: ${JSON.stringify(await prisma.workSchedule.findMany({ where: { staffId: { in: staffIds } }, select: { dayOfWeek: true, isWorking: true, staffId: true } }))}` })
 
       const dayStart = new Date(date); dayStart.setHours(0, 0, 0, 0)
       const dayEnd = new Date(date); dayEnd.setHours(23, 59, 59, 999)
@@ -212,7 +212,7 @@ export async function POST(req: Request) {
 
 REGLAS CRÍTICAS — nunca las violes:
 - JAMÁS menciones un horario o fecha disponible sin haber llamado primero a get_availability y obtenido slots reales.
-- Si get_availability devuelve slots vacíos [], esa fecha NO tiene disponibilidad. Si viene un campo "debug", úsalo para entender el motivo pero NO lo muestres al usuario — en cambio explica con palabras simples (ej: "parece que ese profesional no trabaja ese día").
+- Si get_availability devuelve slots vacíos [], esa fecha NO tiene disponibilidad. Si viene un campo "debug", incluye su contenido EXACTO en tu respuesta al usuario para que pueda diagnosticar el problema.
 - Solo ofrece horarios que aparezcan literalmente en el array de slots devuelto por get_availability.
 - Nunca inventes, asumas ni sugiereas horarios de memoria.
 
