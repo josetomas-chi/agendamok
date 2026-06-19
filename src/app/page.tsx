@@ -512,7 +512,7 @@ export default function LandingPage() {
               <span className="hero-word hw2 gradient-text">Copiloto de tu negocio.</span>
             </h1>
 
-            <p className="hero-sub max-w-2xl mx-auto text-lg sm:text-xl text-white/50 mb-12 leading-relaxed">
+            <p className="hero-sub max-w-2xl mx-auto text-lg sm:text-xl text-white/50 mb-6 sm:mb-12 leading-relaxed">
               La plataforma de reservas online para peluquerías, clínicas, gimnasios y cualquier negocio con turnos.
               Configura en 5 minutos.
             </p>
@@ -530,7 +530,7 @@ export default function LandingPage() {
             <p className="hero-note mt-8 text-sm text-white/30">30 días gratis en todos los planes · Sin tarjeta al inicio</p>
 
             {/* Dashboard preview */}
-            <div className="mockup-reveal reveal mt-20 relative">
+            <div className="mockup-reveal reveal mt-20 relative origin-top scale-[0.62] sm:scale-100 -mb-[38%] sm:mb-0">
               <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#52525a] to-transparent z-10" />
               {/* Retroiluminación */}
               <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-sky-500/40 via-sky-400/20 to-sky-500/40 blur-xl" />
@@ -564,16 +564,16 @@ export default function LandingPage() {
                   <div className="bg-[#242426] col-span-3 p-4 space-y-3">
 
                     {/* KPI row */}
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
-                        { label: "Ingresos del mes", val: "$1.847.300", sub: "↑ 23% vs mes anterior", color: "text-emerald-400", subColor: "text-emerald-400/70" },
-                        { label: "Turnos completados", val: "214", sub: "↑ 31 más que junio", color: "text-sky-400", subColor: "text-sky-400/60" },
+                        { label: "Ingresos del mes", val: "$1.847.300", sub: "↑ 23%", color: "text-emerald-400", subColor: "text-emerald-400/70" },
+                        { label: "Turnos completados", val: "214", sub: "↑ 31 más", color: "text-sky-400", subColor: "text-sky-400/60" },
                         { label: "Ticket promedio", val: "$8.630", sub: "Por servicio", color: "text-violet-400", subColor: "text-white/30" },
                         { label: "Nuevos clientes", val: "38", sub: "↑ 12 este mes", color: "text-amber-400", subColor: "text-amber-400/60" },
                       ].map(({ label, val, sub, color, subColor }) => (
-                        <div key={label} className="bg-white/[0.05] rounded-xl p-2.5 border border-white/[0.07]">
-                          <div className="text-[9px] text-white/35 mb-1 uppercase tracking-wide leading-tight">{label}</div>
-                          <div className={`text-base font-bold ${color} leading-tight`}>{val}</div>
+                        <div key={label} className="bg-white/[0.05] rounded-xl p-2.5 border border-white/[0.07] overflow-hidden">
+                          <div className="text-[9px] text-white/35 mb-1 uppercase tracking-wide leading-tight truncate">{label}</div>
+                          <div className={`text-[13px] font-bold ${color} leading-tight`}>{val}</div>
                           <div className={`text-[9px] mt-0.5 ${subColor}`}>{sub}</div>
                         </div>
                       ))}
