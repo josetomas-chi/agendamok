@@ -797,11 +797,28 @@ function SettingsContent() {
                 )}
               </div>
 
-              <div className="bg-sky-500/5 border border-sky-400/20 rounded-xl p-4 text-xs text-white/50 space-y-1">
-                <p className="font-medium text-sky-300">¿Cómo obtener tus credenciales?</p>
-                <p>1. Ingresa a tu cuenta de Flow.cl → Panel de comercio → Integración</p>
-                <p>2. Copia tu <strong className="text-white/70">API Key</strong> y <strong className="text-white/70">Secret Key</strong> de producción</p>
-                <p>3. Pégalos arriba y guarda. Tus clientes podrán pagar al reservar y el dinero llega directamente a tu cuenta Flow.</p>
+              <div className="bg-sky-500/5 border border-sky-400/20 rounded-xl p-4 text-xs text-white/50 space-y-2">
+                <p className="font-medium text-sky-300 text-sm">¿Cómo activar los cobros online?</p>
+                <div className="space-y-1.5">
+                  <p className="font-medium text-white/70">Paso 1 — Crear cuenta en Flow</p>
+                  <p>Ingresa a <a href="https://www.flow.cl/app/web/register.php" target="_blank" rel="noopener noreferrer" className="text-sky-400 underline">flow.cl</a> y crea una cuenta de comercio. Completa el proceso de verificación de identidad y datos bancarios para recibir pagos.</p>
+                </div>
+                <div className="space-y-1.5">
+                  <p className="font-medium text-white/70">Paso 2 — Obtener credenciales de producción</p>
+                  <p>En tu panel de Flow: <strong className="text-white/60">Configuración → Integración → Credenciales de producción</strong>. Copia el <strong className="text-white/60">API Key</strong> y el <strong className="text-white/60">Secret Key</strong> y pégalos en los campos de arriba.</p>
+                </div>
+                <div className="space-y-1.5">
+                  <p className="font-medium text-white/70">Paso 3 — Configurar el webhook en Flow</p>
+                  <p>En Flow: <strong className="text-white/60">Configuración → Integración → URL de confirmación</strong>. Ingresa esta URL para que los pagos se confirmen automáticamente:</p>
+                  <code className="block mt-1 bg-black/30 rounded px-2 py-1.5 text-sky-300 break-all select-all">
+                    {typeof window !== "undefined" ? `${window.location.origin}/api/book/TU-SLUG/payment-webhook` : "https://agendamok.vercel.app/api/book/TU-SLUG/payment-webhook"}
+                  </code>
+                  <p className="text-white/30">Reemplaza <strong className="text-white/50">TU-SLUG</strong> con tu identificador de negocio (el que aparece en tu link de reservas).</p>
+                </div>
+                <div className="space-y-1.5">
+                  <p className="font-medium text-white/70">Paso 4 — Activar cobros</p>
+                  <p>Guarda las credenciales y activa el interruptor <strong className="text-white/60">Cobros online</strong> al inicio de esta sección. Tus clientes verán la opción de pagar al reservar y el dinero llegará directo a tu cuenta Flow.</p>
+                </div>
               </div>
             </CardContent>
           </Card>

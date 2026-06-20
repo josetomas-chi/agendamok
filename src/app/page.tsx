@@ -508,7 +508,7 @@ export default function LandingPage() {
           <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-24">
             <div className="hero-badge inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-sky-400/25 bg-sky-500/8 text-xs text-sky-300 mb-10 tracking-wide">
               <span className="text-sky-400">✦</span>
-              30 días gratis · Sin tarjeta · Sin add-ons
+              30 días gratis · Sin tarjeta · Sin cobros sorpresa
             </div>
 
             <h1 className="text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] mb-8">
@@ -845,15 +845,15 @@ export default function LandingPage() {
                   </div>
                   <div className="p-4 text-center border-l border-white/10 bg-white/[0.04]">
                     <span className="text-white/70 font-bold">$15.900</span>
-                    <div className="text-[10px] text-red-400 mt-0.5">+ add-ons</div>
+                    <div className="text-[10px] text-red-400 mt-0.5">cobros extra</div>
                   </div>
                   <div className="p-4 text-center border-l border-white/10 bg-white/[0.04]">
                     <span className="text-white/70 font-bold">$34.900</span>
-                    <div className="text-[10px] text-red-400 mt-0.5">+ add-ons</div>
+                    <div className="text-[10px] text-red-400 mt-0.5">cobros extra</div>
                   </div>
                   <div className="p-4 text-center border-l border-white/10 bg-white/[0.04]">
                     <span className="text-white/70 font-bold">$54.900</span>
-                    <div className="text-[10px] text-red-400 mt-0.5">+ add-ons</div>
+                    <div className="text-[10px] text-red-400 mt-0.5">cobros extra</div>
                   </div>
                 </div>
               </div>
