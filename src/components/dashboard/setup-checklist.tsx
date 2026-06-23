@@ -53,9 +53,9 @@ export function SetupChecklist({ hasServices, hasStaff, hasSchedule, slug }: Set
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-sky-400" />
           <span className="font-semibold text-white text-sm">Configura tu negocio</span>
-          <span className="text-xs text-slate-500 ml-1">{completed}/{steps.length} pasos</span>
+          <span className="text-xs text-white/40 ml-1">{completed}/{steps.length} pasos</span>
         </div>
-        <button onClick={() => setDismissed(true)} className="text-slate-600 hover:text-slate-400 transition-colors">
+        <button onClick={() => setDismissed(true)} className="text-white/30 hover:text-white/60 transition-colors">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -82,16 +82,16 @@ export function SetupChecklist({ hasServices, hasStaff, hasSchedule, slug }: Set
             {step.done ? (
               <CheckCircle2 className="w-5 h-5 text-sky-400 flex-shrink-0" />
             ) : (
-              <Circle className="w-5 h-5 text-slate-600 flex-shrink-0" />
+              <Circle className="w-5 h-5 text-white/25 flex-shrink-0" />
             )}
             <div className="flex-1 min-w-0">
-              <div className={`text-sm font-medium ${step.done ? "line-through text-slate-500" : "text-slate-200"}`}>
+              <div className={`text-sm font-medium ${step.done ? "line-through text-white/30" : "text-white"}`}>
                 {step.label}
               </div>
-              <div className="text-xs text-slate-600 truncate">{step.desc}</div>
+              <div className="text-xs text-white/40 truncate">{step.desc}</div>
             </div>
             {!step.done && (
-              <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-sky-400 transition-colors flex-shrink-0" />
+              <ChevronRight className="w-4 h-4 text-white/25 group-hover:text-sky-400 transition-colors flex-shrink-0" />
             )}
           </Link>
         ))}

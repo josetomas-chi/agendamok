@@ -2,11 +2,6 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Check, Plus, Trash2, ArrowRight, Scissors, Users, Rocket, CreditCard, Lock } from "lucide-react"
 
@@ -125,177 +120,197 @@ export default function SetupPage() {
     { icon: Rocket, label: "Listo" },
   ]
 
+  const inputCls = "w-full bg-[#3a3a3c] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 focus:outline-none focus:border-sky-400/50 transition-colors text-sm"
+  const labelCls = "block text-xs text-white/50 mb-1.5"
+  const cardCls = "bg-[#2c2c30] border border-white/10 rounded-2xl p-6 space-y-5"
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-xl space-y-6">
+    <div className="min-h-screen bg-[#1c1c1e] text-white flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-xl space-y-8">
+
+        {/* Logo */}
+        <div className="text-center">
+          <span className="font-bold text-2xl tracking-tight">Agenda<span className="text-sky-400">Mok</span></span>
+        </div>
 
         {/* Progress */}
         <div className="flex items-center gap-2">
           {stepConfig.map(({ label }, i) => {
             const s = i + 1
+            const done = step > s
+            const current = step === s
             return (
               <div key={label} className="flex items-center gap-2 flex-1">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
-                  step > s ? "bg-indigo-600 text-white" : step === s ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-500"
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                  done ? "bg-sky-500 text-white" : current ? "bg-sky-500 text-white ring-4 ring-sky-500/20" : "bg-white/10 text-white/40"
                 }`}>
-                  {step > s ? <Check className="w-4 h-4" /> : s}
+                  {done ? <Check className="w-4 h-4" /> : s}
                 </div>
-                <span className={`text-sm font-medium hidden sm:block ${step === s ? "text-indigo-600" : "text-muted-foreground"}`}>{label}</span>
-                {s < 3 && <div className={`flex-1 h-1 rounded ${step > s ? "bg-indigo-600" : "bg-gray-200"}`} />}
+                <span className={`text-xs font-medium hidden sm:block ${current ? "text-sky-300" : done ? "text-white/60" : "text-white/25"}`}>{label}</span>
+                {i < stepConfig.length - 1 && (
+                  <div className={`flex-1 h-0.5 rounded transition-all ${done ? "bg-sky-500" : "bg-white/10"}`} />
+                )}
               </div>
             )
           })}
         </div>
 
+        <p className="text-sm text-white/40 text-center">Paso {step} de {stepConfig.length} — {stepConfig[step - 1].label}</p>
+
         {/* Step 1: Servicios */}
         {step === 1 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>¿Qué servicios ofreces?</CardTitle>
-              <CardDescription>Agrega los servicios que tus clientes pueden reservar. Puedes agregar más desde el panel.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className={cardCls}>
+            <div>
+              <h2 className="text-xl font-semibold text-white">¿Qué servicios ofreces?</h2>
+              <p className="text-sm text-white/40 mt-1">Agrega los servicios que tus clientes pueden reservar. Puedes agregar más desde el panel.</p>
+            </div>
+            <div className="space-y-3">
               {services.map((svc, i) => (
-                <div key={i} className="p-4 border rounded-xl space-y-3 relative">
-                  <div className="flex items-center gap-2 justify-between">
+                <div key={i} className="p-4 bg-white/[0.03] border border-white/10 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {COLORS.map(c => (
                         <button key={c} onClick={() => updateService(i, "color", c)}
-                          className={`w-5 h-5 rounded-full transition-transform ${svc.color === c ? "scale-125 ring-2 ring-offset-1 ring-gray-400" : ""}`}
+                          className={`w-5 h-5 rounded-full transition-transform ${svc.color === c ? "scale-125 ring-2 ring-offset-2 ring-offset-[#2c2c30] ring-white/40" : ""}`}
                           style={{ background: c }} />
                       ))}
                     </div>
                     {services.length > 1 && (
-                      <button onClick={() => removeService(i)} className="text-muted-foreground hover:text-red-500 transition-colors">
+                      <button onClick={() => removeService(i)} className="text-white/30 hover:text-red-400 transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2 space-y-1">
-                      <Label>Nombre del servicio *</Label>
-                      <Input value={svc.name} onChange={e => updateService(i, "name", e.target.value)} placeholder="Ej: Corte de pelo" />
+                    <div className="col-span-2">
+                      <label className={labelCls}>Nombre del servicio *</label>
+                      <input className={inputCls} value={svc.name} onChange={e => updateService(i, "name", e.target.value)} placeholder="Ej: Corte de pelo" />
                     </div>
-                    <div className="space-y-1">
-                      <Label>Duración (min) *</Label>
-                      <Input type="number" value={svc.duration} onChange={e => updateService(i, "duration", e.target.value)} placeholder="60" min="5" />
+                    <div>
+                      <label className={labelCls}>Duración (min) *</label>
+                      <input type="number" className={inputCls} value={svc.duration} onChange={e => updateService(i, "duration", e.target.value)} placeholder="60" min="5" />
                     </div>
-                    <div className="space-y-1">
-                      <Label>Precio</Label>
-                      <Input type="number" value={svc.price} onChange={e => updateService(i, "price", e.target.value)} placeholder="0" min="0" />
+                    <div>
+                      <label className={labelCls}>Precio</label>
+                      <input type="number" className={inputCls} value={svc.price} onChange={e => updateService(i, "price", e.target.value)} placeholder="0" min="0" />
                     </div>
                   </div>
                 </div>
               ))}
-              <Button variant="outline" className="w-full gap-2" onClick={addService}>
+              <button onClick={addService}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-white/50 hover:text-white hover:border-white/20 transition-colors text-sm">
                 <Plus className="w-4 h-4" /> Agregar otro servicio
-              </Button>
-              <Button className="w-full gap-2" onClick={handleSaveServices} disabled={saving}>
-                {saving ? "Guardando..." : "Continuar"} <ArrowRight className="w-4 h-4" />
-              </Button>
-            </CardContent>
-          </Card>
+              </button>
+            </div>
+            <button
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-sky-500 hover:bg-sky-400 transition-colors font-semibold disabled:opacity-40"
+              onClick={handleSaveServices} disabled={saving}>
+              {saving ? "Guardando..." : "Continuar"} <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         )}
 
         {/* Step 2: Staff */}
         {step === 2 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>¿Quiénes son tus profesionales?</CardTitle>
-              <CardDescription>Agrega las personas que atienden en tu negocio. Si trabajas solo, completa con tu nombre.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className={cardCls}>
+            <div>
+              <h2 className="text-xl font-semibold text-white">¿Quiénes son tus profesionales?</h2>
+              <p className="text-sm text-white/40 mt-1">Agrega las personas que atienden en tu negocio. Si trabajas solo, completa con tu nombre.</p>
+            </div>
+            <div className="space-y-3">
               {staff.map((st, i) => (
-                <div key={i} className="p-4 border rounded-xl space-y-3">
+                <div key={i} className="p-4 bg-white/[0.03] border border-white/10 rounded-xl space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Profesional {i + 1}</span>
+                    <span className="text-sm font-medium text-white/60">Profesional {i + 1}</span>
                     {staff.length > 1 && (
-                      <button onClick={() => removeStaff(i)} className="text-muted-foreground hover:text-red-500 transition-colors">
+                      <button onClick={() => removeStaff(i)} className="text-white/30 hover:text-red-400 transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label>Nombre *</Label>
-                      <Input value={st.name} onChange={e => updateStaff(i, "name", e.target.value)} placeholder="Ej: María García" />
+                    <div>
+                      <label className={labelCls}>Nombre *</label>
+                      <input className={inputCls} value={st.name} onChange={e => updateStaff(i, "name", e.target.value)} placeholder="Ej: María García" />
                     </div>
-                    <div className="space-y-1">
-                      <Label>Email (opcional)</Label>
-                      <Input type="email" value={st.email} onChange={e => updateStaff(i, "email", e.target.value)} placeholder="maria@negocio.com" />
+                    <div>
+                      <label className={labelCls}>Email (opcional)</label>
+                      <input type="email" className={inputCls} value={st.email} onChange={e => updateStaff(i, "email", e.target.value)} placeholder="maria@negocio.com" />
                     </div>
                   </div>
                 </div>
               ))}
-              <Button variant="outline" className="w-full gap-2" onClick={addStaff}>
+              <button onClick={addStaff}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-white/50 hover:text-white hover:border-white/20 transition-colors text-sm">
                 <Plus className="w-4 h-4" /> Agregar otro profesional
-              </Button>
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>Atrás</Button>
-                <Button className="flex-1 gap-2" onClick={handleSaveStaff} disabled={saving}>
-                  {saving ? "Guardando..." : "Continuar"} <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
-              <button onClick={() => setStep(3 as Step)} className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors text-center pt-1">
-                Omitir por ahora
               </button>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="flex gap-3">
+              <button className="flex-1 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/20 transition-colors text-sm font-medium"
+                onClick={() => setStep(1)}>Atrás</button>
+              <button className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-sky-500 hover:bg-sky-400 transition-colors font-semibold disabled:opacity-40"
+                onClick={handleSaveStaff} disabled={saving}>
+                {saving ? "Guardando..." : "Continuar"} <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+            <button onClick={() => setStep(3 as Step)} className="w-full text-sm text-white/30 hover:text-white/60 transition-colors text-center">
+              Omitir por ahora
+            </button>
+          </div>
         )}
 
         {/* Step 3: Método de pago */}
         {step === 3 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Registra tu método de pago</CardTitle>
-              <CardDescription>
-                Tienes 30 días gratis. Guarda tu tarjeta ahora para que el cobro sea automático cuando termine el periodo de prueba.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-indigo-800">Plan Inicial</span>
-                  <Badge className="bg-indigo-600">30 días gratis</Badge>
-                </div>
-                <p className="text-xs text-indigo-700">A partir del día 91 se cobra $4.990/mes automáticamente. Puedes cancelar cuando quieras.</p>
+          <div className={cardCls}>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Registra tu método de pago</h2>
+              <p className="text-sm text-white/40 mt-1">Tienes 30 días gratis. Guarda tu tarjeta ahora para que el cobro sea automático cuando termine el periodo de prueba.</p>
+            </div>
+            <div className="bg-sky-500/10 border border-sky-400/20 rounded-xl p-4 space-y-1">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-sky-300">Plan Starter</span>
+                <span className="text-xs bg-sky-500 text-white px-2 py-0.5 rounded-full font-semibold">30 días gratis</span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground p-3 bg-gray-50 rounded-lg">
-                <Lock className="w-3.5 h-3.5 flex-shrink-0" />
-                Tus datos de tarjeta son procesados de forma segura por Flow.cl. AgendaMok nunca almacena los datos de tu tarjeta.
-              </div>
-              <Button className="w-full gap-2 h-11" onClick={handleRegisterCard} disabled={registeringCard}>
-                <CreditCard className="w-4 h-4" />
-                {registeringCard ? "Redirigiendo a Flow..." : "Agregar tarjeta de crédito"}
-              </Button>
-              <button onClick={() => setStep(4 as Step)} className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors text-center pt-1">
-                Omitir por ahora — lo agrego desde Configuración
-              </button>
-            </CardContent>
-          </Card>
+              <p className="text-xs text-white/40">A partir del día 31 se cobra $9.900/mes + IVA automáticamente. Puedes cancelar cuando quieras.</p>
+            </div>
+            <div className="flex items-start gap-2.5 text-xs text-white/30 bg-white/[0.03] border border-white/5 rounded-xl p-3">
+              <Lock className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              Tus datos de tarjeta son procesados de forma segura por Flow.cl. AgendaMok nunca almacena los datos de tu tarjeta.
+            </div>
+            <button
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-sky-500 hover:bg-sky-400 transition-colors font-semibold disabled:opacity-50"
+              onClick={handleRegisterCard} disabled={registeringCard}>
+              <CreditCard className="w-4 h-4" />
+              {registeringCard ? "Redirigiendo a Flow..." : "Agregar tarjeta de crédito"}
+            </button>
+            <button onClick={() => setStep(4 as Step)} className="w-full text-sm text-white/30 hover:text-white/60 transition-colors text-center">
+              Omitir por ahora — lo agrego desde Configuración
+            </button>
+          </div>
         )}
 
         {/* Step 4: Listo */}
         {step === 4 && (
-          <Card className="text-center">
-            <CardContent className="pt-8 pb-8 space-y-5">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                <Rocket className="w-8 h-8 text-green-600" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold">¡Tu negocio está listo!</h2>
-                <p className="text-muted-foreground mt-2">Ya puedes recibir reservas. Desde el panel puedes seguir configurando horarios, precios y más.</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <Button variant="outline" onClick={() => router.push("/dashboard/settings?tab=booking")} className="gap-2">
-                  Ver mi página de reservas
-                </Button>
-                <Button onClick={() => router.push("/dashboard")} className="gap-2">
-                  Ir al panel <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className={`${cardCls} text-center items-center`}>
+            <div className="w-16 h-16 bg-sky-500/15 rounded-full flex items-center justify-center mx-auto"
+              style={{ boxShadow: "0 0 24px rgba(14,165,233,0.3)" }}>
+              <Rocket className="w-8 h-8 text-sky-400" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white">¡Tu negocio está listo!</h2>
+              <p className="text-white/40 mt-2 text-sm">Ya puedes recibir reservas. Desde el panel puedes seguir configurando horarios, precios y más.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 w-full pt-2">
+              <button onClick={() => router.push("/dashboard/settings?tab=booking")}
+                className="py-3 rounded-xl border border-white/10 text-white/70 hover:text-white hover:border-white/20 transition-colors text-sm font-medium">
+                Ver mi página de reservas
+              </button>
+              <button onClick={() => router.push("/dashboard")}
+                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-sky-500 hover:bg-sky-400 transition-colors font-semibold text-sm">
+                Ir al panel <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>
