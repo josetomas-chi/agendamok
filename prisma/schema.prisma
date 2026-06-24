@@ -92,6 +92,18 @@ enum QuoteStatus {
   EXPIRED
 }
 
+enum InvoiceStatus {
+  PENDING
+  EMITTED
+  CANCELLED
+  ERROR
+}
+
+enum InvoiceDocType {
+  BOLETA
+  FACTURA
+}
+
 // ─── AUTH / USERS ─────────────────────────────────────────────────────────────
 
 model User {
@@ -204,6 +216,9 @@ model Business {
   flowApiKey            String?
   flowSecretKey         String?
   onlinePaymentsEnabled       Boolean   @default(false)
+  bsaleApiKey                 String?
+  bsaleAutoInvoice            Boolean   @default(false)
+  bsaleDocType                InvoiceDocType @default(BOLETA)
   cancellationHoursNotice     Int?
   coverImage                  String?
   primaryColor                String?
@@ -231,6 +246,7 @@ model Business {
   clinicalRecords           ClinicalRecord[]
   quotes                    Quote[]
   apiKeys                   ApiKey[]
+  invoices                  Invoice[]
 
   @@index([slug])
   @@map("businesses")
@@ -485,8 +501,38 @@ model Payment {
   updatedAt               DateTime      @updatedAt
 
   appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  invoice     Invoice?
 
   @@map("payments")
+}
+
+// ─── INVOICES (BSALE DTE) ─────────────────────────────────────────────────────
+
+model Invoice {
+  id            String         @id @default(cuid())
+  businessId    String
+  paymentId     String         @unique
+  bsaleId       Int?
+  docType       InvoiceDocType @default(BOLETA)
+  number        Int?
+  amount        Decimal        @db.Decimal(10, 2)
+  clientName    String?
+  clientRut     String?
+  clientEmail   String?
+  pdfUrl        String?
+  xmlUrl        String?
+  status        InvoiceStatus  @default(PENDING)
+  errorMessage  String?        @db.Text
+  emittedAt     DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  payment  Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([businessId, status])
+  @@map("invoices")
 }
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────

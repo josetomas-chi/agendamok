@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote } from "lucide-react"
+import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 
 type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean }
 type PaymentSettings = { onlinePaymentsEnabled: boolean; hasCredentials: boolean }
@@ -49,6 +49,15 @@ function SettingsContent() {
   const [savingPay, setSavingPay] = useState(false)
   const [showPaySecret, setShowPaySecret] = useState(false)
 
+  // Bsale / Facturación
+  const [bsaleKey, setBsaleKey] = useState("")
+  const [bsaleAuto, setBsaleAuto] = useState(false)
+  const [bsaleDocType, setBsaleDocType] = useState<"BOLETA" | "FACTURA">("BOLETA")
+  const [bsaleConnected, setBsaleConnected] = useState(false)
+  const [savingBsale, setSavingBsale] = useState(false)
+  const [testingBsale, setTestingBsale] = useState(false)
+  const [showBsaleKey, setShowBsaleKey] = useState(false)
+
   // API Keys
   type ApiKey = { id: string; name: string; key: string; isActive: boolean; lastUsedAt: string | null; createdAt: string }
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
@@ -79,6 +88,14 @@ function SettingsContent() {
       if (pr.ok) {
         const pd = await pr.json()
         setPaySettings(pd)
+      }
+      // Load Bsale settings
+      const br = await fetch(`/api/businesses/${d.businessId}/bsale-settings`)
+      if (br.ok) {
+        const bd = await br.json()
+        setBsaleConnected(bd.hasKey)
+        setBsaleAuto(bd.bsaleAutoInvoice)
+        setBsaleDocType(bd.bsaleDocType ?? "BOLETA")
       }
     })
   }, [])
@@ -134,6 +151,48 @@ function SettingsContent() {
       toast.error("Error al guardar")
     }
     setSavingPay(false)
+  }
+
+  async function saveBsaleSettings() {
+    if (!business) return
+    setSavingBsale(true)
+    try {
+      const r = await fetch(`/api/businesses/${business.id}/bsale-settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bsaleApiKey: bsaleKey || undefined, bsaleAutoInvoice: bsaleAuto, bsaleDocType }),
+      })
+      if (!r.ok) throw new Error()
+      setBsaleConnected(bsaleKey ? true : bsaleConnected)
+      setBsaleKey("")
+      toast.success("Configuración de facturación guardada")
+    } catch {
+      toast.error("Error al guardar configuración de Bsale")
+    }
+    setSavingBsale(false)
+  }
+
+  async function testBsaleConnection() {
+    if (!business) return
+    setTestingBsale(true)
+    try {
+      const r = await fetch(`/api/businesses/${business.id}/bsale-settings/test`, { method: "POST" })
+      const d = await r.json()
+      if (d.ok) toast.success("Conexión con Bsale exitosa ✓")
+      else toast.error("No se pudo conectar con Bsale. Verifica la API Key.")
+    } catch {
+      toast.error("Error al probar la conexión")
+    }
+    setTestingBsale(false)
+  }
+
+  async function clearBsaleKey() {
+    if (!business || !confirm("¿Eliminar la API Key de Bsale? Esto deshabilitará la emisión de boletas.")) return
+    const r = await fetch(`/api/businesses/${business.id}/bsale-settings`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clearKey: true }),
+    })
+    if (r.ok) { setBsaleConnected(false); toast.success("API Key eliminada") }
   }
 
   async function clearPaymentCredentials() {
@@ -254,6 +313,7 @@ function SettingsContent() {
             <TabsTrigger value="integrations" className="gap-2"><Link2 className="w-4 h-4" />Integraciones</TabsTrigger>
             <TabsTrigger value="payments" className="gap-2"><Banknote className="w-4 h-4" />Cobros</TabsTrigger>
             <TabsTrigger value="billing" className="gap-2"><CreditCard className="w-4 h-4" />Plan</TabsTrigger>
+            <TabsTrigger value="invoicing" className="gap-2"><FileText className="w-4 h-4" />Facturación</TabsTrigger>
             <TabsTrigger value="api" className="gap-2"><Key className="w-4 h-4" />API</TabsTrigger>
           </TabsList>
         </div>
@@ -891,6 +951,119 @@ function SettingsContent() {
                   </Button>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Facturación ── */}
+        <TabsContent value="invoicing" className="pt-4 space-y-5">
+          <Card className="bg-[#2c2c30] border-white/10">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <FileText className="w-4 h-4 text-sky-400" />
+                Integración con Bsale
+              </CardTitle>
+              <CardDescription className="text-white/50">
+                Conecta la cuenta Bsale de tu negocio para emitir boletas y facturas electrónicas ante el SII directamente desde AgendaMok.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+
+              {/* Estado de conexión */}
+              <div className={`flex items-center gap-3 p-3 rounded-xl border ${bsaleConnected ? "border-emerald-500/20 bg-emerald-500/5" : "border-white/10 bg-white/[0.02]"}`}>
+                {bsaleConnected
+                  ? <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  : <AlertCircle className="w-4 h-4 text-white/30 flex-shrink-0" />}
+                <div>
+                  <p className={`text-sm font-medium ${bsaleConnected ? "text-emerald-400" : "text-white/50"}`}>
+                    {bsaleConnected ? "Bsale conectado" : "Bsale no configurado"}
+                  </p>
+                  <p className="text-xs text-white/30">
+                    {bsaleConnected ? "Tu negocio puede emitir documentos tributarios electrónicos." : "Ingresa tu API Key de Bsale para activar la emisión de boletas."}
+                  </p>
+                </div>
+                {bsaleConnected && (
+                  <div className="ml-auto flex gap-2">
+                    <button onClick={testBsaleConnection} disabled={testingBsale}
+                      className="text-xs text-sky-400 hover:text-sky-300 transition-colors disabled:opacity-40">
+                      {testingBsale ? <Loader2 className="w-3 h-3 animate-spin" /> : "Probar conexión"}
+                    </button>
+                    <button onClick={clearBsaleKey} className="text-xs text-red-400/60 hover:text-red-400 transition-colors ml-2">
+                      Eliminar
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* API Key */}
+              <div className="space-y-1.5">
+                <Label className="text-white/60 text-xs">
+                  {bsaleConnected ? "Nueva API Key (deja vacío para mantener la actual)" : "API Key de Bsale *"}
+                </Label>
+                <div className="relative">
+                  <Input
+                    type={showBsaleKey ? "text" : "password"}
+                    value={bsaleKey}
+                    onChange={e => setBsaleKey(e.target.value)}
+                    placeholder={bsaleConnected ? "••••••••••••••••" : "Ingresa tu API Key de Bsale"}
+                    className="bg-[#3a3a3c] border-white/10 text-white placeholder-white/20 pr-10"
+                  />
+                  <button type="button" onClick={() => setShowBsaleKey(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+                    {showBsaleKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-white/30">La API Key la encuentras en tu cuenta Bsale → Configuración → API.</p>
+              </div>
+
+              {/* Tipo de documento */}
+              <div className="space-y-1.5">
+                <Label className="text-white/60 text-xs">Tipo de documento por defecto</Label>
+                <div className="flex gap-3">
+                  {(["BOLETA", "FACTURA"] as const).map(type => (
+                    <button key={type} onClick={() => setBsaleDocType(type)}
+                      className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-colors ${
+                        bsaleDocType === type
+                          ? "border-sky-400/50 bg-sky-400/10 text-sky-400"
+                          : "border-white/10 text-white/40 hover:text-white/60"
+                      }`}>
+                      {type === "BOLETA" ? "Boleta electrónica" : "Factura electrónica"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Emisión automática */}
+              <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.03] border border-white/10">
+                <div>
+                  <p className="text-sm font-medium text-white">Emitir automáticamente al pagar con Flow</p>
+                  <p className="text-xs text-white/40 mt-0.5">Cuando un cliente pague online, la boleta se genera y envía sola por email.</p>
+                </div>
+                <button
+                  onClick={() => setBsaleAuto(v => !v)}
+                  className={`relative w-10 h-6 rounded-full transition-colors ${bsaleAuto ? "bg-sky-500" : "bg-white/10"}`}>
+                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${bsaleAuto ? "left-5" : "left-1"}`} />
+                </button>
+              </div>
+
+              <button onClick={saveBsaleSettings} disabled={savingBsale}
+                className="w-full py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 transition-colors font-semibold text-sm disabled:opacity-40 flex items-center justify-center gap-2">
+                {savingBsale && <Loader2 className="w-4 h-4 animate-spin" />}
+                Guardar configuración
+              </button>
+            </CardContent>
+          </Card>
+
+          {/* Info DTE */}
+          <Card className="bg-[#2c2c30] border-white/10">
+            <CardContent className="pt-5 space-y-3">
+              <p className="text-sm font-medium text-white">¿Cómo funciona?</p>
+              <ol className="space-y-2 text-sm text-white/50">
+                <li className="flex gap-2"><span className="text-sky-400 font-bold">1.</span>Crea o ingresa a tu cuenta en <span className="text-sky-400">bsale.cl</span> con el RUT de tu negocio.</li>
+                <li className="flex gap-2"><span className="text-sky-400 font-bold">2.</span>Ve a Configuración → API y copia tu API Key.</li>
+                <li className="flex gap-2"><span className="text-sky-400 font-bold">3.</span>Pégala aquí y guarda. AgendaMok emitirá en nombre de tu negocio.</li>
+                <li className="flex gap-2"><span className="text-sky-400 font-bold">4.</span>Cada boleta queda registrada ante el SII con tu RUT y razón social.</li>
+              </ol>
             </CardContent>
           </Card>
         </TabsContent>

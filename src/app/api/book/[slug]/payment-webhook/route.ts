@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { businessGetPaymentStatus, verifyBusinessWebhook } from "@/lib/flow"
-import { sendBookingConfirmation, sendNewBookingAlert } from "@/lib/email"
+import { sendBookingConfirmation, sendNewBookingAlert, sendInvoiceEmail } from "@/lib/email"
+import { bsaleCreateDocument } from "@/lib/bsale"
 
 type Params = { params: Promise<{ slug: string }> }
 
@@ -10,7 +11,7 @@ export async function POST(req: Request, { params }: Params) {
 
   const business = await prisma.business.findUnique({
     where: { slug, isActive: true, deletedAt: null },
-    select: { id: true, name: true, flowApiKey: true, flowSecretKey: true },
+    select: { id: true, name: true, flowApiKey: true, flowSecretKey: true, bsaleApiKey: true, bsaleAutoInvoice: true, bsaleDocType: true },
   })
   if (!business?.flowApiKey || !business?.flowSecretKey) {
     return NextResponse.json({ error: "Not configured" }, { status: 400 })
@@ -86,6 +87,46 @@ export async function POST(req: Request, { params }: Params) {
           time: timeStr,
           duration: appt.service.duration,
         }).catch(() => { /* don't fail webhook on email error */ })
+      }
+
+      // Auto-emit Bsale invoice if configured
+      if (business.bsaleApiKey && business.bsaleAutoInvoice) {
+        try {
+          const savedPayment = await prisma.payment.findUnique({ where: { appointmentId } })
+          if (savedPayment && !await prisma.invoice.findUnique({ where: { paymentId: savedPayment.id } })) {
+            const invoiceRecord = await prisma.invoice.create({
+              data: {
+                businessId: business.id,
+                paymentId: savedPayment.id,
+                docType: business.bsaleDocType,
+                amount: savedPayment.amount,
+                clientName: appt.client.name,
+                clientEmail: appt.client.email,
+                status: "PENDING",
+              },
+            })
+            const result = await bsaleCreateDocument({
+              apiKey: business.bsaleApiKey,
+              docType: business.bsaleDocType,
+              amount: Number(savedPayment.amount),
+              clientName: appt.client.name,
+              clientEmail: appt.client.email ?? undefined,
+              description: appt.service.name,
+            })
+            await prisma.invoice.update({
+              where: { id: invoiceRecord.id },
+              data: { bsaleId: result.bsaleId, number: result.number, pdfUrl: result.pdfUrl, xmlUrl: result.xmlUrl ?? null, status: "EMITTED", emittedAt: new Date() },
+            })
+            if (appt.client.email && result.pdfUrl) {
+              await sendInvoiceEmail({ clientEmail: appt.client.email, clientName: appt.client.name, businessName: business.name, invoiceNumber: result.number, pdfUrl: result.pdfUrl }).catch(() => {})
+            }
+          }
+        } catch (invoiceErr) {
+          // Log error but don't fail webhook
+          const msg = invoiceErr instanceof Error ? invoiceErr.message : "Unknown"
+          await prisma.invoice.updateMany({ where: { appointmentId: undefined }, data: {} }).catch(() => {})
+          console.error("Bsale auto-invoice error:", msg)
+        }
       }
 
       // Alert business owner

@@ -264,3 +264,32 @@ export async function sendBookingReminder({
     `),
   })
 }
+
+export async function sendInvoiceEmail({
+  clientEmail, clientName, businessName, invoiceNumber, pdfUrl,
+}: {
+  clientEmail: string; clientName: string; businessName: string
+  invoiceNumber: number; pdfUrl: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `Tu boleta N° ${invoiceNumber} de ${businessName}`,
+    html: base(`
+      <h1>Tu boleta electrónica</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, te enviamos la boleta de tu servicio en <strong style="color:#38bdf8">${businessName}</strong>.</p>
+      <div class="box">
+        <div class="row"><span class="label">N° Boleta</span><span class="value">${invoiceNumber}</span></div>
+        <div class="row"><span class="label">Emitida por</span><span class="value">${businessName}</span></div>
+      </div>
+      <div style="text-align:center;margin-top:28px">
+        <a href="${pdfUrl}" style="display:inline-block;background:#38bdf8;color:#0f172a;font-weight:700;padding:14px 32px;border-radius:10px;text-decoration:none;font-size:15px">
+          Descargar boleta PDF
+        </a>
+      </div>
+      <p class="subtitle" style="margin-top:20px;font-size:12px">Documento emitido electrónicamente ante el SII a través de Bsale.</p>
+    `),
+  })
+}
