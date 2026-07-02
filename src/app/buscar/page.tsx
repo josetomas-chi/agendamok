@@ -5,6 +5,29 @@ import { Search, MapPin, Navigation, Clock, ChevronRight, Tag, Loader2 } from "l
 import Image from "next/image"
 import Link from "next/link"
 
+const BUSINESS_CARDS = [
+  { name: "Kinesiólogo",        category: "Kinesiología",          photo: "photo-1571019613454-1cb2f99b2d8b" },
+  { name: "Peluquería",         category: "Peluquería",            photo: "photo-1522337360788-8b13dee7a37e" },
+  { name: "Barbería",           category: "Barbería",              photo: "photo-1503951914875-452162b0f3f1" },
+  { name: "Nutricionista",      category: "Nutrición",             photo: "photo-1490645935967-10de6ba17061" },
+  { name: "Masajes",            category: "Masajes",               photo: "photo-1544161515-4ab6ce6db874" },
+  { name: "Acupuntura",         category: "Kinesiología",          photo: "photo-1512290923902-8a9f81dc236c" },
+  { name: "Psicólogo",          category: "Psicología",            photo: "photo-1573497019940-1c28c88b4f3e" },
+  { name: "Tatuador",           category: "Tatuaje",               photo: "photo-1598371839696-5c5bb00bdc28" },
+  { name: "Fotógrafo",          category: "Estética",              photo: "photo-1542038784456-1ea8e935640e" },
+  { name: "Entrenador Personal",category: "Entrenamiento Personal", photo: "photo-1571019614242-c5c5dee9f50b" },
+  { name: "Manicure & Pedicure",category: "Manicura",              photo: "photo-1604654894610-df63bc536371" },
+  { name: "Dentista",           category: "Odontología",           photo: "photo-1606811971618-4486d14f3f99" },
+  { name: "Médico",             category: "Medicina General",      photo: "photo-1559839734-2b71ea197ec2" },
+  { name: "Veterinario",        category: "Veterinaria",           photo: "photo-1581888227599-779811939961" },
+  { name: "Spa",                category: "Masajes",               photo: "photo-1540555700478-4be289fbecef" },
+  { name: "Centro Estético",    category: "Estética",              photo: "photo-1570172619644-dfd03ed5d881" },
+  { name: "Yoga",               category: "Yoga",                  photo: "photo-1506126613408-eca07ce68773" },
+  { name: "Pilates",            category: "Pilates",               photo: "photo-1518611012118-696072aa579a" },
+  { name: "Fisioterapia",       category: "Fisioterapia",          photo: "photo-1576091160550-2173dba999ef" },
+  { name: "Taller Mecánico",    category: "Medicina General",      photo: "photo-1487754180451-c456f719a1fc" },
+]
+
 const CATEGORIES = [
   "Peluquería", "Barbería", "Kinesiología", "Psicología", "Nutrición",
   "Odontología", "Medicina General", "Fisioterapia", "Yoga", "Pilates",
@@ -158,12 +181,29 @@ export default function BuscarPage() {
         )}
 
         {!loading && !searched && (
-          <div className="text-center py-24">
-            <div className="w-14 h-14 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center mx-auto mb-5">
-              <MapPin className="w-7 h-7 text-sky-400" />
+          <div>
+            <p className="text-xs text-white/30 uppercase tracking-widest font-semibold mb-5">Explora por rubro</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {BUSINESS_CARDS.map(b => (
+                <button
+                  key={b.name}
+                  onClick={() => setCategory(b.category)}
+                  className="group relative overflow-hidden rounded-2xl aspect-[3/4] border border-white/[0.07] hover:border-sky-400/40 transition-all hover:scale-[1.02]"
+                >
+                  <img
+                    src={`https://images.unsplash.com/${b.photo}?w=360&h=480&fit=crop&crop=faces,center&auto=format&q=70`}
+                    alt={b.name}
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.75) 100%)" }} />
+                  <div className="absolute bottom-0 inset-x-0" style={{ height: 3, background: "linear-gradient(90deg, #0ea5e9, #62CBF2)" }} />
+                  <p className="absolute bottom-0 inset-x-0 pb-4 px-2 text-white text-center font-bold text-[12px] leading-tight" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>
+                    {b.name}
+                  </p>
+                </button>
+              ))}
             </div>
-            <p className="font-semibold text-white/70 text-lg">Selecciona un rubro para comenzar</p>
-            <p className="text-sm text-white/35 mt-2">También puedes activar tu ubicación para ver negocios cercanos</p>
           </div>
         )}
 
