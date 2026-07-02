@@ -18,7 +18,7 @@ const businesses = [
   { name: "Médico",            photo: "photo-1559839734-2b71ea197ec2" },
   { name: "Veterinario",       photo: "photo-1581888227599-779811939961" },
   { name: "Spa",               photo: "photo-1540555700478-4be289fbecef" },
-  { name: "Centro Estético",   photo: "photo-1487412947147-5cebf100ffc2" },
+  { name: "Centro Estético",   photo: "photo-1570172619644-dfd03ed5d881" },
   { name: "Abogado",           photo: "photo-1589829545856-d10d557cf95f" },
   { name: "Notaría",           photo: "photo-1454165804606-c3d57bc86b40" },
   { name: "Coach",             photo: "photo-1522202176988-66273c2fd55f" },
