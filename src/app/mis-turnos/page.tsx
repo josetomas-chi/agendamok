@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { Calendar, Clock, MapPin, User, Loader2, LogOut, RefreshCw, X, ChevronRight, CheckCircle2 } from "lucide-react"
+import { MokIcon } from "@/components/ui/mok-icon"
 import { toast } from "sonner"
 
 type Appointment = {
@@ -328,8 +329,8 @@ export default function MisTurnosPage() {
       <div className="border-b border-white/8 bg-[#28282c]">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <Link href="/" className="flex items-center gap-2 w-fit">
-            <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center" style={{ boxShadow: "0 0 12px rgba(14,165,233,0.4)" }}>
-              <Calendar className="w-3.5 h-3.5 text-white" />
+            <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0" style={{ boxShadow: "0 0 12px rgba(56,189,248,0.4)" }}>
+              <img src="/mok-icon.png" alt="AgendaMok" width={28} height={28} className="w-full h-full object-cover" />
             </div>
             <span className="font-bold text-[15px]">Agenda<span className="text-sky-400">Mok</span></span>
           </Link>

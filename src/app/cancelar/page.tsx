@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { CheckCircle, XCircle, Loader2, Calendar } from "lucide-react"
+import { MokIcon } from "@/components/ui/mok-icon"
 
 type State = "loading" | "success" | "error"
 
@@ -37,8 +38,8 @@ function CancelarContent() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-sky-500 flex items-center justify-center" style={{ boxShadow: "0 0 16px rgba(14,165,233,0.5)" }}>
-              <Calendar className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0" style={{ boxShadow: "0 0 16px rgba(56,189,248,0.4)" }}>
+              <img src="/mok-icon.png" alt="AgendaMok" width={32} height={32} className="w-full h-full object-cover" />
             </div>
             <span className="font-bold text-lg text-white">Agenda<span className="text-sky-400">Mok</span></span>
           </div>

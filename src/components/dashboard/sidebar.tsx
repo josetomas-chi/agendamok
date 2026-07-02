@@ -7,6 +7,7 @@ import {
   Settings, CreditCard, Megaphone, MapPin, LogOut, LayoutDashboard, Star, Percent, FileText, HelpCircle, X,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
+import { MokIcon } from "@/components/ui/mok-icon"
 import { cn } from "@/lib/utils"
 
 const groups = [
@@ -62,9 +63,8 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       {/* Logo */}
       <div className="h-14 flex items-center px-4 gap-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <Link href="/dashboard" className="flex items-center gap-2.5 flex-1" onClick={onClose}>
-          <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center flex-shrink-0"
-            style={{ boxShadow: "0 0 12px rgba(14,165,233,0.5)" }}>
-            <Calendar className="w-3.5 h-3.5 text-white" />
+          <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0" style={{ boxShadow: "0 0 12px rgba(56,189,248,0.4)" }}>
+            <img src="/mok-icon.png" alt="AgendaMok" width={28} height={28} className="w-full h-full object-cover" />
           </div>
           <span className="font-bold text-[15px] tracking-tight text-white">
             Agenda<span className="text-sky-400">Mok</span>

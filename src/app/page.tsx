@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { Check, X, Minus, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight, Star, Percent, MapPin, FileText, Stethoscope, Key, ChevronDown, Rocket, Scissors, HelpCircle, Menu, type LucideIcon } from "lucide-react"
+import { MokIcon } from "@/components/ui/mok-icon"
 
 const features = [
   { icon: Calendar, title: "Calendario inteligente", desc: "Vista semanal y diaria por profesional. Arrastra y suelta para mover turnos al instante." },
@@ -437,8 +438,8 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #0ea5e9, #38bdf8)", boxShadow: "0 0 12px rgba(56,189,248,0.4)" }}>
-              <Calendar className="w-3.5 h-3.5 text-white" />
+            <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0" style={{ boxShadow: "0 0 12px rgba(56,189,248,0.4)" }}>
+              <img src="/mok-icon.png" alt="AgendaMok" width={28} height={28} className="w-full h-full object-cover" />
             </div>
             <span className="font-bold text-[17px] tracking-tight text-white">
               Agenda<span className="text-sky-400">Mok</span>

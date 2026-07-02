@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 import { ChevronDown, Calendar, Rocket, Scissors, CreditCard, Users, HelpCircle, ArrowLeft, type LucideIcon } from "lucide-react"
+import { MokIcon } from "@/components/ui/mok-icon"
 
 const helpItems: { category: string; icon: LucideIcon; steps: { title: string; content: string }[] }[] = [
   {
@@ -75,8 +76,8 @@ export default function AyudaPage() {
           </Link>
           <div className="w-px h-4 bg-white/15" />
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0ea5e9, #38bdf8)" }}>
-              <Calendar className="w-3 h-3 text-white" />
+            <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+              <img src="/mok-icon.png" alt="AgendaMok" width={24} height={24} className="w-full h-full object-cover" />
             </div>
             <span className="font-bold text-[15px] tracking-tight">Agenda<span className="text-sky-400">Mok</span></span>
           </Link>
