@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "sonner"
-import { CreditCard, Banknote, Smartphone, DollarSign, CheckCircle2 } from "lucide-react"
+import { CreditCard, Banknote, Smartphone, DollarSign, CheckCircle2, FileText, ExternalLink, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -34,14 +34,18 @@ const PAYMENT_STATUS: Record<string, string> = {
 export default function PaymentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [businessId, setBusinessId] = useState("")
+  const [hasBsale, setHasBsale] = useState(false)
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Appointment | null>(null)
   const [method, setMethod] = useState("CASH")
   const [saving, setSaving] = useState(false)
+  const [lastPaymentId, setLastPaymentId] = useState<string | null>(null)
+  const [emitting, setEmitting] = useState(false)
 
   useEffect(() => {
     fetch("/api/me/business").then(r => r.json()).then(d => {
       setBusinessId(d.businessId)
+      setHasBsale(!!d.bsaleApiKey)
       load(d.businessId)
     })
   }, [])
@@ -65,11 +69,31 @@ export default function PaymentsPage() {
       body: JSON.stringify({ appointmentId: selected.id, method, amount: selected.service.price }),
     })
     if (r.ok) {
+      const data = await r.json()
       toast.success("Pago registrado")
-      setSelected(null)
+      setLastPaymentId(data.payment?.id ?? null)
       load(businessId)
     } else toast.error("Error al registrar")
     setSaving(false)
+  }
+
+  async function emitBoleta() {
+    if (!lastPaymentId || !selected) return
+    setEmitting(true)
+    const r = await fetch(`/api/businesses/${businessId}/invoices`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentId: lastPaymentId, clientName: selected.client.name }),
+    })
+    const data = await r.json()
+    if (r.ok) {
+      toast.success("Boleta emitida correctamente")
+      if (data.invoice?.pdfUrl) window.open(data.invoice.pdfUrl, "_blank")
+      setSelected(null)
+      setLastPaymentId(null)
+    } else {
+      toast.error(data.error || "Error al emitir boleta")
+    }
+    setEmitting(false)
   }
 
   const todayRevenue = appointments.filter(a => a.payment?.status === "PAID").reduce((s, a) => s + Number(a.payment!.amount), 0)
@@ -165,9 +189,27 @@ export default function PaymentsPage() {
                   ))}
                 </div>
               </div>
-              <Button className="w-full" onClick={registerPayment} disabled={saving}>
-                {saving ? "Registrando..." : `Confirmar cobro en ${METHODS.find(m => m.id === method)?.label}`}
-              </Button>
+              {!lastPaymentId ? (
+                <Button className="w-full" onClick={registerPayment} disabled={saving}>
+                  {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Registrando...</> : `Confirmar cobro · ${METHODS.find(m => m.id === method)?.label}`}
+                </Button>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium justify-center py-1">
+                    <CheckCircle2 className="w-4 h-4" /> Pago registrado
+                  </div>
+                  {hasBsale && (
+                    <Button variant="outline" className="w-full gap-2" onClick={emitBoleta} disabled={emitting}>
+                      {emitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                      {emitting ? "Emitiendo..." : "Emitir boleta (Bsale)"}
+                      {!emitting && <ExternalLink className="w-3 h-3 ml-auto opacity-50" />}
+                    </Button>
+                  )}
+                  <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => { setSelected(null); setLastPaymentId(null) }}>
+                    Cerrar
+                  </Button>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>

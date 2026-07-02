@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { Plus, Search, Clock } from "lucide-react"
+import { Plus, Search, Clock, FileText, ExternalLink, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -17,7 +17,7 @@ type Appointment = {
   service: { name: string; color: string; duration: number; price: number }
   staff: { user: { name: string | null } }
   client: { id: string; name: string; email: string | null; phone: string | null }
-  payment: { amount: number; status: string; method: string } | null
+  payment: { id: string; amount: number; status: string; method: string } | null
 }
 type Service = { id: string; name: string; duration: number; price: number; color: string }
 type Staff = { id: string; user: { name: string | null } }
@@ -43,6 +43,8 @@ export default function AppointmentsPage() {
   const [newOpen, setNewOpen] = useState(false)
   const [form, setForm] = useState(DEFAULT_FORM)
   const [saving, setSaving] = useState(false)
+  const [hasBsale, setHasBsale] = useState(false)
+  const [emitting, setEmitting] = useState(false)
   const [services, setServices] = useState<Service[]>([])
   const [staff, setStaff] = useState<Staff[]>([])
   const [clients, setClients] = useState<Client[]>([])
@@ -50,6 +52,7 @@ export default function AppointmentsPage() {
   useEffect(() => {
     fetch("/api/me/business").then(r => r.json()).then(d => {
       setBusinessId(d.businessId)
+      setHasBsale(!!d.bsaleApiKey)
       loadAppts(d.businessId, "")
       loadFormData(d.businessId)
     })
@@ -123,6 +126,23 @@ export default function AppointmentsPage() {
     toast.success("Estado actualizado")
     setSelected(null)
     loadAppts(businessId, statusFilter)
+  }
+
+  async function emitBoleta() {
+    if (!selected?.payment) return
+    setEmitting(true)
+    const r = await fetch(`/api/businesses/${businessId}/invoices`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentId: selected.payment.id, clientName: selected.client.name }),
+    })
+    const data = await r.json()
+    if (r.ok) {
+      toast.success("Boleta emitida correctamente")
+      if (data.invoice?.pdfUrl) window.open(data.invoice.pdfUrl, "_blank")
+    } else {
+      toast.error(data.error || "Error al emitir boleta")
+    }
+    setEmitting(false)
   }
 
   const filtered = appointments.filter(a =>
@@ -334,6 +354,14 @@ export default function AppointmentsPage() {
                   ))}
                 </div>
               </div>
+
+              {hasBsale && selected.payment?.status === "PAID" && (
+                <Button variant="outline" className="w-full gap-2" onClick={emitBoleta} disabled={emitting}>
+                  {emitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                  {emitting ? "Emitiendo boleta..." : "Emitir boleta (Bsale)"}
+                  {!emitting && <ExternalLink className="w-3 h-3 ml-auto opacity-50" />}
+                </Button>
+              )}
             </div>
           </DialogContent>
         </Dialog>
