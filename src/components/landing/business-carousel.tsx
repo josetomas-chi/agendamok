@@ -23,7 +23,7 @@ const businesses = [
   { name: "Notaría",           photo: "photo-1454165804606-c3d57bc86b40" },
   { name: "Coach",             photo: "photo-1522202176988-66273c2fd55f" },
   { name: "Yoga",              photo: "photo-1506126613408-eca07ce68773" },
-  { name: "Taller Mecánico",  photo: "photo-1558618666-fcd25c85cd64" },
+  { name: "Taller Mecánico",  photo: "photo-1487754180451-c456f719a1fc" },
 ]
 
 const row1 = businesses.slice(0, 10)
@@ -100,7 +100,7 @@ function CarouselRow({ items, direction }: { items: typeof businesses; direction
 
 export function BusinessCarousel() {
   return (
-    <section className="py-20 overflow-hidden bg-background">
+    <section className="relative py-20 overflow-hidden bg-background">
       <style>{`
         @keyframes scroll-left {
           0%   { transform: translateX(0); }
@@ -127,8 +127,8 @@ export function BusinessCarousel() {
       </div>
 
       {/* Edge fade masks */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-32" style={{ background: "linear-gradient(to right, #111318, transparent)" }} />
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-32" style={{ background: "linear-gradient(to left, #111318, transparent)" }} />
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-32 bg-gradient-to-r from-background to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-32 bg-gradient-to-l from-background to-transparent" />
     </section>
   )
 }
