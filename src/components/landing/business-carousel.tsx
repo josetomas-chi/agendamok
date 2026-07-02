@@ -4,7 +4,7 @@ import { useRef } from "react"
 
 const businesses = [
   { name: "Kinesiólogo",       photo: "photo-1571019613454-1cb2f99b2d8b" },
-  { name: "Peluquería",        photo: "photo-1560066984-138daaa6e8a1" },
+  { name: "Peluquería",        photo: "photo-1522337360788-8b13dee7a37e" },
   { name: "Barbería",          photo: "photo-1503951914875-452162b0f3f1" },
   { name: "Nutricionista",     photo: "photo-1490645935967-10de6ba17061" },
   { name: "Masajes",           photo: "photo-1544161515-4ab6ce6db874" },
