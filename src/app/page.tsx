@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { Check, X, Minus, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight, Star, Percent, MapPin, FileText, Stethoscope, Key, ChevronDown, Rocket, Scissors, HelpCircle, Menu, type LucideIcon } from "lucide-react"
 import { MokIcon } from "@/components/ui/mok-icon"
+import { BusinessCarousel } from "@/components/landing/business-carousel"
 
 const features = [
   { icon: Calendar, title: "Calendario inteligente", desc: "Vista semanal y diaria por profesional. Arrastra y suelta para mover turnos al instante." },
@@ -539,7 +540,14 @@ export default function LandingPage() {
             </div>
 
             <p className="hero-note mt-8 text-sm text-white/30">30 días gratis en todos los planes · Sin tarjeta al inicio</p>
+          </div>
+        </section>
 
+        {/* Business carousel */}
+        <BusinessCarousel />
+
+        <section className="relative overflow-hidden">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             {/* Dashboard preview */}
             <div className="mockup-reveal reveal mt-16 relative">
               <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#52525a] to-transparent z-10 pointer-events-none" />
