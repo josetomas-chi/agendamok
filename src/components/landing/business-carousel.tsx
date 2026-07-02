@@ -23,7 +23,7 @@ const businesses = [
   { name: "Notaría",           photo: "photo-1454165804606-c3d57bc86b40" },
   { name: "Coach",             photo: "photo-1522202176988-66273c2fd55f" },
   { name: "Yoga",              photo: "photo-1506126613408-eca07ce68773" },
-  { name: "Taller Mecánico",  photo: "photo-1537984822441-cff5b2880159" },
+  { name: "Taller Mecánico",  photo: "photo-1558618666-fcd25c85cd64" },
 ]
 
 const row1 = businesses.slice(0, 10)
