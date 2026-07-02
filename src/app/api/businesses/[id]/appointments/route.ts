@@ -179,7 +179,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         date: format(startTime, "EEEE d 'de' MMMM yyyy", { locale: es }),
         time: format(startTime, "HH:mm"),
         duration: service.duration,
-      }).catch(() => {})
+      }).catch((err) => { console.error("[email] sendBookingConfirmation failed:", err?.message ?? err) })
     }
 
     return NextResponse.json({ appointment }, { status: 201 })

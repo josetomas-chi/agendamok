@@ -63,6 +63,7 @@ export async function sendBookingConfirmation({
 }) {
   if (!process.env.RESEND_API_KEY) return
 
+  console.log("[email] sendBookingConfirmation → from:", FROM, "to:", clientEmail)
   await resend.emails.send({
     from: FROM,
     to: clientEmail,

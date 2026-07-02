@@ -136,7 +136,7 @@ export async function POST(req: Request) {
       time: localTime,
       duration: service.duration,
       cancelUrl: `${baseUrl}/cancelar?token=${cancelToken}`,
-    }).catch(() => {})
+    }).catch((err) => { console.error("[email] sendBookingConfirmation failed:", err?.message ?? err) })
 
     // Sync to Google Calendar (async, don't block response)
     createCalendarEvent({
