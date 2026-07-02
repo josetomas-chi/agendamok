@@ -99,10 +99,7 @@ function CarouselRow({ items, direction }: { items: typeof businesses; direction
 
 export function BusinessCarousel() {
   return (
-    <section
-      className="py-20 overflow-hidden"
-      style={{ background: "linear-gradient(to bottom, #0f0f13 0%, #111318 100%)" }}
-    >
+    <section className="py-20 overflow-hidden bg-background">
       <style>{`
         @keyframes scroll-left {
           0%   { transform: translateX(0); }
