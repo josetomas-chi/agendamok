@@ -64,7 +64,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       <div className="h-14 flex items-center px-4 gap-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <Link href="/dashboard" className="flex items-center gap-2.5 flex-1" onClick={onClose}>
           <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0" style={{ boxShadow: "0 0 12px rgba(56,189,248,0.4)" }}>
-            <img src="/mok-icon.png" alt="AgendaMok" width={28} height={28} className="w-full h-full object-cover" />
+            <img src="/icon.svg" alt="AgendaMok" width={28} height={28} className="w-full h-full object-cover" />
           </div>
           <span className="font-bold text-[15px] tracking-tight text-white">
             Agenda<span className="text-sky-400">Mok</span>

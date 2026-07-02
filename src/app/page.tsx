@@ -439,7 +439,7 @@ export default function LandingPage() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0" style={{ boxShadow: "0 0 12px rgba(56,189,248,0.4)" }}>
-              <img src="/mok-icon.png" alt="AgendaMok" width={28} height={28} className="w-full h-full object-cover" />
+              <img src="/icon.svg" alt="AgendaMok" width={28} height={28} className="w-full h-full object-cover" />
             </div>
             <span className="font-bold text-[17px] tracking-tight text-white">
               Agenda<span className="text-sky-400">Mok</span>

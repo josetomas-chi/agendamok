@@ -77,7 +77,7 @@ export default function AyudaPage() {
           <div className="w-px h-4 bg-white/15" />
           <Link href="/" className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
-              <img src="/mok-icon.png" alt="AgendaMok" width={24} height={24} className="w-full h-full object-cover" />
+              <img src="/icon.svg" alt="AgendaMok" width={24} height={24} className="w-full h-full object-cover" />
             </div>
             <span className="font-bold text-[15px] tracking-tight">Agenda<span className="text-sky-400">Mok</span></span>
           </Link>

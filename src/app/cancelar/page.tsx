@@ -39,7 +39,7 @@ function CancelarContent() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0" style={{ boxShadow: "0 0 16px rgba(56,189,248,0.4)" }}>
-              <img src="/mok-icon.png" alt="AgendaMok" width={32} height={32} className="w-full h-full object-cover" />
+              <img src="/icon.svg" alt="AgendaMok" width={32} height={32} className="w-full h-full object-cover" />
             </div>
             <span className="font-bold text-lg text-white">Agenda<span className="text-sky-400">Mok</span></span>
           </div>
