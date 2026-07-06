@@ -137,7 +137,7 @@ export default function AdminBusinessesPage() {
         <table className="w-full text-sm">
           <thead className="border-b border-white/[0.07]">
             <tr>
-              {["Negocio", "Dueño", "Plan", "Citas", "Registro", "Estado", ""].map(h => (
+              {["Negocio", "Dueño", "Plan", "Suscripción", "Citas", "Registro", "Estado", ""].map(h => (
                 <th key={h} className="text-left px-4 py-3 font-medium text-white/40 text-xs uppercase tracking-wider">{h}</th>
               ))}
             </tr>
@@ -177,6 +177,24 @@ export default function AdminBusinessesPage() {
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${planColor[b.subscription?.plan || "FREE"]}`}>
                     {b.subscription?.plan || "FREE"}
                   </span>
+                </td>
+                <td className="px-4 py-3">
+                  {(() => {
+                    const s = b.subscription?.status
+                    const map: Record<string, string> = {
+                      TRIALING: "bg-amber-400/15 text-amber-400 border-amber-400/30",
+                      ACTIVE: "bg-emerald-500/15 text-emerald-400 border-emerald-400/30",
+                      PAST_DUE: "bg-red-500/15 text-red-400 border-red-400/30",
+                      CANCELED: "bg-white/10 text-white/40 border-white/10",
+                      PAUSED: "bg-orange-500/15 text-orange-400 border-orange-400/30",
+                    }
+                    const label: Record<string, string> = { TRIALING: "Prueba", ACTIVE: "Activa", PAST_DUE: "Vencida", CANCELED: "Cancelada", PAUSED: "Pausada" }
+                    return s ? (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${map[s] || "bg-white/10 text-white/40 border-white/10"}`}>
+                        {label[s] || s}
+                      </span>
+                    ) : <span className="text-white/30 text-xs">—</span>
+                  })()}
                 </td>
                 <td className="px-4 py-3 text-white/50">{b._count.appointments}</td>
                 <td className="px-4 py-3 text-white/40">{new Date(b.createdAt).toLocaleDateString("es-CL")}</td>
