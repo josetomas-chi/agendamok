@@ -221,6 +221,9 @@ model Business {
   bsaleAutoInvoice            Boolean   @default(false)
   bsaleDocType                InvoiceDocType @default(BOLETA)
   cancellationHoursNotice     Int?
+  loyaltyPointsPerVisit       Int       @default(10)
+  loyaltyVipThreshold         Int       @default(500)
+  segmentDiscounts            Json      @default("{}")
   coverImage                  String?
   primaryColor                String?
   dailySummaryEnabled         Boolean   @default(false)

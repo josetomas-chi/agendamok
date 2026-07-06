@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle2, AlertCircle, Loader2, Gift } from "lucide-react"
 
 type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean }
 type PaymentSettings = { onlinePaymentsEnabled: boolean; hasCredentials: boolean }
@@ -58,6 +58,12 @@ function SettingsContent() {
   const [testingBsale, setTestingBsale] = useState(false)
   const [showBsaleKey, setShowBsaleKey] = useState(false)
 
+  // Loyalty / fidelización
+  const [loyaltyPoints, setLoyaltyPoints] = useState("10")
+  const [loyaltyThreshold, setLoyaltyThreshold] = useState("500")
+  const [segmentDiscounts, setSegmentDiscounts] = useState<Record<string, string>>({ VIP: "", INFLUENCER: "", FREQUENT: "", REGULAR: "", AT_RISK: "", NEW: "" })
+  const [savingLoyalty, setSavingLoyalty] = useState(false)
+
   // API Keys
   type ApiKey = { id: string; name: string; key: string; isActive: boolean; lastUsedAt: string | null; createdAt: string }
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
@@ -88,6 +94,13 @@ function SettingsContent() {
       if (pr.ok) {
         const pd = await pr.json()
         setPaySettings(pd)
+      }
+      // Load loyalty settings
+      setLoyaltyPoints(String(biz.business.loyaltyPointsPerVisit ?? 10))
+      setLoyaltyThreshold(String(biz.business.loyaltyVipThreshold ?? 500))
+      if (biz.business.segmentDiscounts) {
+        const saved = biz.business.segmentDiscounts as Record<string, number>
+        setSegmentDiscounts(prev => Object.fromEntries(Object.keys(prev).map(k => [k, saved[k] != null ? String(saved[k]) : ""])))
       }
       // Load Bsale settings
       const br = await fetch(`/api/businesses/${d.businessId}/bsale-settings`)
@@ -130,6 +143,25 @@ function SettingsContent() {
       if (next.has(keyId)) next.delete(keyId); else next.add(keyId)
       return next
     })
+  }
+
+  async function saveLoyalty() {
+    if (!business) return
+    setSavingLoyalty(true)
+    const discounts: Record<string, number | null> = {}
+    for (const [seg, val] of Object.entries(segmentDiscounts)) {
+      discounts[seg] = val === "" ? null : Math.min(100, Math.max(0, Number(val)))
+    }
+    await fetch(`/api/businesses/${business.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        loyaltyPointsPerVisit: Math.max(0, Number(loyaltyPoints) || 0),
+        loyaltyVipThreshold: Math.max(1, Number(loyaltyThreshold) || 500),
+        segmentDiscounts: discounts,
+      }),
+    })
+    toast.success("Configuración de fidelización guardada")
+    setSavingLoyalty(false)
   }
 
   async function savePaymentSettings() {
@@ -314,6 +346,7 @@ function SettingsContent() {
             <TabsTrigger value="payments" className="gap-2"><Banknote className="w-4 h-4" />Cobros</TabsTrigger>
             <TabsTrigger value="billing" className="gap-2"><CreditCard className="w-4 h-4" />Plan</TabsTrigger>
             <TabsTrigger value="invoicing" className="gap-2"><FileText className="w-4 h-4" />Facturación</TabsTrigger>
+            <TabsTrigger value="loyalty" className="gap-2"><Gift className="w-4 h-4" />Fidelización</TabsTrigger>
             <TabsTrigger value="api" className="gap-2"><Key className="w-4 h-4" />API</TabsTrigger>
           </TabsList>
         </div>
@@ -1066,6 +1099,89 @@ function SettingsContent() {
               </ol>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Fidelización */}
+        <TabsContent value="loyalty" className="pt-4 space-y-4">
+          {/* Puntos de fidelización */}
+          <Card className="bg-[#2c2c30] border-white/10">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2"><Gift className="w-4 h-4 text-yellow-400" />Puntos de fidelización</CardTitle>
+              <CardDescription>Los clientes acumulan puntos cada vez que se completa un turno.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Puntos por turno completado</Label>
+                  <Input
+                    type="number"
+                    value={loyaltyPoints}
+                    onFocus={e => e.target.select()}
+                    onChange={e => setLoyaltyPoints(e.target.value)}
+                    className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    placeholder="10"
+                  />
+                  <p className="text-xs text-white/35">Ej: 10 puntos por cada sesión</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Puntos para alcanzar VIP automático</Label>
+                  <Input
+                    type="number"
+                    value={loyaltyThreshold}
+                    onFocus={e => e.target.select()}
+                    onChange={e => setLoyaltyThreshold(e.target.value)}
+                    className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    placeholder="500"
+                  />
+                  <p className="text-xs text-white/35">Al alcanzar este número se asigna VIP</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Descuentos por segmento */}
+          <Card className="bg-[#2c2c30] border-white/10">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Descuentos por segmento</CardTitle>
+              <CardDescription>Define el % de descuento automático para cada tipo de cliente. Deja en blanco para no aplicar descuento. Pon 100 para que sea gratis.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[
+                { key: "VIP", label: "VIP", color: "text-purple-300" },
+                { key: "INFLUENCER", label: "Influencer", color: "text-pink-300" },
+                { key: "FREQUENT", label: "Frecuente", color: "text-green-300" },
+                { key: "REGULAR", label: "Regular", color: "text-white/60" },
+                { key: "NEW", label: "Nuevo", color: "text-sky-300" },
+                { key: "AT_RISK", label: "En riesgo", color: "text-orange-300" },
+              ].map(({ key, label, color }) => (
+                <div key={key} className="flex items-center gap-4">
+                  <span className={`w-28 text-sm font-medium ${color}`}>{label}</span>
+                  <div className="flex items-center gap-2 flex-1">
+                    <Input
+                      type="number"
+                      value={segmentDiscounts[key] ?? ""}
+                      onFocus={e => e.target.select()}
+                      onChange={e => setSegmentDiscounts(prev => ({ ...prev, [key]: e.target.value }))}
+                      placeholder="Sin descuento"
+                      min={0} max={100}
+                      className="max-w-[140px] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    />
+                    <span className="text-sm text-white/40">%</span>
+                    {segmentDiscounts[key] === "100" && <span className="text-xs text-green-400 font-medium">Gratis</span>}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <button
+            onClick={saveLoyalty}
+            disabled={savingLoyalty}
+            className="w-full py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 transition-colors font-semibold text-sm disabled:opacity-40 flex items-center justify-center gap-2"
+          >
+            {savingLoyalty && <Loader2 className="w-4 h-4 animate-spin" />}
+            Guardar configuración
+          </button>
         </TabsContent>
       </Tabs>
     </div>

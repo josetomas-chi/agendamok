@@ -94,8 +94,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   // Award loyalty points when appointment is marked COMPLETED for the first time
   if (body.status === "COMPLETED" && prevAppt?.status !== "COMPLETED" && appointment.clientId) {
-    const POINTS_PER_VISIT = 10
-    const VIP_THRESHOLD = 500
+    const biz = await prisma.business.findUnique({ where: { id }, select: { loyaltyPointsPerVisit: true, loyaltyVipThreshold: true } })
+    const POINTS_PER_VISIT = biz?.loyaltyPointsPerVisit ?? 10
+    const VIP_THRESHOLD = biz?.loyaltyVipThreshold ?? 500
     const updated = await prisma.client.update({
       where: { id: appointment.clientId },
       data: { loyaltyPoints: { increment: POINTS_PER_VISIT } },
