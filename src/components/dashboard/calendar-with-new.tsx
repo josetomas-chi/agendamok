@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Phone, Mail, Clock, User, X, Pencil, Trash2, CheckCircle, DollarSign, ChevronDown, CalendarDays } from "lucide-react"
 import { CalendarView } from "./calendar-view"
 import { ApptDetailDialog } from "./appt-detail-dialog"
@@ -33,6 +33,93 @@ interface Props {
 }
 
 const DEFAULT_FORM = { serviceId: "", staffId: "", clientId: "", locationId: "", date: "", time: "", notes: "" }
+
+function ClientCombobox({ clients, value, onChange }: {
+  clients: { id: string; name: string }[]
+  value: string
+  onChange: (id: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState("")
+  const ref = useRef<HTMLDivElement>(null)
+
+  const selected = clients.find(c => c.id === value)
+  const filtered = query.trim()
+    ? clients.filter(c => c.name.toLowerCase().includes(query.toLowerCase()))
+    : clients
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+        setQuery("")
+      }
+    }
+    document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => { setOpen(o => !o); setQuery("") }}
+        className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-left flex items-center focus:outline-none focus:border-sky-500/60 focus:bg-white/[0.08] transition-colors"
+      >
+        <span className={selected ? "text-white" : "text-white/25"}>
+          {selected ? selected.name : "Cliente"}
+        </span>
+        {selected && (
+          <button
+            type="button"
+            onMouseDown={e => { e.stopPropagation(); onChange(""); setQuery("") }}
+            className="ml-auto mr-6 text-white/30 hover:text-white/60"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        )}
+      </button>
+      <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-white/30 pointer-events-none" />
+
+      {open && (
+        <div className="absolute z-50 w-full mt-1 rounded-xl border border-white/[0.08] bg-[#28282c] shadow-xl overflow-hidden">
+          <div className="p-2 border-b border-white/[0.06]">
+            <input
+              autoFocus
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Buscar cliente..."
+              className="w-full h-8 rounded-lg bg-white/[0.06] border border-white/[0.08] px-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-sky-500/60"
+            />
+          </div>
+          <div className="max-h-44 overflow-y-auto">
+            <button
+              type="button"
+              onMouseDown={() => { onChange(""); setOpen(false); setQuery("") }}
+              className="w-full px-4 py-2.5 text-sm text-left text-white/35 hover:bg-white/[0.05] transition-colors"
+            >
+              Sin cliente asignado
+            </button>
+            {filtered.length === 0 ? (
+              <p className="px-4 py-3 text-sm text-white/25">Sin resultados</p>
+            ) : (
+              filtered.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onMouseDown={() => { onChange(c.id); setOpen(false); setQuery("") }}
+                  className={`w-full px-4 py-2.5 text-sm text-left transition-colors ${value === c.id ? "bg-sky-500/15 text-sky-300" : "text-white hover:bg-white/[0.05]"}`}
+                >
+                  {c.name}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export function CalendarWithNew({ businessId, services, staff, clients, locations = [] }: Props) {
   const [open, setOpen] = useState(false)
@@ -426,15 +513,11 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
                   </>
                 )}
               </div>
-              <div className="relative">
-                <select value={form.clientId} onChange={e => setForm(f => ({ ...f, clientId: e.target.value }))}
-                  className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 focus:bg-white/[0.08] transition-colors"
-                  style={{ colorScheme: "dark" }}>
-                  <option value="" style={{ backgroundColor: "#28282c" }}>Cliente</option>
-                  {clients.map(c => <option key={c.id} value={c.id} style={{ backgroundColor: "#28282c" }}>{c.name}</option>)}
-                </select>
-                <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-white/30 pointer-events-none" />
-              </div>
+              <ClientCombobox
+                clients={clients}
+                value={form.clientId}
+                onChange={id => setForm(f => ({ ...f, clientId: id }))}
+              />
             </div>
 
             {/* Fecha + Hora */}
