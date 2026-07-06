@@ -247,7 +247,11 @@ function ServiceGrid({ items, onEdit, onDelete, onToggle }: {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {items.map(s => (
-        <Card key={s.id} className={cn("group relative overflow-hidden transition-all hover:shadow-md", !s.isActive && "opacity-60")}>
+        <Card
+          key={s.id}
+          onClick={() => onEdit(s)}
+          className={cn("group relative overflow-hidden transition-all hover:shadow-md cursor-pointer hover:border-white/20", !s.isActive && "opacity-60")}
+        >
           <div className="h-1 w-full" style={{ backgroundColor: s.color }} />
           <CardContent className="p-4">
             <div className="flex items-start justify-between gap-2 mb-2">
@@ -264,9 +268,9 @@ function ServiceGrid({ items, onEdit, onDelete, onToggle }: {
               <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />${Number(s.price).toLocaleString("es-AR")}</span>
             </div>
             <div className="flex gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => onEdit(s)}><Pencil className="w-3 h-3" /></Button>
-              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => onToggle(s)}><Power className="w-3 h-3" /></Button>
-              <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive hover:text-destructive" onClick={() => onDelete(s.id)}><Trash2 className="w-3 h-3" /></Button>
+              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={e => { e.stopPropagation(); onEdit(s) }}><Pencil className="w-3 h-3" /></Button>
+              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={e => { e.stopPropagation(); onToggle(s) }}><Power className="w-3 h-3" /></Button>
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive hover:text-destructive" onClick={e => { e.stopPropagation(); onDelete(s.id) }}><Trash2 className="w-3 h-3" /></Button>
             </div>
           </CardContent>
         </Card>
