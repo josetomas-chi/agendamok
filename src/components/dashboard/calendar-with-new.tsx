@@ -73,8 +73,8 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
     return () => controller.abort()
   }, [fetchAppts])
 
-  function handleNewAppointment(date: string, time: string) {
-    setForm({ ...DEFAULT_FORM, date, time })
+  function handleNewAppointment(date: string, time: string, staffId?: string) {
+    setForm({ ...DEFAULT_FORM, date, time, staffId: staffId || "" })
     setOpen(true)
   }
 
