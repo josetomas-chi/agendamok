@@ -74,6 +74,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   // Email client when cancelled
+  console.log("[cancel-email] body.status:", body.status, "prevStatus:", prevAppt?.status, "clientEmail:", appointment.client?.email)
   if (body.status === "CANCELLED" && prevAppt?.status !== "CANCELLED" && appointment.client.email) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"
     sendCancellationEmail({
