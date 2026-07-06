@@ -38,8 +38,8 @@ export async function GET() {
     take: 50,
     include: {
       service: { select: { name: true, duration: true, color: true } },
-      staff: { select: { user: { select: { name: true } } } },
-      business: { select: { name: true, slug: true, address: true, city: true, logo: true } },
+      staff: { select: { id: true, user: { select: { name: true } } } },
+      business: { select: { id: true, name: true, slug: true, address: true, city: true, logo: true } },
     },
   })
 
@@ -53,6 +53,9 @@ export async function GET() {
       date: format(local, "EEEE d 'de' MMMM yyyy", { locale: es }),
       time: format(local, "HH:mm"),
       isPast: a.startTime < new Date(),
+      startTimeISO: a.startTime.toISOString(),
+      staffId: a.staff?.id ?? null,
+      businessId: a.business.id,
       service: { name: a.service.name, duration: a.service.duration, color: a.service.color },
       staff: a.staff?.user.name ?? null,
       business: {

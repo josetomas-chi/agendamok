@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, User, Loader2, LogOut, RefreshCw, X, ChevronRight, CheckCircle2 } from "lucide-react"
+import { Calendar, Clock, MapPin, User, Loader2, LogOut, RefreshCw, X, LayoutGrid, List, CheckCircle2 } from "lucide-react"
 import { MokIcon } from "@/components/ui/mok-icon"
 import { toast } from "sonner"
+import { ClientCalendar } from "@/components/client/client-calendar"
 
 type Appointment = {
   id: string
@@ -13,6 +14,9 @@ type Appointment = {
   date: string
   time: string
   isPast: boolean
+  startTimeISO: string
+  staffId: string | null
+  businessId: string
   service: { name: string; duration: number; color: string }
   staff: string | null
   business: { name: string; slug: string; address: string | null; logo: string | null }
@@ -142,6 +146,7 @@ function ClientPortal({ name, email, appointments, onLogout }: {
 }) {
   const [items, setItems] = useState(appointments)
   const [cancelling, setCancelling] = useState<string | null>(null)
+  const [view, setView] = useState<"list" | "calendar">("list")
 
   async function cancel(appt: Appointment) {
     if (!appt.cancelToken) return
@@ -157,67 +162,96 @@ function ClientPortal({ name, email, appointments, onLogout }: {
     setCancelling(null)
   }
 
+  function handleRescheduled(id: string, newStartISO: string) {
+    setItems(prev => prev.map(a => {
+      if (a.id !== id) return a
+      const d = new Date(newStartISO)
+      const date = d.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+      const time = d.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
+      return { ...a, startTimeISO: newStartISO, date, time, isPast: d < new Date() }
+    }))
+  }
+
   const upcoming = items.filter(a => !a.isPast && a.status !== "CANCELLED")
   const past = items.filter(a => a.isPast || a.status === "CANCELLED")
 
   return (
     <div>
       {/* User bar */}
-      <div className="flex items-center justify-between mb-8 bg-[#28282c] rounded-2xl px-5 py-4 border border-white/8">
+      <div className="flex items-center justify-between mb-6 bg-[#28282c] rounded-2xl px-5 py-4 border border-white/8">
         <div>
           <p className="font-semibold text-white text-sm">{name ? `Hola, ${name}` : "Mi cuenta"}</p>
           <p className="text-xs text-white/35">{email}</p>
         </div>
-        <button
-          onClick={onLogout}
-          className="flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60 transition-colors"
-        >
-          <LogOut className="w-3.5 h-3.5" /> Salir
-        </button>
-      </div>
-
-      {/* Upcoming */}
-      <div className="mb-8">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-sky-400/70 mb-3">
-          Próximos ({upcoming.length})
-        </h2>
-        {upcoming.length === 0 ? (
-          <div className="text-center py-10 bg-[#28282c] rounded-2xl border border-white/8">
-            <Calendar className="w-8 h-8 text-white/15 mx-auto mb-2" />
-            <p className="text-white/30 text-sm">Sin turnos próximos</p>
-            <Link
-              href="/"
-              className="inline-block mt-3 text-sm text-sky-400 hover:text-sky-300 transition-colors"
-            >
-              Buscar negocios →
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {upcoming.map(a => (
-              <AppointmentCard
-                key={a.id}
-                appointment={a}
-                onCancel={() => cancel(a)}
-                cancelling={cancelling === a.id}
-              />
+        <div className="flex items-center gap-3">
+          {/* View toggle — only on desktop */}
+          <div className="hidden md:flex items-center gap-1 bg-white/[0.05] rounded-lg p-1">
+            {([["list", List], ["calendar", LayoutGrid]] as const).map(([v, Icon]) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`p-1.5 rounded-md transition-colors ${view === v ? "bg-sky-500/20 text-sky-400" : "text-white/30 hover:text-white/60"}`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+              </button>
             ))}
           </div>
-        )}
-      </div>
-
-      {/* History */}
-      {past.length > 0 && (
-        <div>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-white/25 mb-3">
-            Historial ({past.length})
-          </h2>
-          <div className="space-y-3 opacity-60">
-            {past.map(a => (
-              <AppointmentCard key={a.id} appointment={a} showRebook />
-            ))}
-          </div>
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60 transition-colors"
+          >
+            <LogOut className="w-3.5 h-3.5" /> Salir
+          </button>
         </div>
+      </div>
+
+      {/* Calendar view */}
+      {view === "calendar" && (
+        <div className="mb-8">
+          <ClientCalendar
+            appointments={items.filter(a => !a.isPast && a.status !== "CANCELLED")}
+            onRescheduled={handleRescheduled}
+          />
+        </div>
+      )}
+
+      {/* List view */}
+      {view === "list" && (
+        <>
+          <div className="mb-8">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-sky-400/70 mb-3">
+              Próximos ({upcoming.length})
+            </h2>
+            {upcoming.length === 0 ? (
+              <div className="text-center py-10 bg-[#28282c] rounded-2xl border border-white/8">
+                <Calendar className="w-8 h-8 text-white/15 mx-auto mb-2" />
+                <p className="text-white/30 text-sm">Sin turnos próximos</p>
+                <Link href="/" className="inline-block mt-3 text-sm text-sky-400 hover:text-sky-300 transition-colors">
+                  Buscar negocios →
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {upcoming.map(a => (
+                  <AppointmentCard key={a.id} appointment={a} onCancel={() => cancel(a)} cancelling={cancelling === a.id} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {past.length > 0 && (
+            <div>
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-white/25 mb-3">
+                Historial ({past.length})
+              </h2>
+              <div className="space-y-3 opacity-60">
+                {past.map(a => (
+                  <AppointmentCard key={a.id} appointment={a} showRebook />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
