@@ -14,8 +14,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const body = await req.json()
 
-  // If rescheduling (startTime provided), recalculate endTime from service duration
+  // If rescheduling (startTime provided), validate it's not in the past and recalculate endTime
   if (body.startTime) {
+    if (new Date(body.startTime) < new Date()) {
+      return NextResponse.json({ error: "No puedes reprogramar a un horario que ya pasó" }, { status: 400 })
+    }
     const existing = await prisma.appointment.findFirst({
       where: { id: apptId, businessId: id, deletedAt: null },
       include: { service: { select: { duration: true } } },
