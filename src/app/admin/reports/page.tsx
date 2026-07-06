@@ -13,17 +13,9 @@ export default async function AdminReportsPage() {
   const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
 
   const [
-    totalBusinesses,
-    newBusinessesThisMonth,
-    newBusinessesLastMonth,
-    totalUsers,
-    totalAppointments,
-    appointmentsThisMonth,
-    appointmentsLastMonth,
-    activeSubs,
-    trialSubs,
-    businessesByCategory,
-    businessesByMonth,
+    totalBusinesses, newBusinessesThisMonth, newBusinessesLastMonth,
+    totalUsers, totalAppointments, appointmentsThisMonth, appointmentsLastMonth,
+    activeSubs, trialSubs, businessesByCategory, businessesByMonth,
   ] = await Promise.all([
     prisma.business.count({ where: { deletedAt: null } }),
     prisma.business.count({ where: { deletedAt: null, createdAt: { gte: startOfMonth } } }),
@@ -35,14 +27,9 @@ export default async function AdminReportsPage() {
     prisma.subscription.count({ where: { status: "ACTIVE" } }),
     prisma.subscription.count({ where: { status: "TRIALING" } }),
     prisma.business.groupBy({ by: ["category"], where: { deletedAt: null }, _count: { id: true }, orderBy: { _count: { id: "desc" } }, take: 6 }),
-    prisma.business.findMany({
-      where: { deletedAt: null },
-      select: { createdAt: true },
-      orderBy: { createdAt: "asc" },
-    }),
+    prisma.business.findMany({ where: { deletedAt: null }, select: { createdAt: true }, orderBy: { createdAt: "asc" } }),
   ])
 
-  // Group businesses by month (last 6 months)
   const months: { label: string; count: number }[] = []
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
@@ -54,43 +41,43 @@ export default async function AdminReportsPage() {
     months.push({ label, count })
   }
   const maxCount = Math.max(...months.map(m => m.count), 1)
-
-  const mrr = (activeSubs * 4990) // estimate with base plan
+  const mrr = activeSubs * 4990
 
   function delta(current: number, prev: number) {
-    if (prev === 0) return current > 0 ? "+100%" : "—"
+    if (prev === 0) return current > 0 ? "+100%" : null
     const pct = Math.round(((current - prev) / prev) * 100)
     return pct >= 0 ? `+${pct}%` : `${pct}%`
   }
 
   const kpis = [
-    { label: "Negocios totales", value: totalBusinesses, sub: `${newBusinessesThisMonth} este mes`, delta: delta(newBusinessesThisMonth, newBusinessesLastMonth), icon: Building2, color: "text-indigo-600 bg-indigo-50" },
-    { label: "Usuarios totales", value: totalUsers, sub: "En toda la plataforma", icon: Users, color: "text-blue-600 bg-blue-50" },
-    { label: "Citas totales", value: totalAppointments, sub: `${appointmentsThisMonth} este mes`, delta: delta(appointmentsThisMonth, appointmentsLastMonth), icon: Calendar, color: "text-green-600 bg-green-50" },
-    { label: "Suscripciones activas", value: activeSubs, sub: `${trialSubs} en prueba`, icon: CreditCard, color: "text-purple-600 bg-purple-50" },
-    { label: "MRR estimado", value: `$${mrr.toLocaleString("es-CL")}`, sub: "Ingresos mensuales recurrentes", icon: TrendingUp, color: "text-orange-600 bg-orange-50" },
+    { label: "Negocios totales", value: totalBusinesses, sub: `${newBusinessesThisMonth} este mes`, d: delta(newBusinessesThisMonth, newBusinessesLastMonth), icon: Building2, color: "bg-sky-500/15 text-sky-400", glow: "rgba(56,189,248,0.2)" },
+    { label: "Usuarios totales", value: totalUsers, sub: "En toda la plataforma", d: null, icon: Users, color: "bg-violet-500/15 text-violet-400", glow: "rgba(167,139,250,0.2)" },
+    { label: "Citas totales", value: totalAppointments, sub: `${appointmentsThisMonth} este mes`, d: delta(appointmentsThisMonth, appointmentsLastMonth), icon: Calendar, color: "bg-emerald-500/15 text-emerald-400", glow: "rgba(52,211,153,0.2)" },
+    { label: "Suscripciones activas", value: activeSubs, sub: `${trialSubs} en prueba`, d: null, icon: CreditCard, color: "bg-amber-400/15 text-amber-400", glow: "rgba(251,191,36,0.2)" },
+    { label: "MRR estimado", value: `$${mrr.toLocaleString("es-CL")}`, sub: "Ingresos mensuales recurrentes", d: null, icon: TrendingUp, color: "bg-rose-500/15 text-rose-400", glow: "rgba(251,113,133,0.2)" },
   ]
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Reportes</h1>
-        <p className="text-muted-foreground text-sm mt-1">Vision general de la plataforma</p>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Reportes</h1>
+          <p className="page-subtitle">Visión general de la plataforma</p>
+        </div>
       </div>
 
-      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {kpis.map(({ label, value, sub, delta: d, icon: Icon, color }) => (
-          <div key={label} className="bg-white rounded-xl border p-4 space-y-3">
-            <div className={`w-9 h-9 rounded-lg ${color} flex items-center justify-center`}>
+        {kpis.map(({ label, value, sub, d, icon: Icon, color, glow }) => (
+          <div key={label} className="rounded-2xl border border-white/[0.07] p-4 space-y-3" style={{ background: "oklch(0.18 0.02 260)" }}>
+            <div className={`w-9 h-9 rounded-lg ${color} flex items-center justify-center`} style={{ boxShadow: `0 0 12px ${glow}` }}>
               <Icon className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{value}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+              <p className="text-2xl font-bold text-white">{value}</p>
+              <p className="text-xs text-white/40 mt-0.5">{label}</p>
               <div className="flex items-center gap-1.5 mt-1">
-                <p className="text-xs text-muted-foreground">{sub}</p>
-                {d && <span className={`text-xs font-semibold ${d.startsWith("+") ? "text-green-600" : "text-red-500"}`}>{d}</span>}
+                <p className="text-xs text-white/30">{sub}</p>
+                {d && <span className={`text-xs font-semibold ${d.startsWith("+") ? "text-emerald-400" : "text-red-400"}`}>{d}</span>}
               </div>
             </div>
           </div>
@@ -98,39 +85,40 @@ export default async function AdminReportsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Negocios por mes */}
-        <div className="bg-white rounded-xl border p-5">
-          <h2 className="font-semibold mb-4">Nuevos negocios por mes</h2>
+        <div className="rounded-2xl border border-white/[0.07] p-5" style={{ background: "oklch(0.18 0.02 260)" }}>
+          <h2 className="font-semibold text-white mb-4">Nuevos negocios por mes</h2>
           <div className="flex items-end gap-2 h-32">
             {months.map(({ label, count }) => (
               <div key={label} className="flex-1 flex flex-col items-center gap-1">
-                <span className="text-xs font-medium text-muted-foreground">{count || ""}</span>
+                <span className="text-xs font-medium text-white/50">{count || ""}</span>
                 <div
-                  className="w-full bg-indigo-500 rounded-t-sm transition-all"
-                  style={{ height: `${Math.max((count / maxCount) * 96, count > 0 ? 4 : 0)}px` }}
+                  className="w-full rounded-t-sm transition-all"
+                  style={{
+                    height: `${Math.max((count / maxCount) * 96, count > 0 ? 4 : 0)}px`,
+                    background: count > 0 ? "linear-gradient(to top, #0ea5e9, #38bdf8)" : "rgba(255,255,255,0.05)",
+                  }}
                 />
-                <span className="text-xs text-muted-foreground">{label}</span>
+                <span className="text-xs text-white/30">{label}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Negocios por categoria */}
-        <div className="bg-white rounded-xl border p-5">
-          <h2 className="font-semibold mb-4">Negocios por categoria</h2>
+        <div className="rounded-2xl border border-white/[0.07] p-5" style={{ background: "oklch(0.18 0.02 260)" }}>
+          <h2 className="font-semibold text-white mb-4">Negocios por categoría</h2>
           <div className="space-y-3">
             {businessesByCategory.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Sin datos</p>
+              <p className="text-sm text-white/30 text-center py-8">Sin datos</p>
             ) : businessesByCategory.map(({ category, _count }: { category: string; _count: { id: number } }) => {
               const pct = Math.round((_count.id / totalBusinesses) * 100)
               return (
                 <div key={category}>
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="font-medium">{category}</span>
-                    <span className="text-muted-foreground">{_count.id} ({pct}%)</span>
+                  <div className="flex items-center justify-between text-sm mb-1.5">
+                    <span className="font-medium text-white/80">{category}</span>
+                    <span className="text-white/40">{_count.id} ({pct}%)</span>
                   </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                  <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: "linear-gradient(to right, #0ea5e9, #38bdf8)" }} />
                   </div>
                 </div>
               )
@@ -139,20 +127,19 @@ export default async function AdminReportsPage() {
         </div>
       </div>
 
-      {/* Conversion funnel */}
-      <div className="bg-white rounded-xl border p-5">
-        <h2 className="font-semibold mb-4">Embudo de conversion</h2>
+      <div className="rounded-2xl border border-white/[0.07] p-5" style={{ background: "oklch(0.18 0.02 260)" }}>
+        <h2 className="font-semibold text-white mb-4">Embudo de conversión</h2>
         <div className="grid grid-cols-3 gap-4 text-center">
           {[
-            { label: "Registrados", value: totalBusinesses, color: "bg-indigo-100 text-indigo-700" },
-            { label: "En periodo de prueba", value: trialSubs, color: "bg-yellow-100 text-yellow-700" },
-            { label: "Convertidos a pago", value: activeSubs, color: "bg-green-100 text-green-700" },
+            { label: "Registrados", value: totalBusinesses, color: "bg-sky-500/15 text-sky-400 border border-sky-400/20" },
+            { label: "En periodo de prueba", value: trialSubs, color: "bg-amber-400/15 text-amber-400 border border-amber-400/20" },
+            { label: "Convertidos a pago", value: activeSubs, color: "bg-emerald-500/15 text-emerald-400 border border-emerald-400/20" },
           ].map(({ label, value, color }) => (
-            <div key={label} className={`rounded-xl p-4 ${color}`}>
+            <div key={label} className={`rounded-xl p-5 ${color}`}>
               <p className="text-3xl font-bold">{value}</p>
-              <p className="text-sm font-medium mt-1">{label}</p>
+              <p className="text-sm font-medium mt-1 opacity-80">{label}</p>
               {totalBusinesses > 0 && (
-                <p className="text-xs opacity-70 mt-0.5">{Math.round((value / totalBusinesses) * 100)}% del total</p>
+                <p className="text-xs opacity-50 mt-0.5">{Math.round((value / totalBusinesses) * 100)}% del total</p>
               )}
             </div>
           ))}
