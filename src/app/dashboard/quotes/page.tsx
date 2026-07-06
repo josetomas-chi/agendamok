@@ -127,9 +127,11 @@ export default function QuotesPage() {
       body: JSON.stringify({ ...form, items: validItems }),
     })
     if (r.ok) {
+      const data = await r.json()
       toast.success(editing ? "Presupuesto actualizado" : "Presupuesto creado")
       setOpen(false)
       load(businessId)
+      if (editing && selected?.id === editing.id && data.quote) setSelected(data.quote)
     } else toast.error("Error al guardar")
     setSaving(false)
   }
@@ -224,6 +226,12 @@ export default function QuotesPage() {
                 <X className="w-3.5 h-3.5" /> Rechazado
               </Button>
             </>
+          )}
+          {(selected.status === "ACCEPTED" || selected.status === "REJECTED" || selected.status === "EXPIRED") && (
+            <Button size="sm" variant="outline" className="gap-1.5 text-white/50 border-white/20 hover:bg-white/[0.06]"
+              onClick={() => changeStatus(selected, "DRAFT")}>
+              <ArrowLeft className="w-3.5 h-3.5" /> Volver a borrador
+            </Button>
           )}
           {selected.status === "SENT" && (
             <Button size="sm" variant="outline" className="gap-1.5 text-orange-400 border-orange-400/30 hover:bg-orange-500/10"
