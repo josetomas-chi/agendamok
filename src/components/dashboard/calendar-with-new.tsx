@@ -242,9 +242,15 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
           if (appt) setSelectedAppt(appt)
         }}
         onAppointmentMoved={(id, newStartTime) => {
-          setAppts(prev => prev.map(a =>
-            a.id === id ? { ...a, startTime: newStartTime } : a
-          ))
+          setAppts(prev => prev.map(a => {
+            if (a.id !== id) return a
+            const start = new Date(newStartTime)
+            const oldStart = new Date(a.startTime)
+            const oldEnd = new Date(a.endTime)
+            const durationMs = oldEnd.getTime() - oldStart.getTime()
+            const newEnd = new Date(start.getTime() + durationMs)
+            return { ...a, startTime: newStartTime, endTime: newEnd.toISOString() }
+          }))
         }}
       />
 
