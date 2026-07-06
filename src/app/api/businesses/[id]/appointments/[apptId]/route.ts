@@ -26,7 +26,26 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (!existing) return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 })
 
     const startTime = new Date(body.startTime)
-    body.endTime = addMinutes(startTime, existing.service.duration)
+    const endTime = addMinutes(startTime, existing.service.duration)
+
+    // Check client conflict on reschedule (exclude this appointment itself)
+    if (existing.clientId) {
+      const clientConflict = await prisma.appointment.count({
+        where: {
+          id: { not: apptId },
+          clientId: existing.clientId,
+          deletedAt: null,
+          status: { in: ["PENDING", "CONFIRMED"] },
+          startTime: { lt: endTime },
+          endTime: { gt: startTime },
+        },
+      })
+      if (clientConflict > 0) {
+        return NextResponse.json({ error: "Este cliente ya tiene un turno en ese horario" }, { status: 409 })
+      }
+    }
+
+    body.endTime = endTime
     body.startTime = startTime
   }
 
