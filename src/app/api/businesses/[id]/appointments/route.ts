@@ -148,6 +148,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     if (!clientId) return NextResponse.json({ error: "Cliente requerido" }, { status: 400 })
 
+    // Check if the client already has an overlapping appointment (any staff)
+    const clientConflict = await prisma.appointment.count({
+      where: {
+        clientId,
+        deletedAt: null,
+        status: { in: ["PENDING", "CONFIRMED"] },
+        startTime: { lt: endTime },
+        endTime: { gt: startTime },
+      },
+    })
+    if (clientConflict > 0) {
+      return NextResponse.json(
+        { error: "Este cliente ya tiene un turno en ese horario" },
+        { status: 409 }
+      )
+    }
+
     const appointment = await prisma.appointment.create({
       data: {
         businessId: id,
@@ -179,6 +196,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         date: format(startTime, "EEEE d 'de' MMMM yyyy", { locale: es }),
         time: format(startTime, "HH:mm"),
         duration: service.duration,
+        startTimeISO: startTime.toISOString(),
       }).catch((err) => { console.error("[email] sendBookingConfirmation failed:", err?.message ?? err) })
     }
 

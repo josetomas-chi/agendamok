@@ -86,6 +86,7 @@ export async function POST(req: Request, { params }: Params) {
           date: dateStr,
           time: timeStr,
           duration: appt.service.duration,
+          startTimeISO: appt.startTime.toISOString(),
         }).catch(() => { /* don't fail webhook on email error */ })
       }
 

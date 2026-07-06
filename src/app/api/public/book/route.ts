@@ -96,6 +96,20 @@ export async function POST(req: Request) {
       })
     }
 
+    // Check if the client already has an overlapping appointment (any staff)
+    const clientConflict = await prisma.appointment.count({
+      where: {
+        clientId: client.id,
+        deletedAt: null,
+        status: { in: ["PENDING", "CONFIRMED"] },
+        startTime: { lt: endTime },
+        endTime: { gt: startTime },
+      },
+    })
+    if (clientConflict > 0) {
+      return NextResponse.json({ error: "Ya tienes un turno reservado en ese horario" }, { status: 409 })
+    }
+
     const cancelToken = randomBytes(32).toString("hex")
 
     const appointment = await prisma.appointment.create({
@@ -136,6 +150,7 @@ export async function POST(req: Request) {
       time: localTime,
       duration: service.duration,
       cancelUrl: `${baseUrl}/cancelar?token=${cancelToken}`,
+      startTimeISO: startTime.toISOString(),
     }).catch((err) => { console.error("[email] sendBookingConfirmation failed:", err?.message ?? err) })
 
     // Sync to Google Calendar (async, don't block response)

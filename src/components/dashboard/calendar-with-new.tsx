@@ -37,6 +37,7 @@ const DEFAULT_FORM = { serviceId: "", staffId: "", clientId: "", locationId: "",
 export function CalendarWithNew({ businessId, services, staff, clients, locations = [] }: Props) {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(DEFAULT_FORM)
+  const [staffLocked, setStaffLocked] = useState(false)
   const [saving, setSaving] = useState(false)
   const [appts, setAppts] = useState<Appointment[]>([])
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null)
@@ -75,6 +76,7 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
 
   function handleNewAppointment(date: string, time: string, staffId?: string) {
     setForm({ ...DEFAULT_FORM, date, time, staffId: staffId || "" })
+    setStaffLocked(!!staffId)
     setOpen(true)
   }
 
@@ -105,6 +107,7 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
       setAppts(prev => [...prev, d.appointment])
       setOpen(false)
       setForm(DEFAULT_FORM)
+      setStaffLocked(false)
       toast.success("Turno creado")
       // Reload from server after a tick so the DB write is visible
       setTimeout(() => fetchAppts(), 500)
@@ -364,7 +367,7 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
         </DialogContent>
       </Dialog>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setForm(DEFAULT_FORM); setStaffLocked(false) } }}>
         <DialogContent className="max-w-md" accent="sky">
           <DialogHeader>
             <DialogTitle>Nuevo turno</DialogTitle>
@@ -381,12 +384,19 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
             </div>
             <div className="space-y-1.5">
               <Label>Profesional *</Label>
-              <select value={form.staffId} onChange={e => setForm(f => ({ ...f, staffId: e.target.value }))}
-                className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
-                <option value="" style={{ backgroundColor: "#3a3a3c" }}>Selecciona un profesional</option>
-                {staff.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#3a3a3c" }}>{s.user.name}</option>)}
-              </select>
+              {staffLocked ? (
+                <div className="w-full h-9 rounded-md border border-white/10 px-3 py-1 text-sm flex items-center gap-2 text-white/60 cursor-not-allowed select-none" style={{ backgroundColor: "#2c2c30" }}>
+                  <span className="text-white">{staff.find(s => s.id === form.staffId)?.user.name}</span>
+                  <span className="ml-auto text-xs text-white/30">bloqueado</span>
+                </div>
+              ) : (
+                <select value={form.staffId} onChange={e => setForm(f => ({ ...f, staffId: e.target.value }))}
+                  className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
+                  <option value="" style={{ backgroundColor: "#3a3a3c" }}>Selecciona un profesional</option>
+                  {staff.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#3a3a3c" }}>{s.user.name}</option>)}
+                </select>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Cliente</Label>

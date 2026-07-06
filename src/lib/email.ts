@@ -56,13 +56,29 @@ function base(content: string) {
 
 export async function sendBookingConfirmation({
   clientName, clientEmail, businessName,
-  serviceName, staffName, date, time, duration, cancelUrl,
+  serviceName, staffName, date, time, duration, cancelUrl, startTimeISO,
 }: {
   clientName: string; clientEmail: string; businessName: string
   serviceName: string; staffName: string; date: string; time: string; duration: number
-  cancelUrl?: string
+  cancelUrl?: string; startTimeISO?: string
 }) {
   if (!process.env.RESEND_API_KEY) return
+
+  // Build Google Calendar URL
+  let gcalUrl = ""
+  if (startTimeISO) {
+    const start = new Date(startTimeISO)
+    const end = new Date(start.getTime() + duration * 60000)
+    const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"
+    const params = new URLSearchParams({
+      action: "TEMPLATE",
+      text: `${serviceName} — ${businessName}`,
+      dates: `${fmt(start)}/${fmt(end)}`,
+      details: `Profesional: ${staffName}`,
+    })
+    gcalUrl = `https://calendar.google.com/calendar/render?${params.toString()}`
+  }
+
   await resend.emails.send({
     from: FROM,
     to: clientEmail,
@@ -77,9 +93,15 @@ export async function sendBookingConfirmation({
         <div class="row"><span class="label">Hora</span><span class="value">${time} hrs</span></div>
         <div class="row"><span class="label">Duración</span><span class="value">${duration} min</span></div>
       </div>
+      ${gcalUrl ? `
+      <div style="text-align:center;margin:24px 0 8px">
+        <a href="${gcalUrl}" style="display:inline-block;background:#38bdf8;color:#0c1a2e;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;letter-spacing:0.01em">
+          📅 Agregar a Google Calendar
+        </a>
+      </div>` : ""}
       <hr class="divider"/>
       <p style="color:rgba(255,255,255,0.3);font-size:13px;margin:0 0 6px">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.vercel.app"}/mis-turnos?email=${encodeURIComponent(clientEmail)}" style="color:rgba(56,189,248,0.7);text-decoration:none">Ver todos mis turnos</a>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"}/mis-turnos?email=${encodeURIComponent(clientEmail)}" style="color:rgba(56,189,248,0.7);text-decoration:none">Ver todos mis turnos</a>
         ${cancelUrl ? ` &nbsp;·&nbsp; <a href="${cancelUrl}" class="btn-cancel">Cancelar este turno</a>` : ""}
       </p>
     `),
