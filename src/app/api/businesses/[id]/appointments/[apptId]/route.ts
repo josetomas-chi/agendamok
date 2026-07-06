@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { addMinutes, addDays } from "date-fns"
-import { sendSurveyRequest, sendCancellationEmail, sendRescheduleEmail } from "@/lib/email"
+import { sendSurveyRequest, sendCancellationEmail, sendRescheduleEmail, sendStaffChangeEmail } from "@/lib/email"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { utcToChileLocal } from "@/lib/timezone"
@@ -51,7 +51,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const prevAppt = await prisma.appointment.findUnique({
     where: { id: apptId },
-    select: { status: true, startTime: true },
+    select: { status: true, startTime: true, staffId: true },
   })
 
   const appointment = await prisma.appointment.update({
@@ -120,6 +120,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       time: format(utcToChileLocal(appointment.startTime), "HH:mm"),
       startTimeISO: appointment.startTime.toISOString(),
       duration: appointment.service.duration ?? 60,
+    }).catch(() => {})
+  }
+
+  // Email client when staff changes (but appointment is not being cancelled or rescheduled)
+  if (body.staffId && prevAppt?.staffId && body.staffId !== prevAppt.staffId &&
+      body.status !== "CANCELLED" && !body.startTime && appointment.client.email) {
+    sendStaffChangeEmail({
+      clientName: appointment.client.name,
+      clientEmail: appointment.client.email,
+      businessName: appointment.business.name,
+      serviceName: appointment.service.name,
+      newStaffName: appointment.staff.user.name || "Sin asignar",
+      date: format(utcToChileLocal(appointment.startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
+      time: format(utcToChileLocal(appointment.startTime), "HH:mm"),
     }).catch(() => {})
   }
 

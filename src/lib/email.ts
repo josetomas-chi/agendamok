@@ -363,6 +363,32 @@ export async function sendBookingReminder({
   })
 }
 
+export async function sendStaffChangeEmail({
+  clientName, clientEmail, businessName, serviceName, newStaffName, date, time,
+}: {
+  clientName: string; clientEmail: string; businessName: string
+  serviceName: string; newStaffName: string; date: string; time: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `Cambio de profesional — ${businessName}`,
+    html: base(`
+      <h1>Cambio de profesional</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, te informamos que el profesional asignado a tu turno en <strong style="color:#38bdf8">${businessName}</strong> ha cambiado.</p>
+      <div class="box">
+        <div class="row"><span class="label">Servicio</span><span class="value">${serviceName}</span></div>
+        <div class="row"><span class="label">Nuevo profesional</span><span class="value" style="color:#38bdf8;font-weight:700">${newStaffName}</span></div>
+        <div class="row"><span class="label">Fecha</span><span class="value">${date}</span></div>
+        <div class="row"><span class="label">Hora</span><span class="value">${time} hrs</span></div>
+      </div>
+      <p class="subtitle" style="margin-top:16px;font-size:13px">El horario de tu turno se mantiene igual. Si tienes alguna consulta, contáctanos.</p>
+    `),
+  })
+}
+
 export async function sendInvoiceEmail({
   clientEmail, clientName, businessName, invoiceNumber, pdfUrl,
 }: {
