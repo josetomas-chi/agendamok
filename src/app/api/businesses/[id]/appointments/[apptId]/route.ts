@@ -128,8 +128,32 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string; apptId: string }> }) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-  const { apptId } = await params
+  const { id, apptId } = await params
 
-  await prisma.appointment.update({ where: { id: apptId }, data: { deletedAt: new Date(), status: "CANCELLED" } })
+  const appt = await prisma.appointment.update({
+    where: { id: apptId },
+    data: { deletedAt: new Date(), status: "CANCELLED" },
+    include: {
+      service: { select: { name: true } },
+      staff: { select: { user: { select: { name: true } } } },
+      client: { select: { name: true, email: true } },
+      business: { select: { name: true, slug: true } },
+    },
+  })
+
+  if (appt.client.email) {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"
+    sendCancellationEmail({
+      clientName: appt.client.name,
+      clientEmail: appt.client.email,
+      businessName: appt.business.name,
+      serviceName: appt.service.name,
+      staffName: appt.staff.user.name || "Sin asignar",
+      date: format(utcToChileLocal(appt.startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
+      time: format(utcToChileLocal(appt.startTime), "HH:mm"),
+      bookingUrl: `${baseUrl}/book/${appt.business.slug}`,
+    }).catch(() => {})
+  }
+
   return NextResponse.json({ success: true })
 }
