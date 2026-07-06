@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Phone, Mail, Clock, User, X, Pencil, Trash2, CheckCircle, DollarSign } from "lucide-react"
+import { Phone, Mail, Clock, User, X, Pencil, Trash2, CheckCircle, DollarSign, ChevronDown, CalendarDays } from "lucide-react"
 import { CalendarView } from "./calendar-view"
 import { ApptDetailDialog } from "./appt-detail-dialog"
 import { Button } from "@/components/ui/button"
@@ -382,106 +382,127 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
       </Dialog>
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setForm(DEFAULT_FORM); setStaffLocked(false) } }}>
-        <DialogContent className="max-w-sm" accent="sky">
-          <DialogHeader>
-            <DialogTitle>Nuevo turno</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 pt-1">
+        <DialogContent className="max-w-sm p-0 gap-0 overflow-hidden border-white/[0.08]" accent="sky">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 pt-5 pb-4">
+            <div>
+              <h2 className="text-[15px] font-semibold text-white">Nuevo turno</h2>
+              <p className="text-xs text-white/35 mt-0.5">Completa los datos del turno</p>
+            </div>
+            <button onClick={() => setOpen(false)} className="w-7 h-7 rounded-full flex items-center justify-center text-white/30 hover:text-white hover:bg-white/[0.07] transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="px-5 pb-5 space-y-2">
             {/* Servicio */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Servicio *</label>
+            <div className="relative">
               <select value={form.serviceId} onChange={e => setForm(f => ({ ...f, serviceId: e.target.value }))}
-                className="w-full h-9 rounded-lg border border-white/10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-sky-400"
-                style={{ backgroundColor: "#2c2c30", color: "#f4f4f5" }}>
-                <option value="" style={{ backgroundColor: "#2c2c30" }}>— elige un servicio —</option>
-                {services.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#2c2c30" }}>{s.name} · {s.duration} min</option>)}
+                className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 focus:bg-white/[0.08] transition-colors"
+                style={{ colorScheme: "dark" }}>
+                <option value="" style={{ backgroundColor: "#28282c" }}>Selecciona un servicio</option>
+                {services.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#28282c" }}>{s.name} · {s.duration} min</option>)}
               </select>
+              <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-white/30 pointer-events-none" />
             </div>
 
-            {/* Profesional + Cliente en grid */}
+            {/* Profesional + Cliente */}
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Profesional *</label>
+              <div className="relative">
                 {staffLocked ? (
-                  <div className="h-9 rounded-lg border border-white/10 px-3 text-sm flex items-center gap-2 text-white/70 select-none" style={{ backgroundColor: "#2c2c30" }}>
-                    <span className="truncate">{staff.find(s => s.id === form.staffId)?.user.name}</span>
+                  <div className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm flex items-center gap-2 text-white/60 select-none">
+                    <span className="truncate text-white">{staff.find(s => s.id === form.staffId)?.user.name}</span>
+                    <span className="ml-auto text-[10px] text-sky-400/60 flex-shrink-0">fijo</span>
                   </div>
                 ) : (
-                  <select value={form.staffId} onChange={e => setForm(f => ({ ...f, staffId: e.target.value }))}
-                    className="w-full h-9 rounded-lg border border-white/10 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-400"
-                    style={{ backgroundColor: "#2c2c30", color: "#f4f4f5" }}>
-                    <option value="" style={{ backgroundColor: "#2c2c30" }}>—</option>
-                    {staff.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#2c2c30" }}>{s.user.name}</option>)}
-                  </select>
+                  <>
+                    <select value={form.staffId} onChange={e => setForm(f => ({ ...f, staffId: e.target.value }))}
+                      className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 focus:bg-white/[0.08] transition-colors"
+                      style={{ colorScheme: "dark" }}>
+                      <option value="" style={{ backgroundColor: "#28282c" }}>Profesional</option>
+                      {staff.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#28282c" }}>{s.user.name}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-white/30 pointer-events-none" />
+                  </>
                 )}
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Cliente</label>
+              <div className="relative">
                 <select value={form.clientId} onChange={e => setForm(f => ({ ...f, clientId: e.target.value }))}
-                  className="w-full h-9 rounded-lg border border-white/10 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-400"
-                  style={{ backgroundColor: "#2c2c30", color: "#f4f4f5" }}>
-                  <option value="" style={{ backgroundColor: "#2c2c30" }}>—</option>
-                  {clients.map(c => <option key={c.id} value={c.id} style={{ backgroundColor: "#2c2c30" }}>{c.name}</option>)}
+                  className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 focus:bg-white/[0.08] transition-colors"
+                  style={{ colorScheme: "dark" }}>
+                  <option value="" style={{ backgroundColor: "#28282c" }}>Cliente</option>
+                  {clients.map(c => <option key={c.id} value={c.id} style={{ backgroundColor: "#28282c" }}>{c.name}</option>)}
                 </select>
+                <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-white/30 pointer-events-none" />
               </div>
             </div>
 
             {/* Fecha + Hora */}
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Fecha *</label>
-                <Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className="h-9" />
+              <div className="relative">
+                <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                  className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white focus:outline-none focus:border-sky-500/60 focus:bg-white/[0.08] transition-colors"
+                  style={{ colorScheme: "dark" }} />
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Hora *</label>
-                <div className="flex gap-1.5">
+              <div className="flex gap-1.5">
+                <div className="relative flex-1">
                   <select
                     value={form.time ? form.time.split(":")[0] : ""}
                     onChange={e => setForm(f => ({ ...f, time: `${e.target.value}:${f.time.split(":")[1] || "00"}` }))}
-                    className="flex-1 h-9 rounded-lg border border-white/10 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-400"
-                    style={{ backgroundColor: "#2c2c30", color: "#f4f4f5" }}>
-                    <option value="" style={{ backgroundColor: "#2c2c30" }}>hh</option>
+                    className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-3 pr-7 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 transition-colors"
+                    style={{ colorScheme: "dark" }}>
+                    <option value="" style={{ backgroundColor: "#28282c" }}>hh</option>
                     {Array.from({ length: 15 }, (_, i) => i + 7).map(h => (
-                      <option key={h} value={String(h).padStart(2, "0")} style={{ backgroundColor: "#2c2c30" }}>{String(h).padStart(2, "0")}h</option>
+                      <option key={h} value={String(h).padStart(2, "0")} style={{ backgroundColor: "#28282c" }}>{String(h).padStart(2, "0")}h</option>
                     ))}
                   </select>
+                  <ChevronDown className="absolute right-2 top-3.5 w-3.5 h-3.5 text-white/30 pointer-events-none" />
+                </div>
+                <div className="relative flex-1">
                   <select
                     value={form.time ? form.time.split(":")[1] : ""}
                     onChange={e => setForm(f => ({ ...f, time: `${f.time.split(":")[0] || "08"}:${e.target.value}` }))}
-                    className="flex-1 h-9 rounded-lg border border-white/10 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-400"
-                    style={{ backgroundColor: "#2c2c30", color: "#f4f4f5" }}>
-                    <option value="" style={{ backgroundColor: "#2c2c30" }}>mm</option>
-                    <option value="00" style={{ backgroundColor: "#2c2c30" }}>:00</option>
-                    <option value="30" style={{ backgroundColor: "#2c2c30" }}>:30</option>
+                    className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-3 pr-7 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 transition-colors"
+                    style={{ colorScheme: "dark" }}>
+                    <option value="" style={{ backgroundColor: "#28282c" }}>mm</option>
+                    <option value="00" style={{ backgroundColor: "#28282c" }}>:00</option>
+                    <option value="30" style={{ backgroundColor: "#28282c" }}>:30</option>
                   </select>
+                  <ChevronDown className="absolute right-2 top-3.5 w-3.5 h-3.5 text-white/30 pointer-events-none" />
                 </div>
               </div>
             </div>
 
-            {/* Sede (solo si hay) */}
+            {/* Sede */}
             {locations.length > 0 && (
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Sede</label>
+              <div className="relative">
                 <select value={form.locationId} onChange={e => setForm(f => ({ ...f, locationId: e.target.value }))}
-                  className="w-full h-9 rounded-lg border border-white/10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-sky-400"
-                  style={{ backgroundColor: "#2c2c30", color: "#f4f4f5" }}>
-                  <option value="" style={{ backgroundColor: "#2c2c30" }}>Sin sede específica</option>
-                  {locations.map(l => <option key={l.id} value={l.id} style={{ backgroundColor: "#2c2c30" }}>{l.name}</option>)}
+                  className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 transition-colors"
+                  style={{ colorScheme: "dark" }}>
+                  <option value="" style={{ backgroundColor: "#28282c" }}>Sin sede específica</option>
+                  {locations.map(l => <option key={l.id} value={l.id} style={{ backgroundColor: "#28282c" }}>{l.name}</option>)}
                 </select>
+                <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-white/30 pointer-events-none" />
               </div>
             )}
 
             {/* Notas */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Notas</label>
-              <Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Opcional..." className="h-9" />
-            </div>
+            <input
+              value={form.notes}
+              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+              placeholder="Notas opcionales..."
+              className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-sky-500/60 focus:bg-white/[0.08] transition-colors"
+            />
 
-            <div className="flex gap-2 pt-1">
-              <Button className="flex-1" onClick={handleCreate} disabled={saving}>
+            {/* CTA */}
+            <div className="pt-1">
+              <button
+                onClick={handleCreate}
+                disabled={saving}
+                className="w-full h-11 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white font-semibold text-sm transition-colors"
+              >
                 {saving ? "Guardando..." : "Crear turno"}
-              </Button>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+              </button>
             </div>
           </div>
         </DialogContent>
