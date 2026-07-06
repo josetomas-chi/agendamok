@@ -66,6 +66,7 @@ export default function QuotesPage() {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Quote | null>(null)
   const [saving, setSaving] = useState(false)
+  const [sending, setSending] = useState(false)
 
   const [form, setForm] = useState({
     clientId: "", notes: "", discount: 0, validUntil: "",
@@ -158,6 +159,14 @@ export default function QuotesPage() {
     }
   }
 
+  async function sendQuote(q: Quote) {
+    setSending(true)
+    const r = await fetch(`/api/businesses/${businessId}/quotes/${q.id}/send`, { method: "POST" })
+    if (r.ok) toast.success("Presupuesto enviado por email")
+    else { const d = await r.json(); toast.error(d.error || "Error al enviar") }
+    setSending(false)
+  }
+
   function addItem() {
     setForm(f => ({ ...f, items: [...f.items, { ...EMPTY_ITEM }] }))
   }
@@ -202,6 +211,12 @@ export default function QuotesPage() {
             <p className="page-subtitle">{selected.client?.name || "Sin cliente"}</p>
           </div>
           <Badge className={STATUS_COLORS[selected.status]}>{STATUS_LABELS[selected.status]}</Badge>
+          {selected.client?.email && (
+            <Button size="sm" variant="outline" className="gap-1.5 h-8 text-sky-400 border-sky-400/30 hover:bg-sky-500/10"
+              onClick={() => sendQuote(selected)} disabled={sending}>
+              <Send className="w-3.5 h-3.5" />{sending ? "Enviando…" : "Enviar"}
+            </Button>
+          )}
           <Button size="sm" variant="outline" className="h-8 px-2.5" onClick={e => openEdit(selected, e)}>
             <Pencil className="w-3.5 h-3.5" />
           </Button>

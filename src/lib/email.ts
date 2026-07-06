@@ -390,6 +390,60 @@ export async function sendStaffChangeEmail({
   })
 }
 
+export async function sendQuoteEmail({
+  clientEmail, clientName, businessName, quoteNumber, validUntil, items, discount, notes,
+}: {
+  clientEmail: string; clientName: string; businessName: string
+  quoteNumber: number; validUntil?: string | null
+  items: { description: string; quantity: number; unitPrice: number }[]
+  discount: number; notes?: string | null
+}) {
+  if (!process.env.RESEND_API_KEY) return
+
+  const subtotal = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0)
+  const discountAmt = subtotal * discount / 100
+  const total = subtotal - discountAmt
+  const fmt = (n: number) => `$${n.toLocaleString("es-CL")}`
+
+  const rows = items.map(i => `
+    <div class="row">
+      <span class="label" style="flex:1">${i.description}</span>
+      <span class="value" style="min-width:40px;text-align:center">${i.quantity}</span>
+      <span class="value" style="min-width:90px">${fmt(i.unitPrice)}</span>
+      <span class="value" style="min-width:90px">${fmt(i.quantity * i.unitPrice)}</span>
+    </div>`).join("")
+
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `Presupuesto #${String(quoteNumber).padStart(4, "0")} de ${businessName}`,
+    html: base(`
+      <h1>Tu presupuesto</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, <strong style="color:#38bdf8">${businessName}</strong> te envió el siguiente presupuesto.</p>
+      <div class="box">
+        <div class="row"><span class="label">Presupuesto</span><span class="value">#${String(quoteNumber).padStart(4, "0")}</span></div>
+        ${validUntil ? `<div class="row"><span class="label">Válido hasta</span><span class="value">${new Date(validUntil).toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" })}</span></div>` : ""}
+      </div>
+      <div class="box" style="padding:0;overflow:hidden">
+        <div class="row" style="padding:12px 20px;background:rgba(255,255,255,0.04)">
+          <span class="label" style="flex:1;font-weight:600;color:rgba(255,255,255,0.6)">Descripción</span>
+          <span class="value" style="min-width:40px;text-align:center;color:rgba(255,255,255,0.4)">Cant.</span>
+          <span class="value" style="min-width:90px;color:rgba(255,255,255,0.4)">P. unit.</span>
+          <span class="value" style="min-width:90px;color:rgba(255,255,255,0.4)">Total</span>
+        </div>
+        <div style="padding:0 20px">${rows}</div>
+        <div style="padding:12px 20px;border-top:1px solid rgba(255,255,255,0.06)">
+          <div class="row"><span class="label">Subtotal</span><span class="value">${fmt(subtotal)}</span></div>
+          ${discount > 0 ? `<div class="row"><span class="label" style="color:#4ade80">Descuento (${discount}%)</span><span class="value" style="color:#4ade80">−${fmt(discountAmt)}</span></div>` : ""}
+          <div class="row" style="border-top:1px solid rgba(255,255,255,0.08);margin-top:4px;padding-top:12px"><span class="label" style="font-size:15px;font-weight:700;color:#fff">Total</span><span class="value" style="font-size:17px;color:#38bdf8">${fmt(total)}</span></div>
+        </div>
+      </div>
+      ${notes ? `<p class="subtitle" style="margin-top:16px"><strong style="color:rgba(255,255,255,0.6)">Notas:</strong> ${notes}</p>` : ""}
+      <p class="subtitle" style="margin-top:24px;font-size:13px">Para aceptar o consultar este presupuesto, responde a este correo o contacta directamente a ${businessName}.</p>
+    `),
+  })
+}
+
 export async function sendInvoiceEmail({
   clientEmail, clientName, businessName, invoiceNumber, pdfUrl,
 }: {
