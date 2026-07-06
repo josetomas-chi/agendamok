@@ -175,11 +175,12 @@ export async function sendRescheduleEmail({
         <div class="row"><span class="label">Nueva hora</span><span class="value">${time} hrs</span></div>
       </div>
       ${gcalUrl ? `
-      <div style="text-align:center;margin:24px 0 8px">
+      <div style="text-align:center;margin:24px 0 4px">
         <a href="${gcalUrl}" style="display:inline-block;background:#38bdf8;color:#0c1a2e;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;letter-spacing:0.01em">
           📅 Agregar a Google Calendar
         </a>
-      </div>` : ""}
+      </div>
+      <p style="text-align:center;color:rgba(255,255,255,0.3);font-size:12px;margin:8px 0 0">Si ya tenías este turno en tu calendario, elimínalo antes de agregar el nuevo.</p>` : ""}
     `),
   })
 }
