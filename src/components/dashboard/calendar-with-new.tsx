@@ -131,8 +131,12 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
 
   async function handleEdit() {
     if (!selectedAppt || !editForm.date || !editForm.time) return
-    setEditSaving(true)
     const startTime = new Date(`${editForm.date}T${editForm.time}`).toISOString()
+    if (new Date(startTime) < new Date()) {
+      toast.error("No puedes reprogramar a un horario que ya pasó")
+      return
+    }
+    setEditSaving(true)
     const r = await fetch(`/api/businesses/${businessId}/appointments/${selectedAppt.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
