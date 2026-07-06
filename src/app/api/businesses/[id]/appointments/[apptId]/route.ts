@@ -92,6 +92,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
   }
 
+  // Award loyalty points when appointment is marked COMPLETED for the first time
+  if (body.status === "COMPLETED" && prevAppt?.status !== "COMPLETED" && appointment.clientId) {
+    const POINTS_PER_VISIT = 10
+    const VIP_THRESHOLD = 500
+    const updated = await prisma.client.update({
+      where: { id: appointment.clientId },
+      data: { loyaltyPoints: { increment: POINTS_PER_VISIT } },
+      select: { loyaltyPoints: true, segment: true },
+    })
+    if (updated.loyaltyPoints >= VIP_THRESHOLD && updated.segment !== "VIP") {
+      await prisma.client.update({
+        where: { id: appointment.clientId },
+        data: { segment: "VIP" },
+      })
+    }
+  }
+
   // Email client when cancelled
   if (body.status === "CANCELLED" && prevAppt?.status !== "CANCELLED" && appointment.client.email) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"

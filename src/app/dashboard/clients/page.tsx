@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { Plus, Search, Mail, Phone, Calendar, Tag, Upload, CheckCircle, AlertCircle, Stethoscope } from "lucide-react"
+import { Plus, Search, Mail, Phone, Calendar, Tag, Upload, CheckCircle, AlertCircle, Stethoscope, Star, Gift } from "lucide-react"
 import Link from "next/link"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -162,6 +162,24 @@ export default function ClientsPage() {
     setImportResult(null)
   }
 
+  const [pointsInput, setPointsInput] = useState("")
+  const [savingClient, setSavingClient] = useState(false)
+
+  async function patchClient(clientId: string, data: Record<string, unknown>) {
+    setSavingClient(true)
+    const r = await fetch(`/api/businesses/${businessId}/clients/${clientId}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    })
+    if (r.ok) {
+      const { client: updated } = await r.json()
+      setClients(prev => prev.map(c => c.id === clientId ? { ...c, ...updated } : c))
+      setSelected(prev => prev?.id === clientId ? { ...prev, ...updated } : prev)
+      toast.success("Cliente actualizado")
+    } else toast.error("Error al actualizar")
+    setSavingClient(false)
+  }
+
   const totalSpend = (c: Client) => c.appointments.reduce((sum, a) => sum + (a.payment ? Number(a.payment.amount) : 0), 0)
 
   return (
@@ -219,6 +237,7 @@ export default function ClientsPage() {
                 <th className="text-left px-4 py-2.5">Cliente</th>
                 <th className="text-center px-4 py-2.5">Turnos</th>
                 <th className="text-right px-4 py-2.5">Gasto total</th>
+                <th className="text-center px-4 py-2.5">Puntos</th>
                 <th className="text-center px-4 py-2.5">Segmento</th>
                 <th className="px-4 py-2.5"></th>
               </tr>
@@ -242,6 +261,12 @@ export default function ClientsPage() {
                   </td>
                   <td className="px-4 py-3 text-center font-medium">{c._count.appointments}</td>
                   <td className="px-4 py-3 text-right font-medium">${totalSpend(c).toLocaleString("es-AR")}</td>
+                  <td className="px-4 py-3 text-center">
+                    <span className="flex items-center justify-center gap-1 text-sm font-medium">
+                      <Gift className="w-3.5 h-3.5 text-yellow-400/70" />
+                      {c.loyaltyPoints}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-center">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SEGMENT_LABELS[c.segment]?.color}`}>
                       {SEGMENT_LABELS[c.segment]?.label}
@@ -285,21 +310,36 @@ export default function ClientsPage() {
 
       {/* Client detail dialog */}
       {selected && (
-        <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
+        <Dialog open={!!selected} onOpenChange={() => { setSelected(null); setPointsInput("") }}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl flex-shrink-0">
                   {selected.name[0].toUpperCase()}
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <DialogTitle>{selected.name}</DialogTitle>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SEGMENT_LABELS[selected.segment]?.color}`}>
-                    {SEGMENT_LABELS[selected.segment]?.label}
-                  </span>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SEGMENT_LABELS[selected.segment]?.color}`}>
+                      {SEGMENT_LABELS[selected.segment]?.label}
+                    </span>
+                    <button
+                      onClick={() => patchClient(selected.id, { segment: selected.segment === "VIP" ? "REGULAR" : "VIP" })}
+                      disabled={savingClient}
+                      className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium border transition-colors ${
+                        selected.segment === "VIP"
+                          ? "border-yellow-400/40 bg-yellow-400/10 text-yellow-300 hover:bg-yellow-400/20"
+                          : "border-white/15 bg-white/5 text-white/40 hover:text-yellow-300 hover:border-yellow-400/30"
+                      }`}
+                    >
+                      <Star className={`w-3 h-3 ${selected.segment === "VIP" ? "fill-yellow-300" : ""}`} />
+                      {selected.segment === "VIP" ? "Quitar VIP" : "Marcar VIP"}
+                    </button>
+                  </div>
                 </div>
               </div>
             </DialogHeader>
+
             <div className="grid grid-cols-3 gap-3 py-2">
               <div className="bg-muted/50 rounded-lg p-3 text-center">
                 <p className="text-2xl font-bold">{selected._count.appointments}</p>
@@ -309,11 +349,41 @@ export default function ClientsPage() {
                 <p className="text-2xl font-bold">${totalSpend(selected).toLocaleString("es-AR")}</p>
                 <p className="text-xs text-muted-foreground mt-1">Gasto total</p>
               </div>
-              <div className="bg-muted/50 rounded-lg p-3 text-center">
-                <p className="text-2xl font-bold">{selected.loyaltyPoints}</p>
-                <p className="text-xs text-muted-foreground mt-1">Puntos</p>
+              <div className="bg-yellow-400/5 border border-yellow-400/20 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-yellow-300">{selected.loyaltyPoints}</p>
+                <p className="text-xs text-yellow-400/60 mt-1">Puntos</p>
               </div>
             </div>
+
+            {/* Points adjustment */}
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
+              <p className="text-xs font-medium text-white/50 mb-2 flex items-center gap-1.5">
+                <Gift className="w-3.5 h-3.5 text-yellow-400/60" /> Ajustar puntos manualmente
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={pointsInput}
+                  onFocus={e => e.target.select()}
+                  onChange={e => setPointsInput(e.target.value)}
+                  placeholder={String(selected.loyaltyPoints)}
+                  className="flex-1 h-8 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+                <button
+                  onClick={() => {
+                    if (pointsInput === "") return
+                    patchClient(selected.id, { loyaltyPoints: Number(pointsInput) })
+                    setPointsInput("")
+                  }}
+                  disabled={savingClient || pointsInput === ""}
+                  className="px-3 h-8 rounded-lg bg-sky-500/20 text-sky-300 text-xs font-medium hover:bg-sky-500/30 disabled:opacity-40 transition-colors"
+                >
+                  Guardar
+                </button>
+              </div>
+              <p className="text-[11px] text-white/25 mt-1.5">Se asigna VIP automáticamente al llegar a 500 pts · +10 pts por turno completado</p>
+            </div>
+
             <div className="space-y-2 text-sm">
               {selected.email && <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-4 h-4" />{selected.email}</div>}
               {selected.phone && <div className="flex items-center gap-2 text-muted-foreground"><Phone className="w-4 h-4" />{selected.phone}</div>}
