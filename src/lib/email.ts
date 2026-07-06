@@ -22,7 +22,8 @@ function base(content: string) {
     h1{color:#ffffff;font-size:22px;font-weight:700;margin:0 0 8px}
     .subtitle{color:rgba(255,255,255,0.5);font-size:15px;line-height:1.6;margin:0 0 24px}
     .box{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:20px;margin:20px 0}
-    .row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:14px;gap:16px}
+    .row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:14px;gap:24px}
+    .label{color:rgba(255,255,255,0.35);font-size:13px;white-space:nowrap;min-width:90px}
     .row:last-child{border-bottom:none}
     .label{color:rgba(255,255,255,0.35);font-size:13px}
     .value{color:#ffffff;font-weight:500;text-align:right}
