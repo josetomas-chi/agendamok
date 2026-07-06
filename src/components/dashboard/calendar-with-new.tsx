@@ -14,7 +14,7 @@ type Appointment = {
   id: string; startTime: Date | string; endTime: Date | string; status: string
   service: { name: string; color: string; price: number | null }
   staff: { id: string; color: string; user: { name: string | null; image: string | null } }
-  client: { name: string; email: string | null; phone: string | null }
+  client: { name: string; email: string | null; phone: string | null; segment?: string }
   notes: string | null
   payment: { status: string; method: string; amount: number } | null
 }
@@ -134,7 +134,16 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
   const [cancelling, setCancelling] = useState(false)
   const [payOpen, setPayOpen] = useState(false)
   const [payForm, setPayForm] = useState({ method: "CASH", amount: "" })
+  const [payDiscount, setPayDiscount] = useState(0)
   const [paying, setPaying] = useState(false)
+  const [segmentDiscounts, setSegmentDiscounts] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    fetch(`/api/businesses/${businessId}`).then(r => r.json()).then(d => {
+      const sd = d.business?.segmentDiscounts
+      if (sd && typeof sd === "object") setSegmentDiscounts(sd as Record<string, number>)
+    }).catch(() => {})
+  }, [businessId])
 
   const fetchAppts = useCallback(async (signal?: AbortSignal) => {
     const from = new Date()
@@ -285,9 +294,16 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
   }
 
   function openPay(appt: Appointment) {
+    const basePrice = appt.service.price ?? 0
+    const segment = appt.client.segment ?? ""
+    const discountPct = segmentDiscounts[segment] ?? 0
+    const discountedPrice = discountPct > 0
+      ? Math.round(basePrice * (1 - discountPct / 100))
+      : basePrice
+    setPayDiscount(discountPct)
     setPayForm({
       method: "CASH",
-      amount: appt.service.price != null ? String(appt.service.price) : "",
+      amount: basePrice > 0 ? String(discountedPrice) : "",
     })
     setPayOpen(true)
   }
@@ -431,8 +447,16 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
             {selectedAppt && (
               <div className="flex items-center gap-2 text-sm text-white/50 bg-white/[0.03] rounded-xl px-3 py-2">
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: selectedAppt.service.color }} />
-                {selectedAppt.service.name} · {selectedAppt.client.name}
+                <span className="flex-1">{selectedAppt.service.name} · {selectedAppt.client.name}</span>
+                {payDiscount > 0 && (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-500/20 text-green-300 flex-shrink-0">
+                    -{payDiscount}% descuento
+                  </span>
+                )}
               </div>
+            )}
+            {payDiscount === 100 && (
+              <p className="text-xs text-center text-green-400 font-medium -mt-1">Servicio gratuito — monto $0</p>
             )}
             <div className="space-y-1.5">
               <Label>Método de pago</Label>
