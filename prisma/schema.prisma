@@ -73,6 +73,7 @@ enum CommissionType {
 
 enum ClientSegment {
   VIP
+  INFLUENCER
   FREQUENT
   AT_RISK
   NEW

@@ -28,6 +28,7 @@ const SEGMENT_LABELS: Record<string, { label: string; color: string }> = {
   REGULAR: { label: "Regular", color: "bg-white/15 text-white/80" },
   FREQUENT: { label: "Frecuente", color: "bg-green-500/30 text-green-200" },
   VIP: { label: "VIP", color: "bg-purple-500/30 text-purple-200" },
+  INFLUENCER: { label: "Influencer", color: "bg-pink-500/30 text-pink-200" },
   AT_RISK: { label: "En riesgo", color: "bg-orange-500/30 text-orange-200" },
 }
 
@@ -205,7 +206,7 @@ export default function ClientsPage() {
           <Input className="pl-9" placeholder="Buscar por nombre, email o teléfono..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div className="flex gap-2">
-          {["", "VIP", "FREQUENT", "AT_RISK", "NEW"].map(s => (
+          {["", "VIP", "INFLUENCER", "FREQUENT", "AT_RISK", "NEW"].map(s => (
             <button key={s} onClick={() => setSegment(s)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${segment === s ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-muted"}`}>
               {s === "" ? "Todos" : SEGMENT_LABELS[s]?.label}
@@ -323,18 +324,17 @@ export default function ClientsPage() {
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SEGMENT_LABELS[selected.segment]?.color}`}>
                       {SEGMENT_LABELS[selected.segment]?.label}
                     </span>
-                    <button
-                      onClick={() => patchClient(selected.id, { segment: selected.segment === "VIP" ? "REGULAR" : "VIP" })}
+                    <select
+                      value={selected.segment}
+                      onChange={e => patchClient(selected.id, { segment: e.target.value })}
                       disabled={savingClient}
-                      className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium border transition-colors ${
-                        selected.segment === "VIP"
-                          ? "border-yellow-400/40 bg-yellow-400/10 text-yellow-300 hover:bg-yellow-400/20"
-                          : "border-white/15 bg-white/5 text-white/40 hover:text-yellow-300 hover:border-yellow-400/30"
-                      }`}
+                      className="text-xs h-6 rounded-full border border-white/15 bg-white/[0.05] px-2 text-white/60 focus:outline-none focus:border-sky-500/60 appearance-none cursor-pointer"
+                      style={{ colorScheme: "dark" }}
                     >
-                      <Star className={`w-3 h-3 ${selected.segment === "VIP" ? "fill-yellow-300" : ""}`} />
-                      {selected.segment === "VIP" ? "Quitar VIP" : "Marcar VIP"}
-                    </button>
+                      {Object.entries(SEGMENT_LABELS).map(([val, { label }]) => (
+                        <option key={val} value={val} style={{ backgroundColor: "#28282c" }}>{label}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
