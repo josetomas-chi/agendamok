@@ -5,6 +5,7 @@ import { z } from "zod"
 import { addMinutes, format } from "date-fns"
 import { es } from "date-fns/locale"
 import { sendBookingConfirmation } from "@/lib/email"
+import { utcToChileLocal } from "@/lib/timezone"
 
 const schema = z.object({
   serviceId: z.string().cuid(),
@@ -195,8 +196,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         businessName: business?.name || "",
         serviceName: appointment.service.name,
         staffName: appointment.staff.user.name || "Sin asignar",
-        date: format(startTime, "EEEE d 'de' MMMM yyyy", { locale: es }),
-        time: format(startTime, "HH:mm"),
+        date: format(utcToChileLocal(startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
+        time: format(utcToChileLocal(startTime), "HH:mm"),
         duration: service.duration,
         startTimeISO: startTime.toISOString(),
       }).catch((err) => { console.error("[email] sendBookingConfirmation failed:", err?.message ?? err) })
