@@ -39,7 +39,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       service: { select: { name: true, color: true, price: true, duration: true } },
       staff: { select: { id: true, commissionType: true, commissionValue: true, user: { select: { name: true } } } },
       client: { select: { name: true, email: true, phone: true } },
-      business: { select: { name: true } },
+      business: { select: { name: true, slug: true } },
       payment: { select: { amount: true } },
     },
   })
@@ -72,6 +72,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   // Email client when cancelled
   if (body.status === "CANCELLED" && prevAppt?.status !== "CANCELLED" && appointment.client.email) {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"
     sendCancellationEmail({
       clientName: appointment.client.name,
       clientEmail: appointment.client.email,
@@ -80,6 +81,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       staffName: appointment.staff.user.name || "Sin asignar",
       date: format(utcToChileLocal(appointment.startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
       time: format(utcToChileLocal(appointment.startTime), "HH:mm"),
+      bookingUrl: `${baseUrl}/book/${appointment.business.slug}`,
     }).catch(() => {})
   }
 

@@ -109,10 +109,10 @@ export async function sendBookingConfirmation({
 }
 
 export async function sendCancellationEmail({
-  clientName, clientEmail, businessName, serviceName, staffName, date, time,
+  clientName, clientEmail, businessName, serviceName, staffName, date, time, bookingUrl,
 }: {
   clientName: string; clientEmail: string; businessName: string
-  serviceName: string; staffName: string; date: string; time: string
+  serviceName: string; staffName: string; date: string; time: string; bookingUrl?: string
 }) {
   if (!process.env.RESEND_API_KEY) return
   await resend.emails.send({
@@ -128,7 +128,12 @@ export async function sendCancellationEmail({
         <div class="row"><span class="label">Fecha</span><span class="value">${date}</span></div>
         <div class="row"><span class="label">Hora</span><span class="value">${time} hrs</span></div>
       </div>
-      <p class="subtitle" style="margin-top:16px">Si deseas reagendar, puedes hacerlo directamente desde nuestra web.</p>
+      ${bookingUrl ? `
+      <div style="text-align:center;margin:24px 0 8px">
+        <a href="${bookingUrl}" style="display:inline-block;background:#38bdf8;color:#0c1a2e;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;letter-spacing:0.01em">
+          Reagendar turno →
+        </a>
+      </div>` : ""}
     `),
   })
 }
