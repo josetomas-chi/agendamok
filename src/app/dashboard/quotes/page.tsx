@@ -11,7 +11,7 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import {
   Plus, FileText, Pencil, Trash2, ChevronRight, ArrowLeft,
-  Send, Check, X, Clock, User, Hash, Percent, Package,
+  Send, Check, X, Clock, User, Hash, Percent, Package, ChevronDown,
 } from "lucide-react"
 
 type QuoteItem = {
@@ -434,89 +434,88 @@ function QuoteFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{editing ? `Editar presupuesto #${String(editing.number).padStart(4, "0")}` : "Nuevo presupuesto"}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-5 pt-2">
-          {/* Client & validity */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Cliente</Label>
-              <select value={form.clientId} onChange={e => setForm(f => ({ ...f, clientId: e.target.value }))}
-                className="w-full h-9 rounded-md border border-input px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
-                <option value="" style={{ backgroundColor: "#3a3a3c" }}>Sin cliente</option>
-                {clients.map(c => <option key={c.id} value={c.id} style={{ backgroundColor: "#3a3a3c" }}>{c.name}</option>)}
-              </select>
+      <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden border-white/[0.08]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-4">
+          <div>
+            <h2 className="text-[15px] font-semibold text-white">
+              {editing ? `Presupuesto #${String(editing.number).padStart(4, "0")}` : "Nuevo presupuesto"}
+            </h2>
+            <p className="text-xs text-white/35 mt-0.5">Completa los datos del presupuesto</p>
+          </div>
+          <button onClick={() => onOpenChange(false)} className="w-7 h-7 rounded-full flex items-center justify-center text-white/30 hover:text-white hover:bg-white/[0.07] transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="px-5 pb-5 space-y-3 max-h-[80vh] overflow-y-auto">
+          {/* Cliente + Válido hasta */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Cliente</label>
+              <div className="relative">
+                <select value={form.clientId} onChange={e => setForm(f => ({ ...f, clientId: e.target.value }))}
+                  className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 transition-colors"
+                  style={{ colorScheme: "dark" }}>
+                  <option value="" style={{ backgroundColor: "#28282c" }}>Sin cliente</option>
+                  {clients.map(c => <option key={c.id} value={c.id} style={{ backgroundColor: "#28282c" }}>{c.name}</option>)}
+                </select>
+                <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-white/30 pointer-events-none" />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label>Válido hasta</Label>
-              <Input type="date" value={form.validUntil} onChange={e => setForm(f => ({ ...f, validUntil: e.target.value }))} />
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Válido hasta</label>
+              <input type="date" value={form.validUntil} onChange={e => setForm(f => ({ ...f, validUntil: e.target.value }))}
+                className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white focus:outline-none focus:border-sky-500/60 transition-colors"
+                style={{ colorScheme: "dark" }} />
             </div>
           </div>
 
-          {/* Items */}
+          {/* Ítems */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Ítems *</Label>
-              <button onClick={addItem}
-                className="flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 transition-colors">
+              <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Ítems *</label>
+              <button onClick={addItem} className="flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 transition-colors">
                 <Plus className="w-3.5 h-3.5" /> Agregar ítem
               </button>
             </div>
-
-            {/* Header */}
-            <div className="grid grid-cols-12 gap-2 text-xs text-white/30 px-1">
+            <div className="grid grid-cols-12 gap-1.5 text-[11px] text-white/25 px-1">
               <span className="col-span-5">Descripción</span>
-              <span className="col-span-3">Servicio (opcional)</span>
+              <span className="col-span-3">Servicio</span>
               <span className="col-span-1 text-right">Cant.</span>
               <span className="col-span-2 text-right">Precio</span>
               <span className="col-span-1" />
             </div>
-
             {form.items.map((item, idx) => (
-              <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+              <div key={idx} className="grid grid-cols-12 gap-1.5 items-center">
                 <div className="col-span-5">
-                  <Input
-                    value={item.description}
-                    onChange={e => updateItem(idx, "description", e.target.value)}
+                  <input value={item.description} onChange={e => updateItem(idx, "description", e.target.value)}
                     placeholder="Descripción..."
-                    className="h-8 text-sm"
-                  />
+                    className="w-full h-9 rounded-xl border border-white/[0.08] bg-white/[0.05] px-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-sky-500/60 transition-colors" />
                 </div>
-                <div className="col-span-3">
-                  <select
-                    value={item.serviceId || ""}
-                    onChange={e => fillFromService(idx, e.target.value)}
-                    className="w-full h-8 rounded-md border border-input px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                    style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}
-                  >
-                    <option value="" style={{ backgroundColor: "#3a3a3c" }}>—</option>
-                    {services.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#3a3a3c" }}>{s.name}</option>)}
+                <div className="col-span-3 relative">
+                  <select value={item.serviceId || ""} onChange={e => fillFromService(idx, e.target.value)}
+                    className="w-full h-9 rounded-xl border border-white/[0.08] bg-white/[0.05] px-2 pr-7 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 transition-colors"
+                    style={{ colorScheme: "dark" }}>
+                    <option value="" style={{ backgroundColor: "#28282c" }}>—</option>
+                    {services.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#28282c" }}>{s.name}</option>)}
                   </select>
+                  <ChevronDown className="absolute right-2 top-2.5 w-3.5 h-3.5 text-white/30 pointer-events-none" />
                 </div>
                 <div className="col-span-1">
-                  <Input
-                    type="number" min={1}
-                    value={item.quantity}
+                  <input type="number" min={1} value={item.quantity} onFocus={e => e.target.select()}
                     onChange={e => updateItem(idx, "quantity", parseInt(e.target.value) || 1)}
-                    className="h-8 text-sm text-right"
-                  />
+                    className="w-full h-9 rounded-xl border border-white/[0.08] bg-white/[0.05] px-2 text-sm text-white text-right focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                 </div>
                 <div className="col-span-2">
-                  <Input
-                    type="number" min={0}
-                    value={item.unitPrice}
+                  <input type="number" min={0} value={item.unitPrice} onFocus={e => e.target.select()}
                     onChange={e => updateItem(idx, "unitPrice", parseFloat(e.target.value) || 0)}
-                    className="h-8 text-sm text-right"
                     placeholder="0"
-                  />
+                    className="w-full h-9 rounded-xl border border-white/[0.08] bg-white/[0.05] px-2 text-sm text-white text-right focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                 </div>
                 <div className="col-span-1 flex justify-end">
                   {form.items.length > 1 && (
-                    <button onClick={() => removeItem(idx)}
-                      className="text-white/20 hover:text-red-400 transition-colors">
+                    <button onClick={() => removeItem(idx)} className="text-white/20 hover:text-red-400 transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -525,27 +524,27 @@ function QuoteFormDialog({
             ))}
           </div>
 
-          {/* Discount & notes */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="flex items-center gap-1"><Percent className="w-3.5 h-3.5" /> Descuento (%)</Label>
-              <Input type="number" min={0} max={100}
-                value={form.discount}
+          {/* Descuento + Notas */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Descuento (%)</label>
+              <input type="number" min={0} max={100} value={form.discount} onFocus={e => e.target.select()}
                 onChange={e => setForm(f => ({ ...f, discount: parseFloat(e.target.value) || 0 }))}
                 placeholder="0"
-              />
+                className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
             </div>
-            <div className="space-y-1.5">
-              <Label>Notas internas</Label>
-              <Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Opcional..." />
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Notas internas</label>
+              <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="Opcional..."
+                className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-sky-500/60 transition-colors" />
             </div>
           </div>
 
-          {/* Total preview */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-1.5">
-            <div className="flex justify-between text-sm text-white/50">
-              <span>Subtotal</span>
-              <span>${subtotal.toLocaleString("es-CL")}</span>
+          {/* Total */}
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 space-y-1.5">
+            <div className="flex justify-between text-sm text-white/40">
+              <span>Subtotal</span><span>${subtotal.toLocaleString("es-CL")}</span>
             </div>
             {form.discount > 0 && (
               <div className="flex justify-between text-sm text-green-400">
@@ -553,18 +552,16 @@ function QuoteFormDialog({
                 <span>−${(subtotal * form.discount / 100).toLocaleString("es-CL")}</span>
               </div>
             )}
-            <div className="flex justify-between font-semibold pt-1.5 border-t border-white/10">
+            <div className="flex justify-between font-semibold pt-1.5 border-t border-white/[0.08]">
               <span>Total</span>
               <span className="text-sky-300">${total.toLocaleString("es-CL")}</span>
             </div>
           </div>
 
-          <div className="flex gap-2 pt-1">
-            <Button className="flex-1" onClick={onSave} disabled={saving}>
-              {saving ? "Guardando..." : editing ? "Guardar cambios" : "Crear presupuesto"}
-            </Button>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          </div>
+          <button onClick={onSave} disabled={saving}
+            className="w-full h-11 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white font-semibold text-sm transition-colors">
+            {saving ? "Guardando..." : editing ? "Guardar cambios" : "Crear presupuesto"}
+          </button>
         </div>
       </DialogContent>
     </Dialog>
