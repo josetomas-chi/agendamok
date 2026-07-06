@@ -18,16 +18,22 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     })
   }
 
-  if (body.plan) {
+  if (body.plan || body.status) {
     const existing = await prisma.subscription.findFirst({ where: { businessId: id } })
+    const updateData: Record<string, unknown> = {}
+    if (body.plan) updateData.plan = body.plan
+    if (body.status) {
+      updateData.status = body.status
+      if (body.status === "ACTIVE") {
+        updateData.currentPeriodStart = new Date()
+        updateData.currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      }
+    }
     if (existing) {
-      await prisma.subscription.update({
-        where: { id: existing.id },
-        data: { plan: body.plan },
-      })
+      await prisma.subscription.update({ where: { id: existing.id }, data: updateData })
     } else {
       await prisma.subscription.create({
-        data: { businessId: id, plan: body.plan, status: "ACTIVE" },
+        data: { businessId: id, plan: body.plan || "FREE", status: body.status || "ACTIVE" },
       })
     }
   }

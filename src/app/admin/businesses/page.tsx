@@ -28,6 +28,7 @@ export default function AdminBusinessesPage() {
   const [search, setSearch] = useState("")
   const [selected, setSelected] = useState<Business | null>(null)
   const [planValue, setPlanValue] = useState("")
+  const [statusValue, setStatusValue] = useState("")
   const [saving, setSaving] = useState(false)
   const [newOpen, setNewOpen] = useState(false)
   const [newForm, setNewForm] = useState({ ownerName: "", ownerEmail: "", businessName: "", slug: "", category: "", plan: "FREE" })
@@ -62,7 +63,7 @@ export default function AdminBusinessesPage() {
     await fetch(`/api/admin/businesses/${selected.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: planValue }),
+      body: JSON.stringify({ plan: planValue, status: statusValue }),
     })
     toast.success("Plan actualizado")
     setSelected(null)
@@ -186,7 +187,7 @@ export default function AdminBusinessesPage() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setSelected(b); setPlanValue(b.subscription?.plan || "FREE") }}>
+                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setSelected(b); setPlanValue(b.subscription?.plan || "FREE"); setStatusValue(b.subscription?.status || "ACTIVE") }}>
                       Editar
                     </Button>
                     <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => window.open(`/book/${b.slug}`, "_blank")}>
@@ -286,13 +287,26 @@ export default function AdminBusinessesPage() {
           <DialogHeader><DialogTitle>Editar — {selected?.name}</DialogTitle></DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-1.5">
-              <p className="text-sm font-medium">Plan de suscripcion</p>
+              <p className="text-sm font-medium">Plan</p>
               <Select value={planValue} onValueChange={v => setPlanValue(v ?? "")}>
                 <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                 <SelectContent align="start" sideOffset={4} className="w-[var(--radix-select-trigger-width)]">
                   <SelectItem value="FREE">Inicial — gratis 3 meses</SelectItem>
                   <SelectItem value="PRO">Pro — $9.900/mes</SelectItem>
                   <SelectItem value="ENTERPRISE">Enterprise — $29.900/mes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium">Estado suscripción</p>
+              <Select value={statusValue} onValueChange={v => setStatusValue(v ?? "")}>
+                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent align="start" sideOffset={4} className="w-[var(--radix-select-trigger-width)]">
+                  <SelectItem value="TRIALING">Periodo de prueba</SelectItem>
+                  <SelectItem value="ACTIVE">Activa (pagado)</SelectItem>
+                  <SelectItem value="PAST_DUE">Vencida</SelectItem>
+                  <SelectItem value="PAUSED">Pausada</SelectItem>
+                  <SelectItem value="CANCELED">Cancelada</SelectItem>
                 </SelectContent>
               </Select>
             </div>
