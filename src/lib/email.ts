@@ -22,7 +22,7 @@ function base(content: string) {
     h1{color:#ffffff;font-size:22px;font-weight:700;margin:0 0 8px}
     .subtitle{color:rgba(255,255,255,0.5);font-size:15px;line-height:1.6;margin:0 0 24px}
     .box{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:20px;margin:20px 0}
-    .row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:14px}
+    .row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:14px;gap:16px}
     .row:last-child{border-bottom:none}
     .label{color:rgba(255,255,255,0.35);font-size:13px}
     .value{color:#ffffff;font-weight:500;text-align:right}
@@ -36,7 +36,7 @@ function base(content: string) {
 <body>
   <div class="wrap">
     <div class="header">
-      <span class="logo-text">Agenda<span class="logo-mok">Mok</span></span>
+      <span class="logo-text"><span class="logo-mok">Agenda</span><span class="logo-mok">Mok</span></span>
     </div>
     <div class="card">
       <div class="accent-bar"></div>
@@ -61,7 +61,6 @@ export async function sendBookingConfirmation({
   serviceName: string; staffName: string; date: string; time: string; duration: number
   cancelUrl?: string
 }) {
-  console.log("[email] sendBookingConfirmation → key:", !!process.env.RESEND_API_KEY, "from:", FROM, "to:", clientEmail)
   if (!process.env.RESEND_API_KEY) return
   await resend.emails.send({
     from: FROM,

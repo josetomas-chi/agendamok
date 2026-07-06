@@ -168,7 +168,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     })
 
     // Send confirmation email if client has email
-    console.log("[appt] client email:", appointment.client?.email ?? "NONE")
     if (appointment.client?.email) {
       const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
       sendBookingConfirmation({
