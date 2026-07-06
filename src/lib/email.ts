@@ -1,7 +1,7 @@
 import { Resend } from "resend"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = process.env.RESEND_FROM_EMAIL || "noreply@agendapro.com"
+const FROM = process.env.RESEND_FROM_EMAIL ? `AgendaMok <${process.env.RESEND_FROM_EMAIL}>` : "AgendaMok <noreply@agendamok.cl>"
 
 function base(content: string) {
   return `<!DOCTYPE html>
