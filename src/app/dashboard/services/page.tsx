@@ -184,19 +184,19 @@ export default function ServicesPage() {
             <div className="grid grid-cols-4 gap-2">
               <div className="col-span-1">
                 <Label className="text-xs">Duración (min)</Label>
-                <Input className="h-8 text-sm mt-1" type="number" value={form.duration || ""} onChange={e => setForm(f => ({ ...f, duration: e.target.value === "" ? 0 : +e.target.value }))} min={5} step={5} />
+                <Input className="h-8 text-sm mt-1 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="number" value={form.duration || ""} onChange={e => setForm(f => ({ ...f, duration: e.target.value === "" ? 0 : +e.target.value }))} min={5} step={5} />
               </div>
               <div className="col-span-1">
                 <Label className="text-xs">Precio</Label>
-                <Input className="h-8 text-sm mt-1" type="number" value={form.price || ""} onChange={e => setForm(f => ({ ...f, price: e.target.value === "" ? 0 : +e.target.value }))} min={0} />
+                <Input className="h-8 text-sm mt-1 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="number" value={form.price || ""} onChange={e => setForm(f => ({ ...f, price: e.target.value === "" ? 0 : +e.target.value }))} min={0} />
               </div>
               <div className="col-span-1">
                 <Label className="text-xs">Buffer (min)</Label>
-                <Input className="h-8 text-sm mt-1" type="number" value={form.bufferAfter} onChange={e => setForm(f => ({ ...f, bufferAfter: +e.target.value }))} min={0} step={5} />
+                <Input className="h-8 text-sm mt-1 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="number" value={form.bufferAfter} onChange={e => setForm(f => ({ ...f, bufferAfter: +e.target.value }))} min={0} step={5} />
               </div>
               <div className="col-span-1">
                 <Label className="text-xs">Capacidad</Label>
-                <Input className="h-8 text-sm mt-1" type="number" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: Math.max(1, +e.target.value) }))} min={1} max={20} />
+                <Input className="h-8 text-sm mt-1 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="number" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: Math.max(1, +e.target.value) }))} min={1} max={20} />
               </div>
             </div>
             <div>
