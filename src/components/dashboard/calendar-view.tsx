@@ -91,7 +91,12 @@ export function CalendarView({ appointments, staffMembers = [], businessId, onNe
     const id = dragApptId.current
     dragApptId.current = null
     if (!id) return
-    const newStartTime = new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m, 0).toISOString()
+    const newStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m, 0)
+    if (newStart < new Date()) {
+      toast.error("No puedes mover un turno a un horario que ya pasó")
+      return
+    }
+    const newStartTime = newStart.toISOString()
     onAppointmentMoved?.(id, newStartTime)
     const r = await fetch(`/api/businesses/${businessId}/appointments/${id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
