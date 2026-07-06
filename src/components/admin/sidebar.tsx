@@ -12,22 +12,22 @@ const nav = [
   { href: "/admin/users", label: "Usuarios", icon: Users },
   { href: "/admin/subscriptions", label: "Suscripciones", icon: CreditCard },
   { href: "/admin/reports", label: "Reportes", icon: BarChart3 },
-  { href: "/admin/settings", label: "Configuracion", icon: Settings },
+  { href: "/admin/settings", label: "Configuración", icon: Settings },
 ]
 
 export function AdminSidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="w-60 bg-gray-900 flex flex-col flex-shrink-0 h-screen">
-      <div className="h-16 flex items-center px-5 border-b border-gray-700">
+    <aside className="w-60 flex flex-col flex-shrink-0 h-screen border-r border-white/[0.07]" style={{ background: "oklch(0.16 0.02 260)" }}>
+      <div className="h-16 flex items-center px-5 border-b border-white/[0.07]">
         <Link href="/admin" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0ea5e9, #38bdf8)" }}>
             <Shield className="w-4 h-4 text-white" />
           </div>
           <div>
-            <span className="font-bold text-white text-sm">AgendaMok</span>
-            <p className="text-xs text-gray-400">Super Admin</p>
+            <span className="font-bold text-white text-sm">Agenda<span className="text-sky-400">Mok</span></span>
+            <p className="text-xs text-white/40">Super Admin</p>
           </div>
         </Link>
       </div>
@@ -42,8 +42,8 @@ export function AdminSidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
                 isActive
-                  ? "bg-red-500 text-white shadow-sm"
-                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                  ? "bg-sky-500/20 text-sky-400"
+                  : "text-white/50 hover:bg-white/[0.06] hover:text-white/80"
               )}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
@@ -53,20 +53,20 @@ export function AdminSidebar() {
         })}
       </nav>
 
-      <div className="p-3 border-t border-gray-700">
+      <div className="p-3 border-t border-white/[0.07]">
         <Link
           href="/dashboard"
-          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all mb-1"
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm text-white/50 hover:bg-white/[0.06] hover:text-white/80 transition-all mb-1"
         >
           <LayoutDashboard className="w-4 h-4" />
           Ir al Dashboard
         </Link>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all"
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm text-white/50 hover:bg-white/[0.06] hover:text-white/80 transition-all"
         >
           <LogOut className="w-4 h-4" />
-          Cerrar sesion
+          Cerrar sesión
         </button>
       </div>
     </aside>

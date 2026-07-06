@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Badge } from "@/components/ui/badge"
 import { Users } from "lucide-react"
 
 export default async function AdminUsersPage() {
@@ -17,10 +16,10 @@ export default async function AdminUsersPage() {
   })
 
   const roleColor: Record<string, string> = {
-    SUPER_ADMIN: "bg-red-100 text-red-700",
-    BUSINESS_OWNER: "bg-indigo-100 text-indigo-700",
-    STAFF: "bg-blue-100 text-blue-700",
-    CLIENT: "bg-gray-100 text-gray-600",
+    SUPER_ADMIN: "bg-red-500/20 text-red-400 border border-red-400/30",
+    BUSINESS_OWNER: "bg-sky-500/20 text-sky-400 border border-sky-400/30",
+    STAFF: "bg-violet-500/20 text-violet-400 border border-violet-400/30",
+    CLIENT: "bg-white/10 text-white/50 border border-white/10",
   }
   const roleLabel: Record<string, string> = {
     SUPER_ADMIN: "Super Admin",
@@ -31,40 +30,40 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Usuarios</h1>
-        <p className="text-muted-foreground text-sm mt-1">{users.length} usuarios registrados</p>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Usuarios</h1>
+          <p className="page-subtitle">{users.length} usuarios registrados</p>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl border overflow-hidden">
+      <div className="rounded-2xl border border-white/[0.07] overflow-hidden" style={{ background: "oklch(0.18 0.02 260)" }}>
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+          <thead className="border-b border-white/[0.07]">
             <tr>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Usuario</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Rol</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Negocio</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Estado</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Registro</th>
+              {["Usuario", "Rol", "Negocio", "Estado", "Registro"].map(h => (
+                <th key={h} className="text-left px-4 py-3 font-medium text-white/40 text-xs uppercase tracking-wider">{h}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {users.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={5} className="px-4 py-16 text-center text-white/30">
                   <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
                   No hay usuarios
                 </td>
               </tr>
-            ) : users.map((u: typeof users[number]) => (
-              <tr key={u.id} className="border-b hover:bg-gray-50 transition-colors">
+            ) : users.map((u: typeof users[number], i: number) => (
+              <tr key={u.id} className={`transition-colors hover:bg-white/[0.03] ${i !== users.length - 1 ? "border-b border-white/[0.05]" : ""}`}>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400 font-bold text-xs flex-shrink-0">
                       {(u.name || u.email)?.[0]?.toUpperCase()}
                     </div>
                     <div>
-                      <p className="font-medium">{u.name || "Sin nombre"}</p>
-                      <p className="text-xs text-muted-foreground">{u.email}</p>
+                      <p className="font-medium text-white/90">{u.name || "Sin nombre"}</p>
+                      <p className="text-xs text-white/40">{u.email}</p>
                     </div>
                   </div>
                 </td>
@@ -73,15 +72,15 @@ export default async function AdminUsersPage() {
                     {roleLabel[u.role]}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-muted-foreground text-sm">
+                <td className="px-4 py-3 text-white/50 text-sm">
                   {u.businessOwner?.name || "—"}
                 </td>
                 <td className="px-4 py-3">
-                  <Badge variant={u.password ? "default" : "secondary"}>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${u.password ? "bg-emerald-500/15 text-emerald-400 border-emerald-400/30" : "bg-amber-400/10 text-amber-400 border-amber-400/20"}`}>
                     {u.password ? "Activo" : "Pendiente"}
-                  </Badge>
+                  </span>
                 </td>
-                <td className="px-4 py-3 text-muted-foreground text-sm">
+                <td className="px-4 py-3 text-white/40 text-sm">
                   {new Date(u.createdAt).toLocaleDateString("es-CL")}
                 </td>
               </tr>

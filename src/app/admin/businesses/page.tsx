@@ -104,17 +104,17 @@ export default function AdminBusinessesPage() {
   )
 
   const planColor: Record<string, string> = {
-    FREE: "bg-gray-100 text-gray-700",
-    PRO: "bg-blue-100 text-blue-700",
-    ENTERPRISE: "bg-purple-100 text-purple-700",
+    FREE: "bg-white/10 text-white/50 border border-white/10",
+    PRO: "bg-sky-500/20 text-sky-400 border border-sky-400/30",
+    ENTERPRISE: "bg-violet-500/20 text-violet-400 border border-violet-400/30",
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold">Negocios</h1>
-          <p className="text-muted-foreground text-sm mt-1">{businesses.length} negocios registrados</p>
+          <h1 className="page-title">Negocios</h1>
+          <p className="page-subtitle">{businesses.length} negocios registrados</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -132,61 +132,57 @@ export default function AdminBusinessesPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border overflow-hidden">
+      <div className="rounded-2xl border border-white/[0.07] overflow-hidden" style={{ background: "oklch(0.18 0.02 260)" }}>
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+          <thead className="border-b border-white/[0.07]">
             <tr>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Negocio</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Dueno</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Plan</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Citas</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Registro</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Estado</th>
-              <th className="px-4 py-3" />
+              {["Negocio", "Dueño", "Plan", "Citas", "Registro", "Estado", ""].map(h => (
+                <th key={h} className="text-left px-4 py-3 font-medium text-white/40 text-xs uppercase tracking-wider">{h}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
               [...Array(5)].map((_, i) => (
-                <tr key={i} className="border-b">
-                  <td colSpan={7} className="px-4 py-3"><div className="h-4 bg-muted animate-pulse rounded" /></td>
+                <tr key={i} className="border-b border-white/[0.05]">
+                  <td colSpan={7} className="px-4 py-3"><div className="h-4 bg-white/5 animate-pulse rounded" /></td>
                 </tr>
               ))
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={7} className="px-4 py-16 text-center text-white/30">
                   <Building2 className="w-8 h-8 mx-auto mb-2 opacity-30" />
                   No hay negocios
                 </td>
               </tr>
-            ) : filtered.map(b => (
-              <tr key={b.id} className="border-b hover:bg-gray-50 transition-colors">
+            ) : filtered.map((b, i) => (
+              <tr key={b.id} className={`transition-colors hover:bg-white/[0.03] ${i !== filtered.length - 1 ? "border-b border-white/[0.05]" : ""}`}>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                    <div className="w-8 h-8 rounded-lg bg-sky-500/20 flex items-center justify-center text-sky-400 font-bold text-xs">
                       {b.name[0]}
                     </div>
                     <div>
-                      <p className="font-medium">{b.name}</p>
-                      <p className="text-xs text-muted-foreground">/{b.slug}</p>
+                      <p className="font-medium text-white/90">{b.name}</p>
+                      <p className="text-xs text-white/40">/{b.slug}</p>
                     </div>
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <p>{b.owner.name}</p>
-                  <p className="text-xs text-muted-foreground">{b.owner.email}</p>
+                  <p className="text-white/80">{b.owner.name}</p>
+                  <p className="text-xs text-white/40">{b.owner.email}</p>
                 </td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${planColor[b.subscription?.plan || "FREE"]}`}>
                     {b.subscription?.plan || "FREE"}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-muted-foreground">{b._count.appointments}</td>
-                <td className="px-4 py-3 text-muted-foreground">{new Date(b.createdAt).toLocaleDateString("es-CL")}</td>
+                <td className="px-4 py-3 text-white/50">{b._count.appointments}</td>
+                <td className="px-4 py-3 text-white/40">{new Date(b.createdAt).toLocaleDateString("es-CL")}</td>
                 <td className="px-4 py-3">
-                  <Badge variant={b.isActive ? "default" : "secondary"}>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${b.isActive ? "bg-emerald-500/15 text-emerald-400 border-emerald-400/30" : "bg-red-500/15 text-red-400 border-red-400/30"}`}>
                     {b.isActive ? "Activo" : "Suspendido"}
-                  </Badge>
+                  </span>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1">
