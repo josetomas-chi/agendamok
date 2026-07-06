@@ -382,90 +382,101 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
       </Dialog>
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setForm(DEFAULT_FORM); setStaffLocked(false) } }}>
-        <DialogContent className="max-w-md" accent="sky">
+        <DialogContent className="max-w-sm" accent="sky">
           <DialogHeader>
             <DialogTitle>Nuevo turno</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="space-y-1.5">
-              <Label>Servicio *</Label>
+          <div className="space-y-3 pt-1">
+            {/* Servicio */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Servicio *</label>
               <select value={form.serviceId} onChange={e => setForm(f => ({ ...f, serviceId: e.target.value }))}
-                className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
-                <option value="" style={{ backgroundColor: "#3a3a3c" }}>Selecciona un servicio</option>
-                {services.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#3a3a3c" }}>{s.name} — {s.duration} min</option>)}
+                className="w-full h-9 rounded-lg border border-white/10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-sky-400"
+                style={{ backgroundColor: "#2c2c30", color: "#f4f4f5" }}>
+                <option value="" style={{ backgroundColor: "#2c2c30" }}>— elige un servicio —</option>
+                {services.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#2c2c30" }}>{s.name} · {s.duration} min</option>)}
               </select>
             </div>
-            <div className="space-y-1.5">
-              <Label>Profesional *</Label>
-              {staffLocked ? (
-                <div className="w-full h-9 rounded-md border border-white/10 px-3 py-1 text-sm flex items-center gap-2 text-white/60 cursor-not-allowed select-none" style={{ backgroundColor: "#2c2c30" }}>
-                  <span className="text-white">{staff.find(s => s.id === form.staffId)?.user.name}</span>
-                  <span className="ml-auto text-xs text-white/30">bloqueado</span>
-                </div>
-              ) : (
-                <select value={form.staffId} onChange={e => setForm(f => ({ ...f, staffId: e.target.value }))}
-                  className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                  style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
-                  <option value="" style={{ backgroundColor: "#3a3a3c" }}>Selecciona un profesional</option>
-                  {staff.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#3a3a3c" }}>{s.user.name}</option>)}
-                </select>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>Cliente</Label>
-              <select value={form.clientId} onChange={e => setForm(f => ({ ...f, clientId: e.target.value }))}
-                className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
-                <option value="" style={{ backgroundColor: "#3a3a3c" }}>Sin cliente asignado</option>
-                {clients.map(c => <option key={c.id} value={c.id} style={{ backgroundColor: "#3a3a3c" }}>{c.name}</option>)}
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Fecha *</Label>
-                <Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
+
+            {/* Profesional + Cliente en grid */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Profesional *</label>
+                {staffLocked ? (
+                  <div className="h-9 rounded-lg border border-white/10 px-3 text-sm flex items-center gap-2 text-white/70 select-none" style={{ backgroundColor: "#2c2c30" }}>
+                    <span className="truncate">{staff.find(s => s.id === form.staffId)?.user.name}</span>
+                  </div>
+                ) : (
+                  <select value={form.staffId} onChange={e => setForm(f => ({ ...f, staffId: e.target.value }))}
+                    className="w-full h-9 rounded-lg border border-white/10 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-400"
+                    style={{ backgroundColor: "#2c2c30", color: "#f4f4f5" }}>
+                    <option value="" style={{ backgroundColor: "#2c2c30" }}>—</option>
+                    {staff.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#2c2c30" }}>{s.user.name}</option>)}
+                  </select>
+                )}
               </div>
-              <div className="space-y-1.5">
-                <Label>Hora *</Label>
-                <div className="flex gap-2">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Cliente</label>
+                <select value={form.clientId} onChange={e => setForm(f => ({ ...f, clientId: e.target.value }))}
+                  className="w-full h-9 rounded-lg border border-white/10 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-400"
+                  style={{ backgroundColor: "#2c2c30", color: "#f4f4f5" }}>
+                  <option value="" style={{ backgroundColor: "#2c2c30" }}>—</option>
+                  {clients.map(c => <option key={c.id} value={c.id} style={{ backgroundColor: "#2c2c30" }}>{c.name}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Fecha + Hora */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Fecha *</label>
+                <Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className="h-9" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Hora *</label>
+                <div className="flex gap-1.5">
                   <select
                     value={form.time ? form.time.split(":")[0] : ""}
                     onChange={e => setForm(f => ({ ...f, time: `${e.target.value}:${f.time.split(":")[1] || "00"}` }))}
-                    className="flex-1 h-9 rounded-md border border-input px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                    style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
-                    <option value="" style={{ backgroundColor: "#3a3a3c" }}>HH</option>
+                    className="flex-1 h-9 rounded-lg border border-white/10 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-400"
+                    style={{ backgroundColor: "#2c2c30", color: "#f4f4f5" }}>
+                    <option value="" style={{ backgroundColor: "#2c2c30" }}>hh</option>
                     {Array.from({ length: 15 }, (_, i) => i + 7).map(h => (
-                      <option key={h} value={String(h).padStart(2, "0")} style={{ backgroundColor: "#3a3a3c" }}>{String(h).padStart(2, "0")}h</option>
+                      <option key={h} value={String(h).padStart(2, "0")} style={{ backgroundColor: "#2c2c30" }}>{String(h).padStart(2, "0")}h</option>
                     ))}
                   </select>
                   <select
                     value={form.time ? form.time.split(":")[1] : ""}
                     onChange={e => setForm(f => ({ ...f, time: `${f.time.split(":")[0] || "08"}:${e.target.value}` }))}
-                    className="flex-1 h-9 rounded-md border border-input px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                    style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
-                    <option value="" style={{ backgroundColor: "#3a3a3c" }}>MM</option>
-                    <option value="00" style={{ backgroundColor: "#3a3a3c" }}>:00</option>
-                    <option value="30" style={{ backgroundColor: "#3a3a3c" }}>:30</option>
+                    className="flex-1 h-9 rounded-lg border border-white/10 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-400"
+                    style={{ backgroundColor: "#2c2c30", color: "#f4f4f5" }}>
+                    <option value="" style={{ backgroundColor: "#2c2c30" }}>mm</option>
+                    <option value="00" style={{ backgroundColor: "#2c2c30" }}>:00</option>
+                    <option value="30" style={{ backgroundColor: "#2c2c30" }}>:30</option>
                   </select>
                 </div>
               </div>
             </div>
+
+            {/* Sede (solo si hay) */}
             {locations.length > 0 && (
-              <div className="space-y-1.5">
-                <Label>Sede</Label>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Sede</label>
                 <select value={form.locationId} onChange={e => setForm(f => ({ ...f, locationId: e.target.value }))}
-                  className="w-full h-9 rounded-md border border-input px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                  style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }}>
-                  <option value="" style={{ backgroundColor: "#3a3a3c" }}>Sin sede específica</option>
-                  {locations.map(l => <option key={l.id} value={l.id} style={{ backgroundColor: "#3a3a3c" }}>{l.name}</option>)}
+                  className="w-full h-9 rounded-lg border border-white/10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-sky-400"
+                  style={{ backgroundColor: "#2c2c30", color: "#f4f4f5" }}>
+                  <option value="" style={{ backgroundColor: "#2c2c30" }}>Sin sede específica</option>
+                  {locations.map(l => <option key={l.id} value={l.id} style={{ backgroundColor: "#2c2c30" }}>{l.name}</option>)}
                 </select>
               </div>
             )}
-            <div className="space-y-1.5">
-              <Label>Notas</Label>
-              <Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Opcional..." />
+
+            {/* Notas */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Notas</label>
+              <Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Opcional..." className="h-9" />
             </div>
+
             <div className="flex gap-2 pt-1">
               <Button className="flex-1" onClick={handleCreate} disabled={saving}>
                 {saving ? "Guardando..." : "Crear turno"}
