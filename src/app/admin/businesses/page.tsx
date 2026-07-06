@@ -137,7 +137,7 @@ export default function AdminBusinessesPage() {
         <table className="w-full text-sm">
           <thead className="border-b border-white/[0.07]">
             <tr>
-              {["Negocio", "Dueño", "Plan", "Suscripción", "Citas", "Registro", "Estado", ""].map(h => (
+              {["Negocio", "Dueño", "Plan", "Suscripción", "Citas", "Registro", ""].map(h => (
                 <th key={h} className="text-left px-4 py-3 font-medium text-white/40 text-xs uppercase tracking-wider">{h}</th>
               ))}
             </tr>
@@ -198,11 +198,6 @@ export default function AdminBusinessesPage() {
                 </td>
                 <td className="px-4 py-3 text-white/50">{b._count.appointments}</td>
                 <td className="px-4 py-3 text-white/40">{new Date(b.createdAt).toLocaleDateString("es-CL")}</td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${b.isActive ? "bg-emerald-500/15 text-emerald-400 border-emerald-400/30" : "bg-red-500/15 text-red-400 border-red-400/30"}`}>
-                    {b.isActive ? "Activo" : "Suspendido"}
-                  </span>
-                </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1">
                     <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setSelected(b); setPlanValue(b.subscription?.plan || "FREE"); setStatusValue(b.subscription?.status || "ACTIVE") }}>
