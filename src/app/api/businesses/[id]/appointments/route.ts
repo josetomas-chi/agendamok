@@ -66,6 +66,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!service) return NextResponse.json({ error: "Servicio no encontrado" }, { status: 404 })
 
     const startTime = new Date(data.startTime)
+    if (startTime < new Date()) {
+      return NextResponse.json({ error: "No puedes crear un turno en un horario que ya pasó" }, { status: 400 })
+    }
     const endTime = addMinutes(startTime, service.duration)
 
     // Check availability exceptions for this staff + date

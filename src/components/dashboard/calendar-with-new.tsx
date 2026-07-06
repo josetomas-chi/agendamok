@@ -85,6 +85,10 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
       toast.error("Completa todos los campos obligatorios")
       return
     }
+    if (new Date(`${form.date}T${form.time}`) < new Date()) {
+      toast.error("No puedes crear un turno en un horario que ya pasó")
+      return
+    }
     setSaving(true)
 
     const r = await fetch(`/api/businesses/${businessId}/appointments`, {
