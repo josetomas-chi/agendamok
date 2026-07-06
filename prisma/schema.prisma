@@ -249,6 +249,10 @@ model Business {
   commissions               CommissionRecord[]
   clinicalRecords           ClinicalRecord[]
   quotes                    Quote[]
+  courts                    Court[]
+  courtBookings             CourtBooking[]
+  membershipPlans           MembershipPlan[]
+  clientMemberships         ClientMembership[]
   apiKeys                   ApiKey[]
   invoices                  Invoice[]
 
@@ -443,6 +447,8 @@ model Client {
   appointments    Appointment[]
   clinicalRecord  ClinicalRecord?
   quotes          Quote[]
+  courtBookings   CourtBooking[]
+  memberships     ClientMembership[]
 
   @@index([businessId, email])
   @@map("clients")
@@ -778,4 +784,112 @@ model ApiKey {
 
   @@index([businessId])
   @@map("api_keys")
+}
+
+// ─── CLUB DEPORTIVO ───────────────────────────────────────────────────────────
+
+enum CourtBookingStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+model Court {
+  id          String   @id @default(cuid())
+  businessId  String
+  name        String
+  sport       String?
+  description String?  @db.Text
+  color       String   @default("#38bdf8")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business     Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  pricingRules CourtPricingRule[]
+  bookings     CourtBooking[]
+
+  @@index([businessId])
+  @@map("courts")
+}
+
+model CourtPricingRule {
+  id        String  @id @default(cuid())
+  courtId   String
+  name      String
+  days      Int[]
+  startTime String
+  endTime   String
+  price     Decimal @db.Decimal(10, 2)
+
+  court Court @relation(fields: [courtId], references: [id], onDelete: Cascade)
+
+  @@map("court_pricing_rules")
+}
+
+model CourtBooking {
+  id         String             @id @default(cuid())
+  businessId String
+  courtId    String
+  clientId   String?
+  startTime  DateTime
+  endTime    DateTime
+  price      Decimal            @db.Decimal(10, 2)
+  status     CourtBookingStatus @default(CONFIRMED)
+  notes      String?            @db.Text
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  deletedAt  DateTime?
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  court    Court    @relation(fields: [courtId], references: [id])
+  client   Client?  @relation(fields: [clientId], references: [id])
+
+  @@index([businessId, startTime])
+  @@index([courtId, startTime])
+  @@map("court_bookings")
+}
+
+model MembershipPlan {
+  id           String   @id @default(cuid())
+  businessId   String
+  name         String
+  description  String?  @db.Text
+  price        Decimal  @db.Decimal(10, 2)
+  durationDays Int      @default(30)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  business    Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  memberships ClientMembership[]
+
+  @@index([businessId])
+  @@map("membership_plans")
+}
+
+model ClientMembership {
+  id         String           @id @default(cuid())
+  businessId String
+  clientId   String
+  planId     String
+  startDate  DateTime         @db.Date
+  endDate    DateTime         @db.Date
+  status     MembershipStatus @default(ACTIVE)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  business Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client   Client         @relation(fields: [clientId], references: [id])
+  plan     MembershipPlan @relation(fields: [planId], references: [id])
+
+  @@index([businessId])
+  @@index([clientId])
+  @@map("client_memberships")
 }

@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   Calendar, Users, Scissors, UserCheck, BarChart3,
-  Settings, CreditCard, Megaphone, MapPin, LogOut, LayoutDashboard, Star, Percent, FileText, HelpCircle, X,
+  Settings, CreditCard, Megaphone, MapPin, LogOut, LayoutDashboard, Star, Percent, FileText, HelpCircle, X, Trophy,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { MokIcon } from "@/components/ui/mok-icon"
@@ -41,6 +41,14 @@ const groups = [
       { href: "/dashboard/reports", label: "Reportes", icon: BarChart3 },
       { href: "/dashboard/marketing", label: "Marketing", icon: Megaphone },
       { href: "/dashboard/surveys", label: "Encuestas", icon: Star },
+    ],
+  },
+  {
+    label: "Club",
+    items: [
+      { href: "/dashboard/club", label: "Inicio club", icon: Trophy },
+      { href: "/dashboard/club/courts", label: "Canchas", icon: MapPin },
+      { href: "/dashboard/club/memberships", label: "Membresías", icon: Users },
     ],
   },
   {
