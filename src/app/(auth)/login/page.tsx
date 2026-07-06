@@ -40,7 +40,15 @@ function LoginForm() {
       return
     }
 
-    router.push(isNew ? "/onboarding" : isInvited ? "/onboarding/setup" : "/dashboard")
+    const sessionRes = await fetch("/api/auth/session")
+    const session = await sessionRes.json()
+    const role = session?.user?.role
+
+    if (role === "SUPER_ADMIN") {
+      router.push("/admin")
+    } else {
+      router.push(isNew ? "/onboarding" : isInvited ? "/onboarding/setup" : "/dashboard")
+    }
   }
 
   return (
