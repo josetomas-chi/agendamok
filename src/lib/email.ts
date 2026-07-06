@@ -108,6 +108,77 @@ export async function sendBookingConfirmation({
   })
 }
 
+export async function sendCancellationEmail({
+  clientName, clientEmail, businessName, serviceName, staffName, date, time,
+}: {
+  clientName: string; clientEmail: string; businessName: string
+  serviceName: string; staffName: string; date: string; time: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `Turno cancelado — ${businessName}`,
+    html: base(`
+      <h1>Turno cancelado</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu turno en <strong style="color:#38bdf8">${businessName}</strong> ha sido cancelado.</p>
+      <div class="box">
+        <div class="row"><span class="label">Servicio</span><span class="value">${serviceName}</span></div>
+        <div class="row"><span class="label">Profesional</span><span class="value">${staffName}</span></div>
+        <div class="row"><span class="label">Fecha</span><span class="value">${date}</span></div>
+        <div class="row"><span class="label">Hora</span><span class="value">${time} hrs</span></div>
+      </div>
+      <p class="subtitle" style="margin-top:16px">Si deseas reagendar, puedes hacerlo directamente desde nuestra web.</p>
+    `),
+  })
+}
+
+export async function sendRescheduleEmail({
+  clientName, clientEmail, businessName, serviceName, staffName, date, time, startTimeISO, duration,
+}: {
+  clientName: string; clientEmail: string; businessName: string
+  serviceName: string; staffName: string; date: string; time: string
+  startTimeISO?: string; duration: number
+}) {
+  if (!process.env.RESEND_API_KEY) return
+
+  let gcalUrl = ""
+  if (startTimeISO) {
+    const start = new Date(startTimeISO)
+    const end = new Date(start.getTime() + duration * 60000)
+    const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"
+    const params = new URLSearchParams({
+      action: "TEMPLATE",
+      text: `${serviceName} — ${businessName}`,
+      dates: `${fmt(start)}/${fmt(end)}`,
+      details: `Profesional: ${staffName}`,
+    })
+    gcalUrl = `https://calendar.google.com/calendar/render?${params.toString()}`
+  }
+
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `Turno reprogramado — ${businessName}`,
+    html: base(`
+      <h1>Turno reprogramado ✓</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu turno en <strong style="color:#38bdf8">${businessName}</strong> ha sido reagendado.</p>
+      <div class="box">
+        <div class="row"><span class="label">Servicio</span><span class="value">${serviceName}</span></div>
+        <div class="row"><span class="label">Profesional</span><span class="value">${staffName}</span></div>
+        <div class="row"><span class="label">Nueva fecha</span><span class="value">${date}</span></div>
+        <div class="row"><span class="label">Nueva hora</span><span class="value">${time} hrs</span></div>
+      </div>
+      ${gcalUrl ? `
+      <div style="text-align:center;margin:24px 0 8px">
+        <a href="${gcalUrl}" style="display:inline-block;background:#38bdf8;color:#0c1a2e;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;letter-spacing:0.01em">
+          📅 Agregar a Google Calendar
+        </a>
+      </div>` : ""}
+    `),
+  })
+}
+
 export async function sendInvite({
   ownerName, ownerEmail, businessName, inviteUrl,
 }: {

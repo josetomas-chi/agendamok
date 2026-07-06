@@ -2,7 +2,10 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { addMinutes, addDays } from "date-fns"
-import { sendSurveyRequest } from "@/lib/email"
+import { sendSurveyRequest, sendCancellationEmail, sendRescheduleEmail } from "@/lib/email"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
+import { utcToChileLocal } from "@/lib/timezone"
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string; apptId: string }> }) {
   const session = await auth()
@@ -24,13 +27,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     body.startTime = startTime
   }
 
-  const prevAppt = await prisma.appointment.findUnique({ where: { id: apptId }, select: { status: true } })
+  const prevAppt = await prisma.appointment.findUnique({
+    where: { id: apptId },
+    select: { status: true, startTime: true },
+  })
 
   const appointment = await prisma.appointment.update({
     where: { id: apptId },
     data: body,
     include: {
-      service: { select: { name: true, color: true, price: true } },
+      service: { select: { name: true, color: true, price: true, duration: true } },
       staff: { select: { id: true, commissionType: true, commissionValue: true, user: { select: { name: true } } } },
       client: { select: { name: true, email: true, phone: true } },
       business: { select: { name: true } },
@@ -62,6 +68,35 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         })
       }
     }
+  }
+
+  // Email client when cancelled
+  if (body.status === "CANCELLED" && prevAppt?.status !== "CANCELLED" && appointment.client.email) {
+    sendCancellationEmail({
+      clientName: appointment.client.name,
+      clientEmail: appointment.client.email,
+      businessName: appointment.business.name,
+      serviceName: appointment.service.name,
+      staffName: appointment.staff.user.name || "Sin asignar",
+      date: format(utcToChileLocal(appointment.startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
+      time: format(utcToChileLocal(appointment.startTime), "HH:mm"),
+    }).catch(() => {})
+  }
+
+  // Email client when rescheduled
+  if (body.startTime && prevAppt?.startTime && appointment.client.email &&
+      new Date(body.startTime).getTime() !== prevAppt.startTime.getTime()) {
+    sendRescheduleEmail({
+      clientName: appointment.client.name,
+      clientEmail: appointment.client.email,
+      businessName: appointment.business.name,
+      serviceName: appointment.service.name,
+      staffName: appointment.staff.user.name || "Sin asignar",
+      date: format(utcToChileLocal(appointment.startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
+      time: format(utcToChileLocal(appointment.startTime), "HH:mm"),
+      startTimeISO: appointment.startTime.toISOString(),
+      duration: appointment.service.duration ?? 60,
+    }).catch(() => {})
   }
 
   // Send satisfaction survey when appointment is marked COMPLETED for the first time

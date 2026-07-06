@@ -35,7 +35,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       businessId: id,
       deletedAt: null,
       ...(from && to && { startTime: { gte: new Date(from), lte: new Date(to) } }),
-      ...(status && { status: status as never }),
+      ...(status
+        ? { status: status as never }
+        : { status: { notIn: ["CANCELLED", "NO_SHOW"] as never[] } }),
       ...(staffId && { staffId }),
     },
     include: {
