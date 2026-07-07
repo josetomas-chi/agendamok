@@ -61,6 +61,7 @@ export default async function DashboardPage() {
           hasStaff={hasStaff}
           hasSchedule={hasSchedule}
           slug={business.slug}
+          isSports={business.businessType === "SPORTS_CLUB"}
         />
       )}
 

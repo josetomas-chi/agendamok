@@ -9,9 +9,10 @@ interface SetupChecklistProps {
   hasStaff: boolean
   hasSchedule: boolean
   slug: string
+  isSports?: boolean
 }
 
-export function SetupChecklist({ hasServices, hasStaff, hasSchedule, slug }: SetupChecklistProps) {
+export function SetupChecklist({ hasServices, hasStaff, hasSchedule, slug, isSports }: SetupChecklistProps) {
   const [dismissed, setDismissed] = useState(false)
 
   const steps = [
@@ -36,7 +37,7 @@ export function SetupChecklist({ hasServices, hasStaff, hasSchedule, slug }: Set
     {
       done: true,
       label: "Copia tu link de reservas",
-      desc: `agendamok.vercel.app/book/${slug}`,
+      desc: `agendamok.cl/book/${slug}`,
       href: `/book/${slug}`,
       external: true,
     },
@@ -46,6 +47,49 @@ export function SetupChecklist({ hasServices, hasStaff, hasSchedule, slug }: Set
   const allDone = completed === steps.length
 
   if (dismissed || allDone) return null
+
+  if (isSports) {
+    const NAVY = "#0d1b2a"
+    const GOLD = "#C9A84C"
+    const BORDER = "rgba(201,168,76,0.25)"
+    return (
+      <div style={{ borderRadius: 16, border: `1px solid ${BORDER}`, background: "rgba(13,27,42,0.06)", padding: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Sparkles style={{ width: 16, height: 16, color: GOLD }} />
+            <span style={{ fontWeight: 600, color: NAVY, fontSize: 14 }}>Configura tu negocio</span>
+            <span style={{ fontSize: 12, color: "#666", marginLeft: 4 }}>{completed}/{steps.length} pasos</span>
+          </div>
+          <button onClick={() => setDismissed(true)} style={{ color: "#999", background: "none", border: "none", cursor: "pointer" }}>
+            <X style={{ width: 16, height: 16 }} />
+          </button>
+        </div>
+        <div style={{ width: "100%", background: "rgba(0,0,0,0.1)", borderRadius: 99, height: 4, marginBottom: 12 }}>
+          <div style={{ background: GOLD, height: 4, borderRadius: 99, width: `${(completed / steps.length) * 100}%`, transition: "width 0.5s" }} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {steps.map((step, i) => (
+            <Link key={i} href={step.href} target={step.external ? "_blank" : undefined}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 12,
+                opacity: step.done ? 0.45 : 1, pointerEvents: step.done ? "none" : "auto",
+                textDecoration: "none", transition: "background 0.15s" }}
+              onMouseEnter={e => { if (!step.done) (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.08)" }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent" }}
+            >
+              {step.done
+                ? <CheckCircle2 style={{ width: 20, height: 20, color: GOLD, flexShrink: 0 }} />
+                : <Circle style={{ width: 20, height: 20, color: "#aaa", flexShrink: 0 }} />}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: step.done ? "#999" : NAVY, textDecoration: step.done ? "line-through" : "none" }}>{step.label}</div>
+                <div style={{ fontSize: 12, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{step.desc}</div>
+              </div>
+              {!step.done && <ChevronRight style={{ width: 16, height: 16, color: "#aaa", flexShrink: 0 }} />}
+            </Link>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="rounded-2xl border border-sky-500/20 bg-gradient-to-br from-sky-500/5 to-transparent p-5">
@@ -59,40 +103,22 @@ export function SetupChecklist({ hasServices, hasStaff, hasSchedule, slug }: Set
           <X className="w-4 h-4" />
         </button>
       </div>
-
       <div className="w-full bg-slate-700/40 rounded-full h-1.5 mb-4">
-        <div
-          className="bg-sky-400 h-1.5 rounded-full transition-all duration-500"
-          style={{ width: `${(completed / steps.length) * 100}%` }}
-        />
+        <div className="bg-sky-400 h-1.5 rounded-full transition-all duration-500" style={{ width: `${(completed / steps.length) * 100}%` }} />
       </div>
-
       <div className="space-y-2">
         {steps.map((step, i) => (
-          <Link
-            key={i}
-            href={step.href}
-            target={step.external ? "_blank" : undefined}
-            className={`flex items-center gap-3 p-3 rounded-xl transition-colors group ${
-              step.done
-                ? "opacity-50 cursor-default pointer-events-none"
-                : "hover:bg-white/5 cursor-pointer"
-            }`}
+          <Link key={i} href={step.href} target={step.external ? "_blank" : undefined}
+            className={`flex items-center gap-3 p-3 rounded-xl transition-colors group ${step.done ? "opacity-50 cursor-default pointer-events-none" : "hover:bg-white/5 cursor-pointer"}`}
           >
-            {step.done ? (
-              <CheckCircle2 className="w-5 h-5 text-sky-400 flex-shrink-0" />
-            ) : (
-              <Circle className="w-5 h-5 text-white/25 flex-shrink-0" />
-            )}
+            {step.done
+              ? <CheckCircle2 className="w-5 h-5 text-sky-400 flex-shrink-0" />
+              : <Circle className="w-5 h-5 text-white/25 flex-shrink-0" />}
             <div className="flex-1 min-w-0">
-              <div className={`text-sm font-medium ${step.done ? "line-through text-white/30" : "text-white"}`}>
-                {step.label}
-              </div>
+              <div className={`text-sm font-medium ${step.done ? "line-through text-white/30" : "text-white"}`}>{step.label}</div>
               <div className="text-xs text-white/40 truncate">{step.desc}</div>
             </div>
-            {!step.done && (
-              <ChevronRight className="w-4 h-4 text-white/25 group-hover:text-sky-400 transition-colors flex-shrink-0" />
-            )}
+            {!step.done && <ChevronRight className="w-4 h-4 text-white/25 group-hover:text-sky-400 transition-colors flex-shrink-0" />}
           </Link>
         ))}
       </div>
