@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
-import { Check, X, Minus, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight, Star, Percent, MapPin, FileText, Stethoscope, Key, ChevronDown, Rocket, Scissors, HelpCircle, Menu, type LucideIcon } from "lucide-react"
+import { Check, X, Minus, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight, Star, Percent, MapPin, FileText, Stethoscope, Key, ChevronDown, Rocket, Scissors, HelpCircle, Menu, Layers, CalendarDays, Trophy, CalendarX2, UserCheck, TrendingUp, type LucideIcon } from "lucide-react"
 import { MokIcon } from "@/components/ui/mok-icon"
 import { BusinessCarousel } from "@/components/landing/business-carousel"
 
@@ -578,15 +578,17 @@ export default function LandingPage() {
             {/* Feature cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-16">
               {[
-                { emoji: "🏟️", title: "Canchas y tarifas", desc: "Configura tus canchas con tarifas valle y punta según día y horario. Precios automáticos sin cálculos manuales." },
-                { emoji: "📅", title: "Calendario de reservas", desc: "Vista por cancha con drag & drop. Mueve reservas entre canchas y el precio se recalcula automáticamente." },
-                { emoji: "🎽", title: "Membresías", desc: "Planes mensuales, trimestrales o anuales. Control de vencimientos y acceso diferenciado por tipo de socio." },
-                { emoji: "🎉", title: "Feriados con recargo", desc: "Marca días feriados y define si cierras o abres con recargo porcentual o monto fijo. Se aplica solo." },
-                { emoji: "👥", title: "CRM de socios", desc: "Historial de reservas y pagos por socio. Segmentación y comunicación directa desde el panel." },
-                { emoji: "📊", title: "Reportes de ocupación", desc: "Métricas de uso por cancha, ingresos por período y KPIs clave para tomar decisiones." },
-              ].map(({ emoji, title, desc }) => (
+                { icon: Layers,      title: "Canchas y tarifas",       desc: "Configura tus canchas con tarifas valle y punta según día y horario. Precios automáticos sin cálculos manuales." },
+                { icon: CalendarDays, title: "Calendario de reservas", desc: "Vista por cancha con drag & drop. Mueve reservas entre canchas y el precio se recalcula automáticamente." },
+                { icon: Trophy,      title: "Membresías",               desc: "Planes mensuales, trimestrales o anuales. Control de vencimientos y acceso diferenciado por tipo de socio." },
+                { icon: CalendarX2,  title: "Feriados con recargo",    desc: "Marca días feriados y define si cierras o abres con recargo porcentual o monto fijo. Se aplica solo." },
+                { icon: UserCheck,   title: "CRM de socios",           desc: "Historial de reservas y pagos por socio. Segmentación y comunicación directa desde el panel." },
+                { icon: TrendingUp,  title: "Reportes de ocupación",   desc: "Métricas de uso por cancha, ingresos por período y KPIs clave para tomar decisiones." },
+              ].map(({ icon: Icon, title, desc }) => (
                 <div key={title} className="rounded-2xl p-6 transition-all hover:scale-[1.02]" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,168,76,0.15)" }}>
-                  <div className="text-3xl mb-3">{emoji}</div>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: "rgba(201,168,76,0.15)" }}>
+                    <Icon className="w-5 h-5" style={{ color: "#C9A84C" }} />
+                  </div>
                   <h3 className="font-semibold text-white mb-2">{title}</h3>
                   <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>{desc}</p>
                 </div>
