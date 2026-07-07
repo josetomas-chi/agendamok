@@ -19,7 +19,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   if (body.type) {
-    await prisma.business.update({ where: { id }, data: { type: body.type } })
+    await prisma.business.update({ where: { id }, data: { businessType: body.type } })
   }
 
   if (body.plan || body.status) {
