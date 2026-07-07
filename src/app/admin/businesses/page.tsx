@@ -18,7 +18,7 @@ type Business = {
   createdAt: string
   isActive: boolean
   owner: { name: string; email: string }
-  type: string
+  businessType: string
   subscription: { plan: string; status: string } | null
   _count: { appointments: number; staff: number; clients: number }
 }
@@ -202,7 +202,7 @@ export default function AdminBusinessesPage() {
                 <td className="px-4 py-3 text-white/40">{new Date(b.createdAt).toLocaleDateString("es-CL")}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setSelected(b); setPlanValue(b.subscription?.plan || "FREE"); setStatusValue(b.subscription?.status || "ACTIVE"); setTypeValue(b.type || "REGULAR") }}>
+                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setSelected(b); setPlanValue(b.subscription?.plan || "FREE"); setStatusValue(b.subscription?.status || "ACTIVE"); setTypeValue(b.businessType || "REGULAR") }}>
                       Editar
                     </Button>
                     <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => window.open(`/book/${b.slug}`, "_blank")}>
