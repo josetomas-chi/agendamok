@@ -434,8 +434,17 @@ export default function LandingPage() {
         }
       `}</style>
 
+      {/* Sports announcement banner */}
+      <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-3 px-4 py-2 text-xs font-medium" style={{ background: "linear-gradient(90deg,#0d1b2a,#1a3352,#0d1b2a)" }}>
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider" style={{ background: "#C9A84C", color: "#0d1b2a" }}>NUEVO</span>
+        <span className="text-white/90">AgendaMok Sports — Canchas, reservas y membresías para clubes deportivos</span>
+        <Link href="#sports" className="hidden sm:inline-flex items-center gap-1 text-[#C9A84C] hover:underline">
+          Ver más <ArrowRight className="w-3 h-3" />
+        </Link>
+      </div>
+
       {/* Nav */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/8 backdrop-blur-xl" style={{ background: "rgba(40,40,44,0.88)" }}>
+      <header className="fixed top-8 left-0 right-0 z-50 border-b border-white/8 backdrop-blur-xl" style={{ background: "rgba(40,40,44,0.88)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
@@ -509,7 +518,7 @@ export default function LandingPage() {
             <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-sky-600/8 blur-[100px]" />
           </div>
 
-          <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-24">
+          <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-36">
             <div className="hero-badge inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-sky-400/25 bg-sky-500/8 text-xs text-sky-300 mb-10 tracking-wide">
               <span className="text-sky-400">✦</span>
               30 días gratis · Sin tarjeta · Sin cobros sorpresa
@@ -545,6 +554,55 @@ export default function LandingPage() {
 
         {/* Business carousel */}
         <BusinessCarousel />
+
+        {/* AgendaMok Sports section */}
+        <section id="sports" className="relative overflow-hidden py-24" style={{ background: "linear-gradient(135deg,#0d1b2a 0%,#0f2236 50%,#0d1b2a 100%)" }}>
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[120px]" style={{ background: "rgba(201,168,76,0.08)" }} />
+          </div>
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Header */}
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold tracking-wider mb-6" style={{ background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.3)", color: "#C9A84C" }}>
+                ✦ NUEVO
+              </div>
+              <h2 className="text-4xl sm:text-6xl font-bold mb-4">
+                <span className="text-white">AgendaMok </span>
+                <span style={{ color: "#C9A84C" }}>Sports</span>
+              </h2>
+              <p className="text-lg max-w-2xl mx-auto" style={{ color: "rgba(255,255,255,0.55)" }}>
+                La plataforma completa para clubes deportivos. Gestiona canchas, reservas por hora y membresías desde un solo lugar.
+              </p>
+            </div>
+
+            {/* Feature cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-16">
+              {[
+                { emoji: "🏟️", title: "Canchas y tarifas", desc: "Configura tus canchas con tarifas valle y punta según día y horario. Precios automáticos sin cálculos manuales." },
+                { emoji: "📅", title: "Calendario de reservas", desc: "Vista por cancha con drag & drop. Mueve reservas entre canchas y el precio se recalcula automáticamente." },
+                { emoji: "🎽", title: "Membresías", desc: "Planes mensuales, trimestrales o anuales. Control de vencimientos y acceso diferenciado por tipo de socio." },
+                { emoji: "🎉", title: "Feriados con recargo", desc: "Marca días feriados y define si cierras o abres con recargo porcentual o monto fijo. Se aplica solo." },
+                { emoji: "👥", title: "CRM de socios", desc: "Historial de reservas y pagos por socio. Segmentación y comunicación directa desde el panel." },
+                { emoji: "📊", title: "Reportes de ocupación", desc: "Métricas de uso por cancha, ingresos por período y KPIs clave para tomar decisiones." },
+              ].map(({ emoji, title, desc }) => (
+                <div key={title} className="rounded-2xl p-6 transition-all hover:scale-[1.02]" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,168,76,0.15)" }}>
+                  <div className="text-3xl mb-3">{emoji}</div>
+                  <h3 className="font-semibold text-white mb-2">{title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>{desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* CTA */}
+            <div className="text-center">
+              <Link href="/register" className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-semibold text-base transition-all hover:scale-105" style={{ background: "#C9A84C", color: "#0d1b2a" }}>
+                Probar AgendaMok Sports gratis
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <p className="mt-4 text-sm" style={{ color: "rgba(255,255,255,0.35)" }}>30 días gratis · Sin tarjeta</p>
+            </div>
+          </div>
+        </section>
 
         <section className="relative overflow-hidden">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
