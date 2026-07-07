@@ -18,6 +18,7 @@ type Business = {
   createdAt: string
   isActive: boolean
   owner: { name: string; email: string }
+  type: string
   subscription: { plan: string; status: string } | null
   _count: { appointments: number; staff: number; clients: number }
 }
@@ -29,6 +30,7 @@ export default function AdminBusinessesPage() {
   const [selected, setSelected] = useState<Business | null>(null)
   const [planValue, setPlanValue] = useState("")
   const [statusValue, setStatusValue] = useState("")
+  const [typeValue, setTypeValue] = useState("REGULAR")
   const [saving, setSaving] = useState(false)
   const [newOpen, setNewOpen] = useState(false)
   const [newForm, setNewForm] = useState({ ownerName: "", ownerEmail: "", businessName: "", slug: "", category: "", plan: "FREE" })
@@ -63,7 +65,7 @@ export default function AdminBusinessesPage() {
     await fetch(`/api/admin/businesses/${selected.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: planValue, status: statusValue }),
+      body: JSON.stringify({ plan: planValue, status: statusValue, type: typeValue }),
     })
     toast.success("Plan actualizado")
     setSelected(null)
@@ -200,7 +202,7 @@ export default function AdminBusinessesPage() {
                 <td className="px-4 py-3 text-white/40">{new Date(b.createdAt).toLocaleDateString("es-CL")}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setSelected(b); setPlanValue(b.subscription?.plan || "FREE"); setStatusValue(b.subscription?.status || "ACTIVE") }}>
+                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setSelected(b); setPlanValue(b.subscription?.plan || "FREE"); setStatusValue(b.subscription?.status || "ACTIVE"); setTypeValue(b.type || "REGULAR") }}>
                       Editar
                     </Button>
                     <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => window.open(`/book/${b.slug}`, "_blank")}>
@@ -307,6 +309,16 @@ export default function AdminBusinessesPage() {
                   <SelectItem value="FREE">Inicial — gratis 3 meses</SelectItem>
                   <SelectItem value="PRO">Pro — $9.900/mes</SelectItem>
                   <SelectItem value="ENTERPRISE">Enterprise — $29.900/mes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium">Tipo de negocio</p>
+              <Select value={typeValue} onValueChange={v => setTypeValue(v ?? "REGULAR")}>
+                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent align="start" sideOffset={4} className="w-[var(--radix-select-trigger-width)]">
+                  <SelectItem value="REGULAR">Regular (AgendaMok)</SelectItem>
+                  <SelectItem value="SPORTS_CLUB">Club Deportivo</SelectItem>
                 </SelectContent>
               </Select>
             </div>
