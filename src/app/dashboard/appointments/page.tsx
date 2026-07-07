@@ -13,7 +13,7 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
 type Appointment = {
-  id: string; startTime: string; endTime: string; status: string; notes: string | null
+  id: string; startTime: string; endTime: string; status: string; notes: string | null; price?: number | null
   service: { name: string; color: string; duration: number; price: number }
   staff: { user: { name: string | null } }
   client: { id: string; name: string; email: string | null; phone: string | null }
@@ -318,7 +318,7 @@ export default function AppointmentsPage() {
                 <div className="w-2 h-12 rounded-full flex-shrink-0" style={{ backgroundColor: selected.service.color }} />
                 <div>
                   <p className="font-semibold">{selected.service.name}</p>
-                  <p className="text-sm text-muted-foreground">{selected.service.duration} min • ${Number(selected.service.price).toLocaleString("es-CL")}</p>
+                  <p className="text-sm text-muted-foreground">{selected.service.duration} min • ${Number(selected.price ?? selected.service.price).toLocaleString("es-CL")}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">

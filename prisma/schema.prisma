@@ -197,11 +197,12 @@ model VerificationToken {
 // ─── BUSINESS ─────────────────────────────────────────────────────────────────
 
 model Business {
-  id          String    @id @default(cuid())
-  ownerId     String    @unique
-  name        String
-  slug        String    @unique
-  category    String
+  id           String    @id @default(cuid())
+  ownerId      String    @unique
+  name         String
+  slug         String    @unique
+  category     String
+  businessType String    @default("GENERAL")
   description String?   @db.Text
   logo        String?
   website     String?
@@ -253,6 +254,8 @@ model Business {
   courtBookings             CourtBooking[]
   membershipPlans           MembershipPlan[]
   clientMemberships         ClientMembership[]
+  clubSettings              ClubSettings?
+  clubHolidays              ClubHoliday[]
   apiKeys                   ApiKey[]
   invoices                  Invoice[]
 
@@ -468,6 +471,7 @@ model Appointment {
   status        AppointmentStatus @default(PENDING)
   notes         String?           @db.Text
   internalNotes String?           @db.Text
+  price         Float?
   googleEventId           String?
   cancelToken              String?           @unique
   whatsappReminderSentAt   DateTime?
@@ -808,6 +812,7 @@ model Court {
   description String?  @db.Text
   color       String   @default("#38bdf8")
   isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -892,4 +897,38 @@ model ClientMembership {
   @@index([businessId])
   @@index([clientId])
   @@map("client_memberships")
+}
+
+model ClubSettings {
+  id          String   @id @default(cuid())
+  businessId  String   @unique
+  clubName    String?
+  description String?  @db.Text
+  address     String?
+  phone       String?
+  website     String?
+  openDays    Int[]    @default([1,2,3,4,5,6])
+  openTime    String   @default("08:00")
+  closeTime   String   @default("22:00")
+  slotMinutes Int      @default(60)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("club_settings")
+}
+
+model ClubHoliday {
+  id             String   @id @default(cuid())
+  businessId     String
+  date           DateTime @db.Date
+  name           String
+  type           String   @default("CLOSED")   // CLOSED | SURCHARGE
+  surchargeType  String?                        // PERCENT | FIXED
+  surchargeValue Float?
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("club_holidays")
 }

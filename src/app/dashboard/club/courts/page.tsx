@@ -1,6 +1,6 @@
 "use client"
-import React, { useState, useEffect, useCallback } from "react"
-import { Plus, Pencil, Trash2, Trophy, X } from "lucide-react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
+import { Plus, Pencil, Trash2, Trophy, X, GripVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { toast } from "sonner"
@@ -19,6 +19,10 @@ export default function CourtsPage() {
   const [editing, setEditing] = useState<Court | null>(null)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ name: "", sport: "", description: "", color: "#38bdf8", pricingRules: [{ ...EMPTY_RULE }] as PricingRule[] })
+  const dragIndex = useRef<number | null>(null)
+  const [dragOver, setDragOver] = useState<number | null>(null)
+  const [futureBookings, setFutureBookings] = useState(0)
+  const [updateFutureBookings, setUpdateFutureBookings] = useState(false)
 
   const load = useCallback(async (bid: string) => {
     const r = await fetch(`/api/businesses/${bid}/courts`)
@@ -28,9 +32,8 @@ export default function CourtsPage() {
   }, [])
 
   useEffect(() => {
-    fetch("/api/auth/session").then(r => r.json()).then(s => {
-      const bid = s?.user?.businessId
-      if (bid) { setBusinessId(bid); load(bid) }
+    fetch("/api/me/business").then(r => r.json()).then(d => {
+      if (d.businessId) { setBusinessId(d.businessId); load(d.businessId) }
     })
   }, [load])
 
@@ -40,10 +43,19 @@ export default function CourtsPage() {
     setOpen(true)
   }
 
-  function openEdit(c: Court) {
+  async function openEdit(c: Court) {
     setEditing(c)
     setForm({ name: c.name, sport: c.sport || "", description: c.description || "", color: c.color, pricingRules: c.pricingRules.length > 0 ? c.pricingRules.map(r => ({ ...r })) : [{ ...EMPTY_RULE }] })
+    setFutureBookings(0)
+    setUpdateFutureBookings(false)
     setOpen(true)
+    const today = new Date(); today.setHours(0, 0, 0, 0); const from = today.toISOString()
+    const r = await fetch(`/api/businesses/${businessId}/court-bookings?from=${from}&to=2099-01-01T00:00:00.000Z`)
+    if (r.ok) {
+      const d = await r.json()
+      const count = (d.bookings as { courtId?: string; court?: { id: string } }[] || []).filter(b => (b.courtId ?? b.court?.id) === c.id).length
+      setFutureBookings(count)
+    }
   }
 
   async function handleSave() {
@@ -52,8 +64,38 @@ export default function CourtsPage() {
     const url = editing ? `/api/businesses/${businessId}/courts/${editing.id}` : `/api/businesses/${businessId}/courts`
     const method = editing ? "PATCH" : "POST"
     const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) })
-    if (r.ok) { toast.success(editing ? "Cancha actualizada" : "Cancha creada"); setOpen(false); load(businessId) }
-    else toast.error("Error al guardar")
+    if (r.ok) {
+      if (editing && updateFutureBookings && futureBookings > 0) {
+        const today = new Date(); today.setHours(0, 0, 0, 0); const from = today.toISOString()
+        const br = await fetch(`/api/businesses/${businessId}/court-bookings?from=${from}&to=2099-01-01T00:00:00.000Z`)
+        if (br.ok) {
+          const bd = await br.json()
+          const future = (bd.bookings as { id: string; courtId?: string; court?: { id: string }; startTime: string }[] || []).filter(b => (b.courtId ?? b.court?.id) === editing.id)
+          await Promise.all(future.map(b => {
+            const start = new Date(b.startTime)
+            const dayOfWeek = start.getDay()
+            const timeStr = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`
+            const matchingRule = form.pricingRules.find(rule =>
+              rule.days.includes(dayOfWeek) &&
+              timeStr >= rule.startTime &&
+              timeStr < rule.endTime
+            )
+            if (!matchingRule) return Promise.resolve()
+            return fetch(`/api/businesses/${businessId}/court-bookings/${b.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ price: matchingRule.price }),
+            })
+          }))
+          toast.success(`Cancha actualizada · ${future.length} reserva${future.length !== 1 ? "s" : ""} actualizada${future.length !== 1 ? "s" : ""}`)
+        }
+      } else {
+        toast.success(editing ? "Cancha actualizada" : "Cancha creada")
+      }
+      setOpen(false); load(businessId)
+    } else {
+      const d = await r.json().catch(() => ({})); toast.error(d.error || `Error ${r.status} al guardar`)
+    }
     setSaving(false)
   }
 
@@ -62,6 +104,33 @@ export default function CourtsPage() {
     await fetch(`/api/businesses/${businessId}/courts/${c.id}`, { method: "DELETE" })
     toast.success("Cancha desactivada")
     load(businessId)
+  }
+
+  function handleDragStart(e: React.DragEvent, idx: number) {
+    e.dataTransfer.effectAllowed = "move"
+    e.dataTransfer.setData("text/plain", String(idx))
+    dragIndex.current = idx
+  }
+
+  function handleDragOver(e: React.DragEvent, idx: number) {
+    e.preventDefault()
+    setDragOver(idx)
+  }
+
+  async function handleDrop(targetIdx: number) {
+    const from = dragIndex.current
+    if (from === null || from === targetIdx) { setDragOver(null); dragIndex.current = null; return }
+    const next = [...courts]
+    const [moved] = next.splice(from, 1)
+    next.splice(targetIdx, 0, moved)
+    setCourts(next)
+    setDragOver(null)
+    dragIndex.current = null
+    await fetch(`/api/businesses/${businessId}/courts/reorder`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order: next.map(c => c.id) }),
+    })
   }
 
   function updateRule(idx: number, field: keyof PricingRule, value: string | number | number[]) {
@@ -98,20 +167,43 @@ export default function CourtsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {courts.map(c => (
-            <div key={c.id} className={`rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden ${!c.isActive ? "opacity-50" : ""}`}>
+          {courts.map((c, idx) => (
+            <div key={c.id}
+              draggable
+              onDragStart={e => handleDragStart(e, idx)}
+              onDragOver={e => handleDragOver(e, idx)}
+              onDragLeave={() => setDragOver(null)}
+              onDrop={() => handleDrop(idx)}
+              onDragEnd={() => { setDragOver(null); dragIndex.current = null }}
+              className={`rounded-2xl overflow-hidden transition-all select-none flex flex-col ${!c.isActive ? "opacity-50" : ""}`}
+              style={{
+                cursor: "grab",
+                background: "#0d1b2a",
+                border: dragOver === idx ? `2px solid #C9A84C` : "1px solid rgba(201,168,76,0.2)",
+                boxShadow: dragOver === idx ? "0 4px 20px rgba(201,168,76,0.25)" : "0 2px 8px rgba(0,0,0,0.2)",
+                transform: dragOver === idx ? "scale(1.02)" : "scale(1)",
+                minHeight: "160px",
+              }}
+            >
               <div className="h-1.5" style={{ background: c.color }} />
               <div className="p-5">
                 <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="font-semibold text-white">{c.name}</p>
-                    {c.sport && <p className="text-xs text-white/40 mt-0.5">{c.sport}</p>}
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-4 h-4 flex-shrink-0" style={{ color: "rgba(255,255,255,0.2)" }} />
+                    <div>
+                      <p className="font-bold text-sm text-white">{c.name}</p>
+                      {c.sport && <p className="text-xs mt-0.5 font-semibold uppercase tracking-wide" style={{ color: "#C9A84C" }}>{c.sport}</p>}
+                    </div>
                   </div>
                   <div className="flex gap-1.5">
-                    <button onClick={() => openEdit(c)} className="w-7 h-7 rounded-lg border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/30 transition-colors">
+                    <button onClick={e => { e.stopPropagation(); openEdit(c) }}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+                      style={{ border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.35)" }}>
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => handleDelete(c)} className="w-7 h-7 rounded-lg border border-white/10 flex items-center justify-center text-white/40 hover:text-red-400 hover:border-red-400/30 transition-colors">
+                    <button onClick={e => { e.stopPropagation(); handleDelete(c) }}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+                      style={{ border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.35)" }}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -120,13 +212,13 @@ export default function CourtsPage() {
                   <div className="space-y-1.5">
                     {c.pricingRules.map((r, i) => (
                       <div key={i} className="flex items-center justify-between text-xs">
-                        <span className="text-white/40">{r.name} · {r.startTime}–{r.endTime}</span>
-                        <span className="text-sky-400 font-medium">${Number(r.price).toLocaleString("es-CL")}/hr</span>
+                        <span style={{ color: "rgba(255,255,255,0.45)" }}>{r.name} · {r.startTime}–{r.endTime}</span>
+                        <span className="font-bold" style={{ color: "#C9A84C" }}>${Number(r.price).toLocaleString("es-CL")}/hr</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-white/25">Sin tarifas configuradas</p>
+                  <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>Sin tarifas configuradas</p>
                 )}
               </div>
             </div>
@@ -148,6 +240,19 @@ export default function CourtsPage() {
           </div>
 
           <div className="px-5 pb-5 space-y-4 pt-4">
+            {/* Advertencia reservas futuras */}
+            {editing && futureBookings > 0 && (
+              <div className="rounded-lg px-3.5 py-3 space-y-2.5" style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)" }}>
+                <p className="text-[12px] leading-snug" style={{ color: "#fbbf24" }}>
+                  <span className="font-bold">⚠ {futureBookings} reserva{futureBookings !== 1 ? "s" : ""} futura{futureBookings !== 1 ? "s" : ""}</span> no actualizarán su precio automáticamente al guardar los cambios.
+                </p>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={updateFutureBookings} onChange={e => setUpdateFutureBookings(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded accent-amber-400" />
+                  <span className="text-[12px] font-medium" style={{ color: "#fbbf24" }}>Actualizar precio en reservas futuras de esta cancha</span>
+                </label>
+              </div>
+            )}
             {/* Nombre + Deporte */}
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
@@ -155,9 +260,16 @@ export default function CourtsPage() {
                   placeholder="Nombre de la cancha *"
                   className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white placeholder-white/20 focus:outline-none focus:border-sky-500/60" />
               </div>
-              <input value={form.sport} onChange={e => setForm(f => ({ ...f, sport: e.target.value }))}
-                placeholder="Deporte (ej: Pádel)"
-                className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white placeholder-white/20 focus:outline-none focus:border-sky-500/60" />
+              <>
+                <input list="sports-list" value={form.sport} onChange={e => setForm(f => ({ ...f, sport: e.target.value }))}
+                  placeholder="Deporte (ej: Pádel)"
+                  className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white placeholder-white/20 focus:outline-none focus:border-sky-500/60" />
+                <datalist id="sports-list">
+                  {["Pádel","Tenis","Fútbol","Básquetbol","Volleyball","Squash","Badminton","Tenis de mesa","Natación","Rugby","Hockey","Atletismo","Ciclismo","Boxeo","Artes marciales","CrossFit","Pilates","Yoga"].map(s => (
+                    <option key={s} value={s} />
+                  ))}
+                </datalist>
+              </>
               <div className="flex items-center gap-3 h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4">
                 <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
                   className="w-6 h-6 rounded cursor-pointer bg-transparent border-0 p-0" />
@@ -169,10 +281,27 @@ export default function CourtsPage() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold text-white/50 uppercase tracking-wide">Tarifas</p>
-                <button onClick={() => setForm(f => ({ ...f, pricingRules: [...f.pricingRules, { ...EMPTY_RULE }] }))}
-                  className="flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 transition-colors">
-                  <Plus className="w-3.5 h-3.5" /> Agregar tarifa
-                </button>
+                <div className="flex items-center gap-3">
+                  {courts.filter(c => c.id !== editing?.id && c.pricingRules.length > 0).length > 0 && (
+                    <select
+                      defaultValue=""
+                      onChange={e => {
+                        const source = courts.find(c => c.id === e.target.value)
+                        if (source) setForm(f => ({ ...f, pricingRules: source.pricingRules.map(r => ({ ...r, id: undefined })) }))
+                      }}
+                      className="h-6 rounded-lg border border-white/[0.08] bg-white/[0.05] px-2 text-[11px] text-white/50 focus:outline-none focus:border-sky-500/60 appearance-none cursor-pointer"
+                    >
+                      <option value="" disabled>Copiar tarifas de…</option>
+                      {courts.filter(c => c.id !== editing?.id && c.pricingRules.length > 0).map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  )}
+                  <button onClick={() => setForm(f => ({ ...f, pricingRules: [...f.pricingRules, { ...EMPTY_RULE }] }))}
+                    className="flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 transition-colors">
+                    <Plus className="w-3.5 h-3.5" /> Agregar tarifa
+                  </button>
+                </div>
               </div>
               <div className="space-y-3">
                 {form.pricingRules.map((rule, idx) => (
@@ -205,9 +334,11 @@ export default function CourtsPage() {
                         className="h-8 rounded-lg border border-white/[0.08] bg-white/[0.05] px-2 text-xs text-white focus:outline-none focus:border-sky-500/60 [color-scheme:dark]" />
                       <div className="relative">
                         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-white/30">$</span>
-                        <input type="number" value={rule.price} onFocus={e => e.target.select()} onChange={e => updateRule(idx, "price", parseFloat(e.target.value) || 0)}
+                        <input type="text" inputMode="numeric" value={rule.price === 0 ? "" : rule.price}
+                          onFocus={e => e.target.select()}
+                          onChange={e => updateRule(idx, "price", parseFloat(e.target.value.replace(/[^0-9.]/g, "")) || 0)}
                           placeholder="0"
-                          className="w-full h-8 rounded-lg border border-white/[0.08] bg-white/[0.05] pl-6 pr-2 text-xs text-white focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" />
+                          className="w-full h-8 rounded-lg border border-white/[0.08] bg-white/[0.05] pl-6 pr-2 text-xs text-white focus:outline-none focus:border-sky-500/60" />
                       </div>
                     </div>
                     <p className="text-[10px] text-white/25">Precio por hora en este rango</p>

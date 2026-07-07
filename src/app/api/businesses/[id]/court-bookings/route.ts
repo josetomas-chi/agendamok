@@ -54,7 +54,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
   }
 
-  const price = pricePerHour * durationHours
+  let price = pricePerHour * durationHours
+
+  // Aplicar recargo si el día es feriado
+  const holiday = await prisma.clubHoliday.findFirst({
+    where: { businessId: id, date: { gte: new Date(start.toDateString()), lt: new Date(new Date(start.toDateString()).getTime() + 86400000) }, type: "SURCHARGE" },
+  })
+  if (holiday && holiday.surchargeValue) {
+    if (holiday.surchargeType === "PERCENT") price = price * (1 + holiday.surchargeValue / 100)
+    else if (holiday.surchargeType === "FIXED") price = price + holiday.surchargeValue
+  }
 
   const booking = await prisma.courtBooking.create({
     data: { businessId: id, courtId, clientId: clientId || null, startTime: start, endTime: end, price, notes, status: "CONFIRMED" },

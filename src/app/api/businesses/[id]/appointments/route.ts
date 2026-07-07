@@ -171,6 +171,22 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       )
     }
 
+    // Apply holiday surcharge if applicable
+    let appointmentPrice: number | undefined
+    if (service.price) {
+      const dayStart = new Date(startTime.toDateString())
+      const dayEnd = new Date(dayStart.getTime() + 86400000)
+      const holiday = await prisma.clubHoliday.findFirst({
+        where: { businessId: id, date: { gte: dayStart, lt: dayEnd }, type: "SURCHARGE" },
+      })
+      if (holiday?.surchargeValue) {
+        let p = Number(service.price)
+        if (holiday.surchargeType === "PERCENT") p = p * (1 + holiday.surchargeValue / 100)
+        else if (holiday.surchargeType === "FIXED") p = p + holiday.surchargeValue
+        appointmentPrice = p
+      }
+    }
+
     const appointment = await prisma.appointment.create({
       data: {
         businessId: id,
@@ -182,6 +198,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         endTime,
         status: data.status,
         notes: data.notes,
+        ...(appointmentPrice !== undefined && { price: appointmentPrice }),
       },
       include: {
         service: { select: { name: true, color: true } },

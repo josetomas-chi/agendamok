@@ -11,7 +11,7 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
 type Appointment = {
-  id: string; startTime: string; status: string
+  id: string; startTime: string; status: string; price?: number | null
   service: { name: string; price: number; color: string }
   staff: { user: { name: string | null } }
   client: { name: string }
@@ -66,7 +66,7 @@ export default function PaymentsPage() {
     setSaving(true)
     const r = await fetch(`/api/businesses/${businessId}/payments`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ appointmentId: selected.id, method, amount: selected.service.price }),
+      body: JSON.stringify({ appointmentId: selected.id, method, amount: (selected.price ?? selected.service.price) }),
     })
     if (r.ok) {
       const data = await r.json()
@@ -149,7 +149,7 @@ export default function PaymentsPage() {
                   <p className="text-sm text-muted-foreground">{a.service.name} • {format(new Date(a.startTime), "HH:mm")}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold">${Number(a.service.price).toLocaleString("es-AR")}</p>
+                  <p className="font-semibold">${Number(a.price ?? a.service.price).toLocaleString("es-AR")}</p>
                   {a.payment ? (
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PAYMENT_STATUS[a.payment.status] || ""}`}>
                       {a.payment.status === "PAID" ? METHOD_LABELS[a.payment.method] : "Pendiente"}
@@ -175,7 +175,7 @@ export default function PaymentsPage() {
               <div className="bg-muted/30 rounded-lg p-4 space-y-1">
                 <p className="font-semibold">{selected.client.name}</p>
                 <p className="text-sm text-muted-foreground">{selected.service.name}</p>
-                <p className="text-2xl font-bold mt-2">${Number(selected.service.price).toLocaleString("es-AR")}</p>
+                <p className="text-2xl font-bold mt-2">${Number((selected.price ?? selected.service.price)).toLocaleString("es-AR")}</p>
               </div>
               <div>
                 <p className="text-sm font-medium mb-2">Método de pago</p>

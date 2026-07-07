@@ -8,7 +8,7 @@ export async function GET() {
 
   const business = await prisma.business.findUnique({
     where: { ownerId: session.user.id },
-    select: { id: true, name: true, slug: true, currency: true, category: true, bsaleApiKey: true },
+    select: { id: true, name: true, slug: true, currency: true, category: true, bsaleApiKey: true, businessType: true },
   })
 
   if (!business) return NextResponse.json({ error: "No encontrado" }, { status: 404 })

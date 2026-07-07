@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import React, { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle2, AlertCircle, Loader2, Gift } from "lucide-react"
+import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle2, AlertCircle, Loader2, Gift, CalendarX2 } from "lucide-react"
 
 type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean }
 type PaymentSettings = { onlinePaymentsEnabled: boolean; hasCredentials: boolean }
@@ -39,6 +39,7 @@ function SettingsContent() {
     if (gcalStatus === "success") toast.success("Google Calendar conectado")
     if (gcalStatus === "error") toast.error("Error al conectar Google Calendar")
   }, [])
+  const [activeTab, setActiveTab] = useState("business")
   const [locating, setLocating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [subscribing, setSubscribing] = useState(false)
@@ -63,6 +64,12 @@ function SettingsContent() {
   const [loyaltyThreshold, setLoyaltyThreshold] = useState("500")
   const [segmentDiscounts, setSegmentDiscounts] = useState<Record<string, string>>({ VIP: "", INFLUENCER: "", FREQUENT: "", REGULAR: "", AT_RISK: "", NEW: "" })
   const [savingLoyalty, setSavingLoyalty] = useState(false)
+
+  // Holidays
+  type Holiday = { id: string; date: string; name: string; type: string; surchargeType: string | null; surchargeValue: number | null }
+  const [holidays, setHolidays] = useState<Holiday[]>([])
+  const [holidayForm, setHolidayForm] = useState({ date: "", name: "", type: "CLOSED", surchargeType: "PERCENT", surchargeValue: "" })
+  const [savingHoliday, setSavingHoliday] = useState(false)
 
   // API Keys
   type ApiKey = { id: string; name: string; key: string; isActive: boolean; lastUsedAt: string | null; createdAt: string }
@@ -89,6 +96,8 @@ function SettingsContent() {
       const kr = await fetch(`/api/businesses/${d.businessId}/api-keys`)
       const kd = await kr.json()
       setApiKeys(kd.keys || [])
+      // Load holidays
+      loadHolidays(d.businessId)
       // Load payment settings
       const pr = await fetch(`/api/businesses/${d.businessId}/payment-settings`)
       if (pr.ok) {
@@ -143,6 +152,38 @@ function SettingsContent() {
       if (next.has(keyId)) next.delete(keyId); else next.add(keyId)
       return next
     })
+  }
+
+  async function loadHolidays(bid: string) {
+    const r = await fetch(`/api/businesses/${bid}/club-holidays`)
+    if (r.ok) { const d = await r.json(); setHolidays(d.holidays || []) }
+  }
+
+  async function handleAddHoliday() {
+    if (!business || !holidayForm.date || !holidayForm.name) return
+    setSavingHoliday(true)
+    const body: Record<string, unknown> = { date: holidayForm.date, name: holidayForm.name, type: holidayForm.type }
+    if (holidayForm.type === "SURCHARGE") {
+      body.surchargeType = holidayForm.surchargeType
+      body.surchargeValue = Number(holidayForm.surchargeValue) || 0
+    }
+    const r = await fetch(`/api/businesses/${business.id}/club-holidays`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    })
+    if (r.ok) {
+      const d = await r.json()
+      setHolidays(prev => [...prev, d.holiday].sort((a, b) => a.date.localeCompare(b.date)))
+      setHolidayForm({ date: "", name: "", type: "CLOSED", surchargeType: "PERCENT", surchargeValue: "" })
+      toast.success("Feriado agregado")
+    } else toast.error("Error al guardar feriado")
+    setSavingHoliday(false)
+  }
+
+  async function handleDeleteHoliday(id: string) {
+    if (!business || !confirm("Eliminar este feriado?")) return
+    await fetch(`/api/businesses/${business.id}/club-holidays/${id}`, { method: "DELETE" })
+    setHolidays(prev => prev.filter(h => h.id !== id))
+    toast.success("Feriado eliminado")
   }
 
   async function saveLoyalty() {
@@ -336,23 +377,37 @@ function SettingsContent() {
         <div><h1 className="page-title">Configuracion</h1><p className="page-subtitle">Ajusta tu negocio y preferencias</p></div>
       </div>
 
-      <Tabs defaultValue="business">
-        <div className="overflow-x-auto">
-          <TabsList>
-            <TabsTrigger value="business" className="gap-2"><Building2 className="w-4 h-4" />Negocio</TabsTrigger>
-            <TabsTrigger value="booking" className="gap-2"><Globe className="w-4 h-4" />Reservas</TabsTrigger>
-            <TabsTrigger value="notifications" className="gap-2"><Bell className="w-4 h-4" />Avisos</TabsTrigger>
-            <TabsTrigger value="integrations" className="gap-2"><Link2 className="w-4 h-4" />Integraciones</TabsTrigger>
-            <TabsTrigger value="payments" className="gap-2"><Banknote className="w-4 h-4" />Cobros</TabsTrigger>
-            <TabsTrigger value="billing" className="gap-2"><CreditCard className="w-4 h-4" />Plan</TabsTrigger>
-            <TabsTrigger value="invoicing" className="gap-2"><FileText className="w-4 h-4" />Facturación</TabsTrigger>
-            <TabsTrigger value="loyalty" className="gap-2"><Gift className="w-4 h-4" />Fidelización</TabsTrigger>
-            <TabsTrigger value="api" className="gap-2"><Key className="w-4 h-4" />API</TabsTrigger>
-          </TabsList>
+      <div>
+        <div className="flex flex-wrap gap-2">
+          {([
+            { value: "business",      icon: Building2,  label: "Negocio" },
+            { value: "booking",       icon: Globe,      label: "Reservas" },
+            { value: "notifications", icon: Bell,       label: "Avisos" },
+            { value: "integrations",  icon: Link2,      label: "Integraciones" },
+            { value: "payments",      icon: Banknote,   label: "Cobros" },
+            { value: "billing",       icon: CreditCard, label: "Plan" },
+            { value: "invoicing",     icon: FileText,   label: "Facturación" },
+            { value: "loyalty",       icon: Gift,       label: "Fidelización" },
+            { value: "api",           icon: Key,        label: "API" },
+            { value: "holidays",      icon: CalendarX2, label: "Feriados" },
+          ] as { value: string; icon: React.ElementType; label: string }[]).map(({ value, icon: Icon, label }) => (
+            <button
+              key={value}
+              onClick={() => setActiveTab(value)}
+              className={`flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl border transition-all min-w-[76px] ${
+                activeTab === value
+                  ? "bg-sky-500/15 border-sky-400/60 text-sky-500 shadow-[0_0_14px_rgba(56,189,248,0.15)]"
+                  : "bg-muted border-border text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              <span className="text-xs font-medium">{label}</span>
+            </button>
+          ))}
         </div>
 
         {/* Business info */}
-        <TabsContent value="business" className="pt-4">
+        {activeTab === "business" && <div className="pt-4">
           <Card>
             <CardHeader><CardTitle>Informacion del negocio</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -419,10 +474,10 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>}
 
         {/* Booking page */}
-        <TabsContent value="booking" className="pt-4 space-y-4">
+        {activeTab === "booking" && <div className="pt-4 space-y-4">
           {/* Link directo */}
           <Card>
             <CardHeader>
@@ -547,10 +602,10 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>}
 
         {/* API */}
-        <TabsContent value="api" className="pt-4 space-y-5">
+        {activeTab === "api" && <div className="pt-4 space-y-5">
           <Card>
             <CardHeader>
               <CardTitle>API Keys</CardTitle>
@@ -627,10 +682,10 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>}
 
         {/* Notifications */}
-        <TabsContent value="notifications" className="pt-4 space-y-4">
+        {activeTab === "notifications" && <div className="pt-4 space-y-4">
           {/* Status */}
           <Card>
             <CardHeader><CardTitle>Notificaciones automáticas</CardTitle><CardDescription>Mensajes que se envían sin intervención manual</CardDescription></CardHeader>
@@ -723,10 +778,10 @@ function SettingsContent() {
           >
             {savingNotif ? "Guardando..." : "Guardar configuración"}
           </Button>
-        </TabsContent>
+        </div>}
 
         {/* Billing */}
-        <TabsContent value="billing" className="pt-4 space-y-4">
+        {activeTab === "billing" && <div className="pt-4 space-y-4">
           {/* Current plan */}
           <Card>
             <CardHeader><CardTitle>Plan actual</CardTitle></CardHeader>
@@ -775,7 +830,7 @@ function SettingsContent() {
             {(Object.entries(PLAN_INFO) as [string, typeof PLAN_INFO[string]][]).map(([key, plan]) => {
               const isCurrent = key === currentPlan && subscription?.status === "ACTIVE"
               return (
-                <Card key={key} className={`relative border ${isCurrent ? "border-sky-400/50 bg-sky-500/5" : "border-white/10 bg-white/[0.02]"}`}>
+                <Card key={key} className={`relative border ${isCurrent ? "border-sky-400/50 bg-sky-500/5" : ""}`}>
                   {isCurrent && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-sky-500 rounded-full text-xs font-semibold text-white">
                       Plan actual
@@ -783,15 +838,15 @@ function SettingsContent() {
                   )}
                   <CardContent className="p-5 space-y-3 pt-6">
                     <div>
-                      <p className="font-bold text-lg text-white">Plan {plan.label}</p>
-                      <p className="text-2xl font-bold text-sky-400 mt-1">
-                        {plan.price.split("/")[0]} <span className="text-sm font-normal text-white/40">/mes + IVA</span>
+                      <p className="font-bold text-lg">Plan {plan.label}</p>
+                      <p className="text-2xl font-bold text-sky-500 mt-1">
+                        {plan.price.split("/")[0]} <span className="text-sm font-normal text-muted-foreground">/mes + IVA</span>
                       </p>
                     </div>
-                    <ul className="text-sm space-y-1.5 text-white/60">
+                    <ul className="text-sm space-y-1.5 text-muted-foreground">
                       {plan.features.map(f => (
                         <li key={f} className="flex items-center gap-2">
-                          <span className="text-sky-400">✓</span> {f}
+                          <span className="text-sky-500">✓</span> {f}
                         </li>
                       ))}
                     </ul>
@@ -817,10 +872,10 @@ function SettingsContent() {
           <p className="text-xs text-white/30">
             Pagos procesados de forma segura a través de Flow. Tu tarjeta se registra una vez y los cobros son automáticos cada mes. Puedes cancelar en cualquier momento desde esta pantalla.
           </p>
-        </TabsContent>
+        </div>}
 
         {/* Cobros online tab */}
-        <TabsContent value="payments" className="pt-4 space-y-5">
+        {activeTab === "payments" && <div className="pt-4 space-y-5">
           <Card className="bg-[#2c2c30] border-white/10">
             <CardHeader>
               <CardTitle className="text-base">Cobros online a tus clientes</CardTitle>
@@ -915,10 +970,10 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>}
 
         {/* Integrations */}
-        <TabsContent value="integrations" className="pt-4 space-y-4">
+        {activeTab === "integrations" && <div className="pt-4 space-y-4">
           <Card className="bg-[#2c2c30] border-white/10">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -986,10 +1041,10 @@ function SettingsContent() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>}
 
         {/* ── Facturación ── */}
-        <TabsContent value="invoicing" className="pt-4 space-y-5">
+        {activeTab === "invoicing" && <div className="pt-4 space-y-5">
           <Card className="bg-[#2c2c30] border-white/10">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
@@ -1099,10 +1154,10 @@ function SettingsContent() {
               </ol>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>}
 
         {/* Fidelización */}
-        <TabsContent value="loyalty" className="pt-4 space-y-4">
+        {activeTab === "loyalty" && <div className="pt-4 space-y-4">
           {/* Puntos de fidelización */}
           <Card className="bg-[#2c2c30] border-white/10">
             <CardHeader className="pb-3">
@@ -1182,8 +1237,77 @@ function SettingsContent() {
             {savingLoyalty && <Loader2 className="w-4 h-4 animate-spin" />}
             Guardar configuración
           </button>
-        </TabsContent>
-      </Tabs>
+        </div>}
+
+        {activeTab === "holidays" && <div className="pt-4 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Días feriados</CardTitle>
+              <CardDescription>Configura qué días el negocio cierra o aplica un recargo especial.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label>Fecha</Label>
+                  <Input type="date" value={holidayForm.date} onChange={e => setHolidayForm(p => ({ ...p, date: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Nombre del feriado</Label>
+                  <Input placeholder="ej. Año Nuevo" value={holidayForm.name} onChange={e => setHolidayForm(p => ({ ...p, name: e.target.value }))} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label>Tipo</Label>
+                <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={holidayForm.type} onChange={e => setHolidayForm(p => ({ ...p, type: e.target.value }))}>
+                  <option value="CLOSED">Cerrado</option>
+                  <option value="SURCHARGE">Abierto con recargo</option>
+                </select>
+              </div>
+              {holidayForm.type === "SURCHARGE" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label>Tipo de recargo</Label>
+                    <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={holidayForm.surchargeType} onChange={e => setHolidayForm(p => ({ ...p, surchargeType: e.target.value }))}>
+                      <option value="PERCENT">Porcentaje (%)</option>
+                      <option value="FIXED">Monto fijo ($)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>{holidayForm.surchargeType === "PERCENT" ? "Porcentaje" : "Monto"}</Label>
+                    <Input type="number" min="0" placeholder={holidayForm.surchargeType === "PERCENT" ? "ej. 20" : "ej. 5000"} value={holidayForm.surchargeValue} onChange={e => setHolidayForm(p => ({ ...p, surchargeValue: e.target.value }))} />
+                  </div>
+                </div>
+              )}
+              <Button onClick={handleAddHoliday} disabled={savingHoliday || !holidayForm.date || !holidayForm.name} className="gap-2">
+                <Plus className="w-4 h-4" />{savingHoliday ? "Guardando..." : "Agregar feriado"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {holidays.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Feriados configurados</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {holidays.map(h => (
+                    <div key={h.id} className="flex items-center justify-between rounded-lg border px-4 py-3">
+                      <div>
+                        <div className="font-medium">{h.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {new Date(h.date).toLocaleDateString("es-CL", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" })}
+                          {" · "}
+                          {h.type === "CLOSED" ? "Cerrado" : h.surchargeType === "PERCENT" ? `+${h.surchargeValue}%` : `+$${h.surchargeValue?.toLocaleString("es-CL")}`}
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteHoliday(h.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>}
+      </div>
     </div>
   )
 }

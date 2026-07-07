@@ -8,16 +8,59 @@ export async function PATCH(req: Request, { params }: Params) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id, bookingId } = await params
-  const body = await req.json()
-  const booking = await prisma.courtBooking.update({
-    where: { id: bookingId, businessId: id },
-    data: body,
-    include: {
-      court: { select: { id: true, name: true, sport: true, color: true } },
-      client: { select: { id: true, name: true, email: true, phone: true } },
-    },
-  })
-  return NextResponse.json({ booking })
+  const { clientId, courtId, startTime, endTime, notes, status, price } = await req.json()
+
+  try {
+    const data: Record<string, unknown> = {}
+    if (clientId !== undefined) data.clientId = clientId || null
+    if (courtId !== undefined) data.courtId = courtId
+    if (startTime !== undefined) data.startTime = new Date(startTime)
+    if (endTime !== undefined) data.endTime = new Date(endTime)
+    if (notes !== undefined) data.notes = notes || null
+    if (status !== undefined) data.status = status
+    if (price !== undefined) data.price = price
+
+    // Recalcular precio si cambia cancha o horario (y no viene precio explícito)
+    if (price === undefined && (courtId !== undefined || startTime !== undefined || endTime !== undefined)) {
+      const current = await prisma.courtBooking.findUnique({ where: { id: bookingId }, select: { courtId: true, startTime: true, endTime: true } })
+      if (current) {
+        const resolvedCourtId = courtId ?? current.courtId
+        const resolvedStart = startTime ? new Date(startTime) : current.startTime
+        const resolvedEnd = endTime ? new Date(endTime) : current.endTime
+        const court = await prisma.court.findUnique({ where: { id: resolvedCourtId }, include: { pricingRules: true } })
+        if (court) {
+          const dayOfWeek = resolvedStart.getDay()
+          const timeStr = `${String(resolvedStart.getHours()).padStart(2, "0")}:${String(resolvedStart.getMinutes()).padStart(2, "0")}`
+          const durationHours = (resolvedEnd.getTime() - resolvedStart.getTime()) / (1000 * 60 * 60)
+          const rule = court.pricingRules.find(r => r.days.includes(dayOfWeek) && timeStr >= r.startTime && timeStr < r.endTime)
+          if (rule) {
+            let calculatedPrice = Number(rule.price) * durationHours
+            const holiday = await prisma.clubHoliday.findFirst({
+              where: { businessId: id, date: { gte: new Date(resolvedStart.toDateString()), lt: new Date(new Date(resolvedStart.toDateString()).getTime() + 86400000) }, type: "SURCHARGE" },
+            })
+            if (holiday?.surchargeValue) {
+              if (holiday.surchargeType === "PERCENT") calculatedPrice = calculatedPrice * (1 + holiday.surchargeValue / 100)
+              else if (holiday.surchargeType === "FIXED") calculatedPrice = calculatedPrice + holiday.surchargeValue
+            }
+            data.price = calculatedPrice
+          }
+        }
+      }
+    }
+
+    const booking = await prisma.courtBooking.update({
+      where: { id: bookingId, businessId: id },
+      data,
+      include: {
+        court: { select: { id: true, name: true, sport: true, color: true } },
+        client: { select: { id: true, name: true, email: true, phone: true } },
+      },
+    })
+    return NextResponse.json({ booking })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
 }
 
 export async function DELETE(_: Request, { params }: Params) {

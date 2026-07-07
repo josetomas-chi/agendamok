@@ -7,7 +7,7 @@ import Image from "next/image"
 
 type Business = { id: string; name: string; logo: string | null }
 
-export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
+export function TopBar({ onMenuClick, isSports }: { onMenuClick?: () => void; isSports?: boolean }) {
   const [business, setBusiness] = useState<Business | null>(null)
   const [uploading, setUploading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -37,33 +37,83 @@ export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
     setUploading(false)
   }
 
+  if (isSports) {
+    const GOLD = "#C9A84C"
+    return (
+      <header className="h-14 flex items-center justify-between px-6 flex-shrink-0"
+        style={{ background: "#ffffff", borderBottom: "1px solid rgba(201,168,76,0.2)" }}>
+        <button onClick={onMenuClick}
+          className="md:hidden p-2 rounded-lg transition-all mr-1"
+          style={{ color: "#0d1b2a" }}>
+          <Menu className="w-5 h-5" />
+        </button>
+
+        <div className="flex items-center gap-3">
+          <div className="relative group">
+            <button onClick={() => inputRef.current?.click()}
+              className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center transition-all"
+              style={{ background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.3)" }}
+              title="Cambiar logo">
+              {business?.logo ? (
+                <Image src={business.logo} alt="Logo" width={36} height={36} className="object-cover w-full h-full" />
+              ) : (
+                <span className="text-sm font-bold" style={{ color: GOLD }}>
+                  {business?.name?.[0]?.toUpperCase() ?? "?"}
+                </span>
+              )}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl" style={{ background: "rgba(13,27,42,0.5)" }}>
+                <Camera className="w-3.5 h-3.5 text-white" />
+              </div>
+            </button>
+            <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f) }} />
+          </div>
+          <div>
+            <p className="text-sm font-black uppercase tracking-wide leading-none" style={{ color: "#0d1b2a" }}>
+              {business?.name ?? <span className="inline-block w-28 h-3.5 rounded bg-gray-200 animate-pulse" />}
+            </p>
+            <p className="text-[11px] leading-none mt-1 font-semibold uppercase tracking-widest" style={{ color: GOLD }}>
+              {uploading ? "Subiendo logo..." : "Sports Club"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }))}
+            className="hidden md:flex items-center gap-2 h-8 px-3 rounded-lg text-xs transition-all"
+            style={{ border: "1px solid rgba(201,168,76,0.25)", background: "rgba(201,168,76,0.06)", color: "rgba(13,27,42,0.4)" }}>
+            <Search className="w-3.5 h-3.5" />
+            <span>Buscar</span>
+            <kbd className="ml-1 text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(201,168,76,0.12)" }}>⌘K</kbd>
+          </button>
+          <div className="flex items-baseline gap-1">
+            <span className="text-[13px] font-black tracking-tight uppercase" style={{ color: "#0d1b2a" }}>AgendaMok</span>
+            <span className="text-[11px] font-black tracking-widest uppercase" style={{ color: GOLD }}>Sports</span>
+          </div>
+        </div>
+      </header>
+    )
+  }
+
+  // ── General topbar (unchanged) ───────────────────────────────────────────────
   return (
     <header className="h-14 flex items-center justify-between px-6 flex-shrink-0"
       style={{ background: "#232326", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-      {/* Hamburger — mobile only */}
-      <button
-        onClick={onMenuClick}
-        className="md:hidden p-2 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/[0.06] transition-all mr-1"
-        aria-label="Abrir menú"
-      >
+      <button onClick={onMenuClick}
+        className="md:hidden p-2 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/[0.06] transition-all mr-1">
         <Menu className="w-5 h-5" />
       </button>
-
-      {/* Business logo + name */}
       <div className="flex items-center gap-3">
         <div className="relative group">
-          <button
-            onClick={() => inputRef.current?.click()}
+          <button onClick={() => inputRef.current?.click()}
             className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center transition-all hover:ring-2 hover:ring-sky-400/40"
             style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
-            title="Cambiar logo del negocio"
-          >
+            title="Cambiar logo del negocio">
             {business?.logo ? (
               <Image src={business.logo} alt="Logo" width={36} height={36} className="object-cover w-full h-full" />
             ) : (
-              <span className="text-sm font-bold text-white/50">
-                {business?.name?.[0]?.toUpperCase() ?? "?"}
-              </span>
+              <span className="text-sm font-bold text-white/50">{business?.name?.[0]?.toUpperCase() ?? "?"}</span>
             )}
             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
               <Camera className="w-3.5 h-3.5 text-white" />
@@ -81,19 +131,14 @@ export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
           </p>
         </div>
       </div>
-
       <div className="flex items-center gap-3">
-        {/* Cmd+K search hint */}
         <button
           onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }))}
-          className="hidden md:flex items-center gap-2 h-8 px-3 rounded-lg border border-white/8 bg-white/[0.04] text-white/25 hover:text-white/50 hover:border-white/15 transition-all text-xs"
-        >
+          className="hidden md:flex items-center gap-2 h-8 px-3 rounded-lg border border-white/8 bg-white/[0.04] text-white/25 hover:text-white/50 hover:border-white/15 transition-all text-xs">
           <Search className="w-3.5 h-3.5" />
           <span>Buscar</span>
           <kbd className="ml-1 text-[10px] bg-white/8 px-1.5 py-0.5 rounded">⌘K</kbd>
         </button>
-
-        {/* AgendaMok brand */}
         <div className="flex items-center gap-1.5">
           <span className="text-[13px] font-bold tracking-tight" style={{ color: "rgba(255,255,255,0.55)" }}>
             Agenda<span style={{ color: "#38bdf8" }}>Mok</span>

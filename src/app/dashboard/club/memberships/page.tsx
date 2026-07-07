@@ -50,9 +50,8 @@ export default function MembershipsPage() {
   }, [])
 
   useEffect(() => {
-    fetch("/api/auth/session").then(r => r.json()).then(s => {
-      const bid = s?.user?.businessId
-      if (bid) { setBusinessId(bid); load(bid) }
+    fetch("/api/me/business").then(r => r.json()).then(d => {
+      if (d.businessId) { setBusinessId(d.businessId); load(d.businessId) }
     })
   }, [load])
 

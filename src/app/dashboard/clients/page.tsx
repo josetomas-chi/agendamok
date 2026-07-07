@@ -38,6 +38,7 @@ type ImportState = "idle" | "preview" | "importing" | "done"
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [businessId, setBusinessId] = useState("")
+  const [isSports, setIsSports] = useState(false)
   const [clinicalEnabled, setClinicalEnabled] = useState(false)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -55,6 +56,7 @@ export default function ClientsPage() {
   useEffect(() => {
     fetch("/api/me/business").then(r => r.json()).then(d => {
       setBusinessId(d.businessId)
+      setIsSports(d.business?.businessType === "SPORTS_CLUB")
       loadClients(d.businessId, "", "")
       fetch(`/api/businesses/${d.businessId}`).then(r => r.json()).then(b => {
         setClinicalEnabled(b.business?.clinicalRecordEnabled ?? false)
@@ -183,107 +185,130 @@ export default function ClientsPage() {
 
   const totalSpend = (c: Client) => c.appointments.reduce((sum, a) => sum + (a.payment ? Number(a.payment.amount) : 0), 0)
 
-  return (
-    <div className="space-y-6">
-      <div className="page-header">
+  const GOLD = "#C9A84C"
+  const NAVY = "#0d1b2a"
+  const NAVY2 = "#111f2d"
+  const BORDER = "rgba(201,168,76,0.2)"
+
+  const S_SEGMENT: Record<string, { label: string; bg: string; color: string }> = {
+    NEW:        { label: "Nuevo",      bg: "rgba(201,168,76,0.12)", color: GOLD },
+    REGULAR:    { label: "Regular",    bg: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" },
+    FREQUENT:   { label: "Frecuente", bg: "rgba(74,222,128,0.15)", color: "#4ade80" },
+    VIP:        { label: "VIP",        bg: "rgba(168,85,247,0.15)", color: "#c084fc" },
+    INFLUENCER: { label: "Influencer", bg: "rgba(236,72,153,0.15)", color: "#f472b6" },
+    AT_RISK:    { label: "En riesgo",  bg: "rgba(251,146,60,0.15)", color: "#fb923c" },
+  }
+
+  if (isSports) return (
+    <div className="min-h-screen p-8" style={{ background: NAVY }}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="page-title">Clientes</h1>
-          <p className="page-subtitle">{clients.length} clientes en total</p>
+          <h1 className="text-2xl font-black uppercase tracking-wide" style={{ color: "#ffffff" }}>Clientes</h1>
+          <p className="text-sm mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{clients.length} clientes en total</p>
         </div>
         <div className="flex gap-2">
           <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileChange} />
-          <Button variant="outline" onClick={() => fileRef.current?.click()} className="gap-2">
+          <button onClick={() => fileRef.current?.click()}
+            className="flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-semibold transition-colors"
+            style={{ border: BORDER, color: GOLD, background: "transparent" }}>
             <Upload className="w-4 h-4" /> Importar
-          </Button>
-          <Button onClick={() => setOpen(true)} className="gap-2"><Plus className="w-4 h-4" /> Nuevo cliente</Button>
+          </button>
+          <button onClick={() => setOpen(true)}
+            className="flex items-center gap-2 h-9 px-4 rounded-xl text-sm font-black uppercase tracking-wide transition-colors"
+            style={{ background: "rgba(201,168,76,0.15)", border: `1px solid ${GOLD}`, color: "#8a6520" }}>
+            <Plus className="w-4 h-4" /> Nuevo cliente
+          </button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex gap-3 flex-wrap mb-6">
         <div className="relative flex-1 min-w-60">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Buscar por nombre, email o teléfono..." value={search} onChange={e => setSearch(e.target.value)} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "rgba(201,168,76,0.5)" }} />
+          <input className="w-full h-10 rounded-xl pl-9 pr-4 text-sm"
+            style={{ border: BORDER, background: NAVY2, color: "#fff", outline: "none" }}
+            placeholder="Buscar por nombre, email o teléfono..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {["", "VIP", "INFLUENCER", "FREQUENT", "AT_RISK", "NEW"].map(s => (
             <button key={s} onClick={() => setSegment(s)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${segment === s ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-muted"}`}>
-              {s === "" ? "Todos" : SEGMENT_LABELS[s]?.label}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors"
+              style={segment === s
+                ? { background: "rgba(201,168,76,0.18)", border: `1px solid ${GOLD}`, color: GOLD }
+                : { border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)", background: "transparent" }}>
+              {s === "" ? "Todos" : S_SEGMENT[s]?.label}
             </button>
           ))}
         </div>
       </div>
 
       {loading ? (
-        <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-muted animate-pulse rounded-xl" />)}</div>
+        <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-16 animate-pulse rounded-xl" style={{ background: NAVY2 }} />)}</div>
       ) : clients.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 select-none">
-          <svg width="72" height="72" viewBox="0 0 72 72" fill="none" className="mb-5 opacity-20">
-            <circle cx="28" cy="26" r="12" stroke="white" strokeWidth="2.5"/>
-            <path d="M8 60c0-11 9-18 20-18s20 7 20 18" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-            <circle cx="52" cy="28" r="8" stroke="white" strokeWidth="2" opacity=".6"/>
-            <path d="M46 56c0-7 5-12 12-12" stroke="white" strokeWidth="2" strokeLinecap="round" opacity=".6"/>
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none" className="mb-5" style={{ opacity: 0.18 }}>
+            <circle cx="28" cy="26" r="12" stroke="#C9A84C" strokeWidth="2.5"/>
+            <path d="M8 60c0-11 9-18 20-18s20 7 20 18" stroke="#C9A84C" strokeWidth="2.5" strokeLinecap="round"/>
+            <circle cx="52" cy="28" r="8" stroke="#C9A84C" strokeWidth="2"/>
+            <path d="M46 56c0-7 5-12 12-12" stroke="#C9A84C" strokeWidth="2" strokeLinecap="round"/>
           </svg>
-          <p className="text-white/70 font-semibold text-base">{search ? "Sin resultados" : "Aún no hay clientes"}</p>
-          <p className="text-white/30 text-sm mt-1.5 max-w-xs text-center">
-            {search ? `No encontramos a nadie con "${search}"` : "Los clientes aparecen automáticamente cuando reservan un turno"}
+          <p className="font-semibold text-base" style={{ color: "rgba(255,255,255,0.5)" }}>{search ? "Sin resultados" : "Aún no hay clientes"}</p>
+          <p className="text-sm mt-1.5 max-w-xs text-center" style={{ color: "rgba(255,255,255,0.25)" }}>
+            {search ? `No encontramos a nadie con "${search}"` : "Agrega clientes o impórtalos desde un archivo CSV"}
           </p>
         </div>
       ) : (
-        <div className="rounded-xl border border-white/10 overflow-hidden">
+        <div className="rounded-2xl overflow-hidden" style={{ border: BORDER, background: NAVY2 }}>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/10 bg-white/5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                <th className="text-left px-4 py-2.5">Cliente</th>
-                <th className="text-center px-4 py-2.5">Turnos</th>
-                <th className="text-right px-4 py-2.5">Gasto total</th>
-                <th className="text-center px-4 py-2.5">Puntos</th>
-                <th className="text-center px-4 py-2.5">Segmento</th>
-                <th className="px-4 py-2.5"></th>
+              <tr style={{ borderBottom: "1px solid rgba(201,168,76,0.12)", background: NAVY }}>
+                {["Cliente", "Reservas", "Gasto total", "Puntos", "Segmento", ""].map((h, i) => (
+                  <th key={i} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-[0.12em] ${i === 0 ? "text-left" : i <= 3 ? "text-center" : "text-center"}`}
+                    style={{ color: "rgba(201,168,76,0.5)" }}>{h}</th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/8">
-              {clients.map(c => (
-                <tr key={c.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3">
+            <tbody>
+              {clients.map((c, idx) => (
+                <tr key={c.id} style={{ borderTop: idx > 0 ? "1px solid rgba(255,255,255,0.04)" : undefined }}
+                  className="transition-colors"
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.04)"}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}>
+                  <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm flex-shrink-0">
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0"
+                        style={{ background: "rgba(201,168,76,0.15)", color: GOLD }}>
                         {c.name[0].toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium truncate">{c.name}</p>
-                        <div className="flex gap-2 text-xs text-muted-foreground">
+                        <p className="font-semibold truncate" style={{ color: "#fff" }}>{c.name}</p>
+                        <div className="flex gap-3 text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>
                           {c.email && <span className="flex items-center gap-1 truncate"><Mail className="w-3 h-3" />{c.email}</span>}
                           {c.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{c.phone}</span>}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-center font-medium">{c._count.appointments}</td>
-                  <td className="px-4 py-3 text-right font-medium">${totalSpend(c).toLocaleString("es-AR")}</td>
-                  <td className="px-4 py-3 text-center">
-                    <span className="flex items-center justify-center gap-1 text-sm font-medium">
-                      <Gift className="w-3.5 h-3.5 text-yellow-400/70" />
-                      {c.loyaltyPoints}
+                  <td className="px-5 py-3.5 text-center font-semibold" style={{ color: "rgba(255,255,255,0.7)" }}>{c._count.appointments}</td>
+                  <td className="px-5 py-3.5 text-center font-bold" style={{ color: GOLD }}>${totalSpend(c).toLocaleString("es-CL")}</td>
+                  <td className="px-5 py-3.5 text-center">
+                    <span className="flex items-center justify-center gap-1 text-sm font-semibold" style={{ color: "rgba(255,255,255,0.6)" }}>
+                      <Gift className="w-3.5 h-3.5" style={{ color: GOLD }} />{c.loyaltyPoints}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SEGMENT_LABELS[c.segment]?.color}`}>
-                      {SEGMENT_LABELS[c.segment]?.label}
+                  <td className="px-5 py-3.5 text-center">
+                    <span className="text-[11px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide"
+                      style={{ background: S_SEGMENT[c.segment]?.bg || "rgba(255,255,255,0.08)", color: S_SEGMENT[c.segment]?.color || "rgba(255,255,255,0.5)" }}>
+                      {S_SEGMENT[c.segment]?.label || c.segment}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 justify-end">
-                      {clinicalEnabled && (
-                        <Link href={`/dashboard/clinical/${c.id}`}>
-                          <Button size="sm" variant="ghost" className="gap-1 text-sky-400 hover:text-sky-300">
-                            <Stethoscope className="w-3.5 h-3.5" />
-                          </Button>
-                        </Link>
-                      )}
-                      <Button size="sm" variant="ghost" onClick={() => setSelected(c)}>Ver</Button>
-                    </div>
+                  <td className="px-5 py-3.5 text-right">
+                    <button onClick={() => setSelected(c)}
+                      className="h-7 px-3 rounded-lg text-xs font-semibold transition-colors"
+                      style={{ border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)", background: "transparent" }}>
+                      Ver
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -292,6 +317,7 @@ export default function ClientsPage() {
         </div>
       )}
 
+      {/* ── Diálogos compartidos (sports + general) ── */}
       {/* New client dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
@@ -479,6 +505,146 @@ export default function ClientsPage() {
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  )
+
+  // ── Render general (no sports) ──────────────────────────────────────────────
+  return (
+    <div className="space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Clientes</h1>
+          <p className="page-subtitle">{clients.length} clientes en total</p>
+        </div>
+        <div className="flex gap-2">
+          <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileChange} />
+          <Button variant="outline" onClick={() => fileRef.current?.click()} className="gap-2">
+            <Upload className="w-4 h-4" /> Importar
+          </Button>
+          <Button onClick={() => setOpen(true)} className="gap-2"><Plus className="w-4 h-4" /> Nuevo cliente</Button>
+        </div>
+      </div>
+
+      <div className="flex gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-60">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input className="pl-9" placeholder="Buscar por nombre, email o teléfono..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <div className="flex gap-2">
+          {["", "VIP", "INFLUENCER", "FREQUENT", "AT_RISK", "NEW"].map(s => (
+            <button key={s} onClick={() => setSegment(s)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${segment === s ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-muted"}`}>
+              {s === "" ? "Todos" : SEGMENT_LABELS[s]?.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-muted animate-pulse rounded-xl" />)}</div>
+      ) : clients.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 select-none">
+          <p className="text-white/70 font-semibold text-base">{search ? "Sin resultados" : "Aún no hay clientes"}</p>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-white/10 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/10 bg-white/5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                <th className="text-left px-4 py-2.5">Cliente</th>
+                <th className="text-center px-4 py-2.5">Turnos</th>
+                <th className="text-right px-4 py-2.5">Gasto total</th>
+                <th className="text-center px-4 py-2.5">Puntos</th>
+                <th className="text-center px-4 py-2.5">Segmento</th>
+                <th className="px-4 py-2.5"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/8">
+              {clients.map(c => (
+                <tr key={c.id} className="hover:bg-white/5 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm flex-shrink-0">
+                        {c.name[0].toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{c.name}</p>
+                        <div className="flex gap-2 text-xs text-muted-foreground">
+                          {c.email && <span className="flex items-center gap-1 truncate"><Mail className="w-3 h-3" />{c.email}</span>}
+                          {c.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{c.phone}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-center font-medium">{c._count.appointments}</td>
+                  <td className="px-4 py-3 text-right font-medium">${totalSpend(c).toLocaleString("es-AR")}</td>
+                  <td className="px-4 py-3 text-center">
+                    <span className="flex items-center justify-center gap-1 text-sm font-medium">
+                      <Gift className="w-3.5 h-3.5 text-yellow-400/70" />{c.loyaltyPoints}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SEGMENT_LABELS[c.segment]?.color}`}>
+                      {SEGMENT_LABELS[c.segment]?.label}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1 justify-end">
+                      {clinicalEnabled && (
+                        <Link href={`/dashboard/clinical/${c.id}`}>
+                          <Button size="sm" variant="ghost" className="gap-1 text-sky-400 hover:text-sky-300">
+                            <Stethoscope className="w-3.5 h-3.5" />
+                          </Button>
+                        </Link>
+                      )}
+                      <Button size="sm" variant="ghost" onClick={() => setSelected(c)}>Ver</Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* New client dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Nuevo cliente</DialogTitle></DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div className="space-y-1.5"><Label>Nombre *</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>Teléfono</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>Notas</Label><Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+            <div className="flex gap-2 pt-1">
+              <Button className="flex-1" onClick={handleCreate} disabled={saving || !form.name}>{saving ? "Guardando..." : "Guardar"}</Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {selected && (
+        <Dialog open={!!selected} onOpenChange={() => { setSelected(null); setPointsInput("") }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl flex-shrink-0">
+                  {selected.name[0].toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <DialogTitle>{selected.name}</DialogTitle>
+                </div>
+              </div>
+            </DialogHeader>
+            <div className="space-y-2 text-sm">
+              {selected.email && <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-4 h-4" />{selected.email}</div>}
+              {selected.phone && <div className="flex items-center gap-2 text-muted-foreground"><Phone className="w-4 h-4" />{selected.phone}</div>}
+              <div className="flex items-center gap-2 text-muted-foreground"><Calendar className="w-4 h-4" />Cliente desde {format(new Date(selected.createdAt), "MMMM yyyy", { locale: es })}</div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

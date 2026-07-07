@@ -8,6 +8,7 @@ const schema = z.object({
   category: z.string().min(1),
   slug: z.string().min(2).regex(/^[a-z0-9-]+$/),
   plan: z.enum(["STARTER", "NEGOCIO", "PRO"]).default("STARTER"),
+  businessType: z.enum(["GENERAL", "SPORTS_CLUB"]).default("GENERAL"),
 })
 
 export async function POST(req: Request) {
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    const { businessName, category, slug, plan } = schema.parse(body)
+    const { businessName, category, slug, plan, businessType } = schema.parse(body)
 
     const existingSlug = await prisma.business.findUnique({ where: { slug } })
     if (existingSlug) {
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
         name: businessName,
         slug,
         category,
+        businessType,
         subscription: {
           create: {
             plan,
