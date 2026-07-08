@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { toast } from "sonner"
-import { ChevronDown, X, UserPlus, RefreshCw } from "lucide-react"
+import { ChevronDown, X, UserPlus } from "lucide-react"
 
 const TIME_SLOTS: string[] = []
 for (let h = 7; h <= 23; h++) {
@@ -15,6 +15,8 @@ const DAYS_ES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes"
 const GOLD = "#C9A84C"
 const NAVY = "#0d1b2a"
 const BORDER = "rgba(201,168,76,0.2)"
+
+type BookingType = "simple" | "recurring" | "class"
 
 function TimeSelect({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
   const [open, setOpen] = useState(false)
@@ -52,6 +54,8 @@ function TimeSelect({ value, onChange, label }: { value: string; onChange: (v: s
 }
 
 type NewClientForm = { name: string; email: string; phone: string }
+type Client = { id: string; name: string; email: string | null; phone: string | null }
+type Coach = { id: string; name: string; color: string; paymentType: string }
 
 function ClientCombobox({ clients, value, onSelect }: {
   clients: Client[]
@@ -165,7 +169,6 @@ function ClientCombobox({ clients, value, onSelect }: {
 
 type PricingRule = { id: string; name: string; days: number[]; startTime: string; endTime: string; price: number }
 type Court = { id: string; name: string; sport: string | null; color: string; isActive?: boolean; pricingRules?: PricingRule[] }
-type Client = { id: string; name: string; email: string | null; phone: string | null }
 
 function calcPrice(court: Court | undefined, startTime: string, endTime: string, date: string): number {
   if (!court?.pricingRules?.length || !startTime || !endTime || !date) return 0
@@ -183,7 +186,6 @@ function calcPrice(court: Court | undefined, startTime: string, endTime: string,
   return pricePerHour * durationHours
 }
 
-// Cuenta las ocurrencias del día de semana entre dos fechas
 function countOccurrences(startDate: string, endDate: string, dayOfWeek: number): number {
   if (!startDate || !endDate || endDate <= startDate) return 0
   const start = new Date(startDate + "T00:00:00Z")
@@ -195,6 +197,12 @@ function countOccurrences(startDate: string, endDate: string, dayOfWeek: number)
   return count
 }
 
+const BOOKING_TYPES: { key: BookingType; label: string; desc: string }[] = [
+  { key: "simple",    label: "Reserva común",    desc: "Cancha libre sin instructor" },
+  { key: "recurring", label: "Reserva múltiple", desc: "Repite semanalmente" },
+  { key: "class",     label: "Clase particular", desc: "Con entrenador asignado" },
+]
+
 export default function NewBookingModal({
   businessId, courts, clients, preselect, onClose, onSaved,
 }: {
@@ -205,6 +213,7 @@ export default function NewBookingModal({
   onClose: () => void
   onSaved: () => void
 }) {
+  const [bookingType, setBookingType] = useState<BookingType>("simple")
   const [form, setForm] = useState({
     courtId: preselect?.courtId || courts[0]?.id || "",
     date: preselect?.date || new Date().toISOString().slice(0, 10),
@@ -213,23 +222,21 @@ export default function NewBookingModal({
     notes: "",
   })
   const [selectedClient, setSelectedClient] = useState<{ id: string; name: string; email?: string; phone?: string } | null>(null)
+  const [selectedCoachId, setSelectedCoachId] = useState<string>("")
+  const [coaches, setCoaches] = useState<Coach[]>([])
   const [saving, setSaving] = useState(false)
   const [allCourts, setAllCourts] = useState<Court[]>(courts)
-
-  // Recurrencia
-  const [isRecurring, setIsRecurring] = useState(false)
   const [rangeEnd, setRangeEnd] = useState("")
 
   useEffect(() => {
     fetch(`/api/businesses/${businessId}/courts`).then(r => r.json()).then(d => setAllCourts(d.courts || []))
+    fetch(`/api/businesses/${businessId}/club-coaches`).then(r => r.json()).then(d => setCoaches((d.coaches || []).filter((c: Coach & { isActive: boolean }) => c.isActive)))
   }, [businessId])
 
   const selectedCourt = allCourts.find(c => c.id === form.courtId)
   const price = calcPrice(selectedCourt, form.startTime, form.endTime, form.date)
-
-  // Para recurrencia: día de semana derivado de la fecha seleccionada
   const selectedDayOfWeek = form.date ? new Date(form.date + "T00:00:00Z").getUTCDay() : -1
-  const sessionCount = isRecurring ? countOccurrences(form.date, rangeEnd, selectedDayOfWeek) : 0
+  const sessionCount = bookingType === "recurring" ? countOccurrences(form.date, rangeEnd, selectedDayOfWeek) : 0
 
   async function resolveClientId(): Promise<string | null> {
     if (!selectedClient) return null
@@ -247,14 +254,17 @@ export default function NewBookingModal({
     if (!form.courtId || !form.date || !form.startTime || !form.endTime) {
       toast.error("Completa todos los campos requeridos"); return
     }
-    if (isRecurring && !rangeEnd) {
+    if (bookingType === "recurring" && !rangeEnd) {
       toast.error("Selecciona una fecha de término para la recurrencia"); return
+    }
+    if (bookingType === "class" && !selectedCoachId) {
+      toast.error("Selecciona un entrenador"); return
     }
     setSaving(true)
     try {
       const clientId = await resolveClientId()
 
-      if (isRecurring) {
+      if (bookingType === "recurring") {
         const [startHour, startMinute] = form.startTime.split(":").map(Number)
         const [endHour, endMinute] = form.endTime.split(":").map(Number)
         const durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute)
@@ -264,15 +274,9 @@ export default function NewBookingModal({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            courtId: form.courtId,
-            clientId,
-            dayOfWeek: selectedDayOfWeek,
-            startHour,
-            startMinute,
-            durationMinutes,
-            rangeStart: form.date,
-            rangeEnd,
-            notes: form.notes || null,
+            courtId: form.courtId, clientId,
+            dayOfWeek: selectedDayOfWeek, startHour, startMinute, durationMinutes,
+            rangeStart: form.date, rangeEnd, notes: form.notes || null,
           }),
         })
         const d = await r.json()
@@ -286,18 +290,19 @@ export default function NewBookingModal({
           toast.error(d.error || "Error al crear reservas recurrentes")
         }
       } else {
+        // simple o class
         const r = await fetch(`/api/businesses/${businessId}/court-bookings`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            courtId: form.courtId,
-            clientId,
+            courtId: form.courtId, clientId,
             startTime: `${form.date}T${form.startTime}:00`,
             endTime: `${form.date}T${form.endTime}:00`,
             notes: form.notes || null,
+            coachId: bookingType === "class" ? (selectedCoachId || null) : null,
           }),
         })
-        if (r.ok) { toast.success("Reserva creada"); onSaved() }
+        if (r.ok) { toast.success(bookingType === "class" ? "Clase particular creada" : "Reserva creada"); onSaved() }
         else { const d = await r.json(); toast.error(d.error || "Error al crear") }
       }
     } finally {
@@ -318,13 +323,30 @@ export default function NewBookingModal({
             <h2 className="text-[15px] font-black uppercase tracking-wide" style={{ color: NAVY }}>Nueva reserva</h2>
             <p className="text-xs mt-0.5" style={{ color: GOLD }}>Asigna una cancha y horario</p>
           </div>
-          <button onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
+          <button onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center"
             style={{ color: "rgba(13,27,42,0.3)" }}>
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="px-5 pb-5 pt-4 space-y-3 max-h-[80vh] overflow-y-auto">
+          {/* Selector tipo de reserva */}
+          <div>
+            <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Tipo de reserva</p>
+            <div className="grid grid-cols-3 gap-1.5">
+              {BOOKING_TYPES.map(bt => (
+                <button key={bt.key} type="button" onClick={() => setBookingType(bt.key)}
+                  className="rounded-xl px-2 py-2.5 text-center transition-all"
+                  style={bookingType === bt.key
+                    ? { background: "rgba(201,168,76,0.1)", border: `1.5px solid ${GOLD}` }
+                    : { background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.1)" }}>
+                  <p className="text-[11px] font-black leading-tight" style={{ color: bookingType === bt.key ? "#8a6520" : NAVY }}>{bt.label}</p>
+                  <p className="text-[9px] mt-0.5 leading-tight" style={{ color: "rgba(13,27,42,0.4)" }}>{bt.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Cancha */}
           <div>
             <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Cancha</p>
@@ -340,12 +362,46 @@ export default function NewBookingModal({
             </div>
           </div>
 
-          {/* Cliente combobox */}
+          {/* Entrenador — solo clase particular */}
+          {bookingType === "class" && (
+            <div>
+              <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Entrenador *</p>
+              {coaches.length === 0 ? (
+                <p className="text-xs py-2" style={{ color: "rgba(13,27,42,0.4)" }}>No hay entrenadores activos. Agrégalos en la pestaña Entrenadores.</p>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  {coaches.map(coach => (
+                    <button key={coach.id} type="button" onClick={() => setSelectedCoachId(coach.id)}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all"
+                      style={selectedCoachId === coach.id
+                        ? { background: "rgba(201,168,76,0.1)", border: `1.5px solid ${GOLD}` }
+                        : { background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.1)" }}>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white flex-shrink-0"
+                        style={{ background: coach.color }}>
+                        {coach.name[0]}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate" style={{ color: selectedCoachId === coach.id ? "#8a6520" : NAVY }}>{coach.name}</p>
+                        <p className="text-[10px]" style={{ color: "rgba(13,27,42,0.4)" }}>
+                          {coach.paymentType === "COMMISSION" ? "Comisión" : "Arriendo cancha"}
+                        </p>
+                      </div>
+                      {selectedCoachId === coach.id && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(201,168,76,0.2)", color: GOLD }}>✓</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Cliente */}
           <ClientCombobox clients={clients} value={selectedClient} onSelect={setSelectedClient} />
 
-          {/* Fecha de inicio */}
+          {/* Fecha */}
           <div>
-            <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>{isRecurring ? "Fecha de inicio" : "Fecha"}</p>
+            <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>{bookingType === "recurring" ? "Fecha de inicio" : "Fecha"}</p>
             <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
               className={inputCls} style={{ ...inputStyle, colorScheme: "light" } as React.CSSProperties} />
           </div>
@@ -356,28 +412,9 @@ export default function NewBookingModal({
             <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} />
           </div>
 
-          {/* Recurrencia — siempre visible */}
-          <div className="rounded-xl overflow-hidden" style={{ border: isRecurring ? `1px solid ${GOLD}` : "1px solid rgba(13,27,42,0.1)" }}>
-            {/* Toggle header */}
-            <button type="button" onClick={() => setIsRecurring(r => !r)}
-              className="w-full h-10 px-4 text-sm font-semibold flex items-center gap-2.5 transition-all"
-              style={isRecurring
-                ? { background: "rgba(201,168,76,0.12)", color: "#8a6520" }
-                : { background: "#f5f4f0", color: "rgba(13,27,42,0.5)" }}>
-              <RefreshCw className="w-4 h-4 flex-shrink-0" style={{ color: isRecurring ? GOLD : "rgba(13,27,42,0.35)" }} />
-              <span className="flex-1 text-left">{isRecurring ? "Reserva recurrente" : "Reserva única"}</span>
-              <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
-                style={isRecurring
-                  ? { background: "rgba(201,168,76,0.2)", color: GOLD }
-                  : { background: "rgba(13,27,42,0.06)", color: "rgba(13,27,42,0.35)" }}>
-                {isRecurring ? "recurrente" : "única"}
-              </span>
-            </button>
-
-            {/* Panel recurrencia expandido */}
-            {isRecurring && (
+          {/* Panel recurrencia */}
+          {bookingType === "recurring" && (
             <div className="rounded-xl p-3.5 space-y-3" style={{ border: `1px solid rgba(201,168,76,0.25)`, background: "rgba(201,168,76,0.04)" }}>
-              {/* Día de semana (informativo) */}
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.5)" }}>Repite cada</span>
                 <span className="text-xs font-black px-2.5 py-1 rounded-lg" style={{ background: "rgba(201,168,76,0.15)", color: "#8a6520" }}>
@@ -385,16 +422,12 @@ export default function NewBookingModal({
                 </span>
                 <span className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.5)" }}>a las {form.startTime}</span>
               </div>
-
-              {/* Fecha de término */}
               <div>
                 <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha de término</p>
                 <input type="date" value={rangeEnd} onChange={e => setRangeEnd(e.target.value)}
                   min={form.date}
                   className={inputCls} style={{ ...inputStyle, colorScheme: "light" } as React.CSSProperties} />
               </div>
-
-              {/* Preview sesiones */}
               {sessionCount > 0 && (
                 <div className="flex items-center justify-between text-xs rounded-lg px-3 py-2"
                   style={{ background: "rgba(201,168,76,0.1)", color: "#8a6520" }}>
@@ -406,11 +439,10 @@ export default function NewBookingModal({
                 Los feriados de tipo "Cerrado" se omiten automáticamente. Los de recargo ajustan el precio de esa sesión.
               </p>
             </div>
-            )}
-          </div>
+          )}
 
-          {/* Precio estimado (solo reserva individual) */}
-          {!isRecurring && price > 0 && (
+          {/* Precio estimado */}
+          {bookingType !== "recurring" && price > 0 && (
             <div className="rounded-xl px-4 py-2.5 flex items-center justify-between"
               style={{ background: "rgba(201,168,76,0.08)", border: `1px solid rgba(201,168,76,0.25)` }}>
               <p className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.5)" }}>Precio estimado</p>
@@ -429,7 +461,7 @@ export default function NewBookingModal({
           <button onClick={handleSave} disabled={saving}
             className="w-full h-11 rounded-xl text-sm font-black uppercase tracking-wide transition-all disabled:opacity-50"
             style={{ background: "rgba(201,168,76,0.15)", border: `1px solid ${GOLD}`, color: "#8a6520" }}>
-            {saving ? "Guardando…" : isRecurring ? "Crear reservas recurrentes" : "Confirmar reserva"}
+            {saving ? "Guardando…" : bookingType === "recurring" ? "Crear reservas recurrentes" : bookingType === "class" ? "Crear clase particular" : "Confirmar reserva"}
           </button>
         </div>
       </DialogContent>

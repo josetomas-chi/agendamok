@@ -19,6 +19,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     include: {
       court: { select: { id: true, name: true, sport: true, color: true } },
       client: { select: { id: true, name: true, email: true, phone: true } },
+      coach: { select: { id: true, name: true, color: true } },
     },
     orderBy: { startTime: "asc" },
   })
@@ -30,7 +31,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
   const body = await req.json()
-  const { courtId, clientId, startTime, endTime, notes } = body
+  const { courtId, clientId, startTime, endTime, notes, coachId } = body
 
   const start = new Date(startTime)
   const end = new Date(endTime)
@@ -81,10 +82,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   const booking = await prisma.courtBooking.create({
-    data: { businessId: id, courtId, clientId: clientId || null, startTime: start, endTime: end, price, notes, status: "CONFIRMED" },
+    data: { businessId: id, courtId, clientId: clientId || null, coachId: coachId || null, startTime: start, endTime: end, price, notes, status: "CONFIRMED" },
     include: {
       court: { select: { id: true, name: true, sport: true, color: true } },
       client: { select: { id: true, name: true, email: true, phone: true } },
+      coach: { select: { id: true, name: true, color: true } },
     },
   })
   return NextResponse.json({ booking }, { status: 201 })
