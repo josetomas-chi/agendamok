@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import { useBusiness } from "@/contexts/business-context"
 import Papa from "papaparse"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,9 +37,9 @@ type ImportRow = { name: string; email: string; phone: string; notes: string; _e
 type ImportState = "idle" | "preview" | "importing" | "done"
 
 export default function ClientsPage() {
+  const { businessId, businessType } = useBusiness()
+  const isSports = businessType === "SPORTS_CLUB"
   const [clients, setClients] = useState<Client[]>([])
-  const [businessId, setBusinessId] = useState("")
-  const [isSports, setIsSports] = useState(false)
   const [clinicalEnabled, setClinicalEnabled] = useState(false)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -54,15 +55,12 @@ export default function ClientsPage() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(d => {
-      setBusinessId(d.businessId)
-      setIsSports(d.business?.businessType === "SPORTS_CLUB")
-      loadClients(d.businessId, "", "")
-      fetch(`/api/businesses/${d.businessId}`).then(r => r.json()).then(b => {
-        setClinicalEnabled(b.business?.clinicalRecordEnabled ?? false)
-      })
+    if (!businessId) return
+    loadClients(businessId, "", "")
+    fetch(`/api/businesses/${businessId}`).then(r => r.json()).then(b => {
+      setClinicalEnabled(b.business?.clinicalRecordEnabled ?? false)
     })
-  }, [])
+  }, [businessId])
 
   const loadClients = useCallback(async (bid: string, q: string, seg: string) => {
     setLoading(true)

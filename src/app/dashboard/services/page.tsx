@@ -1,6 +1,7 @@
 ﻿"use client"
 
 import { useState, useEffect } from "react"
+import { useBusiness } from "@/contexts/business-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -26,9 +27,9 @@ const COLORS = ["#6366f1","#8b5cf6","#ec4899","#ef4444","#f97316","#eab308","#22
 const DEFAULT_FORM = { name: "", description: "", duration: 60, price: 0, color: "#6366f1", categoryId: "", bufferAfter: 0, requiresDeposit: false, deposit: 0, isActive: true, capacity: 1 }
 
 export default function ServicesPage() {
+  const { businessId } = useBusiness()
   const [services, setServices] = useState<Service[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const [businessId, setBusinessId] = useState("")
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Service | null>(null)
@@ -37,15 +38,9 @@ export default function ServicesPage() {
   const [catInput, setCatInput] = useState("")
 
   useEffect(() => {
-    fetch("/api/me/business")
-      .then(r => r.json())
-      .then(d => {
-        if (!d.businessId) { setLoading(false); return }
-        setBusinessId(d.businessId)
-        loadServices(d.businessId)
-      })
-      .catch(() => setLoading(false))
-  }, [])
+    if (!businessId) { setLoading(false); return }
+    loadServices(businessId)
+  }, [businessId])
 
   async function loadServices(bid: string) {
     setLoading(true)

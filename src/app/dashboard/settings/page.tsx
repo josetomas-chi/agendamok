@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, Suspense } from "react"
+import { useBusiness } from "@/contexts/business-context"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -78,9 +79,12 @@ function SettingsContent() {
   const [creatingKey, setCreatingKey] = useState(false)
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set())
 
+  const { businessId: bid } = useBusiness()
+
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(async d => {
-      const r = await fetch(`/api/businesses/${d.businessId}`)
+    if (!bid) return
+    ;(async () => {
+      const r = await fetch(`/api/businesses/${bid}`)
       const biz = await r.json()
       setBusiness(biz.business)
       setSubscription(biz.subscription || null)
@@ -93,13 +97,13 @@ function SettingsContent() {
       const gcalR = await fetch("/api/integrations/google-calendar/status")
       if (gcalR.ok) setGcal(await gcalR.json())
       // Load API keys
-      const kr = await fetch(`/api/businesses/${d.businessId}/api-keys`)
+      const kr = await fetch(`/api/businesses/${bid}/api-keys`)
       const kd = await kr.json()
       setApiKeys(kd.keys || [])
       // Load holidays
-      loadHolidays(d.businessId)
+      loadHolidays(bid)
       // Load payment settings
-      const pr = await fetch(`/api/businesses/${d.businessId}/payment-settings`)
+      const pr = await fetch(`/api/businesses/${bid}/payment-settings`)
       if (pr.ok) {
         const pd = await pr.json()
         setPaySettings(pd)
@@ -112,15 +116,15 @@ function SettingsContent() {
         setSegmentDiscounts(prev => Object.fromEntries(Object.keys(prev).map(k => [k, saved[k] != null ? String(saved[k]) : ""])))
       }
       // Load Bsale settings
-      const br = await fetch(`/api/businesses/${d.businessId}/bsale-settings`)
+      const br = await fetch(`/api/businesses/${bid}/bsale-settings`)
       if (br.ok) {
         const bd = await br.json()
         setBsaleConnected(bd.hasKey)
         setBsaleAuto(bd.bsaleAutoInvoice)
         setBsaleDocType(bd.bsaleDocType ?? "BOLETA")
       }
-    })
-  }, [])
+    })()
+  }, [bid])
 
   async function createApiKey() {
     if (!business) return

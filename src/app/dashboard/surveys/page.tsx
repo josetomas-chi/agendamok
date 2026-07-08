@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useBusiness } from "@/contexts/business-context"
 import { Star, TrendingUp, MessageSquare, Users } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -22,11 +23,11 @@ const STAR_COLOR = ["", "#ef4444", "#f97316", "#eab308", "#84cc16", "#22c55e"]
 const STAR_LABEL = ["", "Muy malo", "Malo", "Regular", "Bueno", "Excelente"]
 
 export default function SurveysPage() {
+  const { businessId } = useBusiness()
   const [surveys, setSurveys] = useState<Survey[]>([])
   const [avg, setAvg] = useState<number | null>(null)
   const [byRating, setByRating] = useState<{ rating: number; count: number }[]>([])
   const [total, setTotal] = useState(0)
-  const [businessId, setBusinessId] = useState("")
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async (bid: string) => {
@@ -41,11 +42,9 @@ export default function SurveysPage() {
   }, [])
 
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(d => {
-      setBusinessId(d.businessId)
-      load(d.businessId)
-    })
-  }, [load])
+    if (!businessId) return
+    load(businessId)
+  }, [businessId, load])
 
   const maxCount = Math.max(...byRating.map(r => r.count), 1)
 

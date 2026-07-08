@@ -1,5 +1,6 @@
 "use client"
 import React, { useState, useEffect, useCallback } from "react"
+import { useBusiness } from "@/contexts/business-context"
 import { Plus, Users, X, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -24,7 +25,7 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_LABELS: Record<string, string> = { ACTIVE: "Activo", EXPIRED: "Vencido", CANCELLED: "Cancelado" }
 
 export default function MembershipsPage() {
-  const [businessId, setBusinessId] = useState("")
+  const { businessId } = useBusiness()
   const [plans, setPlans] = useState<Plan[]>([])
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [clients, setClients] = useState<Client[]>([])
@@ -50,10 +51,9 @@ export default function MembershipsPage() {
   }, [])
 
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(d => {
-      if (d.businessId) { setBusinessId(d.businessId); load(d.businessId) }
-    })
-  }, [load])
+    if (!businessId) return
+    load(businessId)
+  }, [businessId, load])
 
   async function savePlan() {
     if (!planForm.name.trim()) { toast.error("El nombre es requerido"); return }

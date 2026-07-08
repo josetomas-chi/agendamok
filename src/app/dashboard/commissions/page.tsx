@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useBusiness } from "@/contexts/business-context"
 import { format, startOfMonth, endOfMonth, subMonths, addMonths } from "date-fns"
 import { es } from "date-fns/locale"
 import { ChevronLeft, ChevronRight, DollarSign, TrendingUp, Clock, CheckCircle } from "lucide-react"
@@ -17,7 +18,7 @@ type Record_ = {
 }
 
 export default function CommissionsPage() {
-  const [businessId, setBusinessId] = useState("")
+  const { businessId } = useBusiness()
   const [refDate, setRefDate] = useState(new Date())
   const [byStaff, setByStaff] = useState<StaffSummary[]>([])
   const [records, setRecords] = useState<Record_[]>([])
@@ -41,12 +42,10 @@ export default function CommissionsPage() {
   }, [])
 
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(d => {
-      setBusinessId(d.businessId)
-      load(d.businessId, from, to)
-    })
+    if (!businessId) return
+    load(businessId, from, to)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [businessId])
 
   useEffect(() => {
     if (businessId) load(businessId, from, to)

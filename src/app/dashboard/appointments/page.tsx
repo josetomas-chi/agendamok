@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useBusiness } from "@/contexts/business-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -34,8 +35,8 @@ const STATUS = {
 const DEFAULT_FORM = { serviceId: "", staffId: "", clientId: "", date: "", time: "", notes: "" }
 
 export default function AppointmentsPage() {
+  const { businessId, hasBsale } = useBusiness()
   const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [businessId, setBusinessId] = useState("")
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Appointment | null>(null)
   const [statusFilter, setStatusFilter] = useState("")
@@ -43,20 +44,16 @@ export default function AppointmentsPage() {
   const [newOpen, setNewOpen] = useState(false)
   const [form, setForm] = useState(DEFAULT_FORM)
   const [saving, setSaving] = useState(false)
-  const [hasBsale, setHasBsale] = useState(false)
   const [emitting, setEmitting] = useState(false)
   const [services, setServices] = useState<Service[]>([])
   const [staff, setStaff] = useState<Staff[]>([])
   const [clients, setClients] = useState<Client[]>([])
 
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(d => {
-      setBusinessId(d.businessId)
-      setHasBsale(!!d.bsaleApiKey)
-      loadAppts(d.businessId, "")
-      loadFormData(d.businessId)
-    })
-  }, [])
+    if (!businessId) return
+    loadAppts(businessId, "")
+    loadFormData(businessId)
+  }, [businessId])
 
   async function loadFormData(bid: string) {
     const [svcRes, stfRes, cliRes] = await Promise.all([

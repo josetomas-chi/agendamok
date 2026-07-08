@@ -1,6 +1,7 @@
 ﻿"use client"
 
 import React, { useState, useEffect, useCallback } from "react"
+import { useBusiness } from "@/contexts/business-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -47,8 +48,8 @@ const DEFAULT_FORM: LocationForm = {
 }
 
 export default function LocationsPage() {
+  const { businessId } = useBusiness()
   const [locations, setLocations] = useState<Location[]>([])
-  const [businessId, setBusinessId] = useState("")
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Location | null>(null)
@@ -64,11 +65,9 @@ export default function LocationsPage() {
   const [loadingDetail, setLoadingDetail] = useState(false)
 
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(d => {
-      setBusinessId(d.businessId)
-      loadLocations(d.businessId)
-    })
-  }, [])
+    if (!businessId) return
+    loadLocations(businessId)
+  }, [businessId])
 
   async function loadLocations(bid: string) {
     setLoading(true)

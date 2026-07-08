@@ -1,5 +1,6 @@
 "use client"
 import React, { useState, useEffect, useCallback, useRef } from "react"
+import { useBusiness } from "@/contexts/business-context"
 import { Plus, Pencil, Trash2, Trophy, X, GripVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
@@ -12,7 +13,7 @@ const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
 const EMPTY_RULE: PricingRule = { name: "", days: [1, 2, 3, 4, 5], startTime: "08:00", endTime: "18:00", price: 0 }
 
 export default function CourtsPage() {
-  const [businessId, setBusinessId] = useState("")
+  const { businessId } = useBusiness()
   const [courts, setCourts] = useState<Court[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
@@ -32,10 +33,9 @@ export default function CourtsPage() {
   }, [])
 
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(d => {
-      if (d.businessId) { setBusinessId(d.businessId); load(d.businessId) }
-    })
-  }, [load])
+    if (!businessId) return
+    load(businessId)
+  }, [businessId, load])
 
   function openNew() {
     setEditing(null)

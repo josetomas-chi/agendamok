@@ -1,5 +1,6 @@
 "use client"
 import React, { useState, useEffect, useCallback } from "react"
+import { useBusiness } from "@/contexts/business-context"
 import { Settings, CalendarX2, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -36,7 +37,7 @@ function Input({ value, onChange, placeholder, className = "" }: { value: string
 }
 
 export default function ClubSettingsPage() {
-  const [businessId, setBusinessId] = useState("")
+  const { businessId } = useBusiness()
   const [form, setForm] = useState<ClubForm>(DEFAULTS)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -59,10 +60,9 @@ export default function ClubSettingsPage() {
   }, [])
 
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(d => {
-      if (d.businessId) { setBusinessId(d.businessId); load(d.businessId); loadHolidays(d.businessId) }
-    })
-  }, [load, loadHolidays])
+    if (!businessId) return
+    load(businessId); loadHolidays(businessId)
+  }, [businessId, load, loadHolidays])
 
   async function handleSave() {
     setSaving(true)

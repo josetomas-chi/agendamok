@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useBusiness } from "@/contexts/business-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts"
 import { TrendingUp, Users, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Download } from "lucide-react"
@@ -17,9 +18,9 @@ type Stats = {
 const COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"]
 
 export default function ReportsPage() {
+  const { businessId } = useBusiness()
   const [data, setData] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [businessId, setBusinessId] = useState("")
   const [brandColor, setBrandColor] = useState("#6366f1")
   const [refDate, setRefDate] = useState(() => new Date())
   const [mode, setMode] = useState<"month" | "custom">("month")
@@ -27,12 +28,11 @@ export default function ReportsPage() {
   const [customTo, setCustomTo] = useState("")
 
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(async d => {
-      setBusinessId(d.businessId)
-      const biz = await fetch(`/api/businesses/${d.businessId}`).then(r => r.json())
+    if (!businessId) return
+    fetch(`/api/businesses/${businessId}`).then(r => r.json()).then(biz => {
       if (biz.business?.primaryColor) setBrandColor(biz.business.primaryColor)
     })
-  }, [])
+  }, [businessId])
 
   useEffect(() => {
     if (!businessId) return

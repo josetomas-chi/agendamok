@@ -1,6 +1,7 @@
 ﻿"use client"
 
 import { useState, useEffect } from "react"
+import { useBusiness } from "@/contexts/business-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,7 +15,7 @@ import { toast } from "sonner"
 import { Megaphone, Gift, Tag, Zap, Plus, Send } from "lucide-react"
 
 export default function MarketingPage() {
-  const [businessId, setBusinessId] = useState("")
+  const { businessId } = useBusiness()
   const [campaignOpen, setCampaignOpen] = useState(false)
   const [discountOpen, setDiscountOpen] = useState(false)
   const [giftOpen, setGiftOpen] = useState(false)
@@ -25,11 +26,9 @@ export default function MarketingPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(d => {
-      setBusinessId(d.businessId)
-      loadDiscounts(d.businessId)
-    })
-  }, [])
+    if (!businessId) return
+    loadDiscounts(businessId)
+  }, [businessId])
 
   async function loadDiscounts(bid: string) {
     const r = await fetch(`/api/businesses/${bid}/discounts`)

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useBusiness } from "@/contexts/business-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -32,9 +33,8 @@ const PAYMENT_STATUS: Record<string, string> = {
 }
 
 export default function PaymentsPage() {
+  const { businessId, hasBsale } = useBusiness()
   const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [businessId, setBusinessId] = useState("")
-  const [hasBsale, setHasBsale] = useState(false)
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Appointment | null>(null)
   const [method, setMethod] = useState("CASH")
@@ -43,12 +43,9 @@ export default function PaymentsPage() {
   const [emitting, setEmitting] = useState(false)
 
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(d => {
-      setBusinessId(d.businessId)
-      setHasBsale(!!d.bsaleApiKey)
-      load(d.businessId)
-    })
-  }, [])
+    if (!businessId) return
+    load(businessId)
+  }, [businessId])
 
   async function load(bid: string) {
     setLoading(true)

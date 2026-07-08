@@ -1,6 +1,7 @@
 ﻿"use client"
 
 import { useState, useEffect } from "react"
+import { useBusiness } from "@/contexts/business-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -82,8 +83,8 @@ function ServicesEditor({ businessId, staffId, assignedIds, onSaved }: {
 }
 
 export default function StaffPage() {
+  const { businessId } = useBusiness()
   const [staff, setStaff] = useState<StaffMember[]>([])
-  const [businessId, setBusinessId] = useState("")
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<StaffMember | null>(null)
@@ -92,11 +93,9 @@ export default function StaffPage() {
   const [uploadingId, setUploadingId] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(d => {
-      setBusinessId(d.businessId)
-      loadStaff(d.businessId)
-    })
-  }, [])
+    if (!businessId) return
+    loadStaff(businessId)
+  }, [businessId])
 
   async function loadStaff(bid: string) {
     setLoading(true)

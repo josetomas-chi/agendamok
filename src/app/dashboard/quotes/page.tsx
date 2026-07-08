@@ -1,6 +1,7 @@
 ﻿"use client"
 
 import React, { useState, useEffect, useCallback } from "react"
+import { useBusiness } from "@/contexts/business-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -56,8 +57,8 @@ function calcTotal(items: QuoteItem[], discount: number) {
 const EMPTY_ITEM: QuoteItem = { description: "", quantity: 1, unitPrice: 0 }
 
 export default function QuotesPage() {
+  const { businessId } = useBusiness()
   const [quotes, setQuotes] = useState<Quote[]>([])
-  const [businessId, setBusinessId] = useState("")
   const [loading, setLoading] = useState(true)
   const [clients, setClients] = useState<Client[]>([])
   const [services, setServices] = useState<Service[]>([])
@@ -82,14 +83,12 @@ export default function QuotesPage() {
   }, [])
 
   useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(async d => {
-      setBusinessId(d.businessId)
-      load(d.businessId)
-      const [cr, sr] = await Promise.all([
-        fetch(`/api/businesses/${d.businessId}/clients`),
-        fetch(`/api/businesses/${d.businessId}/services`),
-      ])
-      const [cd, sd] = await Promise.all([cr.json(), sr.json()])
+    if (!businessId) return
+    load(businessId)
+    Promise.all([
+      fetch(`/api/businesses/${businessId}/clients`),
+      fetch(`/api/businesses/${businessId}/services`),
+    ]).then(([cr, sr]) => Promise.all([cr.json(), sr.json()])).then(([cd, sd]) => {
       setClients(cd.clients || [])
       setServices(sd.services || [])
     })
