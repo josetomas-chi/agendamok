@@ -31,6 +31,18 @@ function timeToMinutes(t: string) {
   return h * 60 + m
 }
 
+// Booking datetimes are stored as UTC (sent without tz from client)
+// so we must always display in UTC to match what the user entered
+function utcTime(iso: string) {
+  const d = new Date(iso)
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`
+}
+function utcDate(iso: string, fmt: string) {
+  const d = new Date(iso)
+  const shifted = new Date(d.getTime() + d.getTimezoneOffset() * 60000)
+  return format(shifted, fmt)
+}
+
 export default function ClubPageClient({ businessId: initialBusinessId }: { businessId: string }) {
   const businessId = initialBusinessId
   const [allBookings, setAllBookings] = useState<Booking[]>([])
@@ -171,7 +183,7 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
                       <p className="text-xs mt-0.5" style={{ color: "rgba(13,27,42,0.4)" }}>{b.client?.name || "Sin cliente"}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold" style={{ color: "#0d1b2a" }}>{format(new Date(b.startTime), "HH:mm")} – {format(new Date(b.endTime), "HH:mm")}</p>
+                      <p className="text-sm font-semibold" style={{ color: "#0d1b2a" }}>{utcTime(b.startTime)} – {utcTime(b.endTime)}</p>
                       <p className="text-xs font-bold" style={{ color: "#C9A84C" }}>${Number(b.price).toLocaleString("es-CL")}</p>
                     </div>
                   </div>
@@ -409,8 +421,8 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
   }
 
   function bookingStyle(b: Booking) {
-    const startMins = timeToMinutes(format(new Date(b.startTime), "HH:mm"))
-    const endMins = timeToMinutes(format(new Date(b.endTime), "HH:mm"))
+    const startMins = timeToMinutes(utcTime(b.startTime))
+    const endMins = timeToMinutes(utcTime(b.endTime))
     const originMins = START_HOUR * 60
     const top = ((startMins - originMins) / SLOT_MINUTES) * SLOT_HEIGHT
     const height = ((endMins - startMins) / SLOT_MINUTES) * SLOT_HEIGHT
@@ -508,7 +520,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                       >
                         {/* Hora — absoluta esquina superior izquierda */}
                         <p className="absolute top-1 left-1.5 text-[9px] font-semibold leading-none" style={{ color: "rgba(13,27,42,0.6)" }}>
-                          {format(new Date(b.startTime), "HH:mm")}–{format(new Date(b.endTime), "HH:mm")}
+                          {utcTime(b.startTime)}–{utcTime(b.endTime)}
                         </p>
                         {/* Nombre + precio — centrados */}
                         <div className="text-center px-1 w-full">
@@ -690,9 +702,9 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
     booking.client ? { id: booking.clientId!, name: booking.client.name } : null
   )
   const [editForm, setEditForm] = useState({
-    date: format(new Date(booking.startTime), "yyyy-MM-dd"),
-    startTime: format(new Date(booking.startTime), "HH:mm"),
-    endTime: format(new Date(booking.endTime), "HH:mm"),
+    date: utcDate(booking.startTime, "yyyy-MM-dd"),
+    startTime: utcTime(booking.startTime),
+    endTime: utcTime(booking.endTime),
     notes: booking.notes || "",
   })
 
@@ -782,8 +794,8 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
             <div className="rounded-xl divide-y overflow-hidden" style={{ background: "#f5f4f0", border: "1px solid rgba(13,27,42,0.08)" }}>
               {[
                 { label: "Cliente", value: booking.client?.name || "Sin cliente" },
-                { label: "Fecha", value: format(new Date(booking.startTime), "EEEE d 'de' MMMM yyyy", { locale: es }) },
-                { label: "Horario", value: `${format(new Date(booking.startTime), "HH:mm")} – ${format(new Date(booking.endTime), "HH:mm")}` },
+                { label: "Fecha", value: utcDate(booking.startTime, "EEEE d 'de' MMMM yyyy") },
+                { label: "Horario", value: `${utcTime(booking.startTime)} – ${utcTime(booking.endTime)}` },
                 { label: "Precio", value: `$${Number(booking.price).toLocaleString("es-CL")}` },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between px-4 py-2.5" style={{ borderColor: "rgba(13,27,42,0.06)" }}>

@@ -48,6 +48,30 @@ export async function PATCH(req: Request, { params }: Params) {
       }
     }
 
+    // Validar solapamiento si cambia horario o cancha
+    if (startTime !== undefined || endTime !== undefined || courtId !== undefined) {
+      const current = await prisma.courtBooking.findUnique({ where: { id: bookingId }, select: { courtId: true, startTime: true, endTime: true } })
+      if (current) {
+        const resolvedCourtId = courtId ?? current.courtId
+        const resolvedStart = data.startTime as Date ?? current.startTime
+        const resolvedEnd = data.endTime as Date ?? current.endTime
+        const conflict = await prisma.courtBooking.findFirst({
+          where: {
+            courtId: resolvedCourtId,
+            deletedAt: null,
+            status: { not: "CANCELLED" },
+            id: { not: bookingId },
+            OR: [
+              { startTime: { gte: resolvedStart, lt: resolvedEnd } },
+              { endTime: { gt: resolvedStart, lte: resolvedEnd } },
+              { startTime: { lte: resolvedStart }, endTime: { gte: resolvedEnd } },
+            ],
+          },
+        })
+        if (conflict) return NextResponse.json({ error: "La cancha ya tiene una reserva en ese horario" }, { status: 409 })
+      }
+    }
+
     const booking = await prisma.courtBooking.update({
       where: { id: bookingId, businessId: id },
       data,

@@ -43,6 +43,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   })
   if (!court) return NextResponse.json({ error: "Cancha no encontrada" }, { status: 404 })
 
+  // Validar solapamiento
+  const conflict = await prisma.courtBooking.findFirst({
+    where: {
+      courtId,
+      deletedAt: null,
+      status: { not: "CANCELLED" },
+      OR: [
+        { startTime: { gte: start, lt: end } },
+        { endTime: { gt: start, lte: end } },
+        { startTime: { lte: start }, endTime: { gte: end } },
+      ],
+    },
+  })
+  if (conflict) return NextResponse.json({ error: "La cancha ya tiene una reserva en ese horario" }, { status: 409 })
+
   const dayOfWeek = start.getDay() // 0=Sunday
   const timeStr = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`
 
