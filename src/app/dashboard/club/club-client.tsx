@@ -827,27 +827,58 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
     return r
   }
 
-  async function handleSaveEdit() {
-    let clientId: string | null = null
-    if (selectedClient) {
-      if (selectedClient.id) {
-        clientId = selectedClient.id
-      } else {
-        const cr = await fetch(`/api/businesses/${businessId}/clients`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: selectedClient.name, email: selectedClient.email || null, phone: selectedClient.phone || null }),
-        })
-        if (cr.ok) { const cd = await cr.json(); clientId = cd.client?.id || null }
-      }
-    }
+  const [applyScope, setApplyScope] = useState<"this" | "future" | null>(null)
+
+  const timeChanged =
+    editForm.startTime !== utcTime(booking.startTime) || editForm.endTime !== utcTime(booking.endTime)
+
+  async function resolveEditClientId() {
+    if (!selectedClient) return null
+    if (selectedClient.id) return selectedClient.id
+    const cr = await fetch(`/api/businesses/${businessId}/clients`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: selectedClient.name, email: selectedClient.email || null, phone: selectedClient.phone || null }),
+    })
+    if (cr.ok) { const cd = await cr.json(); return cd.client?.id || null }
+    return null
+  }
+
+  async function handleSaveEdit(scope: "this" | "future" = "this") {
+    setApplyScope(null)
+    const clientId = await resolveEditClientId()
+
+    // Siempre actualiza esta sesión
     const r = await patch({
       clientId,
       startTime: `${editForm.date}T${editForm.startTime}:00`,
       endTime: `${editForm.date}T${editForm.endTime}:00`,
       notes: editForm.notes || null,
     })
-    if (r.ok) { toast.success("Reserva actualizada"); onSaved() }
-    else { const d = await r.json().catch(() => ({})); toast.error(d.error || "Error al guardar") }
+    if (!r.ok) { const d = await r.json().catch(() => ({})); toast.error(d.error || "Error al guardar"); return }
+
+    // Si aplica a futuras, llama al endpoint de grupo
+    if (scope === "future" && booking.recurringGroupId && timeChanged) {
+      const [sh, sm] = editForm.startTime.split(":").map(Number)
+      const [eh, em] = editForm.endTime.split(":").map(Number)
+      const durationMinutes = (eh * 60 + em) - (sh * 60 + sm)
+      await fetch(`/api/businesses/${businessId}/recurring-bookings/${booking.recurringGroupId}/update-future`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ startHour: sh, startMinute: sm, durationMinutes, fromBookingId: booking.id }),
+      })
+      toast.success("Sesiones futuras actualizadas")
+    } else {
+      toast.success("Reserva actualizada")
+    }
+    onSaved()
+  }
+
+  function handleSaveEditClick() {
+    // Si es recurrente y cambió el horario, preguntar alcance
+    if (booking.recurringGroupId && timeChanged) {
+      setApplyScope("this") // abre modal
+    } else {
+      handleSaveEdit("this")
+    }
   }
 
   async function handleStatus(status: string) {
@@ -1128,11 +1159,44 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                 style={{ border: "1px solid rgba(13,27,42,0.12)", color: "rgba(13,27,42,0.5)", background: "#f5f4f0" }}>
                 Cancelar
               </button>
-              <button onClick={handleSaveEdit} disabled={saving}
+              <button onClick={handleSaveEditClick} disabled={saving}
                 className="flex-1 h-10 rounded-xl text-sm font-bold uppercase tracking-wide transition-colors disabled:opacity-50"
                 style={{ background: "rgba(201,168,76,0.12)", border: `1px solid rgba(201,168,76,0.4)`, color: "#a07b20" }}>
                 {saving ? "Guardando…" : "Guardar"}
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: aplicar cambio de horario a sesiones futuras */}
+        {applyScope !== null && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}
+            onClick={() => setApplyScope(null)}>
+            <div className="w-full max-w-xs rounded-2xl p-5 space-y-4" style={{ background: "#ffffff", border: `1px solid ${BORDER}`, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
+              onClick={e => e.stopPropagation()}>
+              <div>
+                <p className="text-sm font-black uppercase tracking-wide" style={{ color: NAVY }}>Cambio de horario</p>
+                <p className="text-xs mt-1 leading-relaxed" style={{ color: "rgba(13,27,42,0.55)" }}>
+                  Esta reserva pertenece a una serie recurrente. ¿A qué sesiones aplicas el nuevo horario?
+                </p>
+              </div>
+              <div className="space-y-2">
+                <button onClick={() => handleSaveEdit("this")} disabled={saving}
+                  className="w-full h-10 rounded-xl text-sm font-semibold disabled:opacity-50"
+                  style={{ background: "rgba(201,168,76,0.08)", border: `1px solid rgba(201,168,76,0.35)`, color: "#8a6520" }}>
+                  Solo esta sesión
+                </button>
+                <button onClick={() => handleSaveEdit("future")} disabled={saving}
+                  className="w-full h-10 rounded-xl text-sm font-bold disabled:opacity-50"
+                  style={{ background: "rgba(201,168,76,0.15)", border: `1px solid rgba(201,168,76,0.5)`, color: "#7a5818" }}>
+                  Esta y todas las futuras
+                </button>
+                <button onClick={() => setApplyScope(null)}
+                  className="w-full h-9 rounded-xl text-xs font-medium"
+                  style={{ color: "rgba(13,27,42,0.4)", background: "#f5f4f0" }}>
+                  Cancelar
+                </button>
+              </div>
             </div>
           </div>
         )}
