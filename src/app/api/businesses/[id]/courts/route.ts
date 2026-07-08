@@ -35,6 +35,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       color: courtData.color || "#38bdf8",
       sponsorName: courtData.sponsorName || null,
       sponsorLogo: courtData.sponsorLogo || null,
+      sponsorUrl: courtData.sponsorUrl || null,
       businessId: id,
       pricingRules: { create: cleanRules },
     },

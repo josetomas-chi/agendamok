@@ -458,11 +458,11 @@ function fmtCourtTime(iso: string) {
 }
 
 export async function sendCourtBookingConfirmation({
-  clientName, clientEmail, businessName, courtName, startTime, endTime, price, sponsorName, sponsorLogo,
+  clientName, clientEmail, businessName, courtName, startTime, endTime, price, sponsorName, sponsorLogo, sponsorUrl,
 }: {
   clientName: string; clientEmail: string; businessName: string
   courtName: string; startTime: string; endTime: string; price: number
-  sponsorName?: string; sponsorLogo?: string
+  sponsorName?: string; sponsorLogo?: string; sponsorUrl?: string
 }) {
   if (!process.env.RESEND_API_KEY) return
   const fmt = (iso: string) => new Date(iso).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"
@@ -488,8 +488,11 @@ export async function sendCourtBookingConfirmation({
       </div>
       ${sponsorLogo ? `
       <div style="text-align:center;margin:20px 0 4px">
-        <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:0 0 8px;text-transform:uppercase;letter-spacing:0.08em">Presentado por</p>
-        <img src="${sponsorLogo}" alt="${sponsorName ?? ""}" style="max-height:80px;max-width:220px;object-fit:contain;opacity:1" />
+        <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:0 0 10px;text-transform:uppercase;letter-spacing:0.08em">Presentado por</p>
+        ${sponsorUrl
+          ? `<a href="${sponsorUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block"><img src="${sponsorLogo}" alt="${sponsorName ?? ""}" style="max-height:110px;max-width:280px;object-fit:contain;opacity:1;display:block" /></a>`
+          : `<img src="${sponsorLogo}" alt="${sponsorName ?? ""}" style="max-height:110px;max-width:280px;object-fit:contain;opacity:1;display:block;margin:0 auto" />`
+        }
       </div>` : ""}
       <div style="text-align:center;margin:24px 0 8px">
         <a href="${gcalUrl}" style="display:inline-block;background:#38bdf8;color:#0c1a2e;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;letter-spacing:0.01em">

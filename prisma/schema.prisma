@@ -818,6 +818,7 @@ model Court {
   sortOrder   Int      @default(0)
   sponsorName String?
   sponsorLogo String?
+  sponsorUrl  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

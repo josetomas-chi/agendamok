@@ -7,7 +7,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { toast } from "sonner"
 
 type PricingRule = { id?: string; name: string; days: number[]; startTime: string; endTime: string; price: number }
-type Court = { id: string; name: string; sport: string | null; description: string | null; color: string; isActive: boolean; sponsorName: string | null; sponsorLogo: string | null; pricingRules: PricingRule[] }
+type Court = { id: string; name: string; sport: string | null; description: string | null; color: string; isActive: boolean; sponsorName: string | null; sponsorLogo: string | null; sponsorUrl: string | null; pricingRules: PricingRule[] }
 
 const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
 const EMPTY_RULE: PricingRule = { name: "", days: [1, 2, 3, 4, 5], startTime: "08:00", endTime: "18:00", price: 0 }
@@ -19,7 +19,7 @@ export default function CourtsPage() {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Court | null>(null)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ name: "", sport: "", description: "", color: "#38bdf8", sponsorName: "", sponsorLogo: "", pricingRules: [{ ...EMPTY_RULE }] as PricingRule[] })
+  const [form, setForm] = useState({ name: "", sport: "", description: "", color: "#38bdf8", sponsorName: "", sponsorLogo: "", sponsorUrl: "", pricingRules: [{ ...EMPTY_RULE }] as PricingRule[] })
   const [uploadingSponsor, setUploadingSponsor] = useState(false)
   const dragIndex = useRef<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
@@ -51,13 +51,13 @@ export default function CourtsPage() {
 
   function openNew() {
     setEditing(null)
-    setForm({ name: "", sport: "", description: "", color: "#38bdf8", sponsorName: "", sponsorLogo: "", pricingRules: [{ ...EMPTY_RULE }] })
+    setForm({ name: "", sport: "", description: "", color: "#38bdf8", sponsorName: "", sponsorLogo: "", sponsorUrl: "", pricingRules: [{ ...EMPTY_RULE }] })
     setOpen(true)
   }
 
   async function openEdit(c: Court) {
     setEditing(c)
-    setForm({ name: c.name, sport: c.sport || "", description: c.description || "", color: c.color, sponsorName: c.sponsorName || "", sponsorLogo: c.sponsorLogo || "", pricingRules: c.pricingRules.length > 0 ? c.pricingRules.map(r => ({ ...r })) : [{ ...EMPTY_RULE }] })
+    setForm({ name: c.name, sport: c.sport || "", description: c.description || "", color: c.color, sponsorName: c.sponsorName || "", sponsorLogo: c.sponsorLogo || "", sponsorUrl: c.sponsorUrl || "", pricingRules: c.pricingRules.length > 0 ? c.pricingRules.map(r => ({ ...r })) : [{ ...EMPTY_RULE }] })
     setFutureBookings(0)
     setUpdateFutureBookings(false)
     setOpen(true)
@@ -314,7 +314,10 @@ export default function CourtsPage() {
                     <input type="file" accept="image/*" className="hidden" onChange={handleSponsorLogo} disabled={uploadingSponsor} />
                   </label>
                 </div>
-                <p className="text-[10px] text-white/25">El logo aparecerá en el email de confirmación de reserva</p>
+                <input value={form.sponsorUrl} onChange={e => setForm(f => ({ ...f, sponsorUrl: e.target.value }))}
+                  placeholder="Web del auspiciador (ej: https://nissan.cl)"
+                  className="w-full h-10 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white placeholder-white/20 focus:outline-none focus:border-sky-500/60" />
+                <p className="text-[10px] text-white/25">El logo aparecerá en el email — al presionarlo lleva a la web del auspiciador</p>
               </div>
             </div>
 
