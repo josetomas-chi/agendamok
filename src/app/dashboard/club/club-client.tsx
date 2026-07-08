@@ -888,10 +888,38 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
   }
 
   const [cancelGroupModal, setCancelGroupModal] = useState(false)
+  const [cancelSessions, setCancelSessions] = useState<{ id: string; startTime: string; endTime: string; price: number; status: string }[]>([])
+  const [cancelSelectedIds, setCancelSelectedIds] = useState<string[]>([])
+  const [cancelling, setCancelling] = useState(false)
   const [payModal, setPayModal] = useState(false)
   const [groupSessions, setGroupSessions] = useState<{ id: string; startTime: string; endTime: string; price: number; status: string }[]>([])
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [paying, setPaying] = useState(false)
+
+  async function openCancelGroupModal() {
+    if (!booking.recurringGroupId) return
+    const r = await fetch(`/api/businesses/${businessId}/recurring-bookings/${booking.recurringGroupId}`)
+    if (r.ok) {
+      const d = await r.json()
+      const now = new Date()
+      const future = (d.bookings as typeof cancelSessions).filter(b => new Date(b.startTime) >= now && b.status !== "CANCELLED")
+      setCancelSessions(future)
+      setCancelSelectedIds([])
+      setCancelGroupModal(true)
+    }
+  }
+
+  async function handleCancelSelected() {
+    if (cancelSelectedIds.length === 0) return
+    setCancelling(true)
+    await Promise.all(cancelSelectedIds.map(id =>
+      fetch(`/api/businesses/${businessId}/court-bookings/${id}`, { method: "DELETE" })
+    ))
+    setCancelling(false)
+    toast.success(`${cancelSelectedIds.length} sesión${cancelSelectedIds.length !== 1 ? "es" : ""} cancelada${cancelSelectedIds.length !== 1 ? "s" : ""}`)
+    setCancelGroupModal(false)
+    onSaved()
+  }
 
   async function openPayModal() {
     if (!booking.recurringGroupId) return
@@ -1031,7 +1059,7 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                         style={{ color: "#15803d", background: "rgba(34,197,94,0.04)" }}>
                         <span className="text-xs">✓✓</span> Cobrar sesiones del ciclo
                       </button>
-                      <button onClick={() => setCancelGroupModal(true)} disabled={saving}
+                      <button onClick={openCancelGroupModal} disabled={saving}
                         className="w-full h-10 px-4 text-sm font-medium text-left flex items-center gap-2 transition-colors disabled:opacity-50"
                         style={{ color: "rgba(220,38,38,0.75)", background: "rgba(239,68,68,0.03)" }}>
                         <span className="text-xs">✕</span> Cancelar serie recurrente
@@ -1107,24 +1135,56 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
             {cancelGroupModal && (
               <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}
                 onClick={() => setCancelGroupModal(false)}>
-                <div className="w-full max-w-xs rounded-2xl p-5 space-y-4" style={{ background: "#ffffff", border: "1px solid rgba(239,68,68,0.25)" }}
+                <div className="w-full max-w-xs rounded-2xl overflow-hidden" style={{ background: "#ffffff", border: "1px solid rgba(239,68,68,0.25)", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
                   onClick={e => e.stopPropagation()}>
-                  <p className="text-sm font-black uppercase tracking-wide" style={{ color: NAVY }}>Cancelar serie</p>
-                  <p className="text-xs leading-relaxed" style={{ color: "rgba(13,27,42,0.55)" }}>
-                    Se cancelarán todas las sesiones futuras. Las sesiones ya realizadas o cobradas no se modifican.
-                  </p>
-                  <div className="space-y-2">
-                    <button onClick={() => handleCancelGroup("future")} disabled={saving}
-                      className="w-full h-11 rounded-xl text-sm font-bold disabled:opacity-50"
-                      style={{ border: "1px solid rgba(239,68,68,0.4)", color: "rgba(220,38,38,0.85)", background: "rgba(239,68,68,0.07)" }}>
-                      {saving ? "Cancelando…" : "Sí, cancelar sesiones futuras"}
-                    </button>
-                    <button onClick={() => setCancelGroupModal(false)}
-                      className="w-full h-9 rounded-xl text-xs font-medium"
-                      style={{ color: "rgba(13,27,42,0.4)", background: "#f5f4f0" }}>
-                      No cancelar
-                    </button>
+                  <div className="px-4 pt-4 pb-3" style={{ borderBottom: "1px solid rgba(13,27,42,0.06)" }}>
+                    <p className="text-sm font-black uppercase tracking-wide" style={{ color: NAVY }}>Cancelar sesiones</p>
+                    <p className="text-[11px] mt-0.5" style={{ color: "rgba(13,27,42,0.45)" }}>Selecciona las sesiones que quieres cancelar</p>
                   </div>
+                  {cancelSessions.length === 0 ? (
+                    <p className="px-4 py-6 text-sm text-center" style={{ color: "rgba(13,27,42,0.4)" }}>No hay sesiones futuras pendientes</p>
+                  ) : (
+                    <>
+                      <div className="max-h-64 overflow-y-auto divide-y" style={{ borderColor: "rgba(13,27,42,0.05)" }}>
+                        {cancelSessions.map(s => {
+                          const checked = cancelSelectedIds.includes(s.id)
+                          return (
+                            <button key={s.id} onClick={() => setCancelSelectedIds(prev => checked ? prev.filter(x => x !== s.id) : [...prev, s.id])}
+                              className="w-full px-4 py-2.5 flex items-center gap-3 text-left transition-colors"
+                              style={{ background: checked ? "rgba(239,68,68,0.05)" : "transparent" }}>
+                              <div className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
+                                style={{ border: checked ? "none" : "1.5px solid rgba(13,27,42,0.2)", background: checked ? "#ef4444" : "transparent" }}>
+                                {checked && <span className="text-white text-[9px] font-black">✕</span>}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold" style={{ color: NAVY }}>
+                                  {utcDate(s.startTime, "EEE d MMM")} · {utcTime(s.startTime)}–{utcTime(s.endTime)}
+                                </p>
+                              </div>
+                              <p className="text-xs font-bold flex-shrink-0" style={{ color: GOLD }}>${Number(s.price).toLocaleString("es-CL")}</p>
+                            </button>
+                          )
+                        })}
+                      </div>
+                      <div className="px-4 py-3 space-y-2" style={{ borderTop: "1px solid rgba(13,27,42,0.06)" }}>
+                        {cancelSelectedIds.length > 0 && (
+                          <p className="text-xs px-1" style={{ color: "rgba(13,27,42,0.4)" }}>
+                            {cancelSelectedIds.length} sesión{cancelSelectedIds.length !== 1 ? "es" : ""} seleccionada{cancelSelectedIds.length !== 1 ? "s" : ""}
+                          </p>
+                        )}
+                        <button onClick={handleCancelSelected} disabled={cancelling || cancelSelectedIds.length === 0}
+                          className="w-full h-10 rounded-xl text-sm font-bold uppercase tracking-wide disabled:opacity-40"
+                          style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.4)", color: "rgba(220,38,38,0.85)" }}>
+                          {cancelling ? "Cancelando…" : `Confirmar cancelación${cancelSelectedIds.length > 0 ? ` (${cancelSelectedIds.length})` : ""}`}
+                        </button>
+                        <button onClick={() => setCancelGroupModal(false)}
+                          className="w-full h-8 rounded-xl text-xs font-medium"
+                          style={{ color: "rgba(13,27,42,0.4)", background: "#f5f4f0" }}>
+                          Volver
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
