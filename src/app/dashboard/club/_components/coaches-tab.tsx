@@ -1,7 +1,15 @@
 "use client"
 import React, { useState, useEffect, useCallback } from "react"
+import { createPortal } from "react-dom"
 import { Plus, X, ChevronDown, Pencil, Trash2, User, TrendingUp, Calendar } from "lucide-react"
 import { toast } from "sonner"
+
+function Portal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+  if (!mounted) return null
+  return createPortal(children, document.body)
+}
 
 type FeeRule = {
   id?: string
@@ -581,6 +589,7 @@ export default function CoachesTab({ businessId }: { businessId: string }) {
 
       {/* Modal crear/editar */}
       {modal && (
+      <Portal>
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8 px-4" style={{ background: "rgba(0,0,0,0.45)", overflowY: "auto" }}>
           <div className="w-full max-w-lg rounded-2xl overflow-hidden flex-shrink-0" style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.1)" }}>
             <div className="flex items-center justify-between px-5 py-4" style={{ background: "#0d1b2a", borderBottom: "1px solid rgba(201,168,76,0.2)" }}>
@@ -600,11 +609,14 @@ export default function CoachesTab({ businessId }: { businessId: string }) {
             </ModalScroller>
           </div>
         </div>
+      </Portal>
       )}
 
       {/* Modal reporte */}
       {reportCoach && (
+      <Portal>
         <ReportModal businessId={businessId} coach={reportCoach} onClose={() => setReportCoach(null)} />
+      </Portal>
       )}
     </div>
   )
