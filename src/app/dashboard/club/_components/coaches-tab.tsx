@@ -46,6 +46,22 @@ type Report = {
 }
 
 const DAY_LABELS = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"]
+
+function ModalScroller({ children }: { children: React.ReactNode }) {
+  const ref = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    // Espera a que el browser termine de hacer auto-focus y fuerza scroll al top
+    const t = setTimeout(() => { el.scrollTop = 0 }, 0)
+    return () => clearTimeout(t)
+  }, [])
+  return (
+    <div ref={ref} className="overflow-y-auto flex-1 p-5">
+      {children}
+    </div>
+  )
+}
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
 
 function fmt(n: number) { return n.toLocaleString("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }) }
@@ -535,13 +551,13 @@ export default function CoachesTab({ businessId }: { businessId: string }) {
                 <X className="w-5 h-5" style={{ color: "rgba(255,255,255,0.5)" }} />
               </button>
             </div>
-            <div className="overflow-y-auto flex-1 p-5" ref={el => { if (el) el.scrollTop = 0 }}>
+            <ModalScroller>
               <CoachForm
                 initial={modal === "edit" && editCoach ? editCoach : undefined}
                 onSave={modal === "create" ? handleCreate : handleEdit}
                 onCancel={() => { setModal(null); setEditCoach(null) }}
               />
-            </div>
+            </ModalScroller>
           </div>
         </div>
       )}
