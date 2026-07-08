@@ -356,18 +356,26 @@ export default function NewBookingModal({
             <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} />
           </div>
 
-          {/* Toggle recurrencia */}
-          <button type="button" onClick={() => setIsRecurring(r => !r)}
-            className="w-full h-10 rounded-xl px-4 text-sm font-semibold flex items-center gap-2.5 transition-all"
-            style={isRecurring
-              ? { background: "rgba(201,168,76,0.12)", border: `1px solid ${GOLD}`, color: "#8a6520" }
-              : { background: "#f5f4f0", border: "1px solid rgba(13,27,42,0.1)", color: "rgba(13,27,42,0.5)" }}>
-            <RefreshCw className="w-4 h-4 flex-shrink-0" style={{ color: isRecurring ? GOLD : "rgba(13,27,42,0.35)" }} />
-            {isRecurring ? "Reserva recurrente activada" : "Convertir en reserva recurrente"}
-          </button>
+          {/* Recurrencia — siempre visible */}
+          <div className="rounded-xl overflow-hidden" style={{ border: isRecurring ? `1px solid ${GOLD}` : "1px solid rgba(13,27,42,0.1)" }}>
+            {/* Toggle header */}
+            <button type="button" onClick={() => setIsRecurring(r => !r)}
+              className="w-full h-10 px-4 text-sm font-semibold flex items-center gap-2.5 transition-all"
+              style={isRecurring
+                ? { background: "rgba(201,168,76,0.12)", color: "#8a6520" }
+                : { background: "#f5f4f0", color: "rgba(13,27,42,0.5)" }}>
+              <RefreshCw className="w-4 h-4 flex-shrink-0" style={{ color: isRecurring ? GOLD : "rgba(13,27,42,0.35)" }} />
+              <span className="flex-1 text-left">{isRecurring ? "Reserva recurrente" : "Reserva única"}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                style={isRecurring
+                  ? { background: "rgba(201,168,76,0.2)", color: GOLD }
+                  : { background: "rgba(13,27,42,0.06)", color: "rgba(13,27,42,0.35)" }}>
+                {isRecurring ? "recurrente" : "única"}
+              </span>
+            </button>
 
-          {/* Panel recurrencia */}
-          {isRecurring && (
+            {/* Panel recurrencia expandido */}
+            {isRecurring && (
             <div className="rounded-xl p-3.5 space-y-3" style={{ border: `1px solid rgba(201,168,76,0.25)`, background: "rgba(201,168,76,0.04)" }}>
               {/* Día de semana (informativo) */}
               <div className="flex items-center gap-2">
@@ -398,7 +406,8 @@ export default function NewBookingModal({
                 Los feriados de tipo "Cerrado" se omiten automáticamente. Los de recargo ajustan el precio de esa sesión.
               </p>
             </div>
-          )}
+            )}
+          </div>
 
           {/* Precio estimado (solo reserva individual) */}
           {!isRecurring && price > 0 && (
