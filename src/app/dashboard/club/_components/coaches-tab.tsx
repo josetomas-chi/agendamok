@@ -48,13 +48,7 @@ type Report = {
 const DAY_LABELS = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"]
 
 function ModalScroller({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="overflow-y-auto flex-1 p-5">
-      {/* Elemento invisible que captura el auto-focus del browser, evitando que scrollee a inputs internos */}
-      <div tabIndex={0} aria-hidden style={{ height: 0, width: 0, overflow: "hidden", outline: "none" }} />
-      {children}
-    </div>
-  )
+  return <div className="p-5 space-y-5">{children}</div>
 }
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
 
@@ -535,8 +529,8 @@ export default function CoachesTab({ businessId }: { businessId: string }) {
 
       {/* Modal crear/editar */}
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.45)" }}>
-          <div className="w-full max-w-lg rounded-2xl overflow-hidden flex flex-col" style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.1)", maxHeight: "90vh" }}>
+        <div className="fixed inset-0 z-50 overflow-y-auto p-4" style={{ background: "rgba(0,0,0,0.45)" }}>
+          <div className="w-full max-w-lg mx-auto my-8 rounded-2xl overflow-hidden" style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.1)" }}>
             <div className="flex items-center justify-between px-5 py-4" style={{ background: "#0d1b2a", borderBottom: "1px solid rgba(201,168,76,0.2)" }}>
               <p className="text-sm font-black uppercase tracking-wide" style={{ color: "#C9A84C" }}>
                 {modal === "create" ? "Nuevo entrenador" : "Editar entrenador"}
