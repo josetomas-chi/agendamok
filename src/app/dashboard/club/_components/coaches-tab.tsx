@@ -77,11 +77,31 @@ function CoachForm({
   const [name, setName] = useState(initial?.name ?? "")
   const [email, setEmail] = useState(initial?.email ?? "")
   const [phone, setPhone] = useState(initial?.phone ?? "")
+  const [photo, setPhoto] = useState(initial?.photo ?? "")
   const [color, setColor] = useState(initial?.color ?? "#38bdf8")
   const [paymentType, setPaymentType] = useState<"COMMISSION" | "COURT_FEE">(initial?.paymentType ?? "COMMISSION")
   const [commissionPercent, setCommissionPercent] = useState<string>(String(initial?.commissionPercent ?? ""))
   const [feeRules, setFeeRules] = useState<FeeRule[]>(initial?.feeRules ?? [])
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileRef = React.useRef<HTMLInputElement>(null)
+
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append("file", file)
+      const r = await fetch("/api/upload", { method: "POST", body: fd })
+      const d = await r.json()
+      if (r.ok) setPhoto(d.url)
+      else toast.error(d.error || "Error al subir imagen")
+    } finally {
+      setUploading(false)
+      e.target.value = ""
+    }
+  }
 
   function addRule() {
     setFeeRules(r => [...r, { name: "Horario Valle", days: [1,2,3,4,5], startTime: "08:00", endTime: "18:00", price: 5000 }])
@@ -107,7 +127,7 @@ function CoachForm({
         name: name.trim(),
         email: email || null,
         phone: phone || null,
-        photo: null,
+        photo: photo || null,
         color,
         paymentType,
         commissionPercent: paymentType === "COMMISSION" ? (parseFloat(commissionPercent) || null) : null,
@@ -120,6 +140,36 @@ function CoachForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Foto de perfil */}
+      <div className="flex items-center gap-4">
+        <div className="relative w-20 h-20 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center"
+          style={{ background: photo ? "transparent" : color, border: "2px solid rgba(13,27,42,0.1)" }}>
+          {photo
+            ? <img src={photo} alt="foto" className="w-full h-full object-cover" />
+            : <span className="text-2xl font-black text-white">{name ? name[0].toUpperCase() : "?"}</span>}
+          {uploading && (
+            <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
+              <div className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+            </div>
+          )}
+        </div>
+        <div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+            className="px-3 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
+            style={{ background: "rgba(13,27,42,0.06)", border: "1px solid rgba(13,27,42,0.12)", color: "#0d1b2a" }}>
+            {uploading ? "Subiendo…" : photo ? "Cambiar foto" : "Subir foto"}
+          </button>
+          {photo && (
+            <button type="button" onClick={() => setPhoto("")}
+              className="block mt-1.5 text-xs" style={{ color: "rgba(220,38,38,0.6)" }}>
+              Quitar foto
+            </button>
+          )}
+          <p className="text-xs mt-1" style={{ color: "rgba(13,27,42,0.35)" }}>JPG, PNG o WebP · máx 5MB</p>
+        </div>
+      </div>
+
       {/* Datos básicos */}
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
@@ -480,10 +530,12 @@ export default function CoachesTab({ businessId }: { businessId: string }) {
       {!loading && coaches.map(coach => (
         <div key={coach.id} className="rounded-2xl p-4 flex items-center gap-4 transition-all"
           style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.08)", opacity: coach.isActive ? 1 : 0.55 }}>
-          {/* Avatar color */}
-          <div className="w-11 h-11 rounded-full flex items-center justify-center text-white text-lg font-black flex-shrink-0"
+          {/* Avatar */}
+          <div className="w-11 h-11 rounded-full flex items-center justify-center text-white text-lg font-black flex-shrink-0 overflow-hidden"
             style={{ background: coach.color }}>
-            {coach.name[0]}
+            {coach.photo
+              ? <img src={coach.photo} alt={coach.name} className="w-full h-full object-cover" />
+              : coach.name[0]}
           </div>
 
           <div className="flex-1 min-w-0">
