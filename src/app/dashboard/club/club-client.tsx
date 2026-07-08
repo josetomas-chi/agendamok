@@ -1068,18 +1068,18 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                   onClick={e => e.stopPropagation()}>
                   <p className="text-sm font-black uppercase tracking-wide" style={{ color: NAVY }}>Cancelar recurrencia</p>
                   <p className="text-xs leading-relaxed" style={{ color: "rgba(13,27,42,0.55)" }}>
-                    ¿Qué sesiones quieres cancelar?
+                    ¿Quieres cancelar solo las sesiones futuras o toda la serie completa?
                   </p>
                   <div className="space-y-2">
                     <button onClick={() => handleCancelGroup("future")} disabled={saving}
                       className="w-full h-10 rounded-xl text-sm font-semibold disabled:opacity-50"
                       style={{ border: "1px solid rgba(239,68,68,0.3)", color: "rgba(220,38,38,0.8)", background: "rgba(239,68,68,0.05)" }}>
-                      Esta y las siguientes
+                      Cancelar sesiones futuras
                     </button>
                     <button onClick={() => handleCancelGroup("all")} disabled={saving}
                       className="w-full h-10 rounded-xl text-sm font-semibold disabled:opacity-50"
                       style={{ border: "1px solid rgba(239,68,68,0.5)", color: "rgba(185,28,28,0.9)", background: "rgba(239,68,68,0.08)" }}>
-                      Todas las sesiones
+                      Cancelar toda la serie
                     </button>
                     <button onClick={() => setCancelGroupModal(false)}
                       className="w-full h-9 rounded-xl text-xs font-medium"
