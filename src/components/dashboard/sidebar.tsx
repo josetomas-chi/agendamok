@@ -99,17 +99,9 @@ const S = {
   label: "rgba(201,168,76,0.4)",
 }
 
-export function Sidebar({ onClose }: { onClose?: () => void }) {
+export function Sidebar({ onClose, isSports = false }: { onClose?: () => void; isSports?: boolean }) {
   const pathname = usePathname()
-  const [businessType, setBusinessType] = useState<string>("GENERAL")
 
-  useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(d => {
-      if (d.business?.businessType) setBusinessType(d.business.businessType)
-    }).catch(() => {})
-  }, [])
-
-  const isSports = businessType === "SPORTS_CLUB"
   const groups = isSports ? SPORTS_GROUPS : GENERAL_GROUPS
 
   function isActive(href: string) {
