@@ -389,12 +389,12 @@ function MiniCalendarClock({ selectedDate, onDateChange }: { selectedDate: Date;
       {/* Reloj digital */}
       <div className="rounded-xl px-4 py-2.5 flex flex-col items-center justify-center"
         style={{ background: NAVY, border: "1px solid rgba(201,168,76,0.2)", boxShadow: "0 1px 4px rgba(0,0,0,0.12)", minWidth: 120 }}>
-        <p className="text-[9px] font-bold uppercase tracking-widest capitalize mb-1" style={{ color: "rgba(201,168,76,0.55)" }}>{dayName}</p>
+        <p className="text-[9px] font-bold uppercase tracking-widest capitalize mb-1" style={{ color: GOLD }}>{dayName}</p>
         <p className="font-black tabular-nums leading-none" style={{ fontSize: "1.5rem", color: "#ffffff", letterSpacing: "0.05em" }}>
           {hh}<span style={{ color: GOLD, animation: "blink 1s step-end infinite" }}>:</span>{mm}
         </p>
-        <p className="text-[10px] font-mono mt-0.5 tabular-nums" style={{ color: "rgba(255,255,255,0.2)" }}>{ss}</p>
-        <p className="text-[9px] mt-1.5 text-center capitalize" style={{ color: "rgba(201,168,76,0.45)" }}>{dateStr}</p>
+        <p className="text-[10px] font-mono mt-0.5 tabular-nums" style={{ color: "rgba(255,255,255,0.4)" }}>{ss}</p>
+        <p className="text-[9px] mt-1.5 text-center capitalize" style={{ color: GOLD }}>{dateStr}</p>
       </div>
 
       <style>{`@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }`}</style>
