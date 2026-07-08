@@ -992,13 +992,14 @@ model ClubCoach {
 }
 
 model ClubCoachFeeRule {
-  id        String   @id @default(cuid())
-  coachId   String
-  name      String
-  days      Int[]    // 0=Sun … 6=Sat
-  startTime String   // "HH:mm"
-  endTime   String   // "HH:mm"
-  price     Decimal  @db.Decimal(10, 2) // lo que el coach paga al club por hora
+  id         String  @id @default(cuid())
+  coachId    String
+  name       String
+  days       Int[]   // 0=Sun … 6=Sat
+  startTime  String  // "HH:mm"
+  endTime    String  // "HH:mm"
+  classPrice Decimal @db.Decimal(10, 2) @default(0) // precio que cobra el profe al cliente por hora
+  price      Decimal @db.Decimal(10, 2) @default(0) // arriendo que paga al club (COURT_FEE) o 0 si COMMISSION
 
   coach ClubCoach @relation(fields: [coachId], references: [id], onDelete: Cascade)
 

@@ -60,26 +60,40 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   })
   if (conflict) return NextResponse.json({ error: "La cancha ya tiene una reserva en ese horario" }, { status: 409 })
 
-  const dayOfWeek = start.getDay() // 0=Sunday
+  const dayOfWeek = start.getDay()
   const timeStr = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`
 
-  let pricePerHour = 0
-  for (const rule of court.pricingRules) {
-    if (rule.days.includes(dayOfWeek) && timeStr >= rule.startTime && timeStr < rule.endTime) {
-      pricePerHour = Number(rule.price)
-      break
+  let price = 0
+
+  if (coachId) {
+    // Clase particular: precio basado en tarifas del entrenador
+    const coach = await prisma.clubCoach.findUnique({
+      where: { id: coachId },
+      include: { feeRules: true },
+    })
+    if (coach) {
+      const rule = coach.feeRules.find(r => r.days.includes(dayOfWeek) && timeStr >= r.startTime && timeStr < r.endTime)
+      if (rule) price = Number(rule.classPrice) * durationHours
     }
-  }
+  } else {
+    // Reserva común: precio basado en tarifas de la cancha
+    let pricePerHour = 0
+    for (const rule of court.pricingRules) {
+      if (rule.days.includes(dayOfWeek) && timeStr >= rule.startTime && timeStr < rule.endTime) {
+        pricePerHour = Number(rule.price)
+        break
+      }
+    }
+    price = pricePerHour * durationHours
 
-  let price = pricePerHour * durationHours
-
-  // Aplicar recargo si el día es feriado
-  const holiday = await prisma.clubHoliday.findFirst({
-    where: { businessId: id, date: { gte: new Date(start.toDateString()), lt: new Date(new Date(start.toDateString()).getTime() + 86400000) }, type: "SURCHARGE" },
-  })
-  if (holiday && holiday.surchargeValue) {
-    if (holiday.surchargeType === "PERCENT") price = price * (1 + holiday.surchargeValue / 100)
-    else if (holiday.surchargeType === "FIXED") price = price + holiday.surchargeValue
+    // Aplicar recargo si el día es feriado (solo reservas sin profe)
+    const holiday = await prisma.clubHoliday.findFirst({
+      where: { businessId: id, date: { gte: new Date(start.toDateString()), lt: new Date(new Date(start.toDateString()).getTime() + 86400000) }, type: "SURCHARGE" },
+    })
+    if (holiday && holiday.surchargeValue) {
+      if (holiday.surchargeType === "PERCENT") price = price * (1 + holiday.surchargeValue / 100)
+      else if (holiday.surchargeType === "FIXED") price = price + holiday.surchargeValue
+    }
   }
 
   const booking = await prisma.courtBooking.create({

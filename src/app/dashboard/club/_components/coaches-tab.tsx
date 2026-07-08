@@ -17,7 +17,8 @@ type FeeRule = {
   days: number[]
   startTime: string
   endTime: string
-  price: number
+  classPrice: number
+  price: number // arriendo al club (COURT_FEE) o 0
 }
 
 type Coach = {
@@ -44,12 +45,13 @@ type ReportSession = {
   status: string
   coachEarns: number
   coachPays: number
+  clubEarns: number
 }
 
 type Report = {
   coach: { id: string; name: string; paymentType: string; commissionPercent: number | null; color: string }
   period: { year: number; month: number }
-  summary: { totalSessions: number; totalHours: number; totalRevenue: number; totalCoachEarns: number; totalCoachPays: number }
+  summary: { totalSessions: number; totalHours: number; totalRevenue: number; totalCoachEarns: number; totalCoachPays: number; totalClubEarns: number }
   sessions: ReportSession[]
 }
 
@@ -112,7 +114,7 @@ function CoachForm({
   }
 
   function addRule() {
-    setFeeRules(r => [...r, { name: "Horario Valle", days: [1,2,3,4,5], startTime: "08:00", endTime: "18:00", price: 5000 }])
+    setFeeRules(r => [...r, { name: "Horario Valle", days: [1,2,3,4,5], startTime: "08:00", endTime: "18:00", classPrice: 0, price: 0 }])
   }
   function removeRule(i: number) { setFeeRules(r => r.filter((_, idx) => idx !== i)) }
   function updateRule(i: number, field: keyof FeeRule, value: unknown) {
@@ -242,67 +244,75 @@ function CoachForm({
         </div>
       )}
 
-      {paymentType === "COURT_FEE" && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-bold uppercase tracking-wide" style={{ color: "rgba(13,27,42,0.5)" }}>Tarifas por horario</label>
-            <button type="button" onClick={addRule}
-              className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
-              style={{ background: "rgba(13,27,42,0.06)", color: "#0d1b2a", border: "1px solid rgba(13,27,42,0.12)" }}>
-              <Plus className="w-3 h-3" /> Agregar
-            </button>
-          </div>
-          <div className="space-y-3">
-            {feeRules.length === 0 && (
-              <p className="text-sm text-center py-4" style={{ color: "rgba(13,27,42,0.35)" }}>Sin tarifas configuradas</p>
-            )}
-            {feeRules.map((rule, i) => (
-              <div key={i} className="rounded-xl p-3 space-y-3" style={{ background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.08)" }}>
-                <div className="flex items-center gap-2">
-                  <input value={rule.name} onChange={e => updateRule(i, "name", e.target.value)}
-                    placeholder="Nombre (ej. Valle, Punta)"
-                    className="flex-1 rounded-lg px-2 py-1.5 text-sm outline-none"
-                    style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.12)", color: "#0d1b2a" }} />
-                  <button type="button" onClick={() => removeRule(i)}>
-                    <X className="w-4 h-4" style={{ color: "rgba(13,27,42,0.35)" }} />
-                  </button>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {DAY_LABELS.map((d, di) => (
-                    <button key={di} type="button" onClick={() => toggleDay(i, di)}
-                      className="w-8 h-8 rounded-full text-xs font-bold transition-all"
-                      style={rule.days.includes(di)
-                        ? { background: "#0d1b2a", color: "#C9A84C" }
-                        : { background: "rgba(13,27,42,0.06)", color: "rgba(13,27,42,0.4)" }}>
-                      {d}
-                    </button>
-                  ))}
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="block text-xs mb-1" style={{ color: "rgba(13,27,42,0.45)" }}>Desde</label>
-                    <input type="time" value={rule.startTime} onChange={e => updateRule(i, "startTime", e.target.value)}
-                      className="w-full rounded-lg px-2 py-1.5 text-sm outline-none"
-                      style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.12)", color: "#0d1b2a" }} />
-                  </div>
-                  <div>
-                    <label className="block text-xs mb-1" style={{ color: "rgba(13,27,42,0.45)" }}>Hasta</label>
-                    <input type="time" value={rule.endTime} onChange={e => updateRule(i, "endTime", e.target.value)}
-                      className="w-full rounded-lg px-2 py-1.5 text-sm outline-none"
-                      style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.12)", color: "#0d1b2a" }} />
-                  </div>
-                  <div>
-                    <label className="block text-xs mb-1" style={{ color: "rgba(13,27,42,0.45)" }}>$/hora</label>
-                    <input type="number" value={rule.price} onChange={e => updateRule(i, "price", parseFloat(e.target.value) || 0)}
-                      className="w-full rounded-lg px-2 py-1.5 text-sm outline-none"
-                      style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.12)", color: "#0d1b2a" }} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs font-bold uppercase tracking-wide" style={{ color: "rgba(13,27,42,0.5)" }}>Tarifas de clase por horario</label>
+          <button type="button" onClick={addRule}
+            className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+            style={{ background: "rgba(13,27,42,0.06)", color: "#0d1b2a", border: "1px solid rgba(13,27,42,0.12)" }}>
+            <Plus className="w-3 h-3" /> Agregar
+          </button>
         </div>
-      )}
+        <div className="space-y-3">
+          {feeRules.length === 0 && (
+            <p className="text-sm text-center py-4" style={{ color: "rgba(13,27,42,0.35)" }}>Sin tarifas configuradas</p>
+          )}
+          {feeRules.map((rule, i) => (
+            <div key={i} className="rounded-xl p-3 space-y-3" style={{ background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.08)" }}>
+              <div className="flex items-center gap-2">
+                <input value={rule.name} onChange={e => updateRule(i, "name", e.target.value)}
+                  placeholder="Nombre (ej. Valle, Punta)"
+                  className="flex-1 rounded-lg px-2 py-1.5 text-sm outline-none"
+                  style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.12)", color: "#0d1b2a" }} />
+                <button type="button" onClick={() => removeRule(i)}>
+                  <X className="w-4 h-4" style={{ color: "rgba(13,27,42,0.35)" }} />
+                </button>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {DAY_LABELS.map((d, di) => (
+                  <button key={di} type="button" onClick={() => toggleDay(i, di)}
+                    className="w-8 h-8 rounded-full text-xs font-bold transition-all"
+                    style={rule.days.includes(di)
+                      ? { background: "#0d1b2a", color: "#C9A84C" }
+                      : { background: "rgba(13,27,42,0.06)", color: "rgba(13,27,42,0.4)" }}>
+                    {d}
+                  </button>
+                ))}
+              </div>
+              <div className={`grid gap-2 ${paymentType === "COURT_FEE" ? "grid-cols-4" : "grid-cols-3"}`}>
+                <div>
+                  <label className="block text-xs mb-1" style={{ color: "rgba(13,27,42,0.45)" }}>Desde</label>
+                  <input type="time" value={rule.startTime} onChange={e => updateRule(i, "startTime", e.target.value)}
+                    className="w-full rounded-lg px-2 py-1.5 text-sm outline-none"
+                    style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.12)", color: "#0d1b2a" }} />
+                </div>
+                <div>
+                  <label className="block text-xs mb-1" style={{ color: "rgba(13,27,42,0.45)" }}>Hasta</label>
+                  <input type="time" value={rule.endTime} onChange={e => updateRule(i, "endTime", e.target.value)}
+                    className="w-full rounded-lg px-2 py-1.5 text-sm outline-none"
+                    style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.12)", color: "#0d1b2a" }} />
+                </div>
+                <div>
+                  <label className="block text-xs mb-1" style={{ color: "rgba(13,27,42,0.45)" }}>Precio clase/hr</label>
+                  <input type="number" value={rule.classPrice || ""} placeholder="0"
+                    onChange={e => updateRule(i, "classPrice", parseFloat(e.target.value) || 0)}
+                    className="w-full rounded-lg px-2 py-1.5 text-sm outline-none"
+                    style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.12)", color: "#0d1b2a" }} />
+                </div>
+                {paymentType === "COURT_FEE" && (
+                  <div>
+                    <label className="block text-xs mb-1" style={{ color: "rgba(13,27,42,0.45)" }}>Arriendo club/hr</label>
+                    <input type="number" value={rule.price || ""} placeholder="0"
+                      onChange={e => updateRule(i, "price", parseFloat(e.target.value) || 0)}
+                      className="w-full rounded-lg px-2 py-1.5 text-sm outline-none"
+                      style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.12)", color: "#0d1b2a" }} />
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Botones */}
       <div className="flex gap-2 pt-2">
@@ -393,16 +403,23 @@ function ReportModal({ businessId, coach, onClose }: { businessId: string; coach
                   <p className="text-2xl font-black" style={{ color: "#0d1b2a" }}>{fmt(report.summary.totalRevenue)}</p>
                   <p className="text-xs mt-0.5" style={{ color: "rgba(13,27,42,0.45)" }}>generado en canchas</p>
                 </div>
-                <div className="col-span-2 rounded-xl p-4" style={{ background: isPaying ? "rgba(56,189,248,0.08)" : "rgba(201,168,76,0.08)", border: `1.5px solid ${isPaying ? "rgba(56,189,248,0.3)" : "rgba(201,168,76,0.3)"}` }}>
+                <div className="rounded-xl p-4" style={{ background: "rgba(201,168,76,0.08)", border: "1.5px solid rgba(201,168,76,0.3)" }}>
                   <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: "rgba(13,27,42,0.5)" }}>
-                    {isPaying ? "Coach paga al club" : "Club paga al coach"}
+                    {isPaying ? "Coach paga al club" : "Coach recibe"}
                   </p>
-                  <p className="text-3xl font-black" style={{ color: isPaying ? "#0ea5e9" : "#C9A84C" }}>
+                  <p className="text-2xl font-black" style={{ color: "#C9A84C" }}>
                     {isPaying ? fmt(report.summary.totalCoachPays) : fmt(report.summary.totalCoachEarns)}
                   </p>
                   {!isPaying && (
-                    <p className="text-xs mt-0.5" style={{ color: "rgba(13,27,42,0.45)" }}>{coach.commissionPercent}% de comisión</p>
+                    <p className="text-xs mt-0.5" style={{ color: "rgba(13,27,42,0.45)" }}>{coach.commissionPercent}% del precio de clase</p>
                   )}
+                </div>
+                <div className="rounded-xl p-4" style={{ background: "rgba(56,189,248,0.08)", border: "1.5px solid rgba(56,189,248,0.3)" }}>
+                  <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: "rgba(13,27,42,0.5)" }}>Club recibe</p>
+                  <p className="text-2xl font-black" style={{ color: "#0ea5e9" }}>{fmt(report.summary.totalClubEarns)}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "rgba(13,27,42,0.45)" }}>
+                    {isPaying ? "arriendo de cancha" : `${100 - (coach.commissionPercent ?? 0)}% del precio de clase`}
+                  </p>
                 </div>
               </div>
 
@@ -424,9 +441,10 @@ function ReportModal({ businessId, coach, onClose }: { businessId: string; coach
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-bold" style={{ color: "#0d1b2a" }}>{fmt(s.price)}</p>
-                          <p className="text-xs font-bold" style={{ color: isPaying ? "#0ea5e9" : "#C9A84C" }}>
-                            {isPaying ? `−${fmt(s.coachPays)}` : `+${fmt(s.coachEarns)}`}
+                          <p className="text-xs font-bold" style={{ color: "#C9A84C" }}>
+                            coach {isPaying ? `−${fmt(s.coachPays)}` : `+${fmt(s.coachEarns)}`}
                           </p>
+                          <p className="text-xs font-bold" style={{ color: "#0ea5e9" }}>club +{fmt(s.clubEarns)}</p>
                         </div>
                       </div>
                     ))}

@@ -45,20 +45,26 @@ export async function GET(req: Request, { params }: Params) {
 
     let coachEarns = 0
     let coachPays = 0
+    let clubEarns = 0
+
+    const h = b.startTime.getUTCHours()
+    const m = b.startTime.getUTCMinutes()
+    const timeStr = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+    const dow = b.startTime.getUTCDay()
+    const rule = coach.feeRules.find(
+      (r: { days: number[]; startTime: string; endTime: string }) => r.days.includes(dow) && timeStr >= r.startTime && timeStr < r.endTime
+    )
 
     if (coach.paymentType === "COMMISSION") {
+      // Coach recibe su % del precio de la clase; el club se queda con el resto
       const pct = coach.commissionPercent ?? 0
       coachEarns = price * (pct / 100)
+      clubEarns = price - coachEarns
     } else {
-      // COURT_FEE: buscar regla aplicable
-      const h = b.startTime.getUTCHours()
-      const m = b.startTime.getUTCMinutes()
-      const timeStr = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
-      const dow = b.startTime.getUTCDay()
-      const rule = coach.feeRules.find(
-        (r: { days: number[]; startTime: string; endTime: string; price: unknown }) => r.days.includes(dow) && timeStr >= r.startTime && timeStr < r.endTime
-      )
+      // COURT_FEE: el club cobra arriendo fijo; el coach se queda con el resto
       coachPays = rule ? Number(rule.price) * durationHours : 0
+      clubEarns = coachPays
+      coachEarns = price - coachPays
     }
 
     return {
@@ -72,6 +78,7 @@ export async function GET(req: Request, { params }: Params) {
       status: b.status,
       coachEarns,
       coachPays,
+      clubEarns,
     }
   })
 
@@ -81,11 +88,12 @@ export async function GET(req: Request, { params }: Params) {
   const totalRevenue = sessions.reduce((s: number, b: Sess) => s + b.price, 0)
   const totalCoachEarns = sessions.reduce((s: number, b: Sess) => s + b.coachEarns, 0)
   const totalCoachPays = sessions.reduce((s: number, b: Sess) => s + b.coachPays, 0)
+  const totalClubEarns = sessions.reduce((s: number, b: Sess) => s + b.clubEarns, 0)
 
   return NextResponse.json({
     coach: { id: coach.id, name: coach.name, paymentType: coach.paymentType, commissionPercent: coach.commissionPercent, color: coach.color },
     period: { year, month },
-    summary: { totalSessions, totalHours, totalRevenue, totalCoachEarns, totalCoachPays },
+    summary: { totalSessions, totalHours, totalRevenue, totalCoachEarns, totalCoachPays, totalClubEarns },
     sessions,
   })
 }
