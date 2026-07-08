@@ -395,7 +395,7 @@ if (!court) return
       {courts.length === 0 ? (
         <div className="p-12 text-center text-sm" style={{ color: "rgba(13,27,42,0.35)" }}>No hay canchas activas. Crea una en la sección Canchas.</div>
       ) : (
-        <div className="overflow-auto max-h-[calc(100vh-280px)]" ref={gridRef}>
+        <div className="overflow-auto max-h-[calc(100vh-280px)] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" ref={gridRef}>
           <div className="flex" style={{ minWidth: `${44 + courts.length * 130}px` }}>
             {/* Time column */}
             <div className="w-11 flex-shrink-0" style={{ borderRight: BORDER }}>
