@@ -55,7 +55,8 @@ function TimeSelect({ value, onChange, label }: { value: string; onChange: (v: s
 
 type NewClientForm = { name: string; email: string; phone: string }
 type Client = { id: string; name: string; email: string | null; phone: string | null }
-type Coach = { id: string; name: string; color: string; paymentType: string }
+type CoachFeeRule = { days: number[]; startTime: string; endTime: string; classPrice: number }
+type Coach = { id: string; name: string; color: string; paymentType: string; feeRules: CoachFeeRule[] }
 
 function ClientCombobox({ clients, value, onSelect }: {
   clients: Client[]
@@ -186,6 +187,21 @@ function calcPrice(court: Court | undefined, startTime: string, endTime: string,
   return pricePerHour * durationHours
 }
 
+function calcClassPrice(coach: Coach | undefined, startTime: string, endTime: string, date: string): number {
+  if (!coach?.feeRules?.length || !startTime || !endTime || !date) return 0
+  const start = new Date(`${date}T${startTime}`)
+  const end = new Date(`${date}T${endTime}`)
+  if (end <= start) return 0
+  const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
+  const dayOfWeek = start.getDay()
+  for (const rule of coach.feeRules) {
+    if (rule.days.includes(dayOfWeek) && startTime >= rule.startTime && startTime < rule.endTime) {
+      return Number(rule.classPrice) * durationHours
+    }
+  }
+  return 0
+}
+
 function countOccurrences(startDate: string, endDate: string, dayOfWeek: number): number {
   if (!startDate || !endDate || endDate <= startDate) return 0
   const start = new Date(startDate + "T00:00:00Z")
@@ -234,7 +250,10 @@ export default function NewBookingModal({
   }, [businessId])
 
   const selectedCourt = allCourts.find(c => c.id === form.courtId)
-  const price = calcPrice(selectedCourt, form.startTime, form.endTime, form.date)
+  const selectedCoach = coaches.find(c => c.id === selectedCoachId)
+  const price = bookingType === "class"
+    ? calcClassPrice(selectedCoach, form.startTime, form.endTime, form.date)
+    : calcPrice(selectedCourt, form.startTime, form.endTime, form.date)
   const selectedDayOfWeek = form.date ? new Date(form.date + "T00:00:00Z").getUTCDay() : -1
   const sessionCount = bookingType === "recurring" ? countOccurrences(form.date, rangeEnd, selectedDayOfWeek) : 0
 
