@@ -41,7 +41,7 @@ function utcTime(iso: string) {
 function utcDate(iso: string, fmt: string) {
   const d = new Date(iso)
   const shifted = new Date(d.getTime() + d.getTimezoneOffset() * 60000)
-  return format(shifted, fmt)
+  return format(shifted, fmt, { locale: es })
 }
 
 export default function ClubPageClient({ businessId: initialBusinessId }: { businessId: string }) {
@@ -995,37 +995,49 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
 
             {/* Actions */}
             {!isCancelled && (
-              <div className="space-y-2">
-                {!isCompleted && (
-                  <button onClick={() => handleStatus("COMPLETED")} disabled={saving}
-                    className="w-full h-10 rounded-xl text-sm font-bold uppercase tracking-wide transition-colors disabled:opacity-50"
-                    style={{ background: "rgba(201,168,76,0.12)", border: `1px solid rgba(201,168,76,0.4)`, color: "#a07b20" }}>
-                    {saving ? "Guardando…" : "✓ Cobrar / Completar"}
-                  </button>
-                )}
-                <button onClick={() => setMode("edit")}
-                  className="w-full h-10 rounded-xl text-sm font-semibold transition-colors"
-                  style={{ background: "#f5f4f0", border: "1px solid rgba(13,27,42,0.12)", color: "rgba(13,27,42,0.6)" }}>
-                  Editar reserva
-                </button>
-                <button onClick={handleDelete} disabled={saving}
-                  className="w-full h-10 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
-                  style={{ border: "1px solid rgba(239,68,68,0.2)", color: "rgba(220,38,38,0.7)" }}>
-                  Cancelar esta reserva
-                </button>
+              <div className="space-y-3">
+                {/* Acciones de esta sesión */}
+                <div className="space-y-2">
+                  {!isCompleted && (
+                    <button onClick={() => handleStatus("COMPLETED")} disabled={saving}
+                      className="w-full h-11 rounded-xl text-sm font-bold uppercase tracking-wide transition-colors disabled:opacity-50"
+                      style={{ background: "rgba(201,168,76,0.15)", border: `1px solid rgba(201,168,76,0.5)`, color: "#8a6520" }}>
+                      {saving ? "Guardando…" : "✓ Cobrar / Completar"}
+                    </button>
+                  )}
+                  <div className="flex gap-2">
+                    <button onClick={() => setMode("edit")}
+                      className="flex-1 h-10 rounded-xl text-sm font-semibold transition-colors"
+                      style={{ background: "#f5f4f0", border: "1px solid rgba(13,27,42,0.12)", color: "rgba(13,27,42,0.6)" }}>
+                      Editar
+                    </button>
+                    <button onClick={handleDelete} disabled={saving}
+                      className="flex-1 h-10 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+                      style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)", color: "rgba(220,38,38,0.7)" }}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+
+                {/* Acciones de la serie recurrente */}
                 {booking.recurringGroupId && (
-                  <button onClick={openPayModal} disabled={saving}
-                    className="w-full h-10 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                    style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.35)", color: "#15803d" }}>
-                    <span style={{ fontSize: 13 }}>✓✓</span> Cobrar sesiones del ciclo
-                  </button>
-                )}
-                {booking.recurringGroupId && (
-                  <button onClick={() => setCancelGroupModal(true)} disabled={saving}
-                    className="w-full h-10 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
-                    style={{ border: "1px solid rgba(239,68,68,0.35)", color: "rgba(220,38,38,0.85)", background: "rgba(239,68,68,0.04)" }}>
-                    Cancelar reservas recurrentes…
-                  </button>
+                  <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(13,27,42,0.08)" }}>
+                    <p className="text-[9px] font-bold uppercase tracking-widest px-3 py-1.5" style={{ background: "#f5f4f0", color: "rgba(13,27,42,0.35)", borderBottom: "1px solid rgba(13,27,42,0.06)" }}>
+                      Serie recurrente
+                    </p>
+                    <div className="divide-y" style={{ borderColor: "rgba(13,27,42,0.06)" }}>
+                      <button onClick={openPayModal} disabled={saving}
+                        className="w-full h-10 px-4 text-sm font-semibold text-left flex items-center gap-2 transition-colors disabled:opacity-50"
+                        style={{ color: "#15803d", background: "rgba(34,197,94,0.04)" }}>
+                        <span className="text-xs">✓✓</span> Cobrar sesiones del ciclo
+                      </button>
+                      <button onClick={() => setCancelGroupModal(true)} disabled={saving}
+                        className="w-full h-10 px-4 text-sm font-medium text-left flex items-center gap-2 transition-colors disabled:opacity-50"
+                        style={{ color: "rgba(220,38,38,0.75)", background: "rgba(239,68,68,0.03)" }}>
+                        <span className="text-xs">✕</span> Cancelar serie recurrente
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
