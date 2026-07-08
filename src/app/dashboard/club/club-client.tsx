@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react"
 import { Trophy, Plus, Calendar, Users, MapPin, Clock, ChevronLeft, ChevronRight, X, ChevronDown, UserPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, addDays, subDays, isSameDay } from "date-fns"
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, addDays, subDays, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from "date-fns"
 import { es } from "date-fns/locale"
 import { toast } from "sonner"
 import NewBookingModal from "./_components/new-booking-modal"
@@ -204,6 +204,7 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
         const filteredCourts = sportFilter === "Todos" ? courts : courts.filter(c => c.sport && normalize(c.sport) === normalize(sportFilter))
         return (
           <>
+            <MiniCalendarClock selectedDate={selectedDate} onDateChange={setSelectedDate} />
             {sports.length > 2 && (
               <div className="flex gap-1 flex-wrap">
                 {sports.map(s => (
@@ -302,6 +303,100 @@ function CalendarSkeleton() {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+// ─── Mini calendar + clock ────────────────────────────────────────────────────
+
+function MiniCalendarClock({ selectedDate, onDateChange }: { selectedDate: Date; onDateChange: (d: Date) => void }) {
+  const [now, setNow] = useState(new Date())
+  const [viewMonth, setViewMonth] = useState(new Date(selectedDate))
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  // Sync viewMonth cuando el usuario navega desde las flechas del calendario grande
+  useEffect(() => {
+    setViewMonth(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1))
+  }, [selectedDate.getFullYear(), selectedDate.getMonth()])
+
+  const monthStart = startOfMonth(viewMonth)
+  const monthEnd = endOfMonth(viewMonth)
+  const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
+  // Lunes como primer día (offset: getDay=0(dom)→6, 1(lun)→0, etc.)
+  const startOffset = (getDay(monthStart) + 6) % 7
+
+  const hh = String(now.getHours()).padStart(2, "0")
+  const mm = String(now.getMinutes()).padStart(2, "0")
+  const ss = String(now.getSeconds()).padStart(2, "0")
+  const dayName = format(now, "EEEE", { locale: es })
+  const dateStr = format(now, "d 'de' MMMM yyyy", { locale: es })
+
+  const GOLD = "#C9A84C"
+  const NAVY = "#0d1b2a"
+
+  return (
+    <div className="flex gap-4 mb-1">
+      {/* Mini calendario mensual */}
+      <div className="rounded-2xl p-3 flex-1" style={{ background: "#ffffff", border: "1px solid rgba(13,27,42,0.08)", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+        {/* Mes + flechas */}
+        <div className="flex items-center justify-between mb-2">
+          <button onClick={() => setViewMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
+            className="w-6 h-6 rounded-lg flex items-center justify-center transition-colors hover:bg-black/5">
+            <ChevronLeft className="w-3.5 h-3.5" style={{ color: "rgba(13,27,42,0.4)" }} />
+          </button>
+          <p className="text-[11px] font-black uppercase tracking-widest capitalize" style={{ color: NAVY }}>
+            {format(viewMonth, "MMMM yyyy", { locale: es })}
+          </p>
+          <button onClick={() => setViewMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
+            className="w-6 h-6 rounded-lg flex items-center justify-center transition-colors hover:bg-black/5">
+            <ChevronRight className="w-3.5 h-3.5" style={{ color: "rgba(13,27,42,0.4)" }} />
+          </button>
+        </div>
+
+        {/* Días de semana */}
+        <div className="grid grid-cols-7 mb-1">
+          {["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"].map(d => (
+            <div key={d} className="text-center text-[9px] font-bold uppercase tracking-wide py-0.5" style={{ color: "rgba(13,27,42,0.3)" }}>{d}</div>
+          ))}
+        </div>
+
+        {/* Grid días */}
+        <div className="grid grid-cols-7 gap-y-0.5">
+          {Array.from({ length: startOffset }).map((_, i) => <div key={`e${i}`} />)}
+          {days.map(day => {
+            const isSelected = isSameDay(day, selectedDate)
+            const isToday = isSameDay(day, new Date())
+            return (
+              <button key={day.toISOString()} onClick={() => onDateChange(day)}
+                className="w-full aspect-square rounded-lg flex items-center justify-center text-[11px] font-semibold transition-all"
+                style={isSelected
+                  ? { background: NAVY, color: "#ffffff" }
+                  : isToday
+                    ? { background: "rgba(201,168,76,0.18)", color: GOLD, fontWeight: 800 }
+                    : { color: "rgba(13,27,42,0.6)" }}>
+                {day.getDate()}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Reloj digital */}
+      <div className="rounded-2xl px-5 py-3 flex flex-col items-center justify-center min-w-[160px]"
+        style={{ background: NAVY, border: "1px solid rgba(201,168,76,0.25)", boxShadow: "0 1px 4px rgba(0,0,0,0.12)" }}>
+        <p className="text-[10px] font-bold uppercase tracking-widest capitalize mb-1" style={{ color: "rgba(201,168,76,0.6)" }}>{dayName}</p>
+        <p className="font-black tabular-nums leading-none" style={{ fontSize: "2rem", color: "#ffffff", letterSpacing: "0.06em" }}>
+          {hh}<span style={{ color: GOLD, animation: "blink 1s step-end infinite" }}>:</span>{mm}
+        </p>
+        <p className="text-[11px] font-mono mt-1 tabular-nums" style={{ color: "rgba(255,255,255,0.25)" }}>{ss}</p>
+        <p className="text-[10px] mt-2 text-center capitalize font-medium" style={{ color: "rgba(201,168,76,0.5)" }}>{dateStr}</p>
+      </div>
+
+      <style>{`@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }`}</style>
     </div>
   )
 }
