@@ -309,6 +309,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
   const selectedDateRef = useRef(selectedDate)
   selectedDateRef.current = selectedDate
   const customDragRef = useRef<{ bookingId: string; durationMins: number; sport: string | null } | null>(null)
+  const dragStartPos = useRef<{ x: number; y: number } | null>(null)
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null)
   const [dragLabel, setDragLabel] = useState("")
@@ -336,6 +337,9 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
     function onMouseMove(e: MouseEvent) {
       const info = customDragRef.current
       if (!info) return
+      // Don't show drag UI until moved at least 8px
+      const start = dragStartPos.current
+      if (start && Math.abs(e.clientX - start.x) < 8 && Math.abs(e.clientY - start.y) < 8) return
       setDragPos({ x: e.clientX, y: e.clientY })
       const court = courtAtPoint(e.clientX, e.clientY)
       if (!court || (info.sport || null) !== (court.courtSport || null)) {
@@ -352,12 +356,16 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
     async function onMouseUp(e: MouseEvent) {
       const info = customDragRef.current
       if (!info) return
+      const start = dragStartPos.current
       customDragRef.current = null
+      dragStartPos.current = null
       setDraggingId(null)
       setDragPos(null)
       setDropTarget(null)
+      // Require at least 8px movement — otherwise it was a click, not a drag
+      if (start && Math.abs(e.clientX - start.x) < 8 && Math.abs(e.clientY - start.y) < 8) return
       const court = courtAtPoint(e.clientX, e.clientY)
-if (!court) return
+      if (!court) return
       const rect = court.slotsEl.getBoundingClientRect()
       const idx = Math.floor((e.clientY - rect.top) / SLOT_HEIGHT)
       const slot = slots[idx] ?? null
@@ -390,6 +398,7 @@ if (!court) return
     e.preventDefault()
     const durationMins = (new Date(b.endTime).getTime() - new Date(b.startTime).getTime()) / 60000
     customDragRef.current = { bookingId: b.id, durationMins, sport: b.court.sport }
+    dragStartPos.current = { x: e.clientX, y: e.clientY }
     setDraggingId(b.id)
     setDragLabel(b.client?.name || "Sin cliente")
     setDragPos({ x: e.clientX, y: e.clientY })
