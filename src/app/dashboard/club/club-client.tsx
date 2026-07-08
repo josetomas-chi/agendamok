@@ -504,6 +504,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
   }, [businessId, onSaved])
 
   function handleBookingMouseDown(e: React.MouseEvent, b: Booking) {
+    if (b.status === "COMPLETED" || b.status === "CANCELLED") return
     e.preventDefault()
     const durationMins = (new Date(b.endTime).getTime() - new Date(b.startTime).getTime()) / 60000
     customDragRef.current = { bookingId: b.id, durationMins, sport: b.court.sport }
