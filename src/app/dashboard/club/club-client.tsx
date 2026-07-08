@@ -1040,11 +1040,13 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                       style={{ background: "#f5f4f0", border: "1px solid rgba(13,27,42,0.12)", color: "rgba(13,27,42,0.6)" }}>
                       Editar
                     </button>
-                    <button onClick={handleDelete} disabled={saving}
-                      className="flex-1 h-10 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
-                      style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)", color: "rgba(220,38,38,0.7)" }}>
-                      Cancelar
-                    </button>
+                    {!isCompleted && (
+                      <button onClick={handleDelete} disabled={saving}
+                        className="flex-1 h-10 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+                        style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)", color: "rgba(220,38,38,0.7)" }}>
+                        Cancelar
+                      </button>
+                    )}
                   </div>
                 </div>
 
