@@ -1,38 +1,36 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useState, useRef } from "react"
 import { Camera, Menu, Search } from "lucide-react"
 import { toast } from "sonner"
 import Image from "next/image"
 
-type Business = { id: string; name: string; logo: string | null }
-
-export function TopBar({ onMenuClick, isSports }: { onMenuClick?: () => void; isSports?: boolean }) {
-  const [business, setBusiness] = useState<Business | null>(null)
+export function TopBar({
+  onMenuClick, isSports, businessId, businessName, businessLogo,
+}: {
+  onMenuClick?: () => void
+  isSports?: boolean
+  businessId: string
+  businessName: string
+  businessLogo: string | null
+}) {
+  const [logo, setLogo] = useState<string | null>(businessLogo)
   const [uploading, setUploading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(async d => {
-      const r = await fetch(`/api/businesses/${d.businessId}`)
-      const data = await r.json()
-      setBusiness({ id: data.business.id, name: data.business.name, logo: data.business.logo })
-    })
-  }, [])
-
   async function handleLogoUpload(file: File) {
-    if (!business) return
+    if (!businessId) return
     setUploading(true)
     const fd = new FormData()
     fd.append("file", file)
     const up = await fetch("/api/upload", { method: "POST", body: fd })
     if (!up.ok) { toast.error("Error al subir imagen"); setUploading(false); return }
     const { url } = await up.json()
-    await fetch(`/api/businesses/${business.id}`, {
+    await fetch(`/api/businesses/${businessId}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ logo: url }),
     })
-    setBusiness(b => b ? { ...b, logo: url } : b)
+    setLogo(url)
     toast.success("Logo actualizado")
     setUploading(false)
   }
@@ -54,11 +52,11 @@ export function TopBar({ onMenuClick, isSports }: { onMenuClick?: () => void; is
               className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center transition-all"
               style={{ background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.3)" }}
               title="Cambiar logo">
-              {business?.logo ? (
-                <Image src={business.logo} alt="Logo" width={36} height={36} className="object-cover w-full h-full" />
+              {logo ? (
+                <Image src={logo} alt="Logo" width={36} height={36} className="object-cover w-full h-full" />
               ) : (
                 <span className="text-sm font-bold" style={{ color: GOLD }}>
-                  {business?.name?.[0]?.toUpperCase() ?? "?"}
+                  {businessName?.[0]?.toUpperCase() ?? "?"}
                 </span>
               )}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl" style={{ background: "rgba(13,27,42,0.5)" }}>
@@ -70,7 +68,7 @@ export function TopBar({ onMenuClick, isSports }: { onMenuClick?: () => void; is
           </div>
           <div>
             <p className="text-sm font-black uppercase tracking-wide leading-none" style={{ color: "#0d1b2a" }}>
-              {business?.name ?? <span className="inline-block w-28 h-3.5 rounded bg-gray-200 animate-pulse" />}
+              {businessName}
             </p>
             <p className="text-[11px] leading-none mt-1 font-semibold uppercase tracking-widest" style={{ color: GOLD }}>
               {uploading ? "Subiendo logo..." : "Sports Club"}
@@ -96,7 +94,7 @@ export function TopBar({ onMenuClick, isSports }: { onMenuClick?: () => void; is
     )
   }
 
-  // ── General topbar (unchanged) ───────────────────────────────────────────────
+  // ── General topbar ───────────────────────────────────────────────────────────
   return (
     <header className="h-14 flex items-center justify-between px-6 flex-shrink-0"
       style={{ background: "#232326", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
@@ -110,10 +108,10 @@ export function TopBar({ onMenuClick, isSports }: { onMenuClick?: () => void; is
             className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center transition-all hover:ring-2 hover:ring-sky-400/40"
             style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
             title="Cambiar logo del negocio">
-            {business?.logo ? (
-              <Image src={business.logo} alt="Logo" width={36} height={36} className="object-cover w-full h-full" />
+            {logo ? (
+              <Image src={logo} alt="Logo" width={36} height={36} className="object-cover w-full h-full" />
             ) : (
-              <span className="text-sm font-bold text-white/50">{business?.name?.[0]?.toUpperCase() ?? "?"}</span>
+              <span className="text-sm font-bold text-white/50">{businessName?.[0]?.toUpperCase() ?? "?"}</span>
             )}
             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
               <Camera className="w-3.5 h-3.5 text-white" />
@@ -124,7 +122,7 @@ export function TopBar({ onMenuClick, isSports }: { onMenuClick?: () => void; is
         </div>
         <div>
           <p className="text-sm font-semibold text-white leading-none tracking-tight">
-            {business?.name ?? <span className="skeleton w-28 h-3.5 rounded inline-block" />}
+            {businessName}
           </p>
           <p className="text-[11px] text-white/35 leading-none mt-1">
             {uploading ? "Subiendo logo..." : "Tu negocio"}

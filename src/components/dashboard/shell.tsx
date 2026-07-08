@@ -6,7 +6,15 @@ import { TopBar } from "@/components/dashboard/topbar"
 import { CommandPalette } from "@/components/dashboard/command-palette"
 import { BottomNav } from "@/components/dashboard/bottom-nav"
 
-export function DashboardShell({ children, businessType }: { children: React.ReactNode; businessType: string }) {
+export function DashboardShell({
+  children, businessId, businessName, businessLogo, businessType,
+}: {
+  children: React.ReactNode
+  businessId: string
+  businessName: string
+  businessLogo: string | null
+  businessType: string
+}) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const isSports = businessType === "SPORTS_CLUB"
@@ -25,7 +33,13 @@ export function DashboardShell({ children, businessType }: { children: React.Rea
         <Sidebar onClose={() => setSidebarOpen(false)} isSports={isSports} />
       </div>
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <TopBar onMenuClick={() => setSidebarOpen(o => !o)} isSports={isSports} />
+        <TopBar
+          onMenuClick={() => setSidebarOpen(o => !o)}
+          isSports={isSports}
+          businessId={businessId}
+          businessName={businessName}
+          businessLogo={businessLogo}
+        />
         <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
           <div className="p-4 md:p-6 page-enter">{children}</div>
         </main>

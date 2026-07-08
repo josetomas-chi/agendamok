@@ -9,8 +9,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const business = await prisma.business.findUnique({
     where: { ownerId: session.user.id },
-    select: { businessType: true },
+    select: { id: true, name: true, logo: true, businessType: true },
   })
 
-  return <DashboardShell businessType={business?.businessType ?? "GENERAL"}>{children}</DashboardShell>
+  return (
+    <DashboardShell
+      businessId={business?.id ?? ""}
+      businessName={business?.name ?? ""}
+      businessLogo={business?.logo ?? null}
+      businessType={business?.businessType ?? "GENERAL"}
+    >
+      {children}
+    </DashboardShell>
+  )
 }
