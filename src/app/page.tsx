@@ -154,6 +154,88 @@ const faqItems = [
   { q: "¿Funciona para cualquier tipo de negocio con turnos?", a: "Sí. Peluquerías, clínicas, centros estéticos, gimnasios, estudios de tatuajes, psicólogos — cualquier negocio que trabaje con citas." },
 ]
 
+function PricingToggle() {
+  const [tab, setTab] = useState<"regular" | "sports">("regular")
+  const NAVY = "#0d1b2a"
+  const GOLD = "#C9A84C"
+
+  useEffect(() => {
+    const el = document.getElementById("regular-plans")
+    if (el) el.style.display = tab === "sports" ? "none" : ""
+  }, [tab])
+
+  return (
+    <div className="mb-12">
+      {/* Tab switcher */}
+      <div className="flex justify-center mb-10">
+        <div className="inline-flex rounded-full p-1 gap-1" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
+          <button
+            onClick={() => setTab("regular")}
+            className="px-6 py-2 rounded-full text-sm font-semibold transition-all"
+            style={tab === "regular" ? { background: "#38bdf8", color: "#0d1b2a" } : { color: "rgba(255,255,255,0.5)" }}
+          >
+            AgendaMok
+          </button>
+          <button
+            onClick={() => setTab("sports")}
+            className="px-6 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2"
+            style={tab === "sports" ? { background: GOLD, color: NAVY } : { color: "rgba(255,255,255,0.5)" }}
+          >
+            <Trophy className="w-3.5 h-3.5" />
+            AgendaMok Sports
+          </button>
+        </div>
+      </div>
+
+      {/* Sports plan — single card */}
+      {tab === "sports" && (
+        <div className="max-w-md mx-auto">
+          <div className="relative rounded-2xl p-8 text-center" style={{ background: "linear-gradient(135deg,#0d1b2a,#0f2236)", border: `1px solid ${GOLD}40` }}>
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold tracking-wide" style={{ background: GOLD, color: NAVY }}>
+              Plan único
+            </div>
+            <div className="mb-6 mt-2">
+              <p className="text-sm mb-1" style={{ color: GOLD }}>AgendaMok Sports</p>
+              <h3 className="text-2xl font-bold text-white mb-1">Club Pro</h3>
+              <p className="text-sm mb-5" style={{ color: "rgba(255,255,255,0.45)" }}>Todo lo que necesita tu club deportivo</p>
+              <div className="flex items-end justify-center gap-1">
+                <span className="text-5xl font-bold text-white">$49.900</span>
+                <span className="text-sm mb-1.5" style={{ color: "rgba(255,255,255,0.4)" }}>/mes + IVA</span>
+              </div>
+            </div>
+            <ul className="space-y-3 text-sm text-left mb-8" style={{ color: "rgba(255,255,255,0.7)" }}>
+              {[
+                "Canchas ilimitadas con tarifas valle/punta",
+                "Calendario de reservas con drag & drop",
+                "Membresías y control de socios",
+                "Feriados con recargo automático",
+                "CRM de clientes",
+                "Reportes de ocupación e ingresos",
+                "Recordatorios automáticos por email",
+                "Pagos online integrados con Flow",
+                "Soporte prioritario",
+              ].map(f => (
+                <li key={f} className="flex items-center gap-2.5">
+                  <Check className="w-4 h-4 flex-shrink-0" style={{ color: GOLD }} />
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/register?type=sports"
+              className="block w-full py-3.5 rounded-full text-sm font-bold transition-all hover:opacity-90"
+              style={{ background: GOLD, color: NAVY }}
+            >
+              Empezar 30 días gratis
+            </Link>
+            <p className="mt-3 text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>Sin tarjeta al inicio · Cancela cuando quieras</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function FaqAccordion() {
   const [open, setOpen] = useState<number | null>(null)
   return (
@@ -697,15 +779,18 @@ export default function LandingPage() {
         {/* Pricing */}
         <section id="pricing" className="py-32 border-t border-white/5">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-20 reveal">
+            <div className="text-center mb-12 reveal">
               <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
                 Precios <span className="gradient-text">simples y claros</span>
               </h2>
               <p className="text-white/40 text-lg">30 días gratis en todos los planes · Sin tarjeta al inicio · Cancela cuando quieras.</p>
             </div>
 
-            {/* Plan cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-24">
+            {/* Toggle AgendaMok / Sports */}
+            <PricingToggle />
+
+            {/* Plan cards — shown only when AgendaMok tab active (PricingToggle handles Sports) */}
+            <div id="regular-plans" className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-24">
               {plans.map((plan, i) => (
                 <div
                   key={plan.name}
