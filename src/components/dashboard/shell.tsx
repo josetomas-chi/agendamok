@@ -1,20 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { TopBar } from "@/components/dashboard/topbar"
 import { CommandPalette } from "@/components/dashboard/command-palette"
 import { BottomNav } from "@/components/dashboard/bottom-nav"
 
-export function DashboardShell({ children }: { children: React.ReactNode }) {
+export function DashboardShell({ children, businessType }: { children: React.ReactNode; businessType: string }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [businessType, setBusinessType] = useState<string>("GENERAL")
-
-  useEffect(() => {
-    fetch("/api/me/business").then(r => r.json()).then(d => {
-      if (d.business?.businessType) setBusinessType(d.business.businessType)
-    }).catch(() => {})
-  }, [])
 
   const isSports = businessType === "SPORTS_CLUB"
 
