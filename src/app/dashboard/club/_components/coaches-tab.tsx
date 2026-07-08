@@ -48,17 +48,7 @@ type Report = {
 const DAY_LABELS = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"]
 
 function ModalScroller({ children }: { children: React.ReactNode }) {
-  const ref = React.useRef<HTMLDivElement>(null)
-  React.useEffect(() => {
-    // Fuerza scroll al top DESPUÉS de que el browser haga auto-focus en algún input
-    const id = setTimeout(() => { if (ref.current) ref.current.scrollTop = 0 }, 80)
-    return () => clearTimeout(id)
-  }, [])
-  return (
-    <div ref={ref} className="overflow-y-auto p-5" style={{ maxHeight: "calc(100vh - 140px)" }}>
-      {children}
-    </div>
-  )
+  return <div className="p-5">{children}</div>
 }
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
 
