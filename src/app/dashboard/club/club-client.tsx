@@ -1109,20 +1109,15 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                 onClick={() => setCancelGroupModal(false)}>
                 <div className="w-full max-w-xs rounded-2xl p-5 space-y-4" style={{ background: "#ffffff", border: "1px solid rgba(239,68,68,0.25)" }}
                   onClick={e => e.stopPropagation()}>
-                  <p className="text-sm font-black uppercase tracking-wide" style={{ color: NAVY }}>Cancelar recurrencia</p>
-                  <p className="text-xs leading-relaxed" style={{ color: "rgba(13,27,42,0.55)" }}>¿Desde cuándo?</p>
+                  <p className="text-sm font-black uppercase tracking-wide" style={{ color: NAVY }}>Cancelar serie</p>
+                  <p className="text-xs leading-relaxed" style={{ color: "rgba(13,27,42,0.55)" }}>
+                    Se cancelarán todas las sesiones futuras. Las sesiones ya realizadas o cobradas no se modifican.
+                  </p>
                   <div className="space-y-2">
                     <button onClick={() => handleCancelGroup("future")} disabled={saving}
-                      className="w-full rounded-xl text-left px-4 py-3 disabled:opacity-50"
-                      style={{ border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.05)" }}>
-                      <p className="text-sm font-bold" style={{ color: "rgba(220,38,38,0.85)" }}>Desde hoy en adelante</p>
-                      <p className="text-[11px] mt-0.5" style={{ color: "rgba(220,38,38,0.5)" }}>Las sesiones pasadas se conservan</p>
-                    </button>
-                    <button onClick={() => handleCancelGroup("all")} disabled={saving}
-                      className="w-full rounded-xl text-left px-4 py-3 disabled:opacity-50"
-                      style={{ border: "1px solid rgba(239,68,68,0.5)", background: "rgba(239,68,68,0.08)" }}>
-                      <p className="text-sm font-bold" style={{ color: "rgba(185,28,28,0.9)" }}>Toda la serie</p>
-                      <p className="text-[11px] mt-0.5" style={{ color: "rgba(185,28,28,0.5)" }}>Incluye sesiones pasadas y futuras</p>
+                      className="w-full h-11 rounded-xl text-sm font-bold disabled:opacity-50"
+                      style={{ border: "1px solid rgba(239,68,68,0.4)", color: "rgba(220,38,38,0.85)", background: "rgba(239,68,68,0.07)" }}>
+                      {saving ? "Cancelando…" : "Sí, cancelar sesiones futuras"}
                     </button>
                     <button onClick={() => setCancelGroupModal(false)}
                       className="w-full h-9 rounded-xl text-xs font-medium"
