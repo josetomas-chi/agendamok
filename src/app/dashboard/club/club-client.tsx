@@ -339,45 +339,44 @@ function MiniCalendarClock({ selectedDate, onDateChange }: { selectedDate: Date;
   const NAVY = "#0d1b2a"
 
   return (
-    <div className="flex gap-4 mb-1">
+    <div className="flex gap-3 mb-1 w-fit">
       {/* Mini calendario mensual */}
-      <div className="rounded-2xl p-3 flex-1" style={{ background: "#ffffff", border: "1px solid rgba(13,27,42,0.08)", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+      <div className="rounded-xl p-2.5" style={{ background: "#ffffff", border: "1px solid rgba(13,27,42,0.08)", boxShadow: "0 1px 4px rgba(0,0,0,0.05)", width: 196 }}>
         {/* Mes + flechas */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-1.5">
           <button onClick={() => setViewMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
-            className="w-6 h-6 rounded-lg flex items-center justify-center transition-colors hover:bg-black/5">
-            <ChevronLeft className="w-3.5 h-3.5" style={{ color: "rgba(13,27,42,0.4)" }} />
+            className="w-5 h-5 rounded flex items-center justify-center hover:bg-black/5">
+            <ChevronLeft className="w-3 h-3" style={{ color: "rgba(13,27,42,0.4)" }} />
           </button>
-          <p className="text-[11px] font-black uppercase tracking-widest capitalize" style={{ color: NAVY }}>
-            {format(viewMonth, "MMMM yyyy", { locale: es })}
+          <p className="text-[10px] font-black uppercase tracking-widest capitalize" style={{ color: NAVY }}>
+            {format(viewMonth, "MMM yyyy", { locale: es })}
           </p>
           <button onClick={() => setViewMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
-            className="w-6 h-6 rounded-lg flex items-center justify-center transition-colors hover:bg-black/5">
-            <ChevronRight className="w-3.5 h-3.5" style={{ color: "rgba(13,27,42,0.4)" }} />
+            className="w-5 h-5 rounded flex items-center justify-center hover:bg-black/5">
+            <ChevronRight className="w-3 h-3" style={{ color: "rgba(13,27,42,0.4)" }} />
           </button>
         </div>
 
         {/* Días de semana */}
-        <div className="grid grid-cols-7 mb-1">
-          {["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"].map(d => (
-            <div key={d} className="text-center text-[9px] font-bold uppercase tracking-wide py-0.5" style={{ color: "rgba(13,27,42,0.3)" }}>{d}</div>
+        <div className="grid grid-cols-7 mb-0.5">
+          {["L","M","X","J","V","S","D"].map(d => (
+            <div key={d} className="text-center text-[8px] font-bold uppercase py-0.5" style={{ color: "rgba(13,27,42,0.3)" }}>{d}</div>
           ))}
         </div>
 
         {/* Grid días */}
-        <div className="grid grid-cols-7 gap-y-0.5">
+        <div className="grid grid-cols-7">
           {Array.from({ length: startOffset }).map((_, i) => <div key={`e${i}`} />)}
           {days.map(day => {
             const isSelected = isSameDay(day, selectedDate)
             const isToday = isSameDay(day, new Date())
             return (
               <button key={day.toISOString()} onClick={() => onDateChange(day)}
-                className="w-full aspect-square rounded-lg flex items-center justify-center text-[11px] font-semibold transition-all"
-                style={isSelected
-                  ? { background: NAVY, color: "#ffffff" }
-                  : isToday
-                    ? { background: "rgba(201,168,76,0.18)", color: GOLD, fontWeight: 800 }
-                    : { color: "rgba(13,27,42,0.6)" }}>
+                className="flex items-center justify-center rounded text-[10px] font-semibold transition-all"
+                style={{ height: 22, width: "100%",
+                  ...(isSelected ? { background: NAVY, color: "#fff" }
+                    : isToday ? { background: "rgba(201,168,76,0.18)", color: GOLD, fontWeight: 800 }
+                    : { color: "rgba(13,27,42,0.55)" }) }}>
                 {day.getDate()}
               </button>
             )
@@ -386,14 +385,14 @@ function MiniCalendarClock({ selectedDate, onDateChange }: { selectedDate: Date;
       </div>
 
       {/* Reloj digital */}
-      <div className="rounded-2xl px-5 py-3 flex flex-col items-center justify-center min-w-[160px]"
-        style={{ background: NAVY, border: "1px solid rgba(201,168,76,0.25)", boxShadow: "0 1px 4px rgba(0,0,0,0.12)" }}>
-        <p className="text-[10px] font-bold uppercase tracking-widest capitalize mb-1" style={{ color: "rgba(201,168,76,0.6)" }}>{dayName}</p>
-        <p className="font-black tabular-nums leading-none" style={{ fontSize: "2rem", color: "#ffffff", letterSpacing: "0.06em" }}>
+      <div className="rounded-xl px-4 py-2.5 flex flex-col items-center justify-center"
+        style={{ background: NAVY, border: "1px solid rgba(201,168,76,0.2)", boxShadow: "0 1px 4px rgba(0,0,0,0.12)", minWidth: 120 }}>
+        <p className="text-[9px] font-bold uppercase tracking-widest capitalize mb-1" style={{ color: "rgba(201,168,76,0.55)" }}>{dayName}</p>
+        <p className="font-black tabular-nums leading-none" style={{ fontSize: "1.5rem", color: "#ffffff", letterSpacing: "0.05em" }}>
           {hh}<span style={{ color: GOLD, animation: "blink 1s step-end infinite" }}>:</span>{mm}
         </p>
-        <p className="text-[11px] font-mono mt-1 tabular-nums" style={{ color: "rgba(255,255,255,0.25)" }}>{ss}</p>
-        <p className="text-[10px] mt-2 text-center capitalize font-medium" style={{ color: "rgba(201,168,76,0.5)" }}>{dateStr}</p>
+        <p className="text-[10px] font-mono mt-0.5 tabular-nums" style={{ color: "rgba(255,255,255,0.2)" }}>{ss}</p>
+        <p className="text-[9px] mt-1.5 text-center capitalize" style={{ color: "rgba(201,168,76,0.45)" }}>{dateStr}</p>
       </div>
 
       <style>{`@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }`}</style>
