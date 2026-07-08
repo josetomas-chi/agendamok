@@ -611,7 +611,10 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                         onMouseDown={e => { if (e.button === 0) handleBookingMouseDown(e, b) }}
                         onClick={e => { if (!dropTarget) { e.stopPropagation(); onBookingClick(b) } }}
                         className="absolute left-0.5 right-0.5 rounded-md cursor-grab transition-all overflow-hidden z-10 flex items-center justify-center"
-                        style={{ top, height, background: "rgba(201,168,76,0.85)", borderLeft: `3px solid #C9A84C`, opacity: draggingId === b.id ? 0.35 : 1 }}
+                        style={{ top, height,
+                          background: b.status === "COMPLETED" ? "rgba(34,197,94,0.18)" : "rgba(201,168,76,0.85)",
+                          borderLeft: `3px solid ${b.status === "COMPLETED" ? "#22c55e" : "#C9A84C"}`,
+                          opacity: draggingId === b.id ? 0.35 : 1 }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = "brightness(0.92)" }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = "none" }}
                       >
@@ -619,6 +622,16 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                         <p className="absolute top-1 left-1.5 text-[9px] font-semibold leading-none" style={{ color: "rgba(13,27,42,0.6)" }}>
                           {utcTime(b.startTime)}–{utcTime(b.endTime)}
                         </p>
+                        {/* Badges top-right: R (recurrente) + ✓✓ (completada) */}
+                        <div className="absolute top-0.5 right-1 flex items-center gap-0.5">
+                          {b.recurringGroupId && (
+                            <span className="text-[8px] font-black px-1 rounded leading-none py-0.5"
+                              style={{ background: "rgba(13,27,42,0.18)", color: "#0d1b2a" }}>R</span>
+                          )}
+                          {b.status === "COMPLETED" && (
+                            <span className="text-[10px] font-black leading-none" style={{ color: "#16a34a" }}>✓✓</span>
+                          )}
+                        </div>
                         {/* Nombre + precio — centrados */}
                         <div className="text-center px-1 w-full">
                           <p className="text-[11px] font-black leading-tight truncate" style={{ color: "#0d1b2a" }}>
@@ -844,6 +857,40 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
   }
 
   const [cancelGroupModal, setCancelGroupModal] = useState(false)
+  const [payModal, setPayModal] = useState(false)
+  const [groupSessions, setGroupSessions] = useState<{ id: string; startTime: string; endTime: string; price: number; status: string }[]>([])
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [paying, setPaying] = useState(false)
+
+  async function openPayModal() {
+    if (!booking.recurringGroupId) return
+    const r = await fetch(`/api/businesses/${businessId}/recurring-bookings/${booking.recurringGroupId}`)
+    if (r.ok) {
+      const d = await r.json()
+      const pending = (d.bookings as typeof groupSessions).filter(b => b.status !== "COMPLETED")
+      setGroupSessions(pending)
+      setSelectedIds(pending.length > 0 ? [pending[0].id] : [])
+      setPayModal(true)
+    }
+  }
+
+  async function handleBulkPay() {
+    if (selectedIds.length === 0) return
+    setPaying(true)
+    const r = await fetch(`/api/businesses/${businessId}/court-bookings/bulk-complete`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookingIds: selectedIds }),
+    })
+    setPaying(false)
+    if (r.ok) {
+      toast.success(`${selectedIds.length} sesión${selectedIds.length !== 1 ? "es" : ""} cobrada${selectedIds.length !== 1 ? "s" : ""}`)
+      setPayModal(false)
+      onSaved()
+    } else toast.error("Error al cobrar")
+  }
+
+  function toggleSession(id: string) {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
 
   async function handleDelete() {
     if (!confirm("¿Cancelar esta reserva?")) return
@@ -936,12 +983,80 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                   Cancelar esta reserva
                 </button>
                 {booking.recurringGroupId && (
+                  <button onClick={openPayModal} disabled={saving}
+                    className="w-full h-10 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.35)", color: "#15803d" }}>
+                    <span style={{ fontSize: 13 }}>✓✓</span> Cobrar sesiones del ciclo
+                  </button>
+                )}
+                {booking.recurringGroupId && (
                   <button onClick={() => setCancelGroupModal(true)} disabled={saving}
                     className="w-full h-10 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
                     style={{ border: "1px solid rgba(239,68,68,0.35)", color: "rgba(220,38,38,0.85)", background: "rgba(239,68,68,0.04)" }}>
                     Cancelar reservas recurrentes…
                   </button>
                 )}
+              </div>
+            )}
+
+            {/* Modal cobrar sesiones */}
+            {payModal && (
+              <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}
+                onClick={() => setPayModal(false)}>
+                <div className="w-full max-w-xs rounded-2xl overflow-hidden" style={{ background: "#ffffff", border: "1px solid rgba(34,197,94,0.25)", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
+                  onClick={e => e.stopPropagation()}>
+                  <div className="px-4 pt-4 pb-3" style={{ borderBottom: "1px solid rgba(13,27,42,0.06)" }}>
+                    <p className="text-sm font-black uppercase tracking-wide" style={{ color: NAVY }}>Cobrar sesiones</p>
+                    <p className="text-[11px] mt-0.5" style={{ color: "rgba(13,27,42,0.45)" }}>Selecciona las sesiones a marcar como cobradas</p>
+                  </div>
+                  {groupSessions.length === 0 ? (
+                    <p className="px-4 py-6 text-sm text-center" style={{ color: "rgba(13,27,42,0.4)" }}>Todas las sesiones ya están cobradas</p>
+                  ) : (
+                    <>
+                      <div className="max-h-64 overflow-y-auto divide-y" style={{ borderColor: "rgba(13,27,42,0.05)" }}>
+                        {groupSessions.map(s => {
+                          const checked = selectedIds.includes(s.id)
+                          return (
+                            <button key={s.id} onClick={() => toggleSession(s.id)}
+                              className="w-full px-4 py-2.5 flex items-center gap-3 text-left transition-colors"
+                              style={{ background: checked ? "rgba(34,197,94,0.06)" : "transparent" }}>
+                              <div className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all"
+                                style={{ border: checked ? "none" : "1.5px solid rgba(13,27,42,0.2)", background: checked ? "#22c55e" : "transparent" }}>
+                                {checked && <span className="text-white text-[9px] font-black">✓</span>}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold" style={{ color: NAVY }}>
+                                  {utcDate(s.startTime, "EEE d MMM")} · {utcTime(s.startTime)}–{utcTime(s.endTime)}
+                                </p>
+                              </div>
+                              <p className="text-xs font-bold flex-shrink-0" style={{ color: GOLD }}>${Number(s.price).toLocaleString("es-CL")}</p>
+                            </button>
+                          )
+                        })}
+                      </div>
+                      <div className="px-4 py-3 space-y-2" style={{ borderTop: "1px solid rgba(13,27,42,0.06)" }}>
+                        {selectedIds.length > 0 && (
+                          <div className="flex justify-between text-xs px-1">
+                            <span style={{ color: "rgba(13,27,42,0.5)" }}>{selectedIds.length} sesión{selectedIds.length !== 1 ? "es" : ""}</span>
+                            <span className="font-black" style={{ color: GOLD }}>
+                              ${groupSessions.filter(s => selectedIds.includes(s.id)).reduce((sum, s) => sum + Number(s.price), 0).toLocaleString("es-CL")}
+                            </span>
+                          </div>
+                        )}
+                        <button onClick={handleBulkPay} disabled={paying || selectedIds.length === 0}
+                          className="w-full h-10 rounded-xl text-sm font-bold uppercase tracking-wide disabled:opacity-40"
+                          style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.4)", color: "#15803d" }}>
+                          {paying ? "Cobrando…" : `Confirmar cobro${selectedIds.length > 0 ? ` (${selectedIds.length})` : ""}`}
+                        </button>
+                        <button onClick={() => setPayModal(false)}
+                          className="w-full h-8 rounded-xl text-xs font-medium"
+                          style={{ color: "rgba(13,27,42,0.4)", background: "#f5f4f0" }}>
+                          Cancelar
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             )}
 
