@@ -85,7 +85,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const booking = await prisma.courtBooking.create({
     data: { businessId: id, courtId, clientId: clientId || null, coachId: coachId || null, startTime: start, endTime: end, price, notes, status: "CONFIRMED" },
     include: {
-      court: { select: { id: true, name: true, sport: true, color: true } },
+      court: { select: { id: true, name: true, sport: true, color: true, sponsorName: true, sponsorLogo: true } },
       client: { select: { id: true, name: true, email: true, phone: true } },
       coach: { select: { id: true, name: true, color: true } },
     },
@@ -100,6 +100,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       startTime: booking.startTime.toISOString(),
       endTime: booking.endTime.toISOString(),
       price: Number(booking.price),
+      sponsorName: booking.court.sponsorName ?? undefined,
+      sponsorLogo: booking.court.sponsorLogo ?? undefined,
     }).catch(console.error)
   }
 

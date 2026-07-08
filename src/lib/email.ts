@@ -458,16 +458,18 @@ function fmtCourtTime(iso: string) {
 }
 
 export async function sendCourtBookingConfirmation({
-  clientName, clientEmail, businessName, courtName, startTime, endTime, price,
+  clientName, clientEmail, businessName, courtName, startTime, endTime, price, sponsorName, sponsorLogo,
 }: {
   clientName: string; clientEmail: string; businessName: string
   courtName: string; startTime: string; endTime: string; price: number
+  sponsorName?: string; sponsorLogo?: string
 }) {
   if (!process.env.RESEND_API_KEY) return
   const fmt = (iso: string) => new Date(iso).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"
+  const displayCourtName = sponsorName ? `${courtName} ${sponsorName}` : courtName
   const gcalUrl = `https://calendar.google.com/calendar/render?${new URLSearchParams({
     action: "TEMPLATE",
-    text: `Reserva ${courtName} — ${businessName}`,
+    text: `Reserva ${displayCourtName} — ${businessName}`,
     dates: `${fmt(startTime)}/${fmt(endTime)}`,
     details: `Reserva confirmada en ${businessName}`,
   }).toString()}`
@@ -479,11 +481,16 @@ export async function sendCourtBookingConfirmation({
       <h1>¡Reserva confirmada! ✓</h1>
       <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu reserva en <strong style="color:#38bdf8">${businessName}</strong> está confirmada.</p>
       <div class="box">
-        <div class="row"><span class="label">Cancha</span><span class="value">${courtName}</span></div>
+        <div class="row"><span class="label">Cancha</span><span class="value">${displayCourtName}</span></div>
         <div class="row"><span class="label">Fecha</span><span class="value">${fmtCourtDate(startTime)}</span></div>
         <div class="row"><span class="label">Horario</span><span class="value">${fmtCourtTime(startTime)} – ${fmtCourtTime(endTime)} hrs</span></div>
         <div class="row"><span class="label">Precio</span><span class="value">$${price.toLocaleString("es-CL")}</span></div>
       </div>
+      ${sponsorLogo ? `
+      <div style="text-align:center;margin:20px 0 4px">
+        <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:0 0 8px;text-transform:uppercase;letter-spacing:0.08em">Presentado por</p>
+        <img src="${sponsorLogo}" alt="${sponsorName ?? ""}" style="max-height:48px;max-width:160px;object-fit:contain;filter:brightness(0) invert(1);opacity:0.85" />
+      </div>` : ""}
       <div style="text-align:center;margin:24px 0 8px">
         <a href="${gcalUrl}" style="display:inline-block;background:#38bdf8;color:#0c1a2e;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;letter-spacing:0.01em">
           📅 Agregar a Google Calendar

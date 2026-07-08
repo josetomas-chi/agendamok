@@ -7,7 +7,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { toast } from "sonner"
 
 type PricingRule = { id?: string; name: string; days: number[]; startTime: string; endTime: string; price: number }
-type Court = { id: string; name: string; sport: string | null; description: string | null; color: string; isActive: boolean; pricingRules: PricingRule[] }
+type Court = { id: string; name: string; sport: string | null; description: string | null; color: string; isActive: boolean; sponsorName: string | null; sponsorLogo: string | null; pricingRules: PricingRule[] }
 
 const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
 const EMPTY_RULE: PricingRule = { name: "", days: [1, 2, 3, 4, 5], startTime: "08:00", endTime: "18:00", price: 0 }
@@ -19,7 +19,8 @@ export default function CourtsPage() {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Court | null>(null)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ name: "", sport: "", description: "", color: "#38bdf8", pricingRules: [{ ...EMPTY_RULE }] as PricingRule[] })
+  const [form, setForm] = useState({ name: "", sport: "", description: "", color: "#38bdf8", sponsorName: "", sponsorLogo: "", pricingRules: [{ ...EMPTY_RULE }] as PricingRule[] })
+  const [uploadingSponsor, setUploadingSponsor] = useState(false)
   const dragIndex = useRef<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
   const [futureBookings, setFutureBookings] = useState(0)
@@ -37,15 +38,26 @@ export default function CourtsPage() {
     load(businessId)
   }, [businessId, load])
 
+  async function handleSponsorLogo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingSponsor(true)
+    const fd = new FormData(); fd.append("file", file)
+    const r = await fetch("/api/upload", { method: "POST", body: fd })
+    const d = await r.json()
+    if (r.ok) setForm(f => ({ ...f, sponsorLogo: d.url }))
+    setUploadingSponsor(false)
+  }
+
   function openNew() {
     setEditing(null)
-    setForm({ name: "", sport: "", description: "", color: "#38bdf8", pricingRules: [{ ...EMPTY_RULE }] })
+    setForm({ name: "", sport: "", description: "", color: "#38bdf8", sponsorName: "", sponsorLogo: "", pricingRules: [{ ...EMPTY_RULE }] })
     setOpen(true)
   }
 
   async function openEdit(c: Court) {
     setEditing(c)
-    setForm({ name: c.name, sport: c.sport || "", description: c.description || "", color: c.color, pricingRules: c.pricingRules.length > 0 ? c.pricingRules.map(r => ({ ...r })) : [{ ...EMPTY_RULE }] })
+    setForm({ name: c.name, sport: c.sport || "", description: c.description || "", color: c.color, sponsorName: c.sponsorName || "", sponsorLogo: c.sponsorLogo || "", pricingRules: c.pricingRules.length > 0 ? c.pricingRules.map(r => ({ ...r })) : [{ ...EMPTY_RULE }] })
     setFutureBookings(0)
     setUpdateFutureBookings(false)
     setOpen(true)
@@ -191,7 +203,10 @@ export default function CourtsPage() {
                   <div className="flex items-center gap-2">
                     <GripVertical className="w-4 h-4 flex-shrink-0" style={{ color: "rgba(255,255,255,0.2)" }} />
                     <div>
-                      <p className="font-bold text-sm text-white">{c.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-sm text-white">{c.name}{c.sponsorName ? ` ${c.sponsorName}` : ""}</p>
+                        {c.sponsorLogo && <img src={c.sponsorLogo} alt={c.sponsorName || ""} className="h-5 w-auto object-contain opacity-90" />}
+                      </div>
                       {c.sport && <p className="text-xs mt-0.5 font-semibold uppercase tracking-wide" style={{ color: "#C9A84C" }}>{c.sport}</p>}
                     </div>
                   </div>
@@ -274,6 +289,32 @@ export default function CourtsPage() {
                 <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
                   className="w-6 h-6 rounded cursor-pointer bg-transparent border-0 p-0" />
                 <span className="text-sm text-white/50">Color</span>
+              </div>
+            </div>
+
+            {/* Auspiciador */}
+            <div>
+              <p className="text-xs font-semibold text-white/50 uppercase tracking-wide mb-3">Auspiciador (naming)</p>
+              <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 space-y-3">
+                <input value={form.sponsorName} onChange={e => setForm(f => ({ ...f, sponsorName: e.target.value }))}
+                  placeholder="Nombre de la marca (ej: Nissan)"
+                  className="w-full h-10 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white placeholder-white/20 focus:outline-none focus:border-sky-500/60" />
+                <div className="flex items-center gap-3">
+                  {form.sponsorLogo ? (
+                    <div className="relative flex-shrink-0">
+                      <img src={form.sponsorLogo} alt="Logo" className="w-14 h-14 object-contain rounded-lg bg-white/10 p-1" />
+                      <button onClick={() => setForm(f => ({ ...f, sponsorLogo: "" }))}
+                        className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
+                        <X className="w-2.5 h-2.5 text-white" />
+                      </button>
+                    </div>
+                  ) : null}
+                  <label className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl border border-dashed border-white/[0.15] text-xs text-white/40 hover:border-sky-500/50 hover:text-sky-400 transition-colors cursor-pointer">
+                    {uploadingSponsor ? "Subiendo…" : "Subir logo del auspiciador"}
+                    <input type="file" accept="image/*" className="hidden" onChange={handleSponsorLogo} disabled={uploadingSponsor} />
+                  </label>
+                </div>
+                <p className="text-[10px] text-white/25">El logo aparecerá en el email de confirmación de reserva</p>
               </div>
             </div>
 
