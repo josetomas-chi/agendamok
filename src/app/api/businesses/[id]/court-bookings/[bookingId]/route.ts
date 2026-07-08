@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { sendCourtBookingModification, sendCourtBookingCancellation } from "@/lib/email"
 
 type Params = { params: Promise<{ id: string; bookingId: string }> }
 
@@ -80,6 +81,22 @@ export async function PATCH(req: Request, { params }: Params) {
         client: { select: { id: true, name: true, email: true, phone: true } },
       },
     })
+
+    // Email de modificación si cambió horario/cancha y hay cliente con email
+    const timeChanged = startTime !== undefined || endTime !== undefined || courtId !== undefined
+    if (timeChanged && booking.client?.email && status === undefined) {
+      const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
+      sendCourtBookingModification({
+        clientName: booking.client.name,
+        clientEmail: booking.client.email,
+        businessName: business?.name ?? "Club Deportivo",
+        courtName: booking.court.name,
+        startTime: booking.startTime.toISOString(),
+        endTime: booking.endTime.toISOString(),
+        price: Number(booking.price),
+      }).catch(() => {})
+    }
+
     return NextResponse.json({ booking })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -91,9 +108,27 @@ export async function DELETE(_: Request, { params }: Params) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id, bookingId } = await params
-  await prisma.courtBooking.update({
+
+  const booking = await prisma.courtBooking.update({
     where: { id: bookingId, businessId: id },
     data: { deletedAt: new Date(), status: "CANCELLED" },
+    include: {
+      court: { select: { name: true } },
+      client: { select: { name: true, email: true } },
+    },
   })
+
+  if (booking.client?.email) {
+    const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
+    sendCourtBookingCancellation({
+      clientName: booking.client.name,
+      clientEmail: booking.client.email,
+      businessName: business?.name ?? "Club Deportivo",
+      courtName: booking.court.name,
+      startTime: booking.startTime.toISOString(),
+      endTime: booking.endTime.toISOString(),
+    }).catch(() => {})
+  }
+
   return NextResponse.json({ success: true })
 }

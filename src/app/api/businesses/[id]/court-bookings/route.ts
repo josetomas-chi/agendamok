@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { sendCourtBookingConfirmation } from "@/lib/email"
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -89,5 +90,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       coach: { select: { id: true, name: true, color: true } },
     },
   })
+  // Email de confirmación al cliente (no bloquea la respuesta)
+  if (booking.client?.email) {
+    const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
+    sendCourtBookingConfirmation({
+      clientName: booking.client.name,
+      clientEmail: booking.client.email,
+      businessName: business?.name ?? "Club Deportivo",
+      courtName: booking.court.name,
+      startTime: booking.startTime.toISOString(),
+      endTime: booking.endTime.toISOString(),
+      price: Number(booking.price),
+    }).catch(() => {})
+  }
+
   return NextResponse.json({ booking }, { status: 201 })
 }

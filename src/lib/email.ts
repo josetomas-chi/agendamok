@@ -444,6 +444,93 @@ export async function sendQuoteEmail({
   })
 }
 
+// ─── Reservas de cancha (Club Deportivo) ────────────────────────────────────
+
+function fmtCourtDate(iso: string) {
+  const d = new Date(iso)
+  const dias = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"]
+  const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]
+  return `${dias[d.getUTCDay()]} ${d.getUTCDate()} de ${meses[d.getUTCMonth()]} ${d.getUTCFullYear()}`
+}
+function fmtCourtTime(iso: string) {
+  const d = new Date(iso)
+  return `${String(d.getUTCHours()).padStart(2,"0")}:${String(d.getUTCMinutes()).padStart(2,"0")}`
+}
+
+export async function sendCourtBookingConfirmation({
+  clientName, clientEmail, businessName, courtName, startTime, endTime, price,
+}: {
+  clientName: string; clientEmail: string; businessName: string
+  courtName: string; startTime: string; endTime: string; price: number
+}) {
+  if (!process.env.RESEND_API_KEY) return
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `Reserva confirmada — ${businessName}`,
+    html: base(`
+      <h1>¡Reserva confirmada! ✓</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu reserva en <strong style="color:#38bdf8">${businessName}</strong> está confirmada.</p>
+      <div class="box">
+        <div class="row"><span class="label">Cancha</span><span class="value">${courtName}</span></div>
+        <div class="row"><span class="label">Fecha</span><span class="value">${fmtCourtDate(startTime)}</span></div>
+        <div class="row"><span class="label">Horario</span><span class="value">${fmtCourtTime(startTime)} – ${fmtCourtTime(endTime)} hrs</span></div>
+        <div class="row"><span class="label">Precio</span><span class="value">$${price.toLocaleString("es-CL")}</span></div>
+      </div>
+      <p class="subtitle" style="margin-top:16px;font-size:13px">Si tienes alguna consulta, contacta directamente a ${businessName}. ¡Te esperamos!</p>
+    `),
+  })
+}
+
+export async function sendCourtBookingCancellation({
+  clientName, clientEmail, businessName, courtName, startTime, endTime,
+}: {
+  clientName: string; clientEmail: string; businessName: string
+  courtName: string; startTime: string; endTime: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `Reserva cancelada — ${businessName}`,
+    html: base(`
+      <h1>Reserva cancelada</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu reserva en <strong style="color:#38bdf8">${businessName}</strong> ha sido cancelada.</p>
+      <div class="box">
+        <div class="row"><span class="label">Cancha</span><span class="value">${courtName}</span></div>
+        <div class="row"><span class="label">Fecha</span><span class="value">${fmtCourtDate(startTime)}</span></div>
+        <div class="row"><span class="label">Horario</span><span class="value">${fmtCourtTime(startTime)} – ${fmtCourtTime(endTime)} hrs</span></div>
+      </div>
+      <p class="subtitle" style="margin-top:16px;font-size:13px">Si crees que esto es un error, contacta directamente a ${businessName}.</p>
+    `),
+  })
+}
+
+export async function sendCourtBookingModification({
+  clientName, clientEmail, businessName, courtName, startTime, endTime, price,
+}: {
+  clientName: string; clientEmail: string; businessName: string
+  courtName: string; startTime: string; endTime: string; price: number
+}) {
+  if (!process.env.RESEND_API_KEY) return
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `Reserva modificada — ${businessName}`,
+    html: base(`
+      <h1>Reserva modificada ✓</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu reserva en <strong style="color:#38bdf8">${businessName}</strong> fue actualizada.</p>
+      <div class="box">
+        <div class="row"><span class="label">Cancha</span><span class="value">${courtName}</span></div>
+        <div class="row"><span class="label">Nueva fecha</span><span class="value">${fmtCourtDate(startTime)}</span></div>
+        <div class="row"><span class="label">Nuevo horario</span><span class="value">${fmtCourtTime(startTime)} – ${fmtCourtTime(endTime)} hrs</span></div>
+        <div class="row"><span class="label">Precio</span><span class="value">$${price.toLocaleString("es-CL")}</span></div>
+      </div>
+      <p class="subtitle" style="margin-top:16px;font-size:13px">Si tienes alguna duda, contacta directamente a ${businessName}.</p>
+    `),
+  })
+}
+
 export async function sendInvoiceEmail({
   clientEmail, clientName, businessName, invoiceNumber, pdfUrl,
 }: {
