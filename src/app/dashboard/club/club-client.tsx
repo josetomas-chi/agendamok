@@ -12,6 +12,7 @@ type Client = { id: string; name: string; email: string | null; phone: string | 
 type Booking = {
   id: string; courtId: string; clientId: string | null
   startTime: string; endTime: string; price: number; status: string; notes: string | null
+  recurringGroupId: string | null
   court: Court; client: Client | null
 }
 
@@ -746,11 +747,21 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
     else toast.error("Error al actualizar")
   }
 
+  const [cancelGroupModal, setCancelGroupModal] = useState(false)
+
   async function handleDelete() {
     if (!confirm("¿Cancelar esta reserva?")) return
     setSaving(true)
     await fetch(`/api/businesses/${businessId}/court-bookings/${booking.id}`, { method: "DELETE" })
     toast.success("Reserva cancelada")
+    onSaved()
+  }
+
+  async function handleCancelGroup(scope: "future" | "all") {
+    setSaving(true)
+    await fetch(`/api/businesses/${businessId}/recurring-bookings/${booking.recurringGroupId}?scope=${scope}`, { method: "DELETE" })
+    toast.success(scope === "all" ? "Todas las sesiones canceladas" : "Sesiones futuras canceladas")
+    setCancelGroupModal(false)
     onSaved()
   }
 
@@ -826,8 +837,46 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                 <button onClick={handleDelete} disabled={saving}
                   className="w-full h-10 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
                   style={{ border: "1px solid rgba(239,68,68,0.2)", color: "rgba(220,38,38,0.7)" }}>
-                  Cancelar reserva
+                  Cancelar esta reserva
                 </button>
+                {booking.recurringGroupId && (
+                  <button onClick={() => setCancelGroupModal(true)} disabled={saving}
+                    className="w-full h-10 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+                    style={{ border: "1px solid rgba(239,68,68,0.35)", color: "rgba(220,38,38,0.85)", background: "rgba(239,68,68,0.04)" }}>
+                    Cancelar reservas recurrentes…
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Modal cancelar grupo */}
+            {cancelGroupModal && (
+              <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}
+                onClick={() => setCancelGroupModal(false)}>
+                <div className="w-full max-w-xs rounded-2xl p-5 space-y-4" style={{ background: "#ffffff", border: "1px solid rgba(239,68,68,0.25)" }}
+                  onClick={e => e.stopPropagation()}>
+                  <p className="text-sm font-black uppercase tracking-wide" style={{ color: NAVY }}>Cancelar recurrencia</p>
+                  <p className="text-xs leading-relaxed" style={{ color: "rgba(13,27,42,0.55)" }}>
+                    ¿Qué sesiones quieres cancelar?
+                  </p>
+                  <div className="space-y-2">
+                    <button onClick={() => handleCancelGroup("future")} disabled={saving}
+                      className="w-full h-10 rounded-xl text-sm font-semibold disabled:opacity-50"
+                      style={{ border: "1px solid rgba(239,68,68,0.3)", color: "rgba(220,38,38,0.8)", background: "rgba(239,68,68,0.05)" }}>
+                      Esta y las siguientes
+                    </button>
+                    <button onClick={() => handleCancelGroup("all")} disabled={saving}
+                      className="w-full h-10 rounded-xl text-sm font-semibold disabled:opacity-50"
+                      style={{ border: "1px solid rgba(239,68,68,0.5)", color: "rgba(185,28,28,0.9)", background: "rgba(239,68,68,0.08)" }}>
+                      Todas las sesiones
+                    </button>
+                    <button onClick={() => setCancelGroupModal(false)}
+                      className="w-full h-9 rounded-xl text-xs font-medium"
+                      style={{ color: "rgba(13,27,42,0.4)", background: "#f5f4f0" }}>
+                      No cancelar
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>

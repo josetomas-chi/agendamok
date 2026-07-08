@@ -2,13 +2,15 @@
 import React, { useState, useEffect, useRef } from "react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { toast } from "sonner"
-import { ChevronDown, X, UserPlus } from "lucide-react"
+import { ChevronDown, X, UserPlus, RefreshCw } from "lucide-react"
 
 const TIME_SLOTS: string[] = []
 for (let h = 7; h <= 23; h++) {
   TIME_SLOTS.push(`${String(h).padStart(2, "0")}:00`)
   if (h < 23) TIME_SLOTS.push(`${String(h).padStart(2, "0")}:30`)
 }
+
+const DAYS_ES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
 
 const GOLD = "#C9A84C"
 const NAVY = "#0d1b2a"
@@ -72,22 +74,16 @@ function ClientCombobox({ clients, value, onSelect }: {
     : clients
   const exactMatch = clients.find(c => c.name.toLowerCase() === query.toLowerCase())
 
-  function startCreating() {
-    setOpen(false)
-    setCreating({ name: query.trim(), email: "", phone: "" })
-  }
-
+  function startCreating() { setOpen(false); setCreating({ name: query.trim(), email: "", phone: "" }) }
   function confirmCreate() {
     if (!creating?.name.trim()) return
     onSelect({ id: "", name: creating.name.trim(), email: creating.email.trim() || undefined, phone: creating.phone.trim() || undefined })
-    setQuery(creating.name.trim())
-    setCreating(null)
+    setQuery(creating.name.trim()); setCreating(null)
   }
 
   return (
     <div ref={ref}>
       <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1.5" style={{ color: "rgba(13,27,42,0.4)" }}>Cliente</p>
-
       {creating ? (
         <div className="rounded-xl p-3 space-y-2" style={{ border: `1px solid rgba(201,168,76,0.35)`, background: "rgba(201,168,76,0.04)" }}>
           <p className="text-[10px] font-bold uppercase tracking-wide flex items-center gap-1" style={{ color: GOLD }}>
@@ -154,7 +150,6 @@ function ClientCombobox({ clients, value, onSelect }: {
           )}
         </div>
       )}
-
       {!creating && value && (
         <div className="mt-1.5 flex items-center gap-1.5">
           {value.id
@@ -188,6 +183,18 @@ function calcPrice(court: Court | undefined, startTime: string, endTime: string,
   return pricePerHour * durationHours
 }
 
+// Cuenta las ocurrencias del día de semana entre dos fechas
+function countOccurrences(startDate: string, endDate: string, dayOfWeek: number): number {
+  if (!startDate || !endDate || endDate <= startDate) return 0
+  const start = new Date(startDate + "T00:00:00Z")
+  const end = new Date(endDate + "T00:00:00Z")
+  const cursor = new Date(start)
+  while (cursor.getUTCDay() !== dayOfWeek) cursor.setUTCDate(cursor.getUTCDate() + 1)
+  let count = 0
+  while (cursor <= end) { count++; cursor.setUTCDate(cursor.getUTCDate() + 7) }
+  return count
+}
+
 export default function NewBookingModal({
   businessId, courts, clients, preselect, onClose, onSaved,
 }: {
@@ -209,6 +216,10 @@ export default function NewBookingModal({
   const [saving, setSaving] = useState(false)
   const [allCourts, setAllCourts] = useState<Court[]>(courts)
 
+  // Recurrencia
+  const [isRecurring, setIsRecurring] = useState(false)
+  const [rangeEnd, setRangeEnd] = useState("")
+
   useEffect(() => {
     fetch(`/api/businesses/${businessId}/courts`).then(r => r.json()).then(d => setAllCourts(d.courts || []))
   }, [businessId])
@@ -216,46 +227,79 @@ export default function NewBookingModal({
   const selectedCourt = allCourts.find(c => c.id === form.courtId)
   const price = calcPrice(selectedCourt, form.startTime, form.endTime, form.date)
 
+  // Para recurrencia: día de semana derivado de la fecha seleccionada
+  const selectedDayOfWeek = form.date ? new Date(form.date + "T00:00:00Z").getUTCDay() : -1
+  const sessionCount = isRecurring ? countOccurrences(form.date, rangeEnd, selectedDayOfWeek) : 0
+
+  async function resolveClientId(): Promise<string | null> {
+    if (!selectedClient) return null
+    if (selectedClient.id) return selectedClient.id
+    const cr = await fetch(`/api/businesses/${businessId}/clients`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: selectedClient.name, email: selectedClient.email || null, phone: selectedClient.phone || null }),
+    })
+    if (cr.ok) { const cd = await cr.json(); return cd.client?.id || null }
+    return null
+  }
+
   async function handleSave() {
     if (!form.courtId || !form.date || !form.startTime || !form.endTime) {
       toast.error("Completa todos los campos requeridos"); return
     }
+    if (isRecurring && !rangeEnd) {
+      toast.error("Selecciona una fecha de término para la recurrencia"); return
+    }
     setSaving(true)
     try {
-      let clientId: string | null = null
+      const clientId = await resolveClientId()
 
-      // Si hay cliente seleccionado
-      if (selectedClient) {
-        if (selectedClient.id) {
-          // Cliente existente
-          clientId = selectedClient.id
+      if (isRecurring) {
+        const [startHour, startMinute] = form.startTime.split(":").map(Number)
+        const [endHour, endMinute] = form.endTime.split(":").map(Number)
+        const durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute)
+        if (durationMinutes <= 0) { toast.error("El horario de fin debe ser posterior al de inicio"); setSaving(false); return }
+
+        const r = await fetch(`/api/businesses/${businessId}/recurring-bookings`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            courtId: form.courtId,
+            clientId,
+            dayOfWeek: selectedDayOfWeek,
+            startHour,
+            startMinute,
+            durationMinutes,
+            rangeStart: form.date,
+            rangeEnd,
+            notes: form.notes || null,
+          }),
+        })
+        const d = await r.json()
+        if (r.ok) {
+          const msg = [`${d.created} sesión${d.created !== 1 ? "es" : ""} creada${d.created !== 1 ? "s" : ""}`]
+          if (d.skipped?.length) msg.push(`${d.skipped.length} omitida${d.skipped.length !== 1 ? "s" : ""} por feriado`)
+          if (d.conflicts?.length) msg.push(`${d.conflicts.length} con conflicto`)
+          toast.success(msg.join(" · "))
+          onSaved()
         } else {
-          // Crear cliente nuevo con el nombre libre
-          const cr = await fetch(`/api/businesses/${businessId}/clients`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: selectedClient.name, email: selectedClient.email || null, phone: selectedClient.phone || null }),
-          })
-          if (cr.ok) {
-            const cd = await cr.json()
-            clientId = cd.client?.id || null
-          }
+          toast.error(d.error || "Error al crear reservas recurrentes")
         }
+      } else {
+        const r = await fetch(`/api/businesses/${businessId}/court-bookings`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            courtId: form.courtId,
+            clientId,
+            startTime: `${form.date}T${form.startTime}:00`,
+            endTime: `${form.date}T${form.endTime}:00`,
+            notes: form.notes || null,
+          }),
+        })
+        if (r.ok) { toast.success("Reserva creada"); onSaved() }
+        else { const d = await r.json(); toast.error(d.error || "Error al crear") }
       }
-
-      const r = await fetch(`/api/businesses/${businessId}/court-bookings`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          courtId: form.courtId,
-          clientId,
-          startTime: `${form.date}T${form.startTime}:00`,
-          endTime: `${form.date}T${form.endTime}:00`,
-          notes: form.notes || null,
-        }),
-      })
-      if (r.ok) { toast.success("Reserva creada"); onSaved() }
-      else { const d = await r.json(); toast.error(d.error || "Error al crear") }
     } finally {
       setSaving(false)
     }
@@ -280,7 +324,7 @@ export default function NewBookingModal({
           </button>
         </div>
 
-        <div className="px-5 pb-5 pt-4 space-y-3">
+        <div className="px-5 pb-5 pt-4 space-y-3 max-h-[80vh] overflow-y-auto">
           {/* Cancha */}
           <div>
             <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Cancha</p>
@@ -299,9 +343,9 @@ export default function NewBookingModal({
           {/* Cliente combobox */}
           <ClientCombobox clients={clients} value={selectedClient} onSelect={setSelectedClient} />
 
-          {/* Fecha */}
+          {/* Fecha de inicio */}
           <div>
-            <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha</p>
+            <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>{isRecurring ? "Fecha de inicio" : "Fecha"}</p>
             <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
               className={inputCls} style={{ ...inputStyle, colorScheme: "light" } as React.CSSProperties} />
           </div>
@@ -312,8 +356,52 @@ export default function NewBookingModal({
             <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} />
           </div>
 
-          {/* Precio */}
-          {price > 0 && (
+          {/* Toggle recurrencia */}
+          <button type="button" onClick={() => setIsRecurring(r => !r)}
+            className="w-full h-10 rounded-xl px-4 text-sm font-semibold flex items-center gap-2.5 transition-all"
+            style={isRecurring
+              ? { background: "rgba(201,168,76,0.12)", border: `1px solid ${GOLD}`, color: "#8a6520" }
+              : { background: "#f5f4f0", border: "1px solid rgba(13,27,42,0.1)", color: "rgba(13,27,42,0.5)" }}>
+            <RefreshCw className="w-4 h-4 flex-shrink-0" style={{ color: isRecurring ? GOLD : "rgba(13,27,42,0.35)" }} />
+            {isRecurring ? "Reserva recurrente activada" : "Convertir en reserva recurrente"}
+          </button>
+
+          {/* Panel recurrencia */}
+          {isRecurring && (
+            <div className="rounded-xl p-3.5 space-y-3" style={{ border: `1px solid rgba(201,168,76,0.25)`, background: "rgba(201,168,76,0.04)" }}>
+              {/* Día de semana (informativo) */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.5)" }}>Repite cada</span>
+                <span className="text-xs font-black px-2.5 py-1 rounded-lg" style={{ background: "rgba(201,168,76,0.15)", color: "#8a6520" }}>
+                  {selectedDayOfWeek >= 0 ? DAYS_ES[selectedDayOfWeek] : "—"}
+                </span>
+                <span className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.5)" }}>a las {form.startTime}</span>
+              </div>
+
+              {/* Fecha de término */}
+              <div>
+                <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha de término</p>
+                <input type="date" value={rangeEnd} onChange={e => setRangeEnd(e.target.value)}
+                  min={form.date}
+                  className={inputCls} style={{ ...inputStyle, colorScheme: "light" } as React.CSSProperties} />
+              </div>
+
+              {/* Preview sesiones */}
+              {sessionCount > 0 && (
+                <div className="flex items-center justify-between text-xs rounded-lg px-3 py-2"
+                  style={{ background: "rgba(201,168,76,0.1)", color: "#8a6520" }}>
+                  <span>Se crearán</span>
+                  <span className="font-black">{sessionCount} sesiones</span>
+                </div>
+              )}
+              <p className="text-[10px] leading-relaxed" style={{ color: "rgba(13,27,42,0.4)" }}>
+                Los feriados de tipo "Cerrado" se omiten automáticamente. Los de recargo ajustan el precio de esa sesión.
+              </p>
+            </div>
+          )}
+
+          {/* Precio estimado (solo reserva individual) */}
+          {!isRecurring && price > 0 && (
             <div className="rounded-xl px-4 py-2.5 flex items-center justify-between"
               style={{ background: "rgba(201,168,76,0.08)", border: `1px solid rgba(201,168,76,0.25)` }}>
               <p className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.5)" }}>Precio estimado</p>
@@ -332,7 +420,7 @@ export default function NewBookingModal({
           <button onClick={handleSave} disabled={saving}
             className="w-full h-11 rounded-xl text-sm font-black uppercase tracking-wide transition-all disabled:opacity-50"
             style={{ background: "rgba(201,168,76,0.15)", border: `1px solid ${GOLD}`, color: "#8a6520" }}>
-            {saving ? "Guardando…" : "Confirmar reserva"}
+            {saving ? "Guardando…" : isRecurring ? "Crear reservas recurrentes" : "Confirmar reserva"}
           </button>
         </div>
       </DialogContent>

@@ -252,6 +252,7 @@ model Business {
   quotes                    Quote[]
   courts                    Court[]
   courtBookings             CourtBooking[]
+  recurringBookingGroups    RecurringBookingGroup[]
   membershipPlans           MembershipPlan[]
   clientMemberships         ClientMembership[]
   clubSettings              ClubSettings?
@@ -450,8 +451,9 @@ model Client {
   appointments    Appointment[]
   clinicalRecord  ClinicalRecord?
   quotes          Quote[]
-  courtBookings   CourtBooking[]
-  memberships     ClientMembership[]
+  courtBookings          CourtBooking[]
+  recurringBookingGroups RecurringBookingGroup[]
+  memberships            ClientMembership[]
 
   @@index([businessId, email])
   @@map("clients")
@@ -816,9 +818,10 @@ model Court {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  business     Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  pricingRules CourtPricingRule[]
-  bookings     CourtBooking[]
+  business          Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  pricingRules      CourtPricingRule[]
+  bookings          CourtBooking[]
+  recurringGroups   RecurringBookingGroup[]
 
   @@index([businessId])
   @@map("courts")
@@ -838,26 +841,52 @@ model CourtPricingRule {
   @@map("court_pricing_rules")
 }
 
-model CourtBooking {
-  id         String             @id @default(cuid())
-  businessId String
-  courtId    String
-  clientId   String?
-  startTime  DateTime
-  endTime    DateTime
-  price      Decimal            @db.Decimal(10, 2)
-  status     CourtBookingStatus @default(CONFIRMED)
-  notes      String?            @db.Text
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
-  deletedAt  DateTime?
+model RecurringBookingGroup {
+  id              String   @id @default(cuid())
+  businessId      String
+  courtId         String
+  clientId        String?
+  dayOfWeek       Int      // 0=Sunday … 6=Saturday
+  startHour       Int
+  startMinute     Int
+  durationMinutes Int
+  rangeStart      DateTime @db.Date
+  rangeEnd        DateTime @db.Date
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
 
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  court    Court    @relation(fields: [courtId], references: [id])
-  client   Client?  @relation(fields: [clientId], references: [id])
+  business  Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  court     Court          @relation(fields: [courtId], references: [id])
+  client    Client?        @relation(fields: [clientId], references: [id])
+  bookings  CourtBooking[]
+
+  @@index([businessId])
+  @@map("recurring_booking_groups")
+}
+
+model CourtBooking {
+  id                 String                 @id @default(cuid())
+  businessId         String
+  courtId            String
+  clientId           String?
+  recurringGroupId   String?
+  startTime          DateTime
+  endTime            DateTime
+  price              Decimal                @db.Decimal(10, 2)
+  status             CourtBookingStatus     @default(CONFIRMED)
+  notes              String?                @db.Text
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  deletedAt          DateTime?
+
+  business       Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  court          Court                  @relation(fields: [courtId], references: [id])
+  client         Client?                @relation(fields: [clientId], references: [id])
+  recurringGroup RecurringBookingGroup? @relation(fields: [recurringGroupId], references: [id])
 
   @@index([businessId, startTime])
   @@index([courtId, startTime])
+  @@index([recurringGroupId])
   @@map("court_bookings")
 }
 
