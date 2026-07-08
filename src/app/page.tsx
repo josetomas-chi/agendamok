@@ -199,7 +199,7 @@ function PricingToggle() {
               <h3 className="text-2xl font-bold text-white mb-1">Club Pro</h3>
               <p className="text-sm mb-5" style={{ color: "rgba(255,255,255,0.45)" }}>Todo lo que necesita tu club deportivo</p>
               <div className="flex items-end justify-center gap-1">
-                <span className="text-5xl font-bold text-white">$49.900</span>
+                <span className="text-5xl font-bold text-white">$39.900</span>
                 <span className="text-sm mb-1.5" style={{ color: "rgba(255,255,255,0.4)" }}>/mes + IVA</span>
               </div>
             </div>
