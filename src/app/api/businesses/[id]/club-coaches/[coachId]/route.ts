@@ -43,13 +43,14 @@ export async function PATCH(req: Request, { params }: Params) {
     await prisma.clubCoachFeeRule.deleteMany({ where: { coachId } })
     if (feeRules.length > 0) {
       await prisma.clubCoachFeeRule.createMany({
-        data: feeRules.map((r: { name: string; days: number[]; startTime: string; endTime: string; price: number }) => ({
+        data: feeRules.map((r: { name: string; days: number[]; startTime: string; endTime: string; classPrice: number; price: number }) => ({
           coachId,
           name: r.name,
           days: r.days,
           startTime: r.startTime,
           endTime: r.endTime,
-          price: r.price,
+          classPrice: r.classPrice ?? 0,
+          price: r.price ?? 0,
         })),
       })
     }

@@ -37,12 +37,13 @@ export async function POST(req: Request, { params }: Params) {
       paymentType,
       commissionPercent: paymentType === "COMMISSION" ? (commissionPercent ?? null) : null,
       feeRules: feeRules?.length
-        ? { create: feeRules.map((r: { name: string; days: number[]; startTime: string; endTime: string; price: number }) => ({
+        ? { create: feeRules.map((r: { name: string; days: number[]; startTime: string; endTime: string; classPrice: number; price: number }) => ({
             name: r.name,
             days: r.days,
             startTime: r.startTime,
             endTime: r.endTime,
-            price: r.price,
+            classPrice: r.classPrice ?? 0,
+            price: r.price ?? 0,
           })) }
         : undefined,
     },
