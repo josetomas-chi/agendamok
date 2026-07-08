@@ -257,6 +257,7 @@ model Business {
   clientMemberships         ClientMembership[]
   clubSettings              ClubSettings?
   clubHolidays              ClubHoliday[]
+  clubCoaches               ClubCoach[]
   apiKeys                   ApiKey[]
   invoices                  Invoice[]
 
@@ -870,6 +871,7 @@ model CourtBooking {
   courtId            String
   clientId           String?
   recurringGroupId   String?
+  coachId            String?
   startTime          DateTime
   endTime            DateTime
   price              Decimal                @db.Decimal(10, 2)
@@ -883,10 +885,12 @@ model CourtBooking {
   court          Court                  @relation(fields: [courtId], references: [id])
   client         Client?                @relation(fields: [clientId], references: [id])
   recurringGroup RecurringBookingGroup? @relation(fields: [recurringGroupId], references: [id])
+  coach          ClubCoach?             @relation(fields: [coachId], references: [id])
 
   @@index([businessId, startTime])
   @@index([courtId, startTime])
   @@index([recurringGroupId])
+  @@index([coachId])
   @@map("court_bookings")
 }
 
@@ -960,4 +964,41 @@ model ClubHoliday {
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@map("club_holidays")
+}
+
+model ClubCoach {
+  id                String   @id @default(cuid())
+  businessId        String
+  name              String
+  email             String?
+  phone             String?
+  photo             String?
+  color             String   @default("#38bdf8")
+  paymentType       String   @default("COMMISSION") // COMMISSION | COURT_FEE
+  commissionPercent Float?                          // % que recibe el coach
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  business  Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  feeRules  ClubCoachFeeRule[]
+  bookings  CourtBooking[]
+
+  @@index([businessId])
+  @@map("club_coaches")
+}
+
+model ClubCoachFeeRule {
+  id        String   @id @default(cuid())
+  coachId   String
+  name      String
+  days      Int[]    // 0=Sun … 6=Sat
+  startTime String   // "HH:mm"
+  endTime   String   // "HH:mm"
+  price     Decimal  @db.Decimal(10, 2) // lo que el coach paga al club por hora
+
+  coach ClubCoach @relation(fields: [coachId], references: [id], onDelete: Cascade)
+
+  @@index([coachId])
+  @@map("club_coach_fee_rules")
 }

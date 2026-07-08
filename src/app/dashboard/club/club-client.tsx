@@ -6,6 +6,7 @@ import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, addDays, subDays,
 import { es } from "date-fns/locale"
 import { toast } from "sonner"
 import NewBookingModal from "./_components/new-booking-modal"
+import CoachesTab from "./_components/coaches-tab"
 
 type Court = { id: string; name: string; sport: string | null; color: string; isActive: boolean }
 type Client = { id: string; name: string; email: string | null; phone: string | null }
@@ -52,7 +53,7 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
   const [clients, setClients] = useState<Client[]>([])
   const [membersCount, setMembersCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<"resumen" | "calendario">("calendario")
+  const [tab, setTab] = useState<"resumen" | "calendario" | "entrenadores">("calendario")
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [sportFilter, setSportFilter] = useState<string>("Todos")
   const [newBookingOpen, setNewBookingOpen] = useState(false)
@@ -125,24 +126,27 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
           </div>
         </div>
         {tab === "calendario" && <MiniCalendarClock selectedDate={selectedDate} onDateChange={setSelectedDate} />}
+        {tab === "entrenadores" && <div />}
         <div className="flex justify-end">
-          <button onClick={() => { setPreselect(null); setNewBookingOpen(true) }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold uppercase tracking-wide transition-all"
-            style={{ background: "#0d1b2a", border: "1px solid #C9A84C", color: "#C9A84C" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.12)" }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#0d1b2a" }}>
-            <Plus className="w-4 h-4" /> Nueva reserva
-          </button>
+          {tab !== "entrenadores" && (
+            <button onClick={() => { setPreselect(null); setNewBookingOpen(true) }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold uppercase tracking-wide transition-all"
+              style={{ background: "#0d1b2a", border: "1px solid #C9A84C", color: "#C9A84C" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.12)" }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#0d1b2a" }}>
+              <Plus className="w-4 h-4" /> Nueva reserva
+            </button>
+          )}
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)" }}>
-        {(["calendario", "resumen"] as const).map(t => (
+        {(["calendario", "resumen", "entrenadores"] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className="px-4 py-1.5 rounded-lg text-sm font-bold uppercase tracking-wide transition-all"
             style={tab === t ? { background: "#ffffff", color: "#C9A84C", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" } : { color: "rgba(13,27,42,0.4)" }}>
-            {t === "calendario" ? "Calendario" : "Resumen"}
+            {t === "calendario" ? "Calendario" : t === "resumen" ? "Resumen" : "Entrenadores"}
           </button>
         ))}
       </div>
@@ -197,6 +201,8 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
           </div>
         </>
       )}
+
+      {tab === "entrenadores" && <CoachesTab businessId={businessId} />}
 
       {tab === "calendario" && (() => {
         if (loading) return <CalendarSkeleton />
