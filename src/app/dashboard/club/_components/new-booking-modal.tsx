@@ -195,7 +195,8 @@ function calcClassPrice(coach: Coach | undefined, startTime: string, endTime: st
   const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
   const dayOfWeek = start.getDay()
   for (const rule of coach.feeRules) {
-    if (rule.days.includes(dayOfWeek) && startTime >= rule.startTime && startTime < rule.endTime) {
+    const days = rule.days.map(Number)
+    if (days.includes(dayOfWeek) && startTime >= rule.startTime && startTime < rule.endTime) {
       return Number(rule.classPrice) * durationHours
     }
   }
