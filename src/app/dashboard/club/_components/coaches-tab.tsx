@@ -48,16 +48,10 @@ type Report = {
 const DAY_LABELS = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"]
 
 function ModalScroller({ children }: { children: React.ReactNode }) {
-  const ref = React.useRef<HTMLDivElement>(null)
-  React.useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    // Espera a que el browser termine de hacer auto-focus y fuerza scroll al top
-    const t = setTimeout(() => { el.scrollTop = 0 }, 0)
-    return () => clearTimeout(t)
-  }, [])
   return (
-    <div ref={ref} className="overflow-y-auto flex-1 p-5">
+    <div className="overflow-y-auto flex-1 p-5">
+      {/* Elemento invisible que captura el auto-focus del browser, evitando que scrollee a inputs internos */}
+      <div tabIndex={0} aria-hidden style={{ height: 0, width: 0, overflow: "hidden", outline: "none" }} />
       {children}
     </div>
   )
