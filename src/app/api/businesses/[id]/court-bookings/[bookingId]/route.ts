@@ -86,7 +86,7 @@ export async function PATCH(req: Request, { params }: Params) {
     const timeChanged = startTime !== undefined || endTime !== undefined || courtId !== undefined
     if (timeChanged && booking.client?.email && status === undefined) {
       const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
-      sendCourtBookingModification({
+      await sendCourtBookingModification({
         clientName: booking.client.name,
         clientEmail: booking.client.email,
         businessName: business?.name ?? "Club Deportivo",
@@ -94,7 +94,7 @@ export async function PATCH(req: Request, { params }: Params) {
         startTime: booking.startTime.toISOString(),
         endTime: booking.endTime.toISOString(),
         price: Number(booking.price),
-      }).catch(() => {})
+      }).catch(console.error)
     }
 
     return NextResponse.json({ booking })
@@ -120,14 +120,14 @@ export async function DELETE(_: Request, { params }: Params) {
 
   if (booking.client?.email) {
     const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
-    sendCourtBookingCancellation({
+    await sendCourtBookingCancellation({
       clientName: booking.client.name,
       clientEmail: booking.client.email,
       businessName: business?.name ?? "Club Deportivo",
       courtName: booking.court.name,
       startTime: booking.startTime.toISOString(),
       endTime: booking.endTime.toISOString(),
-    }).catch(() => {})
+    }).catch(console.error)
   }
 
   return NextResponse.json({ success: true })

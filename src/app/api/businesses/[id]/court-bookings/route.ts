@@ -90,10 +90,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       coach: { select: { id: true, name: true, color: true } },
     },
   })
-  // Email de confirmación al cliente (no bloquea la respuesta)
   if (booking.client?.email) {
     const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
-    sendCourtBookingConfirmation({
+    await sendCourtBookingConfirmation({
       clientName: booking.client.name,
       clientEmail: booking.client.email,
       businessName: business?.name ?? "Club Deportivo",
@@ -101,7 +100,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       startTime: booking.startTime.toISOString(),
       endTime: booking.endTime.toISOString(),
       price: Number(booking.price),
-    }).catch(() => {})
+    }).catch(console.error)
   }
 
   return NextResponse.json({ booking }, { status: 201 })

@@ -464,6 +464,13 @@ export async function sendCourtBookingConfirmation({
   courtName: string; startTime: string; endTime: string; price: number
 }) {
   if (!process.env.RESEND_API_KEY) return
+  const fmt = (iso: string) => new Date(iso).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"
+  const gcalUrl = `https://calendar.google.com/calendar/render?${new URLSearchParams({
+    action: "TEMPLATE",
+    text: `Reserva ${courtName} — ${businessName}`,
+    dates: `${fmt(startTime)}/${fmt(endTime)}`,
+    details: `Reserva confirmada en ${businessName}`,
+  }).toString()}`
   await resend.emails.send({
     from: FROM,
     to: clientEmail,
@@ -476,6 +483,11 @@ export async function sendCourtBookingConfirmation({
         <div class="row"><span class="label">Fecha</span><span class="value">${fmtCourtDate(startTime)}</span></div>
         <div class="row"><span class="label">Horario</span><span class="value">${fmtCourtTime(startTime)} – ${fmtCourtTime(endTime)} hrs</span></div>
         <div class="row"><span class="label">Precio</span><span class="value">$${price.toLocaleString("es-CL")}</span></div>
+      </div>
+      <div style="text-align:center;margin:24px 0 8px">
+        <a href="${gcalUrl}" style="display:inline-block;background:#38bdf8;color:#0c1a2e;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;letter-spacing:0.01em">
+          📅 Agregar a Google Calendar
+        </a>
       </div>
       <p class="subtitle" style="margin-top:16px;font-size:13px">Si tienes alguna consulta, contacta directamente a ${businessName}. ¡Te esperamos!</p>
     `),
