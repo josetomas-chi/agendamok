@@ -114,7 +114,7 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="grid items-center" style={{ gridTemplateColumns: "1fr auto 1fr" }}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(201,168,76,0.12)", border: "1px solid rgba(201,168,76,0.3)" }}>
             <Trophy className="w-5 h-5" style={{ color: "#C9A84C" }} />
@@ -124,13 +124,16 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
             <p className="text-xs font-medium" style={{ color: "rgba(13,27,42,0.45)" }}>Canchas, reservas y membresías</p>
           </div>
         </div>
-        <button onClick={() => { setPreselect(null); setNewBookingOpen(true) }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold uppercase tracking-wide transition-all"
-          style={{ background: "#0d1b2a", border: "1px solid #C9A84C", color: "#C9A84C" }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.12)" }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#0d1b2a" }}>
-          <Plus className="w-4 h-4" /> Nueva reserva
-        </button>
+        {tab === "calendario" && <MiniCalendarClock selectedDate={selectedDate} onDateChange={setSelectedDate} />}
+        <div className="flex justify-end">
+          <button onClick={() => { setPreselect(null); setNewBookingOpen(true) }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold uppercase tracking-wide transition-all"
+            style={{ background: "#0d1b2a", border: "1px solid #C9A84C", color: "#C9A84C" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.12)" }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#0d1b2a" }}>
+            <Plus className="w-4 h-4" /> Nueva reserva
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -204,7 +207,6 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
         const filteredCourts = sportFilter === "Todos" ? courts : courts.filter(c => c.sport && normalize(c.sport) === normalize(sportFilter))
         return (
           <>
-            <MiniCalendarClock selectedDate={selectedDate} onDateChange={setSelectedDate} />
             {sports.length > 2 && (
               <div className="flex gap-1 flex-wrap">
                 {sports.map(s => (
