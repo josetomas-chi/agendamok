@@ -535,7 +535,7 @@ export default function CoachesTab({ businessId }: { businessId: string }) {
                 <X className="w-5 h-5" style={{ color: "rgba(255,255,255,0.5)" }} />
               </button>
             </div>
-            <div className="overflow-y-auto flex-1 p-5">
+            <div className="overflow-y-auto flex-1 p-5" ref={el => { if (el) el.scrollTop = 0 }}>
               <CoachForm
                 initial={modal === "edit" && editCoach ? editCoach : undefined}
                 onSave={modal === "create" ? handleCreate : handleEdit}
