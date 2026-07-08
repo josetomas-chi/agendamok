@@ -612,8 +612,8 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                         onClick={e => { if (!dropTarget) { e.stopPropagation(); onBookingClick(b) } }}
                         className="absolute left-0.5 right-0.5 rounded-md cursor-grab transition-all overflow-hidden z-10 flex items-center justify-center"
                         style={{ top, height,
-                          background: b.status === "COMPLETED" ? "rgba(34,197,94,0.18)" : "rgba(201,168,76,0.85)",
-                          borderLeft: `3px solid ${b.status === "COMPLETED" ? "#22c55e" : "#C9A84C"}`,
+                          background: b.status === "COMPLETED" ? "rgba(34,197,94,0.55)" : "rgba(201,168,76,0.85)",
+                          borderLeft: `3px solid ${b.status === "COMPLETED" ? "#16a34a" : "#C9A84C"}`,
                           opacity: draggingId === b.id ? 0.35 : 1 }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = "brightness(0.92)" }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = "none" }}
