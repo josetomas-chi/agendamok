@@ -1107,6 +1107,7 @@ model TournamentMatch {
   score1         String?
   score2         String?
   courtId        String?
+  courtNumber    Int?
   scheduledTime  DateTime?
   stage          String    @default("KNOCKOUT")
   group          String?

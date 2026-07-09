@@ -16,7 +16,7 @@ type Category = { id: string; name: string; description: string | null }
 type Participant = { id: string; name: string; players: { name: string }[]; seed: number | null; status: string; group: string | null; categoryId: string | null }
 type Match = {
   id: string; round: number; matchNumber: number; status: string; stage: string; group: string | null; categoryId: string | null
-  score1: string | null; score2: string | null
+  score1: string | null; score2: string | null; courtNumber: number | null; scheduledTime: string | null
   participant1: Participant | null; participant2: Participant | null; winner: Participant | null
 }
 type Tournament = {
@@ -71,6 +71,8 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
   const [score1, setScore1] = useState("")
   const [score2, setScore2] = useState("")
   const [winnerId, setWinnerId] = useState("")
+  const [editCourt, setEditCourt] = useState("")
+  const [editTime, setEditTime] = useState("")
   const [savingResult, setSavingResult] = useState(false)
 
   const load = useCallback(async () => {
@@ -186,11 +188,27 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
     setSavingResult(true)
     const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}/matches/${resultMatch.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ score1, score2, winnerId, status: "FINISHED" }),
+      body: JSON.stringify({
+        score1, score2, winnerId, status: "FINISHED",
+        courtNumber: editCourt ? Number(editCourt) : null,
+        scheduledTime: editTime || null,
+      }),
     })
-    if (r.ok) { toast.success("Resultado guardado"); setResultMatch(null); setScore1(""); setScore2(""); setWinnerId(""); load() }
+    if (r.ok) { toast.success("Resultado guardado"); setResultMatch(null); setScore1(""); setScore2(""); setWinnerId(""); setEditCourt(""); setEditTime(""); load() }
     else { const d = await r.json(); toast.error(d.error || "Error") }
     setSavingResult(false)
+  }
+
+  async function handleSaveSchedule(match: Match) {
+    const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}/matches/${match.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        courtNumber: editCourt ? Number(editCourt) : null,
+        scheduledTime: editTime || null,
+      }),
+    })
+    if (r.ok) { toast.success("Horario actualizado"); setResultMatch(null); setEditCourt(""); setEditTime(""); load() }
+    else toast.error("Error al guardar")
   }
 
   async function handleChangeStatus(status: string) {
@@ -537,7 +555,14 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
                       <div style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
                         {gMatches.map(m => (
                           <MatchRow key={m.id} match={m} canEdit={tournament.status === "IN_PROGRESS"}
-                            onEdit={() => { setResultMatch(m); setScore1(m.score1 ?? ""); setScore2(m.score2 ?? ""); setWinnerId(m.winner?.id ?? "") }} />
+                            onEdit={() => {
+                              setResultMatch(m)
+                              setScore1(m.score1 ?? "")
+                              setScore2(m.score2 ?? "")
+                              setWinnerId(m.winner?.id ?? "")
+                              setEditCourt(m.courtNumber ? String(m.courtNumber) : "")
+                              setEditTime(m.scheduledTime ? new Date(m.scheduledTime).toISOString().slice(0,16) : "")
+                            }} />
                         ))}
                       </div>
                     )}
@@ -604,7 +629,14 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
                 <div className="space-y-2">
                   {(tournament.format === "ROUND_ROBIN" ? matches : knockoutMatches.filter(m => m.round === r)).map(m => (
                     <MatchRow key={m.id} match={m} canEdit={tournament.status === "IN_PROGRESS"}
-                      onEdit={() => { setResultMatch(m); setScore1(m.score1 ?? ""); setScore2(m.score2 ?? ""); setWinnerId(m.winner?.id ?? "") }} />
+                      onEdit={() => {
+                              setResultMatch(m)
+                              setScore1(m.score1 ?? "")
+                              setScore2(m.score2 ?? "")
+                              setWinnerId(m.winner?.id ?? "")
+                              setEditCourt(m.courtNumber ? String(m.courtNumber) : "")
+                              setEditTime(m.scheduledTime ? new Date(m.scheduledTime).toISOString().slice(0,16) : "")
+                            }} />
                   ))}
                 </div>
               </div>
@@ -618,14 +650,43 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.4)" }}>
           <div className="rounded-2xl p-6 w-full max-w-sm space-y-4" style={{ background: "#fff", border: "1px solid rgba(201,168,76,0.3)" }}>
             <div className="flex items-center justify-between">
-              <p className="font-black text-sm uppercase tracking-wide" style={{ color: NAVY }}>Cargar resultado</p>
-              <button onClick={() => setResultMatch(null)} className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "rgba(13,27,42,0.06)" }}>
+              <p className="font-black text-sm uppercase tracking-wide" style={{ color: NAVY }}>Partido</p>
+              <button onClick={() => { setResultMatch(null); setEditCourt(""); setEditTime("") }} className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "rgba(13,27,42,0.06)" }}>
                 <X className="w-3.5 h-3.5" style={{ color: "rgba(13,27,42,0.5)" }} />
               </button>
             </div>
             <p className="text-xs text-center font-bold" style={{ color: "rgba(13,27,42,0.5)" }}>
               {resultMatch.participant1?.name} <span style={{ color: "rgba(13,27,42,0.25)" }}>vs</span> {resultMatch.participant2?.name}
             </p>
+
+            {/* Cancha y horario */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "rgba(13,27,42,0.4)" }}>Cancha</p>
+                <input type="number" min="1" value={editCourt} onChange={e => setEditCourt(e.target.value)} placeholder="Nº"
+                  className="w-full rounded-xl px-3 py-2 text-sm font-bold outline-none"
+                  style={{ background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.12)", color: NAVY }} />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "rgba(13,27,42,0.4)" }}>Fecha y hora</p>
+                <input type="datetime-local" value={editTime} onChange={e => setEditTime(e.target.value)}
+                  className="w-full rounded-xl px-3 py-2 text-xs outline-none"
+                  style={{ background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.12)", color: NAVY }} />
+              </div>
+            </div>
+
+            {/* Solo guardar horario */}
+            {resultMatch.status !== "FINISHED" && (
+              <button onClick={() => handleSaveSchedule(resultMatch)}
+                className="w-full h-9 rounded-xl text-xs font-bold uppercase tracking-wide transition-all"
+                style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.12)", color: "rgba(13,27,42,0.5)" }}>
+                Guardar solo horario/cancha
+              </button>
+            )}
+
+            <div style={{ borderTop: "1px solid rgba(13,27,42,0.08)", paddingTop: 8 }}>
+              <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "rgba(13,27,42,0.4)" }}>Resultado</p>
+            </div>
             <div className="flex items-center gap-2">
               <input value={score1} onChange={e => setScore1(e.target.value)} placeholder="0"
                 className="flex-1 rounded-xl px-3 py-2 text-center text-lg font-black outline-none"
@@ -664,44 +725,61 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
 function MatchRow({ match: m, canEdit, onEdit }: { match: Match; canEdit: boolean; onEdit: () => void }) {
   const hasBye = !m.participant1 || !m.participant2
   const isFinished = m.status === "FINISHED"
+  const timeLabel = m.scheduledTime ? format(new Date(m.scheduledTime), "HH:mm", {}) : null
+  const courtLabel = m.courtNumber ? `C${m.courtNumber}` : null
   return (
-    <div className="flex items-stretch" style={{ borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-      <div className="flex-1 flex items-center gap-2 px-3 py-2.5"
-        style={{ background: m.winner?.id === m.participant1?.id ? "rgba(201,168,76,0.06)" : "transparent" }}>
-        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white flex-shrink-0"
-          style={{ background: m.participant1 ? "#0d1b2a" : "rgba(13,27,42,0.1)" }}>
-          {m.participant1 ? m.participant1.name[0] : "?"}
+    <div style={{ borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+      {/* Cancha y hora */}
+      {(courtLabel || timeLabel) && (
+        <div className="flex items-center gap-2 px-3 pt-1.5">
+          {courtLabel && (
+            <span className="text-[9px] font-black px-1.5 py-0.5 rounded" style={{ background: "rgba(13,27,42,0.06)", color: "rgba(13,27,42,0.45)" }}>
+              {courtLabel}
+            </span>
+          )}
+          {timeLabel && (
+            <span className="text-[9px] font-semibold" style={{ color: "rgba(13,27,42,0.35)" }}>{timeLabel}</span>
+          )}
         </div>
-        <p className="text-xs font-bold truncate" style={{ color: m.participant1 ? "#0d1b2a" : "rgba(13,27,42,0.25)" }}>
-          {m.participant1?.name ?? "Por definir"}
-        </p>
-        {m.winner?.id === m.participant1?.id && <Check className="w-3 h-3 flex-shrink-0" style={{ color: "#C9A84C" }} />}
-      </div>
-      <div className="flex items-center gap-1 px-2 flex-shrink-0"
-        style={{ borderLeft: "1px solid rgba(13,27,42,0.07)", borderRight: "1px solid rgba(13,27,42,0.07)" }}>
-        {isFinished
-          ? <p className="text-xs font-black whitespace-nowrap" style={{ color: "#0d1b2a" }}>{m.score1 ?? "–"} – {m.score2 ?? "–"}</p>
-          : <p className="text-[10px] font-semibold" style={{ color: "rgba(13,27,42,0.25)" }}>vs</p>}
-      </div>
-      <div className="flex-1 flex items-center gap-2 px-3 py-2.5 justify-end"
-        style={{ background: m.winner?.id === m.participant2?.id ? "rgba(201,168,76,0.06)" : "transparent" }}>
-        {m.winner?.id === m.participant2?.id && <Check className="w-3 h-3 flex-shrink-0" style={{ color: "#C9A84C" }} />}
-        <p className="text-xs font-bold truncate text-right" style={{ color: m.participant2 ? "#0d1b2a" : "rgba(13,27,42,0.25)" }}>
-          {m.participant2?.name ?? (hasBye && m.participant1 ? "BYE" : "Por definir")}
-        </p>
-        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white flex-shrink-0"
-          style={{ background: m.participant2 ? "#0d1b2a" : "rgba(13,27,42,0.1)" }}>
-          {m.participant2 ? m.participant2.name[0] : "?"}
-        </div>
-      </div>
-      {!hasBye && !isFinished && canEdit && m.participant1 && m.participant2 && (
-        <button onClick={onEdit} className="px-3 flex items-center justify-center flex-shrink-0 transition-all"
-          style={{ borderLeft: "1px solid rgba(13,27,42,0.07)", color: "#C9A84C" }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.06)" }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent" }}>
-          <ChevronRight className="w-3.5 h-3.5" />
-        </button>
       )}
+      <div className="flex items-stretch">
+        <div className="flex-1 flex items-center gap-2 px-3 py-2"
+          style={{ background: m.winner?.id === m.participant1?.id ? "rgba(201,168,76,0.06)" : "transparent" }}>
+          <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white flex-shrink-0"
+            style={{ background: m.participant1 ? "#0d1b2a" : "rgba(13,27,42,0.1)" }}>
+            {m.participant1 ? m.participant1.name[0] : "?"}
+          </div>
+          <p className="text-xs font-bold truncate" style={{ color: m.participant1 ? "#0d1b2a" : "rgba(13,27,42,0.25)" }}>
+            {m.participant1?.name ?? "Por definir"}
+          </p>
+          {m.winner?.id === m.participant1?.id && <Check className="w-3 h-3 flex-shrink-0" style={{ color: "#C9A84C" }} />}
+        </div>
+        <div className="flex items-center gap-1 px-2 flex-shrink-0"
+          style={{ borderLeft: "1px solid rgba(13,27,42,0.07)", borderRight: "1px solid rgba(13,27,42,0.07)" }}>
+          {isFinished
+            ? <p className="text-xs font-black whitespace-nowrap" style={{ color: "#0d1b2a" }}>{m.score1 ?? "–"} – {m.score2 ?? "–"}</p>
+            : <p className="text-[10px] font-semibold" style={{ color: "rgba(13,27,42,0.25)" }}>vs</p>}
+        </div>
+        <div className="flex-1 flex items-center gap-2 px-3 py-2 justify-end"
+          style={{ background: m.winner?.id === m.participant2?.id ? "rgba(201,168,76,0.06)" : "transparent" }}>
+          {m.winner?.id === m.participant2?.id && <Check className="w-3 h-3 flex-shrink-0" style={{ color: "#C9A84C" }} />}
+          <p className="text-xs font-bold truncate text-right" style={{ color: m.participant2 ? "#0d1b2a" : "rgba(13,27,42,0.25)" }}>
+            {m.participant2?.name ?? (hasBye && m.participant1 ? "BYE" : "Por definir")}
+          </p>
+          <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white flex-shrink-0"
+            style={{ background: m.participant2 ? "#0d1b2a" : "rgba(13,27,42,0.1)" }}>
+            {m.participant2 ? m.participant2.name[0] : "?"}
+          </div>
+        </div>
+        {!hasBye && canEdit && m.participant1 && m.participant2 && (
+          <button onClick={onEdit} className="px-3 flex items-center justify-center flex-shrink-0 transition-all"
+            style={{ borderLeft: "1px solid rgba(13,27,42,0.07)", color: "#C9A84C" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.06)" }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent" }}>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
     </div>
   )
 }
