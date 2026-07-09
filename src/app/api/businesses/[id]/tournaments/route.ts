@@ -24,7 +24,7 @@ export async function POST(req: Request, { params }: Params) {
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
   const body = await req.json()
-  const { name, sport, format, participantType, startDate, endDate, maxParticipants, entryFee, description, groupCount, advanceCount } = body
+  const { name, sport, format, participantType, startDate, endDate, maxParticipants, courtCount, entryFee, description, groupCount, advanceCount } = body
 
   if (!name || !startDate || !endDate) return NextResponse.json({ error: "Faltan campos" }, { status: 400 })
 
@@ -38,6 +38,7 @@ export async function POST(req: Request, { params }: Params) {
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       maxParticipants: maxParticipants ? Number(maxParticipants) : null,
+      courtCount: courtCount ? Number(courtCount) : null,
       entryFee: entryFee ? Number(entryFee) : null,
       description: description || null,
       groupCount: groupCount ? Number(groupCount) : null,

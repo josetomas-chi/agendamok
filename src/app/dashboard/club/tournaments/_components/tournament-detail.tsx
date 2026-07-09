@@ -25,7 +25,7 @@ type Tournament = {
   participantType: "INDIVIDUAL" | "PAIR" | "TEAM"
   startDate: string; endDate: string; maxParticipants: number | null
   entryFee: string | null; status: "DRAFT" | "OPEN" | "IN_PROGRESS" | "FINISHED"
-  description: string | null; groupCount: number | null; advanceCount: number | null
+  description: string | null; groupCount: number | null; advanceCount: number | null; courtCount: number | null
   categories: Category[]; participants: Participant[]; matches: Match[]
 }
 
@@ -305,8 +305,8 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
       {/* Info bar */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Participantes", value: `${allParticipants.length}${tournament.maxParticipants ? `/${tournament.maxParticipants}` : ""}` },
-          { label: "Categorías", value: categories.length || "–" },
+          { label: "Inscritos", value: `${allParticipants.length}${tournament.maxParticipants ? `/${tournament.maxParticipants}` : ""}` },
+          { label: "Canchas", value: tournament.courtCount ?? "–" },
           { label: "Estado", value: STATUS_LABELS[tournament.status] },
         ].map(s => (
           <div key={s.label} className="rounded-xl px-4 py-3 text-center" style={{ background: "#fff", border: "1px solid rgba(201,168,76,0.2)" }}>

@@ -50,6 +50,7 @@ export default function TournamentsPage() {
     startDate: "",
     endDate: "",
     maxParticipants: "",
+    courtCount: "",
     entryFee: "",
     description: "",
     groupCount: "2",
@@ -81,6 +82,7 @@ export default function TournamentsPage() {
       body: JSON.stringify({
         ...form,
         maxParticipants: form.maxParticipants ? Number(form.maxParticipants) : null,
+        courtCount: form.courtCount ? Number(form.courtCount) : null,
         entryFee: form.entryFee ? Number(form.entryFee) : null,
         groupCount: form.format === "GROUP_STAGE" ? Number(form.groupCount) : null,
         advanceCount: form.format === "GROUP_STAGE" ? Number(form.advanceCount) : null,
@@ -90,7 +92,7 @@ export default function TournamentsPage() {
       const d = await r.json()
       toast.success("Torneo creado")
       setCreateOpen(false)
-      setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", startDate: "", endDate: "", maxParticipants: "", entryFee: "", description: "", groupCount: "2", advanceCount: "2" })
+      setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", startDate: "", endDate: "", maxParticipants: "", courtCount: "", entryFee: "", description: "", groupCount: "2", advanceCount: "2" })
       setTournaments(prev => [{ ...d.tournament, _count: { participants: 0, matches: 0 } }, ...prev])
       setSelectedId(d.tournament.id)
     } else {
@@ -294,10 +296,17 @@ export default function TournamentsPage() {
               </div>
             </div>
 
-            <div>
-              <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Cupo máximo</label>
-              <input type="number" min="2" value={form.maxParticipants} onChange={e => setForm(f => ({ ...f, maxParticipants: e.target.value }))} placeholder="Sin límite"
-                className={inputCls} style={inputStyle} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Canchas disponibles</label>
+                <input type="number" min="1" value={form.courtCount} onChange={e => setForm(f => ({ ...f, courtCount: e.target.value }))} placeholder="Sin límite"
+                  className={inputCls} style={inputStyle} />
+              </div>
+              <div>
+                <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Cupo máximo</label>
+                <input type="number" min="2" value={form.maxParticipants} onChange={e => setForm(f => ({ ...f, maxParticipants: e.target.value }))} placeholder="Sin límite"
+                  className={inputCls} style={inputStyle} />
+              </div>
             </div>
 
             <div>

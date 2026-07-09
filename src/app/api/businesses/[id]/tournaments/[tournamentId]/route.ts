@@ -12,6 +12,7 @@ export async function GET(_: Request, { params }: Params) {
   const tournament = await prisma.tournament.findFirst({
     where: { id: tournamentId, businessId: id },
     include: {
+      categories: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       participants: { orderBy: [{ seed: "asc" }, { createdAt: "asc" }] },
       matches: {
         include: { participant1: true, participant2: true, winner: true },
@@ -28,7 +29,7 @@ export async function PATCH(req: Request, { params }: Params) {
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id, tournamentId } = await params
   const body = await req.json()
-  const { name, sport, format, participantType, startDate, endDate, maxParticipants, entryFee, description, status } = body
+  const { name, sport, format, participantType, startDate, endDate, maxParticipants, courtCount, entryFee, description, status } = body
 
   const tournament = await prisma.tournament.update({
     where: { id: tournamentId, businessId: id },
@@ -40,6 +41,7 @@ export async function PATCH(req: Request, { params }: Params) {
       ...(startDate !== undefined && { startDate: new Date(startDate) }),
       ...(endDate !== undefined && { endDate: new Date(endDate) }),
       ...(maxParticipants !== undefined && { maxParticipants: maxParticipants ? Number(maxParticipants) : null }),
+      ...(courtCount !== undefined && { courtCount: courtCount ? Number(courtCount) : null }),
       ...(entryFee !== undefined && { entryFee: entryFee ? Number(entryFee) : null }),
       ...(description !== undefined && { description: description || null }),
       ...(status !== undefined && { status }),

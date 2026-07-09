@@ -1060,6 +1060,7 @@ model Tournament {
   description     String?                   @db.Text
   groupCount      Int?
   advanceCount    Int?
+  courtCount      Int?
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
 
