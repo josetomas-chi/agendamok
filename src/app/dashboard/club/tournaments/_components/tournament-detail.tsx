@@ -12,7 +12,7 @@ const FORMAT_LABELS = { ELIMINATION: "Eliminación directa", ROUND_ROBIN: "Round
 const TYPE_LABELS = { INDIVIDUAL: "Individual", PAIR: "Parejas", TEAM: "Equipos" }
 const STATUS_LABELS = { DRAFT: "Borrador", OPEN: "Inscripciones abiertas", IN_PROGRESS: "En curso", FINISHED: "Finalizado" }
 
-type Category = { id: string; name: string; description: string | null }
+type Category = { id: string; name: string; description: string | null; groupCount?: number | null; groupSize?: number | null }
 type Participant = { id: string; name: string; players: { name: string }[]; seed: number | null; status: string; group: string | null; categoryId: string | null }
 type Match = {
   id: string; round: number; matchNumber: number; status: string; stage: string; group: string | null; categoryId: string | null
@@ -184,6 +184,14 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
       load()
     } else { const d = await r.json(); toast.error(d.error || "Error") }
     setAddSaving(false)
+  }
+
+  async function handleUpdateGroup(participantId: string, group: string) {
+    await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}/participants/${participantId}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ group: group || null }),
+    })
+    load()
   }
 
   async function handleRemoveParticipant(id: string) {
@@ -580,41 +588,57 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
             </div>
           ) : (
             <div className="rounded-2xl overflow-hidden" style={{ background: "#fff", border: "1px solid rgba(201,168,76,0.2)" }}>
-              {participants.map((p, i) => {
-                const playerList = (p.players as { name: string }[]).map(pl => pl.name).join(", ")
-                const catLabel = !hasCategories ? null : categories.find(c => c.id === p.categoryId)?.name
-                return (
-                  <div key={p.id} className="flex items-center gap-3 px-4 py-3"
-                    style={{ borderBottom: i < participants.length - 1 ? "1px solid rgba(201,168,76,0.1)" : "none" }}>
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white flex-shrink-0"
-                      style={{ background: NAVY }}>{i + 1}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold truncate" style={{ color: NAVY }}>{p.name}</p>
-                      {playerList && <p className="text-[11px] truncate" style={{ color: "rgba(13,27,42,0.4)" }}>{playerList}</p>}
+              {(() => {
+                // Determine available group letters for this category/tournament
+                const activeCategory = activeCategoryId ? categories.find(c => c.id === activeCategoryId) : null
+                const groupCount = (activeCategory as { groupCount?: number | null } | undefined)?.groupCount ?? tournament.groupCount ?? 0
+                const groupLetters = groupCount > 0
+                  ? Array.from({ length: groupCount }, (_, i) => String.fromCharCode(65 + i))
+                  : ["A","B","C","D","E","F","G","H"]
+                const isGroupStage = tournament.format === "GROUP_STAGE"
+
+                return participants.map((p, i) => {
+                  const playerList = (p.players as { name: string }[]).map(pl => pl.name).join(", ")
+                  const catLabel = !hasCategories ? null : categories.find(c => c.id === p.categoryId)?.name
+                  return (
+                    <div key={p.id} className="flex items-center gap-3 px-4 py-3"
+                      style={{ borderBottom: i < participants.length - 1 ? "1px solid rgba(201,168,76,0.1)" : "none" }}>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white flex-shrink-0"
+                        style={{ background: NAVY }}>{i + 1}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate" style={{ color: NAVY }}>{p.name}</p>
+                        {playerList && <p className="text-[11px] truncate" style={{ color: "rgba(13,27,42,0.4)" }}>{playerList}</p>}
+                      </div>
+                      {catLabel && activeCategoryId === null && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                          style={{ background: "rgba(201,168,76,0.1)", color: GOLD }}>{catLabel}</span>
+                      )}
+                      {/* Grupo editable en torneos fase de grupos */}
+                      {isGroupStage && (
+                        <select value={p.group ?? ""}
+                          onChange={e => handleUpdateGroup(p.id, e.target.value)}
+                          className="rounded-lg px-2 py-1 text-xs font-black outline-none cursor-pointer flex-shrink-0"
+                          style={{ background: p.group ? "rgba(201,168,76,0.12)" : "rgba(13,27,42,0.05)", border: `1px solid ${p.group ? "rgba(201,168,76,0.4)" : "rgba(13,27,42,0.1)"}`, color: p.group ? GOLD : "rgba(13,27,42,0.35)", minWidth: 56 }}>
+                          <option value="">Grupo</option>
+                          {groupLetters.map(l => <option key={l} value={l}>Grupo {l}</option>)}
+                        </select>
+                      )}
+                      {p.status === "CHAMPION" && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(201,168,76,0.2)", color: GOLD }}>🏆 Campeón</span>
+                      )}
+                      {tournament.status === "OPEN" && (
+                        <button onClick={() => handleRemoveParticipant(p.id)}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
+                          style={{ color: "#ef4444" }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.08)" }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent" }}>
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
-                    {catLabel && activeCategoryId === null && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
-                        style={{ background: "rgba(201,168,76,0.1)", color: GOLD }}>{catLabel}</span>
-                    )}
-                    {p.group && (
-                      <span className="text-[11px] font-black w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ background: "rgba(201,168,76,0.15)", color: GOLD }}>{p.group}</span>
-                    )}
-                    {p.status === "CHAMPION" && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(201,168,76,0.2)", color: GOLD }}>🏆 Campeón</span>
-                    )}
-                    {tournament.status === "OPEN" && (
-                      <button onClick={() => handleRemoveParticipant(p.id)}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
-                        style={{ color: "#ef4444" }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.08)" }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent" }}>
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
+                  )
+                })
+              })()}
             </div>
           )}
         </div>
