@@ -505,7 +505,7 @@ function ApptCard({ appt, compact, height, onDragStart, onApptClick }: {
   onDragStart: (e: React.DragEvent, id: string) => void
   onApptClick?: (id: string) => void
 }) {
-  const color = appt.service.color || "#38bdf8"
+  const color = appt.staff?.color || appt.service.color || "#38bdf8"
   const isCompleted = appt.status === "COMPLETED"
   const isPaid = appt.payment?.status === "PAID"
   return (
