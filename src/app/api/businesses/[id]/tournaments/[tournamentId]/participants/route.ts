@@ -9,7 +9,7 @@ export async function POST(req: Request, { params }: Params) {
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id, tournamentId } = await params
   const body = await req.json()
-  const { name, players, seed } = body
+  const { name, phone, players, seed, categoryId } = body
 
   if (!name) return NextResponse.json({ error: "Nombre requerido" }, { status: 400 })
 
@@ -26,8 +26,10 @@ export async function POST(req: Request, { params }: Params) {
     data: {
       tournamentId,
       name,
+      phone: phone?.trim() || null,
       players: players || [],
       seed: seed ? Number(seed) : null,
+      categoryId: categoryId || null,
     },
   })
   return NextResponse.json({ participant }, { status: 201 })

@@ -53,8 +53,15 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
 
   // Participant add
   const [addName, setAddName] = useState("")
-  const [addPlayers, setAddPlayers] = useState("")
   const [addSaving, setAddSaving] = useState(false)
+  // PAIR
+  const [addP1Name, setAddP1Name] = useState("")
+  const [addP1Phone, setAddP1Phone] = useState("")
+  const [addP2Name, setAddP2Name] = useState("")
+  const [addP2Phone, setAddP2Phone] = useState("")
+  // TEAM
+  const [addTeamPhone, setAddTeamPhone] = useState("")
+  const [addTeamPlayers, setAddTeamPlayers] = useState<string[]>(["", ""])
 
   // Category management
   const [catOpen, setCatOpen] = useState(false)
@@ -143,15 +150,39 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
 
   async function handleAddParticipant(e: React.FormEvent) {
     e.preventDefault()
-    if (!addName.trim()) return
+    const pType = tournament?.participantType
     setAddSaving(true)
-    const players = addPlayers ? addPlayers.split(",").map(s => s.trim()).filter(Boolean).map(n => ({ name: n })) : []
+
+    let name = "", phone = "", players: { name: string; phone?: string }[] = []
+
+    if (pType === "INDIVIDUAL") {
+      if (!addName.trim()) { setAddSaving(false); return }
+      name = addName.trim()
+    } else if (pType === "PAIR") {
+      if (!addP1Name.trim() || !addP2Name.trim()) { toast.error("Completa el nombre de ambos jugadores"); setAddSaving(false); return }
+      name = `${addP1Name.trim()} / ${addP2Name.trim()}`
+      phone = addP1Phone.trim()
+      players = [
+        { name: addP1Name.trim(), phone: addP1Phone.trim() },
+        { name: addP2Name.trim(), phone: addP2Phone.trim() },
+      ]
+    } else {
+      if (!addName.trim()) { setAddSaving(false); return }
+      name = addName.trim()
+      phone = addTeamPhone.trim()
+      players = addTeamPlayers.map(p => p.trim()).filter(Boolean).map(n => ({ name: n }))
+    }
+
     const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}/participants`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: addName.trim(), players, categoryId: activeCategoryId }),
+      body: JSON.stringify({ name, phone, players, categoryId: activeCategoryId }),
     })
-    if (r.ok) { toast.success("Participante agregado"); setAddName(""); setAddPlayers(""); load() }
-    else { const d = await r.json(); toast.error(d.error || "Error") }
+    if (r.ok) {
+      toast.success("Participante agregado")
+      setAddName(""); setAddP1Name(""); setAddP1Phone(""); setAddP2Name(""); setAddP2Phone("")
+      setAddTeamPhone(""); setAddTeamPlayers(["", ""])
+      load()
+    } else { const d = await r.json(); toast.error(d.error || "Error") }
     setAddSaving(false)
   }
 
@@ -461,21 +492,83 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
                 Agregar {TYPE_LABELS[tournament.participantType].toLowerCase()}
                 {hasCategories && activeCategoryId && ` — ${categories.find(c => c.id === activeCategoryId)?.name}`}
               </p>
-              <div className="flex gap-2">
-                <input value={addName} onChange={e => setAddName(e.target.value)}
-                  placeholder={tournament.participantType === "INDIVIDUAL" ? "Nombre del jugador" : tournament.participantType === "PAIR" ? "Nombre de la pareja" : "Nombre del equipo"}
-                  className={`flex-1 ${inputCls}`} style={inputStyle} />
-                {tournament.participantType !== "INDIVIDUAL" && (
-                  <input value={addPlayers} onChange={e => setAddPlayers(e.target.value)}
-                    placeholder="Jugadores separados por coma"
-                    className={`flex-1 hidden md:block ${inputCls}`} style={inputStyle} />
-                )}
-                <button type="submit" disabled={addSaving || !addName.trim()}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all disabled:opacity-40"
-                  style={{ background: NAVY, color: GOLD }}>
-                  <UserPlus className="w-3.5 h-3.5" /> Agregar
-                </button>
-              </div>
+
+              {/* INDIVIDUAL */}
+              {tournament.participantType === "INDIVIDUAL" && (
+                <div className="flex gap-2">
+                  <input value={addName} onChange={e => setAddName(e.target.value)}
+                    placeholder="Nombre del jugador"
+                    className={`flex-1 ${inputCls}`} style={inputStyle} />
+                  <button type="submit" disabled={addSaving || !addName.trim()}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all disabled:opacity-40"
+                    style={{ background: NAVY, color: GOLD }}>
+                    <UserPlus className="w-3.5 h-3.5" /> Agregar
+                  </button>
+                </div>
+              )}
+
+              {/* PAREJA */}
+              {tournament.participantType === "PAIR" && (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-black uppercase tracking-wide" style={{ color: GOLD }}>Jugador 1</p>
+                      <input value={addP1Name} onChange={e => setAddP1Name(e.target.value)}
+                        placeholder="Nombre completo" className={inputCls} style={inputStyle} />
+                      <input value={addP1Phone} onChange={e => setAddP1Phone(e.target.value)}
+                        placeholder="WhatsApp" className={inputCls} style={inputStyle} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-black uppercase tracking-wide" style={{ color: GOLD }}>Jugador 2</p>
+                      <input value={addP2Name} onChange={e => setAddP2Name(e.target.value)}
+                        placeholder="Nombre completo" className={inputCls} style={inputStyle} />
+                      <input value={addP2Phone} onChange={e => setAddP2Phone(e.target.value)}
+                        placeholder="WhatsApp" className={inputCls} style={inputStyle} />
+                    </div>
+                  </div>
+                  <button type="submit" disabled={addSaving || !addP1Name.trim() || !addP2Name.trim()}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all disabled:opacity-40"
+                    style={{ background: NAVY, color: GOLD }}>
+                    <UserPlus className="w-3.5 h-3.5" /> Agregar pareja
+                  </button>
+                </div>
+              )}
+
+              {/* EQUIPO */}
+              {tournament.participantType === "TEAM" && (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input value={addName} onChange={e => setAddName(e.target.value)}
+                      placeholder="Nombre del equipo" className={inputCls} style={inputStyle} />
+                    <input value={addTeamPhone} onChange={e => setAddTeamPhone(e.target.value)}
+                      placeholder="WhatsApp contacto" className={inputCls} style={inputStyle} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "rgba(13,27,42,0.4)" }}>Integrantes</p>
+                    {addTeamPlayers.map((p, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <span className="text-[10px] w-4 text-center flex-shrink-0" style={{ color: "rgba(13,27,42,0.3)" }}>{i+1}</span>
+                        <input value={p} onChange={e => setAddTeamPlayers(pl => pl.map((x,j) => j===i ? e.target.value : x))}
+                          placeholder={`Jugador ${i+1}`} className={`flex-1 ${inputCls}`} style={inputStyle} />
+                        {addTeamPlayers.length > 2 && (
+                          <button type="button" onClick={() => setAddTeamPlayers(pl => pl.filter((_,j) => j!==i))}
+                            className="text-red-400 px-1">×</button>
+                        )}
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => setAddTeamPlayers(pl => [...pl, ""])}
+                      className="text-[10px] font-bold px-3 py-1 rounded-lg"
+                      style={{ background: "rgba(13,27,42,0.06)", color: "rgba(13,27,42,0.5)" }}>
+                      + Agregar integrante
+                    </button>
+                  </div>
+                  <button type="submit" disabled={addSaving || !addName.trim()}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all disabled:opacity-40"
+                    style={{ background: NAVY, color: GOLD }}>
+                    <UserPlus className="w-3.5 h-3.5" /> Agregar equipo
+                  </button>
+                </div>
+              )}
             </form>
           )}
 
