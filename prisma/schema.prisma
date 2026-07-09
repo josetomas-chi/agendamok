@@ -260,6 +260,7 @@ model Business {
   clubCoaches               ClubCoach[]
   apiKeys                   ApiKey[]
   invoices                  Invoice[]
+  tournaments               Tournament[]
 
   @@index([slug])
   @@map("businesses")
@@ -1005,4 +1006,90 @@ model ClubCoachFeeRule {
 
   @@index([coachId])
   @@map("club_coach_fee_rules")
+}
+
+// ─── TOURNAMENTS ──────────────────────────────────────────────────────────────
+
+enum TournamentFormat {
+  ELIMINATION
+  ROUND_ROBIN
+}
+
+enum TournamentParticipantType {
+  INDIVIDUAL
+  PAIR
+  TEAM
+}
+
+enum TournamentStatus {
+  DRAFT
+  OPEN
+  IN_PROGRESS
+  FINISHED
+}
+
+model Tournament {
+  id              String                    @id @default(cuid())
+  businessId      String
+  name            String
+  sport           String?
+  format          TournamentFormat          @default(ELIMINATION)
+  participantType TournamentParticipantType @default(INDIVIDUAL)
+  startDate       DateTime
+  endDate         DateTime
+  maxParticipants Int?
+  entryFee        Decimal?                  @db.Decimal(10, 2)
+  status          TournamentStatus          @default(DRAFT)
+  description     String?                   @db.Text
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  business     Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  participants TournamentParticipant[]
+  matches      TournamentMatch[]
+
+  @@index([businessId])
+  @@map("tournaments")
+}
+
+model TournamentParticipant {
+  id           String           @id @default(cuid())
+  tournamentId String
+  name         String
+  players      Json             @default("[]")
+  seed         Int?
+  status       String           @default("REGISTERED")
+  createdAt    DateTime         @default(now())
+
+  tournament Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  matchesAs1 TournamentMatch[] @relation("MatchParticipant1")
+  matchesAs2 TournamentMatch[] @relation("MatchParticipant2")
+  wonMatches TournamentMatch[] @relation("MatchWinner")
+
+  @@index([tournamentId])
+  @@map("tournament_participants")
+}
+
+model TournamentMatch {
+  id             String    @id @default(cuid())
+  tournamentId   String
+  round          Int
+  matchNumber    Int
+  participant1Id String?
+  participant2Id String?
+  winnerId       String?
+  score1         String?
+  score2         String?
+  courtId        String?
+  scheduledTime  DateTime?
+  status         String    @default("PENDING")
+  createdAt      DateTime  @default(now())
+
+  tournament   Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  participant1 TournamentParticipant? @relation("MatchParticipant1", fields: [participant1Id], references: [id])
+  participant2 TournamentParticipant? @relation("MatchParticipant2", fields: [participant2Id], references: [id])
+  winner       TournamentParticipant? @relation("MatchWinner", fields: [winnerId], references: [id])
+
+  @@index([tournamentId])
+  @@map("tournament_matches")
 }

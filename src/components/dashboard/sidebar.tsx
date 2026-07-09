@@ -64,6 +64,7 @@ const SPORTS_GROUPS = [
       { href: "/dashboard/club/courts", label: "Canchas", icon: MapPin },
       { href: "/dashboard/clients", label: "Clientes", icon: Users },
       { href: "/dashboard/club/memberships", label: "Membresías", icon: Trophy },
+      { href: "/dashboard/club/tournaments", label: "Torneos", icon: Calendar },
     ],
   },
   {
