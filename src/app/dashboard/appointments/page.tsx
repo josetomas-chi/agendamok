@@ -16,7 +16,7 @@ import { es } from "date-fns/locale"
 type Appointment = {
   id: string; startTime: string; endTime: string; status: string; notes: string | null; price?: number | null
   service: { name: string; color: string; duration: number; price: number }
-  staff: { user: { name: string | null } }
+  staff: { id: string; color: string; user: { name: string | null } }
   client: { id: string; name: string; email: string | null; phone: string | null }
   payment: { id: string; amount: number; status: string; method: string } | null
 }
