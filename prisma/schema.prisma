@@ -1096,6 +1096,7 @@ model TournamentParticipant {
   tournamentId   String
   name           String
   email          String?
+  phone          String?
   players        Json             @default("[]")
   seed           Int?
   group          String?

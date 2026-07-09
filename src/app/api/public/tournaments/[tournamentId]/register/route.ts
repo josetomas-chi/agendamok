@@ -21,7 +21,7 @@ export async function POST(req: Request, { params }: Params) {
   if (tournament.status !== "OPEN") return NextResponse.json({ error: "Las inscripciones están cerradas" }, { status: 400 })
 
   const body = await req.json()
-  const { name, email, players, categoryId } = body
+  const { name, email, phone, players, categoryId } = body
 
   if (!name?.trim()) return NextResponse.json({ error: "Nombre requerido" }, { status: 400 })
   if (!email?.trim()) return NextResponse.json({ error: "Email requerido" }, { status: 400 })
@@ -61,6 +61,7 @@ export async function POST(req: Request, { params }: Params) {
       tournamentId,
       name: name.trim(),
       email: email.trim().toLowerCase(),
+      phone: phone?.trim() || null,
       players: players || [],
       categoryId: categoryId || null,
       status: initialStatus,

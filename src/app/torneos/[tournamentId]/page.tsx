@@ -53,6 +53,30 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
+function WhatsAppIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+  )
+}
+
+function PhoneField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <Field label={label}>
+      <div className="relative">
+        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5" style={{ color: "#25D366" }}>
+          <WhatsAppIcon size={15} />
+        </span>
+        <input type="tel" value={value} onChange={e => onChange(e.target.value)}
+          placeholder={placeholder ?? "+56 9 1234 5678"}
+          className={inputCls}
+          style={{ ...inputStyle, paddingLeft: "2.25rem" }} />
+      </div>
+    </Field>
+  )
+}
+
 export default function TournamentPublicPage() {
   const { tournamentId } = useParams<{ tournamentId: string }>()
   const [tournament, setTournament] = useState<Tournament | null>(null)
@@ -66,16 +90,20 @@ export default function TournamentPublicPage() {
   // INDIVIDUAL
   const [indName, setIndName] = useState("")
   const [indEmail, setIndEmail] = useState("")
+  const [indPhone, setIndPhone] = useState("")
 
   // PAIR
   const [p1Name, setP1Name] = useState("")
   const [p1Email, setP1Email] = useState("")
+  const [p1Phone, setP1Phone] = useState("")
   const [p2Name, setP2Name] = useState("")
   const [p2Email, setP2Email] = useState("")
+  const [p2Phone, setP2Phone] = useState("")
 
   // TEAM
   const [teamName, setTeamName] = useState("")
   const [teamEmail, setTeamEmail] = useState("")
+  const [teamPhone, setTeamPhone] = useState("")
   const [teamPlayers, setTeamPlayers] = useState<string[]>(["", ""])
 
   useEffect(() => {
@@ -105,27 +133,36 @@ export default function TournamentPublicPage() {
     let submitEmail = ""
     let submitPlayers: { name: string; email?: string }[] = []
 
+    let submitPhone = ""
+
     if (type === "INDIVIDUAL") {
       if (!indName.trim()) { setFormError("Ingresa tu nombre"); return }
       if (!indEmail.trim()) { setFormError("Ingresa tu email"); return }
+      if (!indPhone.trim()) { setFormError("Ingresa tu teléfono WhatsApp"); return }
       submitName = indName.trim()
       submitEmail = indEmail.trim()
+      submitPhone = indPhone.trim()
     } else if (type === "PAIR") {
       if (!p1Name.trim() || !p1Email.trim()) { setFormError("Completa los datos del Jugador 1"); return }
+      if (!p1Phone.trim()) { setFormError("Ingresa el teléfono WhatsApp del Jugador 1"); return }
       if (!p2Name.trim() || !p2Email.trim()) { setFormError("Completa los datos del Jugador 2"); return }
+      if (!p2Phone.trim()) { setFormError("Ingresa el teléfono WhatsApp del Jugador 2"); return }
       submitName = `${p1Name.trim()} / ${p2Name.trim()}`
       submitEmail = p1Email.trim()
+      submitPhone = p1Phone.trim()
       submitPlayers = [
-        { name: p1Name.trim(), email: p1Email.trim() },
-        { name: p2Name.trim(), email: p2Email.trim() },
+        { name: p1Name.trim(), email: p1Email.trim(), phone: p1Phone.trim() },
+        { name: p2Name.trim(), email: p2Email.trim(), phone: p2Phone.trim() },
       ]
     } else if (type === "TEAM") {
       if (!teamName.trim()) { setFormError("Ingresa el nombre del equipo"); return }
       if (!teamEmail.trim()) { setFormError("Ingresa el email de contacto"); return }
+      if (!teamPhone.trim()) { setFormError("Ingresa el teléfono WhatsApp de contacto"); return }
       const validPlayers = teamPlayers.map(p => p.trim()).filter(Boolean)
       if (validPlayers.length < 2) { setFormError("Agrega al menos 2 integrantes"); return }
       submitName = teamName.trim()
       submitEmail = teamEmail.trim()
+      submitPhone = teamPhone.trim()
       submitPlayers = validPlayers.map(n => ({ name: n }))
     }
 
@@ -133,7 +170,7 @@ export default function TournamentPublicPage() {
     const res = await fetch(`/api/public/tournaments/${tournamentId}/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: submitName, email: submitEmail, players: submitPlayers, categoryId: categoryId || null }),
+      body: JSON.stringify({ name: submitName, email: submitEmail, phone: submitPhone, players: submitPlayers, categoryId: categoryId || null }),
     })
     const data = await res.json()
 
@@ -294,6 +331,7 @@ export default function TournamentPublicPage() {
                   <input type="email" value={indEmail} onChange={e => setIndEmail(e.target.value)}
                     placeholder="tu@email.com" className={inputCls} style={inputStyle} />
                 </Field>
+                <PhoneField label="WhatsApp *" value={indPhone} onChange={setIndPhone} />
               </>
             )}
 
@@ -311,6 +349,7 @@ export default function TournamentPublicPage() {
                     <input type="email" value={p1Email} onChange={e => setP1Email(e.target.value)}
                       placeholder="juan@email.com" className={inputCls} style={inputStyle} />
                   </Field>
+                  <PhoneField label="WhatsApp *" value={p1Phone} onChange={setP1Phone} />
                 </div>
 
                 {/* Jugador 2 */}
@@ -324,6 +363,7 @@ export default function TournamentPublicPage() {
                     <input type="email" value={p2Email} onChange={e => setP2Email(e.target.value)}
                       placeholder="maria@email.com" className={inputCls} style={inputStyle} />
                   </Field>
+                  <PhoneField label="WhatsApp *" value={p2Phone} onChange={setP2Phone} />
                 </div>
               </>
             )}
@@ -339,6 +379,7 @@ export default function TournamentPublicPage() {
                   <input type="email" value={teamEmail} onChange={e => setTeamEmail(e.target.value)}
                     placeholder="capitan@email.com" className={inputCls} style={inputStyle} />
                 </Field>
+                <PhoneField label="WhatsApp de contacto *" value={teamPhone} onChange={setTeamPhone} />
 
                 <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                   <div className="flex items-center justify-between">
