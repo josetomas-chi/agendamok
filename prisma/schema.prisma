@@ -1029,6 +1029,22 @@ enum TournamentStatus {
   FINISHED
 }
 
+model TournamentCategory {
+  id           String   @id @default(cuid())
+  tournamentId String
+  name         String
+  description  String?
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  tournament   Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  participants TournamentParticipant[]
+  matches      TournamentMatch[]
+
+  @@index([tournamentId])
+  @@map("tournament_categories")
+}
+
 model Tournament {
   id              String                    @id @default(cuid())
   businessId      String
@@ -1048,6 +1064,7 @@ model Tournament {
   updatedAt       DateTime                  @updatedAt
 
   business     Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  categories   TournamentCategory[]
   participants TournamentParticipant[]
   matches      TournamentMatch[]
 
@@ -1056,19 +1073,23 @@ model Tournament {
 }
 
 model TournamentParticipant {
-  id           String           @id @default(cuid())
-  tournamentId String
-  name         String
-  players      Json             @default("[]")
-  seed         Int?
-  group        String?
-  status       String           @default("REGISTERED")
-  createdAt    DateTime         @default(now())
+  id             String           @id @default(cuid())
+  tournamentId   String
+  name           String
+  email          String?
+  players        Json             @default("[]")
+  seed           Int?
+  group          String?
+  categoryId     String?
+  status         String           @default("REGISTERED")
+  paymentOrderId String?
+  createdAt      DateTime         @default(now())
 
-  tournament Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  matchesAs1 TournamentMatch[] @relation("MatchParticipant1")
-  matchesAs2 TournamentMatch[] @relation("MatchParticipant2")
-  wonMatches TournamentMatch[] @relation("MatchWinner")
+  tournament Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  category   TournamentCategory?    @relation(fields: [categoryId], references: [id])
+  matchesAs1 TournamentMatch[]      @relation("MatchParticipant1")
+  matchesAs2 TournamentMatch[]      @relation("MatchParticipant2")
+  wonMatches TournamentMatch[]      @relation("MatchWinner")
 
   @@index([tournamentId])
   @@map("tournament_participants")
@@ -1088,10 +1109,12 @@ model TournamentMatch {
   scheduledTime  DateTime?
   stage          String    @default("KNOCKOUT")
   group          String?
+  categoryId     String?
   status         String    @default("PENDING")
   createdAt      DateTime  @default(now())
 
   tournament   Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  category     TournamentCategory?    @relation(fields: [categoryId], references: [id])
   participant1 TournamentParticipant? @relation("MatchParticipant1", fields: [participant1Id], references: [id])
   participant2 TournamentParticipant? @relation("MatchParticipant2", fields: [participant2Id], references: [id])
   winner       TournamentParticipant? @relation("MatchWinner", fields: [winnerId], references: [id])
