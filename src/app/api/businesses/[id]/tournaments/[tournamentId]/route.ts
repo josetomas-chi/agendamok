@@ -18,6 +18,7 @@ export async function GET(_: Request, { params }: Params) {
         include: { participant1: true, participant2: true, winner: true },
         orderBy: [{ round: "asc" }, { matchNumber: "asc" }],
       },
+      scheduleDays: { orderBy: { sortOrder: "asc" } },
     },
   })
   if (!tournament) return NextResponse.json({ error: "No encontrado" }, { status: 404 })

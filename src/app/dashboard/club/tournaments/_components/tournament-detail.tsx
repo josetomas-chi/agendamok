@@ -27,6 +27,7 @@ type Tournament = {
   entryFee: string | null; status: "DRAFT" | "OPEN" | "IN_PROGRESS" | "FINISHED"
   description: string | null; groupCount: number | null; advanceCount: number | null; courtCount: number | null
   categories: Category[]; participants: Participant[]; matches: Match[]
+  scheduleDays: { id: string; date: string; startTime: string; endTime: string }[]
 }
 
 function fmt(n: number) { return n.toLocaleString("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }) }
@@ -333,6 +334,24 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
           </div>
         ))}
       </div>
+
+      {/* Jornadas */}
+      {tournament.scheduleDays?.length > 0 && (
+        <div className="rounded-xl px-4 py-3 flex flex-wrap gap-x-5 gap-y-1.5" style={{ background: "#fff", border: "1px solid rgba(201,168,76,0.2)" }}>
+          {tournament.scheduleDays.map(d => {
+            const dateObj = new Date(d.date + "T12:00:00")
+            const dayName = dateObj.toLocaleDateString("es-CL", { weekday: "short" })
+            const dateStr = dateObj.toLocaleDateString("es-CL", { day: "numeric", month: "short" })
+            return (
+              <div key={d.id} className="flex items-center gap-1.5">
+                <span className="text-[11px] font-black uppercase" style={{ color: NAVY }}>{dayName} {dateStr}</span>
+                <span className="text-[11px]" style={{ color: "rgba(13,27,42,0.35)"}}>·</span>
+                <span className="text-[11px] font-semibold" style={{ color: GOLD }}>{d.startTime} – {d.endTime}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* ── CATEGORIES BAR ── */}
       <div className="rounded-2xl p-4 space-y-3" style={{ background: "#fff", border: "1px solid rgba(201,168,76,0.2)" }}>
