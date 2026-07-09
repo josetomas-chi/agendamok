@@ -85,7 +85,7 @@ export function TopBar({
             <span>Buscar</span>
             <kbd className="ml-1 text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(201,168,76,0.12)" }}>⌘K</kbd>
           </button>
-          <div className="flex items-baseline gap-1">
+          <div className="hidden md:flex items-baseline gap-1">
             <span className="text-[13px] font-black tracking-tight uppercase" style={{ color: "#0d1b2a" }}>AgendaMok</span>
             <span className="text-[11px] font-black tracking-widest uppercase" style={{ color: GOLD }}>Sports</span>
           </div>
