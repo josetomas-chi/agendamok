@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useEffect, useCallback } from "react"
 import { useBusiness } from "@/contexts/business-context"
-import { Plus, Trophy, ChevronRight, Trash2, X, Tag } from "lucide-react"
+import { Plus, Trophy, ChevronRight, Trash2, X, Tag, CalendarDays } from "lucide-react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { format } from "date-fns"
@@ -20,6 +20,7 @@ type Tournament = {
 }
 
 type CategoryDraft = { name: string; groupCount: string; groupSize: string }
+type ScheduleDay = { date: string; startTime: string; endTime: string }
 
 const GOLD = "#C9A84C"
 const NAVY = "#0d1b2a"
@@ -27,6 +28,7 @@ const FORMAT_LABELS = { ELIMINATION: "Eliminación directa", ROUND_ROBIN: "Round
 const TYPE_LABELS = { INDIVIDUAL: "Individual", PAIR: "Parejas", TEAM: "Equipos" }
 const STATUS_LABELS = { DRAFT: "Borrador", OPEN: "Inscripciones", IN_PROGRESS: "En curso", FINISHED: "Finalizado" }
 const STATUS_COLORS = { DRAFT: "rgba(13,27,42,0.3)", OPEN: "#22c55e", IN_PROGRESS: GOLD, FINISHED: "rgba(13,27,42,0.4)" }
+const DAY_NAMES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
 
 export default function TournamentsPage() {
   const { businessId } = useBusiness()
@@ -39,11 +41,12 @@ export default function TournamentsPage() {
     name: "", sport: "",
     format: "ELIMINATION" as "ELIMINATION" | "ROUND_ROBIN" | "GROUP_STAGE",
     participantType: "INDIVIDUAL" as "INDIVIDUAL" | "PAIR" | "TEAM",
-    startDate: "", startTime: "09:00",
-    endDate: "", endTime: "20:00",
     maxParticipants: "", courtCount: "", entryFee: "", description: "",
     groupCount: "2", groupSize: "4", advanceCount: "2",
   })
+  const [scheduleDays, setScheduleDays] = useState<ScheduleDay[]>([
+    { date: "", startTime: "09:00", endTime: "20:00" }
+  ])
   const [categories, setCategories] = useState<CategoryDraft[]>([])
   const [catInput, setCatInput] = useState("")
   const [catGroups, setCatGroups] = useState("2")
@@ -63,51 +66,60 @@ export default function TournamentsPage() {
     const name = catInput.trim()
     if (!name || categories.some(c => c.name === name)) return
     setCategories(c => [...c, { name, groupCount: catGroups, groupSize: catGroupSize }])
-    setCatInput("")
-    setCatGroups("2")
-    setCatGroupSize("4")
+    setCatInput(""); setCatGroups("2"); setCatGroupSize("4")
   }
 
-  function removeCategory(name: string) {
-    setCategories(c => c.filter(x => x.name !== name))
+  function addScheduleDay() {
+    setScheduleDays(d => [...d, { date: "", startTime: "09:00", endTime: "20:00" }])
+  }
+
+  function updateScheduleDay(i: number, field: keyof ScheduleDay, value: string) {
+    setScheduleDays(days => days.map((d, idx) => idx === i ? { ...d, [field]: value } : d))
+  }
+
+  function removeScheduleDay(i: number) {
+    setScheduleDays(days => days.filter((_, idx) => idx !== i))
   }
 
   const resetForm = () => {
-    setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", startDate: "", startTime: "09:00", endDate: "", endTime: "20:00", maxParticipants: "", courtCount: "", entryFee: "", description: "", groupCount: "2", groupSize: "4", advanceCount: "2" })
+    setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", maxParticipants: "", courtCount: "", entryFee: "", description: "", groupCount: "2", groupSize: "4", advanceCount: "2" })
+    setScheduleDays([{ date: "", startTime: "09:00", endTime: "20:00" }])
     setCategories([])
-    setCatInput("")
-    setCatGroups("2")
-    setCatGroupSize("4")
+    setCatInput(""); setCatGroups("2"); setCatGroupSize("4")
   }
 
   const isGroupStage = form.format === "GROUP_STAGE"
+  const sortedDays = [...scheduleDays].filter(d => d.date).sort((a, b) => a.date.localeCompare(b.date))
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    if (!businessId || !form.name || !form.startDate || !form.endDate) {
-      toast.error("Completa los campos requeridos"); return
+    const validDays = scheduleDays.filter(d => d.date && d.startTime && d.endTime)
+    if (!businessId || !form.name || validDays.length === 0) {
+      toast.error("Agrega al menos una jornada con fecha"); return
     }
+    const sorted = [...validDays].sort((a, b) => a.date.localeCompare(b.date))
+    const startDate = `${sorted[0].date}T${sorted[0].startTime}:00`
+    const endDate = `${sorted[sorted.length - 1].date}T${sorted[sorted.length - 1].endTime}:00`
+
     setSaving(true)
     const r = await fetch(`/api/businesses/${businessId}/tournaments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
-        startDate: `${form.startDate}T${form.startTime}:00`,
-        endDate: `${form.endDate}T${form.endTime}:00`,
-        maxParticipants: form.maxParticipants ? Number(form.maxParticipants) : null,
+        startDate,
+        endDate,
+        maxParticipants: isGroupStage && categories.length === 0 && form.groupCount && form.groupSize
+          ? Number(form.groupCount) * Number(form.groupSize)
+          : (form.maxParticipants ? Number(form.maxParticipants) : null),
         courtCount: form.courtCount ? Number(form.courtCount) : null,
         entryFee: form.entryFee ? Number(form.entryFee) : null,
         groupCount: isGroupStage && categories.length === 0 ? Number(form.groupCount) : null,
         groupSize: isGroupStage && categories.length === 0 ? Number(form.groupSize) : null,
         advanceCount: isGroupStage ? Number(form.advanceCount) : null,
-        // auto-calculate maxParticipants from groupCount × groupSize when no categories
-        maxParticipants: isGroupStage && categories.length === 0 && form.groupCount && form.groupSize
-          ? Number(form.groupCount) * Number(form.groupSize)
-          : (form.maxParticipants ? Number(form.maxParticipants) : null),
+        scheduleDays: sorted.map((d, i) => ({ ...d, sortOrder: i })),
         categories: categories.map((c, i) => ({
-          name: c.name,
-          sortOrder: i,
+          name: c.name, sortOrder: i,
           groupCount: isGroupStage && c.groupCount ? Number(c.groupCount) : null,
           groupSize: isGroupStage && c.groupSize ? Number(c.groupSize) : null,
         })),
@@ -220,7 +232,7 @@ export default function TournamentsPage() {
 
       {/* Create Modal */}
       <Dialog open={createOpen} onOpenChange={v => { setCreateOpen(v); if (!v) resetForm() }}>
-        <DialogContent className="p-0 gap-0 overflow-hidden" style={{ maxWidth: 520, background: "#ffffff", border: "1px solid rgba(201,168,76,0.2)", borderRadius: 20 }}>
+        <DialogContent className="p-0 gap-0 overflow-hidden" style={{ maxWidth: 540, background: "#ffffff", border: "1px solid rgba(201,168,76,0.2)", borderRadius: 20 }}>
           <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid rgba(201,168,76,0.15)" }}>
             <div>
               <p className="font-black text-base uppercase tracking-wide" style={{ color: NAVY }}>Nuevo torneo</p>
@@ -231,7 +243,7 @@ export default function TournamentsPage() {
             </button>
           </div>
 
-          <form onSubmit={handleCreate} className="p-6 space-y-5 overflow-y-auto max-h-[75vh]">
+          <form onSubmit={handleCreate} className="p-6 space-y-5 overflow-y-auto max-h-[78vh]">
 
             {/* Nombre */}
             <div>
@@ -295,28 +307,20 @@ export default function TournamentsPage() {
                 <label className="text-[10px] font-black uppercase tracking-[0.12em]" style={{ color: NAVY }}>Categorías</label>
                 <span className="text-[10px] ml-1" style={{ color: "rgba(13,27,42,0.35)" }}>(opcional — ej: 1ª, 2ª, Sub-12, Open)</span>
               </div>
-
-              {/* Chips de categorías ya agregadas */}
               {categories.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {categories.map(cat => (
                     <span key={cat.name} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold"
                       style={{ background: NAVY, color: GOLD }}>
                       {cat.name}
-                      {isGroupStage && (
-                        <span className="text-[10px] font-normal opacity-70">
-                          {cat.groupCount}G × {cat.groupSize}
-                        </span>
-                      )}
-                      <button type="button" onClick={() => removeCategory(cat.name)} className="ml-0.5 opacity-60 hover:opacity-100">
+                      {isGroupStage && <span className="text-[10px] font-normal opacity-70">{cat.groupCount}G × {cat.groupSize}</span>}
+                      <button type="button" onClick={() => setCategories(c => c.filter(x => x.name !== cat.name))} className="ml-0.5 opacity-60 hover:opacity-100">
                         <X className="w-3 h-3" />
                       </button>
                     </span>
                   ))}
                 </div>
               )}
-
-              {/* Input nueva categoría */}
               <div className="flex gap-2">
                 <input value={catInput} onChange={e => setCatInput(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCategory() } }}
@@ -328,16 +332,15 @@ export default function TournamentsPage() {
                     <select value={catGroups} onChange={e => setCatGroups(e.target.value)}
                       className="rounded-lg px-2 py-1.5 text-xs outline-none"
                       style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)", color: NAVY }}>
-                      {[2,3,4,6,8].map(n => <option key={n} value={n}>{n} grupos</option>)}
+                      {[2,3,4,6,8].map(n => <option key={n} value={n}>{n}G</option>)}
                     </select>
                     <input type="number" min="2" max="32" value={catGroupSize} onChange={e => setCatGroupSize(e.target.value)}
-                      placeholder="cupo/grupo"
-                      className="w-20 rounded-lg px-2 py-1.5 text-xs outline-none"
+                      placeholder="cupo" className="w-16 rounded-lg px-2 py-1.5 text-xs outline-none"
                       style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)", color: NAVY }} />
                   </>
                 )}
                 <button type="button" onClick={addCategory} disabled={!catInput.trim()}
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide disabled:opacity-40 transition-all"
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide disabled:opacity-40"
                   style={{ background: NAVY, color: GOLD }}>
                   Agregar
                 </button>
@@ -379,35 +382,66 @@ export default function TournamentsPage() {
               </div>
             )}
 
-            {/* Fechas y horas */}
-            <div className="space-y-2">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha inicio *</label>
-                  <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
-                    className={inputCls} style={inputStyle} required />
+            {/* ── JORNADAS ── */}
+            <div className="rounded-xl p-3 space-y-2" style={{ background: "rgba(13,27,42,0.02)", border: "1px solid rgba(13,27,42,0.1)" }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <CalendarDays className="w-3.5 h-3.5" style={{ color: NAVY }} />
+                  <label className="text-[10px] font-black uppercase tracking-[0.12em]" style={{ color: NAVY }}>Jornadas *</label>
                 </div>
-                <div>
-                  <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Hora inicio</label>
-                  <input type="time" value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
-                    className={inputCls} style={inputStyle} />
-                </div>
+                <button type="button" onClick={addScheduleDay}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide"
+                  style={{ background: "rgba(13,27,42,0.07)", color: NAVY }}>
+                  <Plus className="w-3 h-3" /> Agregar día
+                </button>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha fin *</label>
-                  <input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
-                    className={inputCls} style={inputStyle} required />
-                </div>
-                <div>
-                  <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Hora fin</label>
-                  <input type="time" value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
-                    className={inputCls} style={inputStyle} />
-                </div>
+
+              <div className="space-y-2">
+                {scheduleDays.map((day, i) => {
+                  const dayName = day.date ? DAY_NAMES[new Date(day.date + "T12:00:00").getDay()] : null
+                  return (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className="flex-1 grid grid-cols-3 gap-1.5">
+                        <div className="relative">
+                          <input type="date" value={day.date} onChange={e => updateScheduleDay(i, "date", e.target.value)}
+                            className="w-full rounded-lg px-2.5 py-1.5 text-xs outline-none"
+                            style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)", color: NAVY }} />
+                          {dayName && (
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold pointer-events-none" style={{ color: GOLD }}>
+                              {dayName}
+                            </span>
+                          )}
+                        </div>
+                        <input type="time" value={day.startTime} onChange={e => updateScheduleDay(i, "startTime", e.target.value)}
+                          className="rounded-lg px-2.5 py-1.5 text-xs outline-none"
+                          style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)", color: NAVY }} />
+                        <input type="time" value={day.endTime} onChange={e => updateScheduleDay(i, "endTime", e.target.value)}
+                          className="rounded-lg px-2.5 py-1.5 text-xs outline-none"
+                          style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)", color: NAVY }} />
+                      </div>
+                      {scheduleDays.length > 1 && (
+                        <button type="button" onClick={() => removeScheduleDay(i)} className="w-6 h-6 flex items-center justify-center rounded-lg flex-shrink-0" style={{ color: "#ef4444" }}>
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
+
+              {sortedDays.length > 0 && (
+                <div className="pt-1 flex flex-wrap gap-1.5">
+                  {sortedDays.map(d => (
+                    <span key={d.date} className="text-[10px] px-2 py-0.5 rounded-md font-semibold"
+                      style={{ background: "rgba(13,27,42,0.06)", color: "rgba(13,27,42,0.5)" }}>
+                      {DAY_NAMES[new Date(d.date + "T12:00:00").getDay()]} {d.startTime}–{d.endTime}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Canchas + cupo */}
+            {/* Canchas + cupo (cupo solo si no es GROUP_STAGE) */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Canchas disponibles</label>

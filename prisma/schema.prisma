@@ -1067,13 +1067,28 @@ model Tournament {
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
 
-  business     Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  categories   TournamentCategory[]
-  participants TournamentParticipant[]
-  matches      TournamentMatch[]
+  business      Business                @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  categories    TournamentCategory[]
+  participants  TournamentParticipant[]
+  matches       TournamentMatch[]
+  scheduleDays  TournamentScheduleDay[]
 
   @@index([businessId])
   @@map("tournaments")
+}
+
+model TournamentScheduleDay {
+  id           String   @id @default(cuid())
+  tournamentId String
+  date         String   // "YYYY-MM-DD"
+  startTime    String   // "08:00"
+  endTime      String   // "21:00"
+  sortOrder    Int      @default(0)
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@index([tournamentId])
+  @@map("tournament_schedule_days")
 }
 
 model TournamentParticipant {

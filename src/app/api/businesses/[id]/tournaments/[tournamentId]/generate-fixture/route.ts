@@ -15,19 +15,55 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-// Assign scheduledTime and courtNumber cycling through available courts
-// matches are ordered; each slot is SLOT_DURATION minutes, courts run in parallel
+type ScheduleSlot = { time: Date; court: number }
+
+// Build a flat list of available (time, court) slots from schedule days
+function buildSlots(
+  days: { date: string; startTime: string; endTime: string }[],
+  courtCount: number,
+  slotMinutes = 90
+): ScheduleSlot[] {
+  const courts = Math.max(courtCount, 1)
+  const slots: ScheduleSlot[] = []
+  const sorted = [...days].sort((a, b) => a.date.localeCompare(b.date))
+
+  for (const day of sorted) {
+    const [sh, sm] = day.startTime.split(":").map(Number)
+    const [eh, em] = day.endTime.split(":").map(Number)
+    const dayStart = new Date(`${day.date}T${day.startTime}:00`)
+    const dayEndMs = new Date(`${day.date}T${day.endTime}:00`).getTime()
+
+    let slotIndex = 0
+    while (true) {
+      const slotStart = new Date(dayStart.getTime() + slotIndex * slotMinutes * 60 * 1000)
+      const slotEnd = slotStart.getTime() + slotMinutes * 60 * 1000
+      if (slotEnd > dayEndMs) break
+      for (let c = 1; c <= courts; c++) {
+        slots.push({ time: slotStart, court: c })
+      }
+      slotIndex++
+    }
+    void sh; void sm; void eh; void em
+  }
+  return slots
+}
+
 function assignSchedule(
   matches: { participant1Id: string | null; participant2Id: string | null; [k: string]: unknown }[],
-  startDate: Date,
+  slots: ScheduleSlot[],
+  fallbackStart: Date,
   courtCount: number,
   slotMinutes = 90
 ) {
-  const courts = courtCount > 0 ? courtCount : 1
+  const courts = Math.max(courtCount, 1)
   return matches.map((m, i) => {
-    const slotIndex = Math.floor(i / courts)  // which time slot
-    const courtNumber = (i % courts) + 1      // which court (1-based)
-    const scheduledTime = new Date(startDate.getTime() + slotIndex * slotMinutes * 60 * 1000)
+    if (slots.length > 0 && i < slots.length) {
+      return { ...m, scheduledTime: slots[i].time, courtNumber: slots[i].court }
+    }
+    // Fallback: simple sequential if slots exhausted
+    const slotIndex = Math.floor(i / courts)
+    const courtNumber = (i % courts) + 1
+    const scheduledTime = new Date(fallbackStart.getTime() + slotIndex * slotMinutes * 60 * 1000)
     return { ...m, scheduledTime, courtNumber }
   })
 }
@@ -44,6 +80,7 @@ export async function POST(req: Request, { params }: Params) {
     include: {
       participants: { where: categoryId ? { categoryId } : {}, orderBy: [{ seed: "asc" }, { createdAt: "asc" }] },
       categories: true,
+      scheduleDays: { orderBy: { sortOrder: "asc" } },
     },
   })
   if (!tournament) return NextResponse.json({ error: "No encontrado" }, { status: 404 })
@@ -54,7 +91,12 @@ export async function POST(req: Request, { params }: Params) {
   await prisma.tournamentMatch.deleteMany({ where: { tournamentId, ...(categoryId ? { categoryId } : {}) } })
 
   const courtCount = tournament.courtCount ?? 1
-  const startDate = tournament.startDate  // DateTime with time included
+  const startDate = tournament.startDate
+
+  // Build slots from schedule days if defined, otherwise fall back to sequential
+  const slots = tournament.scheduleDays.length > 0
+    ? buildSlots(tournament.scheduleDays, courtCount)
+    : []
 
   // Use category-specific groupCount when generating fixture for a specific category
   const activeCategory = categoryId ? tournament.categories.find(c => c.id === categoryId) : null
@@ -138,7 +180,7 @@ export async function POST(req: Request, { params }: Params) {
   const playableFirst = matchesRaw.filter(m => m.participant1Id && m.participant2Id && m.round === 1)
   const futureMatches = matchesRaw.filter(m => !(m.participant1Id && m.participant2Id && m.round === 1))
 
-  const scheduled = assignSchedule(playableFirst, startDate, courtCount)
+  const scheduled = assignSchedule(playableFirst, slots, startDate, courtCount)
 
   const matchesData: MatchData[] = [
     ...scheduled.map(m => ({
