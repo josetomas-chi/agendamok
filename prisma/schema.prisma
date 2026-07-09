@@ -1013,6 +1013,7 @@ model ClubCoachFeeRule {
 enum TournamentFormat {
   ELIMINATION
   ROUND_ROBIN
+  GROUP_STAGE
 }
 
 enum TournamentParticipantType {
@@ -1041,6 +1042,8 @@ model Tournament {
   entryFee        Decimal?                  @db.Decimal(10, 2)
   status          TournamentStatus          @default(DRAFT)
   description     String?                   @db.Text
+  groupCount      Int?
+  advanceCount    Int?
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
 
@@ -1058,6 +1061,7 @@ model TournamentParticipant {
   name         String
   players      Json             @default("[]")
   seed         Int?
+  group        String?
   status       String           @default("REGISTERED")
   createdAt    DateTime         @default(now())
 
@@ -1082,6 +1086,8 @@ model TournamentMatch {
   score2         String?
   courtId        String?
   scheduledTime  DateTime?
+  stage          String    @default("KNOCKOUT")
+  group          String?
   status         String    @default("PENDING")
   createdAt      DateTime  @default(now())
 

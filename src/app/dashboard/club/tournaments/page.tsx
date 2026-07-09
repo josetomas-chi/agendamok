@@ -12,7 +12,7 @@ type Tournament = {
   id: string
   name: string
   sport: string | null
-  format: "ELIMINATION" | "ROUND_ROBIN"
+  format: "ELIMINATION" | "ROUND_ROBIN" | "GROUP_STAGE"
   participantType: "INDIVIDUAL" | "PAIR" | "TEAM"
   startDate: string
   endDate: string
@@ -26,7 +26,7 @@ type Tournament = {
 const GOLD = "#C9A84C"
 const NAVY = "#0d1b2a"
 
-const FORMAT_LABELS = { ELIMINATION: "Eliminación directa", ROUND_ROBIN: "Round Robin" }
+const FORMAT_LABELS = { ELIMINATION: "Eliminación directa", ROUND_ROBIN: "Round Robin", GROUP_STAGE: "Fase de grupos" }
 const TYPE_LABELS = { INDIVIDUAL: "Individual", PAIR: "Parejas", TEAM: "Equipos" }
 const STATUS_LABELS = { DRAFT: "Borrador", OPEN: "Inscripciones", IN_PROGRESS: "En curso", FINISHED: "Finalizado" }
 const STATUS_COLORS = {
@@ -45,13 +45,15 @@ export default function TournamentsPage() {
   const [form, setForm] = useState({
     name: "",
     sport: "",
-    format: "ELIMINATION" as "ELIMINATION" | "ROUND_ROBIN",
+    format: "ELIMINATION" as "ELIMINATION" | "ROUND_ROBIN" | "GROUP_STAGE",
     participantType: "INDIVIDUAL" as "INDIVIDUAL" | "PAIR" | "TEAM",
     startDate: "",
     endDate: "",
     maxParticipants: "",
     entryFee: "",
     description: "",
+    groupCount: "2",
+    advanceCount: "2",
   })
   const [saving, setSaving] = useState(false)
 
@@ -80,13 +82,15 @@ export default function TournamentsPage() {
         ...form,
         maxParticipants: form.maxParticipants ? Number(form.maxParticipants) : null,
         entryFee: form.entryFee ? Number(form.entryFee) : null,
+        groupCount: form.format === "GROUP_STAGE" ? Number(form.groupCount) : null,
+        advanceCount: form.format === "GROUP_STAGE" ? Number(form.advanceCount) : null,
       }),
     })
     if (r.ok) {
       const d = await r.json()
       toast.success("Torneo creado")
       setCreateOpen(false)
-      setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", startDate: "", endDate: "", maxParticipants: "", entryFee: "", description: "" })
+      setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", startDate: "", endDate: "", maxParticipants: "", entryFee: "", description: "", groupCount: "2", advanceCount: "2" })
       setTournaments(prev => [{ ...d.tournament, _count: { participants: 0, matches: 0 } }, ...prev])
       setSelectedId(d.tournament.id)
     } else {
@@ -246,8 +250,8 @@ export default function TournamentsPage() {
 
             <div>
               <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Formato</label>
-              <div className="grid grid-cols-2 gap-2">
-                {(["ELIMINATION", "ROUND_ROBIN"] as const).map(fmt => (
+              <div className="grid grid-cols-3 gap-2">
+                {(["ELIMINATION", "ROUND_ROBIN", "GROUP_STAGE"] as const).map(fmt => (
                   <button key={fmt} type="button" onClick={() => setForm(f => ({ ...f, format: fmt }))}
                     className="rounded-xl py-2.5 text-xs font-bold uppercase tracking-wide transition-all text-center"
                     style={form.format === fmt
@@ -257,6 +261,24 @@ export default function TournamentsPage() {
                   </button>
                 ))}
               </div>
+              {form.format === "GROUP_STAGE" && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <div>
+                    <label className={labelCls} style={{ color: "rgba(13,27,42,0.35)" }}>Nº de grupos</label>
+                    <select value={form.groupCount} onChange={e => setForm(f => ({ ...f, groupCount: e.target.value }))}
+                      className={inputCls} style={inputStyle}>
+                      {[2,3,4,6,8].map(n => <option key={n} value={n}>{n} grupos</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelCls} style={{ color: "rgba(13,27,42,0.35)" }}>Clasifican por grupo</label>
+                    <select value={form.advanceCount} onChange={e => setForm(f => ({ ...f, advanceCount: e.target.value }))}
+                      className={inputCls} style={inputStyle}>
+                      {[1,2,3,4].map(n => <option key={n} value={n}>{n === 1 ? "Solo el 1°" : `Top ${n}`}</option>)}
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
