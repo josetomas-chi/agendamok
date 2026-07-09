@@ -13,6 +13,7 @@ export async function POST(req: Request, { params }: Params) {
       business: {
         select: { id: true, name: true, slug: true, onlinePaymentsEnabled: true, flowApiKey: true, flowSecretKey: true },
       },
+      categories: true,
     },
   })
 
@@ -25,13 +26,27 @@ export async function POST(req: Request, { params }: Params) {
   if (!name?.trim()) return NextResponse.json({ error: "Nombre requerido" }, { status: 400 })
   if (!email?.trim()) return NextResponse.json({ error: "Email requerido" }, { status: 400 })
 
-  // Check capacity (only count confirmed registrations)
+  // Check global capacity
   if (tournament.maxParticipants) {
     const count = await prisma.tournamentParticipant.count({
       where: { tournamentId, status: "REGISTERED" },
     })
     if (count >= tournament.maxParticipants) {
       return NextResponse.json({ error: "El torneo está lleno" }, { status: 400 })
+    }
+  }
+
+  // Check per-category capacity (groupCount × groupSize)
+  if (categoryId) {
+    const cat = tournament.categories.find(c => c.id === categoryId)
+    if (cat && cat.groupCount && cat.groupSize) {
+      const catMax = cat.groupCount * cat.groupSize
+      const catCount = await prisma.tournamentParticipant.count({
+        where: { tournamentId, categoryId, status: "REGISTERED" },
+      })
+      if (catCount >= catMax) {
+        return NextResponse.json({ error: `La categoría ${cat.name} está llena` }, { status: 400 })
+      }
     }
   }
 

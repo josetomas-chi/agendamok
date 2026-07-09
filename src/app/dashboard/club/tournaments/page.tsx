@@ -19,7 +19,7 @@ type Tournament = {
   _count: { participants: number; matches: number }
 }
 
-type CategoryDraft = { name: string; groupCount: string }
+type CategoryDraft = { name: string; groupCount: string; groupSize: string }
 
 const GOLD = "#C9A84C"
 const NAVY = "#0d1b2a"
@@ -42,11 +42,12 @@ export default function TournamentsPage() {
     startDate: "", startTime: "09:00",
     endDate: "", endTime: "20:00",
     maxParticipants: "", courtCount: "", entryFee: "", description: "",
-    groupCount: "2", advanceCount: "2",
+    groupCount: "2", groupSize: "4", advanceCount: "2",
   })
   const [categories, setCategories] = useState<CategoryDraft[]>([])
   const [catInput, setCatInput] = useState("")
   const [catGroups, setCatGroups] = useState("2")
+  const [catGroupSize, setCatGroupSize] = useState("4")
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(async () => {
@@ -61,9 +62,10 @@ export default function TournamentsPage() {
   function addCategory() {
     const name = catInput.trim()
     if (!name || categories.some(c => c.name === name)) return
-    setCategories(c => [...c, { name, groupCount: catGroups }])
+    setCategories(c => [...c, { name, groupCount: catGroups, groupSize: catGroupSize }])
     setCatInput("")
     setCatGroups("2")
+    setCatGroupSize("4")
   }
 
   function removeCategory(name: string) {
@@ -71,10 +73,11 @@ export default function TournamentsPage() {
   }
 
   const resetForm = () => {
-    setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", startDate: "", startTime: "09:00", endDate: "", endTime: "20:00", maxParticipants: "", courtCount: "", entryFee: "", description: "", groupCount: "2", advanceCount: "2" })
+    setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", startDate: "", startTime: "09:00", endDate: "", endTime: "20:00", maxParticipants: "", courtCount: "", entryFee: "", description: "", groupCount: "2", groupSize: "4", advanceCount: "2" })
     setCategories([])
     setCatInput("")
     setCatGroups("2")
+    setCatGroupSize("4")
   }
 
   const isGroupStage = form.format === "GROUP_STAGE"
@@ -95,13 +98,18 @@ export default function TournamentsPage() {
         maxParticipants: form.maxParticipants ? Number(form.maxParticipants) : null,
         courtCount: form.courtCount ? Number(form.courtCount) : null,
         entryFee: form.entryFee ? Number(form.entryFee) : null,
-        // Global groupCount only when no per-category groupCount
         groupCount: isGroupStage && categories.length === 0 ? Number(form.groupCount) : null,
+        groupSize: isGroupStage && categories.length === 0 ? Number(form.groupSize) : null,
         advanceCount: isGroupStage ? Number(form.advanceCount) : null,
+        // auto-calculate maxParticipants from groupCount × groupSize when no categories
+        maxParticipants: isGroupStage && categories.length === 0 && form.groupCount && form.groupSize
+          ? Number(form.groupCount) * Number(form.groupSize)
+          : (form.maxParticipants ? Number(form.maxParticipants) : null),
         categories: categories.map((c, i) => ({
           name: c.name,
           sortOrder: i,
           groupCount: isGroupStage && c.groupCount ? Number(c.groupCount) : null,
+          groupSize: isGroupStage && c.groupSize ? Number(c.groupSize) : null,
         })),
       }),
     })
@@ -297,7 +305,7 @@ export default function TournamentsPage() {
                       {cat.name}
                       {isGroupStage && (
                         <span className="text-[10px] font-normal opacity-70">
-                          {cat.groupCount}G
+                          {cat.groupCount}G × {cat.groupSize}
                         </span>
                       )}
                       <button type="button" onClick={() => removeCategory(cat.name)} className="ml-0.5 opacity-60 hover:opacity-100">
@@ -316,11 +324,17 @@ export default function TournamentsPage() {
                   className="flex-1 rounded-lg px-3 py-1.5 text-xs outline-none"
                   style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)", color: NAVY }} />
                 {isGroupStage && (
-                  <select value={catGroups} onChange={e => setCatGroups(e.target.value)}
-                    className="rounded-lg px-2 py-1.5 text-xs outline-none"
-                    style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)", color: NAVY }}>
-                    {[2,3,4,6,8].map(n => <option key={n} value={n}>{n} grupos</option>)}
-                  </select>
+                  <>
+                    <select value={catGroups} onChange={e => setCatGroups(e.target.value)}
+                      className="rounded-lg px-2 py-1.5 text-xs outline-none"
+                      style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)", color: NAVY }}>
+                      {[2,3,4,6,8].map(n => <option key={n} value={n}>{n} grupos</option>)}
+                    </select>
+                    <input type="number" min="2" max="32" value={catGroupSize} onChange={e => setCatGroupSize(e.target.value)}
+                      placeholder="cupo/grupo"
+                      className="w-20 rounded-lg px-2 py-1.5 text-xs outline-none"
+                      style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)", color: NAVY }} />
+                  </>
                 )}
                 <button type="button" onClick={addCategory} disabled={!catInput.trim()}
                   className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide disabled:opacity-40 transition-all"
@@ -332,17 +346,30 @@ export default function TournamentsPage() {
 
             {/* Grupos (GROUP_STAGE sin categorías) */}
             {isGroupStage && (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
                 {categories.length === 0 && (
-                  <div>
-                    <label className={labelCls} style={{ color: "rgba(13,27,42,0.35)" }}>Nº de grupos</label>
-                    <select value={form.groupCount} onChange={e => setForm(f => ({ ...f, groupCount: e.target.value }))}
-                      className={inputCls} style={inputStyle}>
-                      {[2,3,4,6,8].map(n => <option key={n} value={n}>{n} grupos</option>)}
-                    </select>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className={labelCls} style={{ color: "rgba(13,27,42,0.35)" }}>Nº de grupos</label>
+                      <select value={form.groupCount} onChange={e => setForm(f => ({ ...f, groupCount: e.target.value }))}
+                        className={inputCls} style={inputStyle}>
+                        {[2,3,4,6,8].map(n => <option key={n} value={n}>{n} grupos</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelCls} style={{ color: "rgba(13,27,42,0.35)" }}>Cupo por grupo</label>
+                      <input type="number" min="2" max="32" value={form.groupSize}
+                        onChange={e => setForm(f => ({ ...f, groupSize: e.target.value }))}
+                        className={inputCls} style={inputStyle} />
+                    </div>
                   </div>
                 )}
-                <div className={categories.length > 0 ? "col-span-2" : ""}>
+                {categories.length === 0 && form.groupCount && form.groupSize && (
+                  <p className="text-[11px] font-semibold" style={{ color: "rgba(13,27,42,0.4)" }}>
+                    Cupo total: <strong style={{ color: NAVY }}>{Number(form.groupCount) * Number(form.groupSize)} participantes</strong>
+                  </p>
+                )}
+                <div>
                   <label className={labelCls} style={{ color: "rgba(13,27,42,0.35)" }}>Clasifican por grupo</label>
                   <select value={form.advanceCount} onChange={e => setForm(f => ({ ...f, advanceCount: e.target.value }))}
                     className={inputCls} style={inputStyle}>
@@ -387,11 +414,13 @@ export default function TournamentsPage() {
                 <input type="number" min="1" value={form.courtCount} onChange={e => setForm(f => ({ ...f, courtCount: e.target.value }))} placeholder="Sin límite"
                   className={inputCls} style={inputStyle} />
               </div>
-              <div>
-                <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Cupo máximo</label>
-                <input type="number" min="2" value={form.maxParticipants} onChange={e => setForm(f => ({ ...f, maxParticipants: e.target.value }))} placeholder="Sin límite"
-                  className={inputCls} style={inputStyle} />
-              </div>
+              {!isGroupStage && (
+                <div>
+                  <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Cupo máximo</label>
+                  <input type="number" min="2" value={form.maxParticipants} onChange={e => setForm(f => ({ ...f, maxParticipants: e.target.value }))} placeholder="Sin límite"
+                    className={inputCls} style={inputStyle} />
+                </div>
+              )}
             </div>
 
             {/* Descripción */}

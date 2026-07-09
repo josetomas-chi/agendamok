@@ -1036,6 +1036,7 @@ model TournamentCategory {
   description  String?
   sortOrder    Int      @default(0)
   groupCount   Int?
+  groupSize    Int?
   createdAt    DateTime @default(now())
 
   tournament   Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
@@ -1060,6 +1061,7 @@ model Tournament {
   status          TournamentStatus          @default(DRAFT)
   description     String?                   @db.Text
   groupCount      Int?
+  groupSize       Int?
   advanceCount    Int?
   courtCount      Int?
   createdAt       DateTime                  @default(now())

@@ -24,7 +24,7 @@ export async function POST(req: Request, { params }: Params) {
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
   const body = await req.json()
-  const { name, sport, format, participantType, startDate, endDate, maxParticipants, courtCount, entryFee, description, groupCount, advanceCount, categories } = body
+  const { name, sport, format, participantType, startDate, endDate, maxParticipants, courtCount, entryFee, description, groupCount, groupSize, advanceCount, categories } = body
 
   if (!name || !startDate || !endDate) return NextResponse.json({ error: "Faltan campos" }, { status: 400 })
 
@@ -42,6 +42,7 @@ export async function POST(req: Request, { params }: Params) {
       entryFee: entryFee ? Number(entryFee) : null,
       description: description || null,
       groupCount: groupCount ? Number(groupCount) : null,
+      groupSize: groupSize ? Number(groupSize) : null,
       advanceCount: advanceCount ? Number(advanceCount) : null,
       status: "OPEN",
     },
@@ -49,10 +50,12 @@ export async function POST(req: Request, { params }: Params) {
 
   if (Array.isArray(categories) && categories.length > 0) {
     await prisma.tournamentCategory.createMany({
-      data: categories.map((c: { name: string; sortOrder?: number }) => ({
+      data: categories.map((c: { name: string; sortOrder?: number; groupCount?: number; groupSize?: number }) => ({
         tournamentId: tournament.id,
         name: c.name,
         sortOrder: c.sortOrder ?? 0,
+        groupCount: c.groupCount ?? null,
+        groupSize: c.groupSize ?? null,
       })),
     })
   }
