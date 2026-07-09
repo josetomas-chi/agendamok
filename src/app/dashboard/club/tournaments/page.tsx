@@ -240,7 +240,9 @@ export default function TournamentsPage() {
                   className={inputCls} style={inputStyle} />
               </div>
               <div>
-                <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Inscripción ($)</label>
+                <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>
+                  Inscripción ($) — {form.participantType === "INDIVIDUAL" ? "por persona" : form.participantType === "PAIR" ? "por pareja" : "por equipo"}
+                </label>
                 <input type="number" min="0" value={form.entryFee} onChange={e => setForm(f => ({ ...f, entryFee: e.target.value }))} placeholder="0"
                   className={inputCls} style={inputStyle} />
               </div>

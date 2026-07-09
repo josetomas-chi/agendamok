@@ -161,7 +161,9 @@ export default function TournamentPublicPage() {
           <p className="text-sm font-black mt-1" style={{ color: entryFee ? GOLD : "rgba(255,255,255,0.5)" }}>
             {entryFee ? fmt(entryFee) : "Gratis"}
           </p>
-          <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>Inscripción</p>
+          <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>
+            {tournament.participantType === "INDIVIDUAL" ? "por persona" : tournament.participantType === "PAIR" ? "por pareja" : "por equipo"}
+          </p>
         </div>
       </div>
 
