@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
-import { Trophy, Calendar, Users, Tag, ChevronRight, Loader2 } from "lucide-react"
+import { Trophy, Calendar, Users, Tag, ChevronRight, Loader2, Plus, X } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -36,20 +36,47 @@ type Tournament = {
   business: { name: string; logoUrl: string | null }; paymentEnabled: boolean
 }
 
+const labelCls = "text-[10px] font-bold uppercase tracking-[0.1em] block mb-1.5"
+const inputCls = "w-full rounded-xl px-4 py-3 text-sm placeholder:opacity-30 outline-none"
+const inputStyle = {
+  background: "rgba(255,255,255,0.06)",
+  border: "1px solid rgba(255,255,255,0.12)",
+  color: "white",
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className={labelCls} style={{ color: "rgba(255,255,255,0.4)" }}>{label}</label>
+      {children}
+    </div>
+  )
+}
+
 export default function TournamentPublicPage() {
   const { tournamentId } = useParams<{ tournamentId: string }>()
   const [tournament, setTournament] = useState<Tournament | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-
-  // Form
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [players, setPlayers] = useState("")
   const [categoryId, setCategoryId] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState("")
   const [success, setSuccess] = useState(false)
+
+  // INDIVIDUAL
+  const [indName, setIndName] = useState("")
+  const [indEmail, setIndEmail] = useState("")
+
+  // PAIR
+  const [p1Name, setP1Name] = useState("")
+  const [p1Email, setP1Email] = useState("")
+  const [p2Name, setP2Name] = useState("")
+  const [p2Email, setP2Email] = useState("")
+
+  // TEAM
+  const [teamName, setTeamName] = useState("")
+  const [teamEmail, setTeamEmail] = useState("")
+  const [teamPlayers, setTeamPlayers] = useState<string[]>(["", ""])
 
   useEffect(() => {
     fetch(`/api/public/tournaments/${tournamentId}`)
@@ -68,17 +95,45 @@ export default function TournamentPublicPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setFormError("")
-    if (!name.trim()) { setFormError("Ingresa tu nombre"); return }
-    if (!email.trim()) { setFormError("Ingresa tu email"); return }
-    if (tournament?.categories?.length && !categoryId) { setFormError("Selecciona una categoría"); return }
+
+    if (tournament?.categories?.length && !categoryId) {
+      setFormError("Selecciona una categoría"); return
+    }
+
+    const type = tournament!.participantType
+    let submitName = ""
+    let submitEmail = ""
+    let submitPlayers: { name: string; email?: string }[] = []
+
+    if (type === "INDIVIDUAL") {
+      if (!indName.trim()) { setFormError("Ingresa tu nombre"); return }
+      if (!indEmail.trim()) { setFormError("Ingresa tu email"); return }
+      submitName = indName.trim()
+      submitEmail = indEmail.trim()
+    } else if (type === "PAIR") {
+      if (!p1Name.trim() || !p1Email.trim()) { setFormError("Completa los datos del Jugador 1"); return }
+      if (!p2Name.trim() || !p2Email.trim()) { setFormError("Completa los datos del Jugador 2"); return }
+      submitName = `${p1Name.trim()} / ${p2Name.trim()}`
+      submitEmail = p1Email.trim()
+      submitPlayers = [
+        { name: p1Name.trim(), email: p1Email.trim() },
+        { name: p2Name.trim(), email: p2Email.trim() },
+      ]
+    } else if (type === "TEAM") {
+      if (!teamName.trim()) { setFormError("Ingresa el nombre del equipo"); return }
+      if (!teamEmail.trim()) { setFormError("Ingresa el email de contacto"); return }
+      const validPlayers = teamPlayers.map(p => p.trim()).filter(Boolean)
+      if (validPlayers.length < 2) { setFormError("Agrega al menos 2 integrantes"); return }
+      submitName = teamName.trim()
+      submitEmail = teamEmail.trim()
+      submitPlayers = validPlayers.map(n => ({ name: n }))
+    }
 
     setSubmitting(true)
-    const playersArr = players ? players.split(",").map(s => s.trim()).filter(Boolean).map(n => ({ name: n })) : []
-
     const res = await fetch(`/api/public/tournaments/${tournamentId}/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), email: email.trim(), players: playersArr, categoryId: categoryId || null }),
+      body: JSON.stringify({ name: submitName, email: submitEmail, players: submitPlayers, categoryId: categoryId || null }),
     })
     const data = await res.json()
 
@@ -89,7 +144,6 @@ export default function TournamentPublicPage() {
     }
 
     if (data.requiresPayment && data.paymentUrl) {
-      // Redirect to Flow
       window.location.href = `${data.paymentUrl}?token=${data.token}`
     } else {
       setSuccess(true)
@@ -116,12 +170,7 @@ export default function TournamentPublicPage() {
   const canRegister = tournament.status === "OPEN" && !isFull
   const entryFee = tournament.entryFee ? Number(tournament.entryFee) : 0
   const requiresPayment = entryFee > 0 && tournament.paymentEnabled
-  const inputStyle = {
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    color: "white",
-    outline: "none",
-  }
+  const type = tournament.participantType
 
   return (
     <div className="min-h-screen" style={{ background: NAVY }}>
@@ -150,7 +199,7 @@ export default function TournamentPublicPage() {
           <p className="text-xs font-bold text-white">
             {tournament.registeredCount}{tournament.maxParticipants ? `/${tournament.maxParticipants}` : ""} inscritos
           </p>
-          <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>{TYPE_LABELS[tournament.participantType]}</p>
+          <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>{TYPE_LABELS[type]}</p>
         </div>
         <div className="rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
           <Trophy className="w-4 h-4 mx-auto mb-1" style={{ color: GOLD }} />
@@ -162,7 +211,7 @@ export default function TournamentPublicPage() {
             {entryFee ? fmt(entryFee) : "Gratis"}
           </p>
           <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>
-            {tournament.participantType === "INDIVIDUAL" ? "por persona" : tournament.participantType === "PAIR" ? "por pareja" : "por equipo"}
+            {type === "INDIVIDUAL" ? "por persona" : type === "PAIR" ? "por pareja" : "por equipo"}
           </p>
         </div>
       </div>
@@ -189,58 +238,142 @@ export default function TournamentPublicPage() {
             </div>
             <p className="text-xl font-black text-white">¡Inscripción confirmada!</p>
             <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
-              Te has inscrito en {tournament.name}. Recibirás información adicional por email.
+              {type === "PAIR"
+                ? `La pareja ha sido inscrita en ${tournament.name}.`
+                : type === "TEAM"
+                ? `El equipo ha sido inscrito en ${tournament.name}.`
+                : `Te has inscrito en ${tournament.name}.`}
+              {" "}Recibirás información por email.
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="rounded-2xl p-6 space-y-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
-            <p className="text-sm font-black uppercase tracking-wide text-white">Inscripción</p>
+          <form onSubmit={handleSubmit} className="rounded-2xl p-6 space-y-5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
 
+            {/* Título del formulario */}
+            <div>
+              <p className="text-sm font-black uppercase tracking-wide text-white">
+                {type === "PAIR" ? "Inscripción de pareja" : type === "TEAM" ? "Inscripción de equipo" : "Inscripción"}
+              </p>
+              {type === "PAIR" && (
+                <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
+                  Completa los datos de ambos jugadores
+                </p>
+              )}
+              {type === "TEAM" && (
+                <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
+                  Datos del equipo e integrantes
+                </p>
+              )}
+            </div>
+
+            {/* Selector de categoría */}
             {tournament.categories?.length > 0 && (
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wide block mb-2" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  Categoría *
-                </label>
-                <div className="flex flex-wrap gap-2">
+              <Field label="Categoría *">
+                <div className="flex flex-wrap gap-2 mt-1">
                   {tournament.categories.map(cat => (
                     <button key={cat.id} type="button" onClick={() => setCategoryId(cat.id)}
                       className="px-3 py-2 rounded-xl text-xs font-bold transition-all"
                       style={categoryId === cat.id
                         ? { background: "rgba(201,168,76,0.2)", border: `1.5px solid ${GOLD}`, color: GOLD }
                         : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)" }}>
-                      <Tag className="w-3 h-3 inline mr-1" />
-                      {cat.name}
+                      <Tag className="w-3 h-3 inline mr-1" />{cat.name}
                     </button>
                   ))}
                 </div>
-              </div>
+              </Field>
             )}
 
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1.5" style={{ color: "rgba(255,255,255,0.4)" }}>
-                {tournament.participantType === "INDIVIDUAL" ? "Nombre completo" : tournament.participantType === "PAIR" ? "Nombre de la pareja" : "Nombre del equipo"} *
-              </label>
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="Ej: Juan Pérez"
-                className="w-full rounded-xl px-4 py-3 text-sm placeholder:opacity-30"
-                style={inputStyle} />
-            </div>
+            {/* ── INDIVIDUAL ── */}
+            {type === "INDIVIDUAL" && (
+              <>
+                <Field label="Nombre completo *">
+                  <input value={indName} onChange={e => setIndName(e.target.value)}
+                    placeholder="Ej: Juan Pérez" className={inputCls} style={inputStyle} />
+                </Field>
+                <Field label="Email *">
+                  <input type="email" value={indEmail} onChange={e => setIndEmail(e.target.value)}
+                    placeholder="tu@email.com" className={inputCls} style={inputStyle} />
+                </Field>
+              </>
+            )}
 
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1.5" style={{ color: "rgba(255,255,255,0.4)" }}>Email *</label>
-              <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="tu@email.com"
-                className="w-full rounded-xl px-4 py-3 text-sm placeholder:opacity-30"
-                style={inputStyle} />
-            </div>
+            {/* ── PAREJA ── */}
+            {type === "PAIR" && (
+              <>
+                {/* Jugador 1 */}
+                <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: GOLD }}>Jugador 1</p>
+                  <Field label="Nombre completo *">
+                    <input value={p1Name} onChange={e => setP1Name(e.target.value)}
+                      placeholder="Ej: Juan Pérez" className={inputCls} style={inputStyle} />
+                  </Field>
+                  <Field label="Email *">
+                    <input type="email" value={p1Email} onChange={e => setP1Email(e.target.value)}
+                      placeholder="juan@email.com" className={inputCls} style={inputStyle} />
+                  </Field>
+                </div>
 
-            {tournament.participantType !== "INDIVIDUAL" && (
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wide block mb-1.5" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  {tournament.participantType === "PAIR" ? "Jugadores (separados por coma)" : "Integrantes del equipo"}
-                </label>
-                <input value={players} onChange={e => setPlayers(e.target.value)} placeholder="Juan, María"
-                  className="w-full rounded-xl px-4 py-3 text-sm placeholder:opacity-30"
-                  style={inputStyle} />
-              </div>
+                {/* Jugador 2 */}
+                <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: GOLD }}>Jugador 2</p>
+                  <Field label="Nombre completo *">
+                    <input value={p2Name} onChange={e => setP2Name(e.target.value)}
+                      placeholder="Ej: María García" className={inputCls} style={inputStyle} />
+                  </Field>
+                  <Field label="Email *">
+                    <input type="email" value={p2Email} onChange={e => setP2Email(e.target.value)}
+                      placeholder="maria@email.com" className={inputCls} style={inputStyle} />
+                  </Field>
+                </div>
+              </>
+            )}
+
+            {/* ── EQUIPO ── */}
+            {type === "TEAM" && (
+              <>
+                <Field label="Nombre del equipo *">
+                  <input value={teamName} onChange={e => setTeamName(e.target.value)}
+                    placeholder="Ej: Los Campeones" className={inputCls} style={inputStyle} />
+                </Field>
+                <Field label="Email de contacto *">
+                  <input type="email" value={teamEmail} onChange={e => setTeamEmail(e.target.value)}
+                    placeholder="capitan@email.com" className={inputCls} style={inputStyle} />
+                </Field>
+
+                <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: GOLD }}>
+                      Integrantes <span style={{ color: "rgba(255,255,255,0.3)" }}>(mín. 2)</span>
+                    </p>
+                    <button type="button"
+                      onClick={() => setTeamPlayers(p => [...p, ""])}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold"
+                      style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }}>
+                      <Plus className="w-3 h-3" /> Agregar
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {teamPlayers.map((p, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <span className="text-[10px] font-bold w-5 text-center flex-shrink-0" style={{ color: "rgba(255,255,255,0.3)" }}>
+                          {i + 1}
+                        </span>
+                        <input value={p} onChange={e => setTeamPlayers(pl => pl.map((x, j) => j === i ? e.target.value : x))}
+                          placeholder={`Jugador ${i + 1}`}
+                          className="flex-1 rounded-xl px-3 py-2.5 text-sm placeholder:opacity-30 outline-none"
+                          style={inputStyle} />
+                        {teamPlayers.length > 2 && (
+                          <button type="button" onClick={() => setTeamPlayers(pl => pl.filter((_, j) => j !== i))}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg flex-shrink-0"
+                            style={{ color: "rgba(255,255,255,0.3)" }}>
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
 
             {formError && (
@@ -257,8 +390,7 @@ export default function TournamentPublicPage() {
                 : <>
                     {requiresPayment ? `Pagar ${fmt(entryFee)} e inscribirse` : "Inscribirse gratis"}
                     <ChevronRight className="w-4 h-4" />
-                  </>
-              }
+                  </>}
             </button>
 
             {requiresPayment && (
