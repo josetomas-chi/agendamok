@@ -129,7 +129,7 @@ export function Sidebar({ onClose, isSports = false }: { onClose?: () => void; i
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-4 px-3 space-y-4 overflow-y-auto">
+        <nav className="flex-1 py-4 px-3 space-y-4 overflow-y-auto scrollbar-hide">
           {groups.map((group) => (
             <div key={group.label}>
               <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-2 mb-1.5" style={{ color: S.label }}>
@@ -198,7 +198,7 @@ export function Sidebar({ onClose, isSports = false }: { onClose?: () => void; i
         </Link>
         <button onClick={onClose} className="md:hidden p-1 text-white/30 hover:text-white/70 transition-colors"><X className="w-4 h-4" /></button>
       </div>
-      <nav className="flex-1 py-3 px-3 space-y-3 overflow-y-auto">
+      <nav className="flex-1 py-3 px-3 space-y-3 overflow-y-auto scrollbar-hide">
         {GENERAL_GROUPS.map((group) => (
           <div key={group.label}>
             <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/25 px-2 mb-1">{group.label}</p>
