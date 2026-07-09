@@ -19,6 +19,8 @@ type Tournament = {
   _count: { participants: number; matches: number }
 }
 
+type CategoryDraft = { name: string; groupCount: string }
+
 const GOLD = "#C9A84C"
 const NAVY = "#0d1b2a"
 const FORMAT_LABELS = { ELIMINATION: "Eliminación directa", ROUND_ROBIN: "Round Robin", GROUP_STAGE: "Fase de grupos" }
@@ -42,9 +44,9 @@ export default function TournamentsPage() {
     maxParticipants: "", courtCount: "", entryFee: "", description: "",
     groupCount: "2", advanceCount: "2",
   })
-  // Categories defined at creation time
-  const [categories, setCategories] = useState<string[]>([])
+  const [categories, setCategories] = useState<CategoryDraft[]>([])
   const [catInput, setCatInput] = useState("")
+  const [catGroups, setCatGroups] = useState("2")
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(async () => {
@@ -58,20 +60,24 @@ export default function TournamentsPage() {
 
   function addCategory() {
     const name = catInput.trim()
-    if (!name || categories.includes(name)) return
-    setCategories(c => [...c, name])
+    if (!name || categories.some(c => c.name === name)) return
+    setCategories(c => [...c, { name, groupCount: catGroups }])
     setCatInput("")
+    setCatGroups("2")
   }
 
   function removeCategory(name: string) {
-    setCategories(c => c.filter(x => x !== name))
+    setCategories(c => c.filter(x => x.name !== name))
   }
 
   const resetForm = () => {
     setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", startDate: "", startTime: "09:00", endDate: "", endTime: "20:00", maxParticipants: "", courtCount: "", entryFee: "", description: "", groupCount: "2", advanceCount: "2" })
     setCategories([])
     setCatInput("")
+    setCatGroups("2")
   }
+
+  const isGroupStage = form.format === "GROUP_STAGE"
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -89,9 +95,14 @@ export default function TournamentsPage() {
         maxParticipants: form.maxParticipants ? Number(form.maxParticipants) : null,
         courtCount: form.courtCount ? Number(form.courtCount) : null,
         entryFee: form.entryFee ? Number(form.entryFee) : null,
-        groupCount: form.format === "GROUP_STAGE" ? Number(form.groupCount) : null,
-        advanceCount: form.format === "GROUP_STAGE" ? Number(form.advanceCount) : null,
-        categories: categories.map((name, i) => ({ name, sortOrder: i })),
+        // Global groupCount only when no per-category groupCount
+        groupCount: isGroupStage && categories.length === 0 ? Number(form.groupCount) : null,
+        advanceCount: isGroupStage ? Number(form.advanceCount) : null,
+        categories: categories.map((c, i) => ({
+          name: c.name,
+          sortOrder: i,
+          groupCount: isGroupStage && c.groupCount ? Number(c.groupCount) : null,
+        })),
       }),
     })
     if (r.ok) {
@@ -275,13 +286,19 @@ export default function TournamentsPage() {
                 <span className="text-[10px] ml-1" style={{ color: "rgba(13,27,42,0.35)" }}>(opcional — ej: 1ª, 2ª, Sub-12, Open)</span>
               </div>
 
+              {/* Chips de categorías ya agregadas */}
               {categories.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {categories.map(cat => (
-                    <span key={cat} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold"
+                    <span key={cat.name} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold"
                       style={{ background: NAVY, color: GOLD }}>
-                      {cat}
-                      <button type="button" onClick={() => removeCategory(cat)} className="ml-0.5 opacity-60 hover:opacity-100">
+                      {cat.name}
+                      {isGroupStage && (
+                        <span className="text-[10px] font-normal opacity-70">
+                          {cat.groupCount}G
+                        </span>
+                      )}
+                      <button type="button" onClick={() => removeCategory(cat.name)} className="ml-0.5 opacity-60 hover:opacity-100">
                         <X className="w-3 h-3" />
                       </button>
                     </span>
@@ -289,12 +306,20 @@ export default function TournamentsPage() {
                 </div>
               )}
 
+              {/* Input nueva categoría */}
               <div className="flex gap-2">
                 <input value={catInput} onChange={e => setCatInput(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCategory() } }}
                   placeholder="Nombre de categoría…"
                   className="flex-1 rounded-lg px-3 py-1.5 text-xs outline-none"
                   style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)", color: NAVY }} />
+                {isGroupStage && (
+                  <select value={catGroups} onChange={e => setCatGroups(e.target.value)}
+                    className="rounded-lg px-2 py-1.5 text-xs outline-none"
+                    style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)", color: NAVY }}>
+                    {[2,3,4,6,8].map(n => <option key={n} value={n}>{n} grupos</option>)}
+                  </select>
+                )}
                 <button type="button" onClick={addCategory} disabled={!catInput.trim()}
                   className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide disabled:opacity-40 transition-all"
                   style={{ background: NAVY, color: GOLD }}>
@@ -303,19 +328,19 @@ export default function TournamentsPage() {
               </div>
             </div>
 
-            {/* Grupos (solo GROUP_STAGE) */}
-            {form.format === "GROUP_STAGE" && (
+            {/* Grupos (GROUP_STAGE sin categorías) */}
+            {isGroupStage && (
               <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelCls} style={{ color: "rgba(13,27,42,0.35)" }}>
-                    {categories.length > 0 ? "Grupos por categoría" : "Nº de grupos"}
-                  </label>
-                  <select value={form.groupCount} onChange={e => setForm(f => ({ ...f, groupCount: e.target.value }))}
-                    className={inputCls} style={inputStyle}>
-                    {[2,3,4,6,8].map(n => <option key={n} value={n}>{n} grupos</option>)}
-                  </select>
-                </div>
-                <div>
+                {categories.length === 0 && (
+                  <div>
+                    <label className={labelCls} style={{ color: "rgba(13,27,42,0.35)" }}>Nº de grupos</label>
+                    <select value={form.groupCount} onChange={e => setForm(f => ({ ...f, groupCount: e.target.value }))}
+                      className={inputCls} style={inputStyle}>
+                      {[2,3,4,6,8].map(n => <option key={n} value={n}>{n} grupos</option>)}
+                    </select>
+                  </div>
+                )}
+                <div className={categories.length > 0 ? "col-span-2" : ""}>
                   <label className={labelCls} style={{ color: "rgba(13,27,42,0.35)" }}>Clasifican por grupo</label>
                   <select value={form.advanceCount} onChange={e => setForm(f => ({ ...f, advanceCount: e.target.value }))}
                     className={inputCls} style={inputStyle}>

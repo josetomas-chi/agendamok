@@ -41,7 +41,10 @@ export async function POST(req: Request, { params }: Params) {
 
   const tournament = await prisma.tournament.findFirst({
     where: { id: tournamentId, businessId: id },
-    include: { participants: { where: categoryId ? { categoryId } : {}, orderBy: [{ seed: "asc" }, { createdAt: "asc" }] } },
+    include: {
+      participants: { where: categoryId ? { categoryId } : {}, orderBy: [{ seed: "asc" }, { createdAt: "asc" }] },
+      categories: true,
+    },
   })
   if (!tournament) return NextResponse.json({ error: "No encontrado" }, { status: 404 })
 
@@ -53,6 +56,9 @@ export async function POST(req: Request, { params }: Params) {
   const courtCount = tournament.courtCount ?? 1
   const startDate = tournament.startDate  // DateTime with time included
 
+  // Use category-specific groupCount when generating fixture for a specific category
+  const activeCategory = categoryId ? tournament.categories.find(c => c.id === categoryId) : null
+
   type MatchData = {
     tournamentId: string; round: number; matchNumber: number
     participant1Id: string | null; participant2Id: string | null
@@ -62,7 +68,7 @@ export async function POST(req: Request, { params }: Params) {
   const matchesRaw: Omit<MatchData, "scheduledTime" | "courtNumber">[] = []
 
   if (tournament.format === "GROUP_STAGE") {
-    const groupCount = tournament.groupCount ?? 2
+    const groupCount = (activeCategory?.groupCount ?? tournament.groupCount) ?? 2
     const seeded = participants.filter(p => p.seed != null).sort((a, b) => (a.seed ?? 0) - (b.seed ?? 0))
     const unseeded = shuffle(participants.filter(p => p.seed == null))
     const ordered = [...seeded, ...unseeded]

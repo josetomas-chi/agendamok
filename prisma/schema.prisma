@@ -1035,6 +1035,7 @@ model TournamentCategory {
   name         String
   description  String?
   sortOrder    Int      @default(0)
+  groupCount   Int?
   createdAt    DateTime @default(now())
 
   tournament   Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
