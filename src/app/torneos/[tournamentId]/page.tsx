@@ -143,7 +143,7 @@ export default function TournamentPublicPage() {
         <div className="rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
           <Calendar className="w-4 h-4 mx-auto mb-1" style={{ color: GOLD }} />
           <p className="text-xs font-bold text-white">{format(new Date(tournament.startDate), "d MMM", { locale: es })}</p>
-          <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>Inicio</p>
+          <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>{format(new Date(tournament.startDate), "HH:mm")} hrs</p>
         </div>
         <div className="rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
           <Users className="w-4 h-4 mx-auto mb-1" style={{ color: GOLD }} />

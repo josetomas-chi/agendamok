@@ -48,7 +48,9 @@ export default function TournamentsPage() {
     format: "ELIMINATION" as "ELIMINATION" | "ROUND_ROBIN" | "GROUP_STAGE",
     participantType: "INDIVIDUAL" as "INDIVIDUAL" | "PAIR" | "TEAM",
     startDate: "",
+    startTime: "09:00",
     endDate: "",
+    endTime: "20:00",
     maxParticipants: "",
     courtCount: "",
     entryFee: "",
@@ -81,6 +83,8 @@ export default function TournamentsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        startDate: form.startDate ? `${form.startDate}T${form.startTime}:00` : null,
+        endDate: form.endDate ? `${form.endDate}T${form.endTime}:00` : null,
         maxParticipants: form.maxParticipants ? Number(form.maxParticipants) : null,
         courtCount: form.courtCount ? Number(form.courtCount) : null,
         entryFee: form.entryFee ? Number(form.entryFee) : null,
@@ -92,7 +96,7 @@ export default function TournamentsPage() {
       const d = await r.json()
       toast.success("Torneo creado")
       setCreateOpen(false)
-      setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", startDate: "", endDate: "", maxParticipants: "", courtCount: "", entryFee: "", description: "", groupCount: "2", advanceCount: "2" })
+      setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", startDate: "", startTime: "09:00", endDate: "", endTime: "20:00", maxParticipants: "", courtCount: "", entryFee: "", description: "", groupCount: "2", advanceCount: "2" })
       setTournaments(prev => [{ ...d.tournament, _count: { participants: 0, matches: 0 } }, ...prev])
       setSelectedId(d.tournament.id)
     } else {
@@ -184,7 +188,7 @@ export default function TournamentsPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-xs font-bold" style={{ color: NAVY }}>{format(new Date(t.startDate), "d MMM", { locale: es })}</p>
-                      <p className="text-[10px] uppercase tracking-wide" style={{ color: "rgba(13,27,42,0.35)" }}>inicio</p>
+                      <p className="text-[10px] uppercase tracking-wide" style={{ color: "rgba(13,27,42,0.35)" }}>{format(new Date(t.startDate), "HH:mm")} hrs</p>
                     </div>
                   </div>
                   <button onClick={e => { e.stopPropagation(); handleDelete(t) }}
@@ -283,16 +287,30 @@ export default function TournamentsPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha inicio *</label>
-                <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
-                  className={inputCls} style={inputStyle} required />
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha inicio *</label>
+                  <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
+                    className={inputCls} style={inputStyle} required />
+                </div>
+                <div>
+                  <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Hora inicio</label>
+                  <input type="time" value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
+                    className={inputCls} style={inputStyle} />
+                </div>
               </div>
-              <div>
-                <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha fin *</label>
-                <input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
-                  className={inputCls} style={inputStyle} required />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha fin *</label>
+                  <input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
+                    className={inputCls} style={inputStyle} required />
+                </div>
+                <div>
+                  <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Hora fin</label>
+                  <input type="time" value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
+                    className={inputCls} style={inputStyle} />
+                </div>
               </div>
             </div>
 
