@@ -231,6 +231,20 @@ export default function NewBookingModal({
   onSaved: () => void
 }) {
   const [bookingType, setBookingType] = useState<BookingType>("simple")
+
+  function handleSetBookingType(type: BookingType) {
+    setBookingType(type)
+    if (type === "class") {
+      setForm(f => {
+        const [sh, sm] = f.startTime.split(":").map(Number)
+        const endMins = sh * 60 + sm + 60
+        const endH = Math.min(Math.floor(endMins / 60), 23)
+        const endM = endMins % 60
+        return { ...f, endTime: `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}` }
+      })
+    }
+  }
+
   const [form, setForm] = useState({
     courtId: preselect?.courtId || courts[0]?.id || "",
     date: preselect?.date || new Date().toISOString().slice(0, 10),
@@ -355,7 +369,7 @@ export default function NewBookingModal({
             <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Tipo de reserva</p>
             <div className="grid grid-cols-3 gap-1.5">
               {BOOKING_TYPES.map(bt => (
-                <button key={bt.key} type="button" onClick={() => setBookingType(bt.key)}
+                <button key={bt.key} type="button" onClick={() => handleSetBookingType(bt.key)}
                   className="rounded-xl px-2 py-2.5 text-center transition-all"
                   style={bookingType === bt.key
                     ? { background: "rgba(201,168,76,0.1)", border: `1.5px solid ${GOLD}` }
