@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle2, AlertCircle, Loader2, Gift, CalendarX2 } from "lucide-react"
+import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle2, AlertCircle, Loader2, Gift, CalendarX2, ImagePlus, X } from "lucide-react"
 
 type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean }
 type PaymentSettings = { onlinePaymentsEnabled: boolean; hasCredentials: boolean }
@@ -29,6 +29,10 @@ function SettingsContent() {
   // Brand color
   const [brandColor, setBrandColor] = useState("#38bdf8")
   const [savingColor, setSavingColor] = useState(false)
+
+  // Cover image
+  const [coverImage, setCoverImage] = useState<string | null>(null)
+  const [uploadingCover, setUploadingCover] = useState(false)
 
   // Google Calendar
   const [gcal, setGcal] = useState<{ connected: boolean; connectedAt: string | null }>({ connected: false, connectedAt: null })
@@ -93,6 +97,7 @@ function SettingsContent() {
       setCancellationHours(biz.business.cancellationHoursNotice?.toString() ?? "")
       setDailySummary(biz.business.dailySummaryEnabled ?? false)
       setBrandColor(biz.business.primaryColor || "#38bdf8")
+      setCoverImage(biz.business.coverImage || null)
       // Load Google Calendar status
       const gcalR = await fetch("/api/integrations/google-calendar/status")
       if (gcalR.ok) setGcal(await gcalR.json())
@@ -498,6 +503,61 @@ function SettingsContent() {
               <Button variant="outline" className="gap-2" onClick={() => window.open(bookingUrl, "_blank")}>
                 <Link2 className="w-4 h-4" />Ver mi pagina de reservas
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* Cover image */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Foto de portada</CardTitle>
+              <CardDescription>Imagen que aparece en la parte superior de tu página de reservas. Recomendado: 1200×400 px, JPG o PNG.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {coverImage ? (
+                <div className="relative rounded-xl overflow-hidden" style={{ height: 160 }}>
+                  <img src={coverImage} alt="Portada" className="w-full h-full object-cover" />
+                  <button
+                    onClick={async () => {
+                      if (!business) return
+                      setCoverImage(null)
+                      await fetch(`/api/businesses/${business.id}`, {
+                        method: "PATCH", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ coverImage: null }),
+                      })
+                      toast.success("Foto de portada eliminada")
+                    }}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-colors"
+                  >
+                    <X className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/15 cursor-pointer hover:border-sky-400/50 hover:bg-white/[0.02] transition-all" style={{ height: 160 }}>
+                  {uploadingCover
+                    ? <><Loader2 className="w-6 h-6 animate-spin text-sky-400" /><span className="text-sm text-muted-foreground">Subiendo...</span></>
+                    : <><ImagePlus className="w-8 h-8 text-white/30" /><span className="text-sm text-muted-foreground">Haz clic para subir una foto</span><span className="text-xs text-white/25">JPG, PNG o WebP · máx. 5 MB</span></>
+                  }
+                  <input type="file" accept="image/*" className="hidden" disabled={uploadingCover}
+                    onChange={async e => {
+                      const file = e.target.files?.[0]
+                      if (!file || !business) return
+                      setUploadingCover(true)
+                      const fd = new FormData()
+                      fd.append("file", file)
+                      const r = await fetch("/api/upload", { method: "POST", body: fd })
+                      const d = await r.json()
+                      if (!r.ok) { toast.error(d.error || "Error al subir"); setUploadingCover(false); return }
+                      await fetch(`/api/businesses/${business.id}`, {
+                        method: "PATCH", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ coverImage: d.url }),
+                      })
+                      setCoverImage(d.url)
+                      setUploadingCover(false)
+                      toast.success("Foto de portada guardada")
+                    }}
+                  />
+                </label>
+              )}
             </CardContent>
           </Card>
 
