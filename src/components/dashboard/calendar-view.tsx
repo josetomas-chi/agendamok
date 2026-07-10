@@ -511,8 +511,6 @@ function ApptCard({ appt, compact, height, onDragStart, onApptClick }: {
   return (
     <div
       draggable
-      data-staffcolor={appt.staff?.color ?? "NULL"}
-      data-servicecolor={appt.service.color}
       onDragStart={e => onDragStart(e, appt.id)}
       onClick={e => { e.stopPropagation(); onApptClick?.(appt.id) }}
       className="rounded-lg text-xs p-2 cursor-pointer select-none transition-all hover:brightness-110 hover:shadow-lg active:opacity-60 active:scale-95 w-full h-full relative overflow-hidden"

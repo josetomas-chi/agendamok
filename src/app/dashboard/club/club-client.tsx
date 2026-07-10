@@ -15,6 +15,7 @@ type Booking = {
   startTime: string; endTime: string; price: number; status: string; notes: string | null
   recurringGroupId: string | null
   court: Court; client: Client | null
+  coach: { id: string; name: string; color: string } | null
 }
 
 // 08:00 – 23:00 in 30-min slots
@@ -642,8 +643,8 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                         onClick={e => { if (!dropTarget) { e.stopPropagation(); onBookingClick(b) } }}
                         className="absolute left-0.5 right-0.5 rounded-md cursor-grab transition-all overflow-hidden z-10 flex items-center justify-center"
                         style={{ top, height,
-                          background: b.status === "COMPLETED" ? "rgba(34,197,94,0.55)" : "rgba(201,168,76,0.85)",
-                          borderLeft: `3px solid ${b.status === "COMPLETED" ? "#16a34a" : "#C9A84C"}`,
+                          background: b.status === "COMPLETED" ? "rgba(34,197,94,0.55)" : b.coach?.color ? `${b.coach.color}cc` : "rgba(201,168,76,0.85)",
+                          borderLeft: `3px solid ${b.status === "COMPLETED" ? "#16a34a" : b.coach?.color ?? "#C9A84C"}`,
                           opacity: draggingId === b.id ? 0.35 : 1 }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = "brightness(0.92)" }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = "none" }}
