@@ -495,29 +495,20 @@ export default function BookingClient({ slug }: { slug: string }) {
             <div className="space-y-4">
               <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.3)" }}>Tus datos</label>
               {[
-                { key: "name", label: "Nombre completo", type: "text", placeholder: "María González", required: true },
-                { key: "email", label: "Email", type: "email", placeholder: "tu@email.com", required: true },
-                { key: "phone", label: "Teléfono (opcional)", type: "tel", placeholder: "+56 9 1234 5678", required: false },
+                { key: "name", label: "Nombre completo", type: "text", placeholder: "María González" },
+                { key: "email", label: "Email", type: "email", placeholder: "tu@email.com" },
+                { key: "phone", label: "Teléfono (opcional)", type: "tel", placeholder: "+56 9 1234 5678" },
               ].map(({ key, label, type, placeholder }) => (
-                <div key={key} className="relative">
+                <div key={key} className="space-y-1.5">
+                  <label className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</label>
                   <input
                     type={type}
                     value={(form as Record<string, string>)[key]}
                     onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                    placeholder=" "
-                    className="peer w-full rounded-2xl px-4 pt-5 pb-2.5 text-sm outline-none transition-all"
+                    placeholder={placeholder}
+                    className="w-full rounded-2xl px-4 py-3 text-sm outline-none transition-all placeholder:text-white/25"
                     style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "#f4f4f5" }}
-                    id={`field-${key}`}
                   />
-                  <label htmlFor={`field-${key}`}
-                    className="absolute left-4 top-3.5 text-xs transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-focus:top-2 peer-focus:text-xs"
-                    style={{ color: "rgba(255,255,255,0.35)", pointerEvents: "none" }}>
-                    {label}
-                  </label>
-                  {/* manually set actual placeholder via value check */}
-                  {!(form as Record<string, string>)[key] && (
-                    <span className="absolute left-4 top-4 text-sm pointer-events-none select-none" style={{ color: "rgba(255,255,255,0.2)" }}>{placeholder}</span>
-                  )}
                 </div>
               ))}
               <div className="relative">
