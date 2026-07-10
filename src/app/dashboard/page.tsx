@@ -2,9 +2,11 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { CalendarWithNew } from "@/components/dashboard/calendar-with-new"
+import dynamic from "next/dynamic"
 import { StatsCards } from "@/components/dashboard/stats-cards"
 import { SetupChecklist } from "@/components/dashboard/setup-checklist"
+
+const CalendarWithNew = dynamic(() => import("@/components/dashboard/calendar-with-new").then(m => m.CalendarWithNew), { ssr: false })
 
 export default async function DashboardPage() {
   const session = await auth()
