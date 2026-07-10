@@ -1,6 +1,7 @@
 "use client"
 import React, { useState, useEffect, useCallback } from "react"
 import { ArrowLeft, UserPlus, Play, Trophy, X, Check, ChevronRight, Swords, Tag, Plus, Pencil, Link2 } from "lucide-react"
+import { LadderView } from "./ladder-view"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -8,7 +9,7 @@ import { es } from "date-fns/locale"
 const GOLD = "#C9A84C"
 const NAVY = "#0d1b2a"
 
-const FORMAT_LABELS = { ELIMINATION: "Eliminación directa", ROUND_ROBIN: "Round Robin", GROUP_STAGE: "Fase de grupos" }
+const FORMAT_LABELS = { ELIMINATION: "Eliminación directa", ROUND_ROBIN: "Round Robin", GROUP_STAGE: "Fase de grupos", LADDER: "Escalerilla" }
 const TYPE_LABELS = { INDIVIDUAL: "Individual", PAIR: "Parejas", TEAM: "Equipos" }
 const STATUS_LABELS = { DRAFT: "Borrador", OPEN: "Inscripciones abiertas", IN_PROGRESS: "En curso", FINISHED: "Finalizado" }
 
@@ -21,7 +22,7 @@ type Match = {
 }
 type Tournament = {
   id: string; name: string; sport: string | null
-  format: "ELIMINATION" | "ROUND_ROBIN" | "GROUP_STAGE"
+  format: "ELIMINATION" | "ROUND_ROBIN" | "GROUP_STAGE" | "LADDER"
   participantType: "INDIVIDUAL" | "PAIR" | "TEAM"
   startDate: string; endDate: string; maxParticipants: number | null
   entryFee: string | null; status: "DRAFT" | "OPEN" | "IN_PROGRESS" | "FINISHED"
@@ -48,7 +49,7 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
 }) {
   const [tournament, setTournament] = useState<Tournament | null>(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<"participants" | "groups" | "fixture">("participants")
+  const [tab, setTab] = useState<"participants" | "groups" | "fixture" | "ladder">("participants")
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null)
 
   // Participant add
@@ -290,10 +291,13 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
   const inputCls = "rounded-xl px-3 py-2 text-sm outline-none transition-all"
   const labelCls = "text-[10px] font-bold uppercase tracking-[0.12em] mb-1.5 block"
 
+  const isLadder = tournament.format === "LADDER"
+
   const tabs = [
     { key: "participants", label: `Inscritos (${participants.length})` },
     ...(isGroupStage ? [{ key: "groups", label: "Grupos" }] : []),
-    { key: "fixture", label: isGroupStage ? "Llaves" : "Fixture" },
+    ...(!isLadder ? [{ key: "fixture", label: isGroupStage ? "Llaves" : "Fixture" }] : []),
+    ...(isLadder ? [{ key: "ladder", label: "Escalerilla" }] : []),
   ] as { key: typeof tab; label: string }[]
 
   return (
@@ -853,6 +857,15 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
             </button>
           </div>
         </div>
+      )}
+
+      {tab === "ladder" && isLadder && (
+        <LadderView
+          businessId={businessId}
+          tournamentId={tournamentId}
+          participantType={tournament.participantType}
+          tournamentStatus={tournament.status}
+        />
       )}
     </div>
   )

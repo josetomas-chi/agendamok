@@ -10,7 +10,7 @@ import TournamentDetail from "./_components/tournament-detail"
 
 type Tournament = {
   id: string; name: string; sport: string | null
-  format: "ELIMINATION" | "ROUND_ROBIN" | "GROUP_STAGE"
+  format: "ELIMINATION" | "ROUND_ROBIN" | "GROUP_STAGE" | "LADDER"
   participantType: "INDIVIDUAL" | "PAIR" | "TEAM"
   startDate: string; endDate: string
   maxParticipants: number | null; entryFee: string | null
@@ -24,7 +24,7 @@ type ScheduleDay = { date: string; startTime: string; endTime: string }
 
 const GOLD = "#C9A84C"
 const NAVY = "#0d1b2a"
-const FORMAT_LABELS = { ELIMINATION: "Eliminación directa", ROUND_ROBIN: "Round Robin", GROUP_STAGE: "Fase de grupos" }
+const FORMAT_LABELS = { ELIMINATION: "Eliminación directa", ROUND_ROBIN: "Round Robin", GROUP_STAGE: "Fase de grupos", LADDER: "Escalerilla" }
 const TYPE_LABELS = { INDIVIDUAL: "Individual", PAIR: "Parejas", TEAM: "Equipos" }
 const STATUS_LABELS = { DRAFT: "Borrador", OPEN: "Inscripciones", IN_PROGRESS: "En curso", FINISHED: "Finalizado" }
 const STATUS_COLORS = { DRAFT: "rgba(13,27,42,0.3)", OPEN: "#22c55e", IN_PROGRESS: GOLD, FINISHED: "rgba(13,27,42,0.4)" }
@@ -39,7 +39,7 @@ export default function TournamentsPage() {
 
   const [form, setForm] = useState({
     name: "", sport: "",
-    format: "ELIMINATION" as "ELIMINATION" | "ROUND_ROBIN" | "GROUP_STAGE",
+    format: "ELIMINATION" as "ELIMINATION" | "ROUND_ROBIN" | "GROUP_STAGE" | "LADDER",
     participantType: "INDIVIDUAL" as "INDIVIDUAL" | "PAIR" | "TEAM",
     maxParticipants: "", courtCount: "", entryFee: "", description: "",
     groupCount: "2", groupSize: "4", advanceCount: "2",
@@ -288,7 +288,7 @@ export default function TournamentsPage() {
             <div>
               <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Formato</label>
               <div className="grid grid-cols-3 gap-2">
-                {(["ELIMINATION", "ROUND_ROBIN", "GROUP_STAGE"] as const).map(fmt => (
+                {(["ELIMINATION", "ROUND_ROBIN", "GROUP_STAGE", "LADDER"] as const).map(fmt => (
                   <button key={fmt} type="button" onClick={() => setForm(f => ({ ...f, format: fmt }))}
                     className="rounded-xl py-2.5 text-xs font-bold uppercase tracking-wide transition-all text-center"
                     style={form.format === fmt

@@ -1014,6 +1014,7 @@ enum TournamentFormat {
   ELIMINATION
   ROUND_ROBIN
   GROUP_STAGE
+  LADDER
 }
 
 enum TournamentParticipantType {
@@ -1099,6 +1100,7 @@ model TournamentParticipant {
   phone          String?
   players        Json             @default("[]")
   seed           Int?
+  ladderPosition Int?
   group          String?
   categoryId     String?
   status         String           @default("REGISTERED")

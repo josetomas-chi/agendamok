@@ -1,0 +1,130 @@
+import { NextResponse } from "next/server"
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+
+type Params = { params: Promise<{ id: string; tournamentId: string }> }
+
+// GET — ranking actual de la escalerilla
+export async function GET(_req: Request, { params }: Params) {
+  const { id, tournamentId } = await params
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+
+  const tournament = await prisma.tournament.findFirst({
+    where: { id: tournamentId, businessId: id },
+  })
+  if (!tournament) return NextResponse.json({ error: "No encontrado" }, { status: 404 })
+
+  const participants = await prisma.tournamentParticipant.findMany({
+    where: { tournamentId, status: { not: "CANCELLED" } },
+    orderBy: [{ ladderPosition: "asc" }, { createdAt: "asc" }],
+  })
+
+  const challenges = await prisma.tournamentMatch.findMany({
+    where: { tournamentId, status: { not: "CANCELLED" } },
+    include: {
+      participant1: true,
+      participant2: true,
+      winner: true,
+    },
+    orderBy: { createdAt: "desc" },
+  })
+
+  return NextResponse.json({ participants, challenges })
+}
+
+// POST — crear un desafío (partido entre dos participantes de la escalerilla)
+export async function POST(req: Request, { params }: Params) {
+  const { id, tournamentId } = await params
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+
+  const { challengerId, defenderId, scheduledTime } = await req.json()
+  if (!challengerId || !defenderId) {
+    return NextResponse.json({ error: "challengerId y defenderId son requeridos" }, { status: 400 })
+  }
+
+  const [challenger, defender] = await Promise.all([
+    prisma.tournamentParticipant.findFirst({ where: { id: challengerId, tournamentId } }),
+    prisma.tournamentParticipant.findFirst({ where: { id: defenderId, tournamentId } }),
+  ])
+  if (!challenger || !defender) {
+    return NextResponse.json({ error: "Participante no encontrado" }, { status: 404 })
+  }
+  if ((challenger.ladderPosition ?? 999) <= (defender.ladderPosition ?? 999)) {
+    return NextResponse.json({ error: "El retador debe tener una posición inferior al defensor" }, { status: 400 })
+  }
+
+  // Contar desafíos existentes para usar como matchNumber
+  const count = await prisma.tournamentMatch.count({ where: { tournamentId } })
+
+  const match = await prisma.tournamentMatch.create({
+    data: {
+      tournamentId,
+      round: 1,
+      matchNumber: count + 1,
+      participant1Id: challengerId,
+      participant2Id: defenderId,
+      status: "PENDING",
+      scheduledTime: scheduledTime ? new Date(scheduledTime) : null,
+    },
+    include: { participant1: true, participant2: true },
+  })
+
+  return NextResponse.json({ match }, { status: 201 })
+}
+
+// PATCH — reordenar posiciones (admin) o registrar resultado de desafío
+export async function PATCH(req: Request, { params }: Params) {
+  const { id, tournamentId } = await params
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+
+  const body = await req.json()
+
+  // Reordenar: [{ id, ladderPosition }]
+  if (body.reorder) {
+    const updates = body.reorder as { id: string; ladderPosition: number }[]
+    await Promise.all(
+      updates.map(u =>
+        prisma.tournamentParticipant.update({
+          where: { id: u.id },
+          data: { ladderPosition: u.ladderPosition },
+        })
+      )
+    )
+    return NextResponse.json({ ok: true })
+  }
+
+  // Registrar resultado de desafío: { matchId, winnerId }
+  if (body.matchId && body.winnerId) {
+    const match = await prisma.tournamentMatch.findFirst({
+      where: { id: body.matchId, tournamentId },
+      include: { participant1: true, participant2: true },
+    })
+    if (!match) return NextResponse.json({ error: "Partido no encontrado" }, { status: 404 })
+
+    const challenger = match.participant1
+    const defender = match.participant2
+    if (!challenger || !defender) return NextResponse.json({ error: "Participantes inválidos" }, { status: 400 })
+
+    const challengerPos = challenger.ladderPosition ?? 999
+    const defenderPos = defender.ladderPosition ?? 999
+
+    // Si gana el retador → intercambiar posiciones
+    await prisma.$transaction(async (tx) => {
+      await tx.tournamentMatch.update({
+        where: { id: body.matchId },
+        data: { winnerId: body.winnerId, status: "FINISHED", score: body.score ?? null },
+      })
+      if (body.winnerId === challenger.id) {
+        await tx.tournamentParticipant.update({ where: { id: challenger.id }, data: { ladderPosition: defenderPos } })
+        await tx.tournamentParticipant.update({ where: { id: defender.id }, data: { ladderPosition: challengerPos } })
+      }
+    })
+
+    return NextResponse.json({ ok: true })
+  }
+
+  return NextResponse.json({ error: "Acción no reconocida" }, { status: 400 })
+}

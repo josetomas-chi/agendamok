@@ -22,6 +22,13 @@ export async function POST(req: Request, { params }: Params) {
       return NextResponse.json({ error: "Cupo máximo alcanzado" }, { status: 400 })
   }
 
+  // Para escalerilla: asignar posición al final del ranking actual
+  let ladderPosition: number | null = null
+  if (tournament.format === "LADDER") {
+    const count = await prisma.tournamentParticipant.count({ where: { tournamentId } })
+    ladderPosition = count + 1
+  }
+
   const participant = await prisma.tournamentParticipant.create({
     data: {
       tournamentId,
@@ -30,6 +37,7 @@ export async function POST(req: Request, { params }: Params) {
       players: players || [],
       seed: seed ? Number(seed) : null,
       categoryId: categoryId || null,
+      ladderPosition,
     },
   })
   return NextResponse.json({ participant }, { status: 201 })
