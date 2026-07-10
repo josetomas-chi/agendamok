@@ -23,6 +23,7 @@ type Challenge = {
   scheduledTime: string | null
   score1: string | null
   score2: string | null
+  sets: { s1: number; s2: number }[] | null
   participant1: Participant | null  // challenger
   participant2: Participant | null  // defender
   winner: Participant | null
@@ -50,10 +51,16 @@ export function LadderView({ businessId, tournamentId, participantType, tourname
 
   // Result modal
   const [resultChallenge, setResultChallenge] = useState<Challenge | null>(null)
-  const [score1, setScore1] = useState("")
-  const [score2, setScore2] = useState("")
+  const [sets, setSets] = useState<{ s1: string; s2: string }[]>([{ s1: "", s2: "" }])
   const [winnerId, setWinnerId] = useState("")
   const [savingResult, setSavingResult] = useState(false)
+
+  function autoDetectWinner(newSets: { s1: string; s2: string }[], challenge: Challenge) {
+    const w1 = newSets.filter(s => Number(s.s1) > Number(s.s2)).length
+    const w2 = newSets.filter(s => Number(s.s2) > Number(s.s1)).length
+    if (w1 > w2 && challenge.participant1) setWinnerId(challenge.participant1.id)
+    else if (w2 > w1 && challenge.participant2) setWinnerId(challenge.participant2.id)
+  }
 
   const load = useCallback(async () => {
     const qs = categoryId ? `?categoryId=${categoryId}` : ""
@@ -131,6 +138,7 @@ export function LadderView({ businessId, tournamentId, participantType, tourname
   async function saveResult(e: React.FormEvent) {
     e.preventDefault()
     if (!resultChallenge || !winnerId) return
+    const validSets = sets.filter(s => s.s1 !== "" && s.s2 !== "").map(s => ({ s1: Number(s.s1), s2: Number(s.s2) }))
     setSavingResult(true)
     const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}/ladder`, {
       method: "PATCH",
@@ -138,13 +146,14 @@ export function LadderView({ businessId, tournamentId, participantType, tourname
       body: JSON.stringify({
         matchId: resultChallenge.id,
         winnerId,
-        score: score1 && score2 ? `${score1}-${score2}` : null,
+        score: validSets.length > 0 ? null : null,
+        sets: validSets.length > 0 ? validSets : null,
       }),
     })
     if (r.ok) {
       toast.success("Resultado registrado")
       setResultChallenge(null)
-      setScore1(""); setScore2(""); setWinnerId("")
+      setSets([{ s1: "", s2: "" }]); setWinnerId("")
       await load()
     } else toast.error("Error al guardar resultado")
     setSavingResult(false)
@@ -266,7 +275,7 @@ export function LadderView({ businessId, tournamentId, participantType, tourname
                 )}
               </div>
               <button
-                onClick={() => { setResultChallenge(c); setWinnerId("") }}
+                onClick={() => { setResultChallenge(c); setWinnerId(c.winner?.id ?? ""); setSets(c.sets?.length ? c.sets.map(s => ({ s1: String(s.s1), s2: String(s.s2) })) : [{ s1: "", s2: "" }]) }}
                 className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
                 style={{ background: "rgba(201,168,76,0.1)", color: GOLD, border: "1px solid rgba(201,168,76,0.2)" }}
               >
@@ -293,7 +302,7 @@ export function LadderView({ businessId, tournamentId, participantType, tourname
                 </p>
                 <p className="text-[11px] mt-0.5" style={{ color: "rgba(13,27,42,0.4)" }}>
                   Ganó: {c.winner ? displayName(c.winner) : "—"}
-                  {c.score1 !== null && c.score2 !== null && ` · ${c.score1}-${c.score2}`}
+                  {c.sets?.length ? ` · ${c.sets.map(s => `${s.s1}-${s.s2}`).join(", ")}` : (c.score1 !== null && c.score2 !== null ? ` · ${c.score1}-${c.score2}` : "")}
                 </p>
               </div>
               {c.winner?.id === c.participant1?.id && (
@@ -364,15 +373,33 @@ export function LadderView({ businessId, tournamentId, participantType, tourname
               {resultChallenge.participant1 ? displayName(resultChallenge.participant1) : "?"} <span style={{ color: GOLD, fontWeight: 700 }}>vs</span> {resultChallenge.participant2 ? displayName(resultChallenge.participant2) : "?"}
             </div>
             <form onSubmit={saveResult} className="space-y-3">
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <label className={labelCls} style={{ color: "rgba(13,27,42,0.5)" }}>Sets retador</label>
-                  <input type="text" value={score1} onChange={e => setScore1(e.target.value)} placeholder="ej. 6" className={inputCls} style={inputStyle} />
+              {/* Entrada por sets */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className={labelCls} style={{ color: "rgba(13,27,42,0.5)" }}>Sets</label>
+                  <button type="button" onClick={() => setSets(p => [...p, { s1: "", s2: "" }])} className="text-[10px] font-bold px-2 py-0.5 rounded-lg" style={{ background: "rgba(201,168,76,0.1)", color: GOLD }}>+ Set</button>
                 </div>
-                <div className="flex-1">
-                  <label className={labelCls} style={{ color: "rgba(13,27,42,0.5)" }}>Sets defensor</label>
-                  <input type="text" value={score2} onChange={e => setScore2(e.target.value)} placeholder="ej. 4" className={inputCls} style={inputStyle} />
+                <div className="grid grid-cols-[auto_1fr_auto_1fr_auto] gap-x-1 gap-y-1 items-center mb-1">
+                  <div /><p className="text-[10px] text-center font-semibold truncate" style={{ color: "rgba(13,27,42,0.4)" }}>{resultChallenge.participant1 ? displayName(resultChallenge.participant1) : "Retador"}</p>
+                  <div /><p className="text-[10px] text-center font-semibold truncate" style={{ color: "rgba(13,27,42,0.4)" }}>{resultChallenge.participant2 ? displayName(resultChallenge.participant2) : "Defensor"}</p>
+                  <div />
                 </div>
+                {sets.map((s, idx) => (
+                  <div key={idx} className="grid grid-cols-[auto_1fr_auto_1fr_auto] gap-x-1 gap-y-1 items-center mb-1">
+                    <span className="text-[10px] font-semibold w-5 text-right" style={{ color: "rgba(13,27,42,0.3)" }}>{idx + 1}</span>
+                    <input type="number" min="0" max="99" value={s.s1} placeholder="0"
+                      onChange={e => { const n = sets.map((x, i) => i === idx ? { ...x, s1: e.target.value } : x); setSets(n); autoDetectWinner(n, resultChallenge) }}
+                      className="rounded-xl px-2 py-2 text-center text-base font-black outline-none"
+                      style={{ background: Number(s.s1) > Number(s.s2) ? "rgba(201,168,76,0.1)" : "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.12)", color: NAVY }} />
+                    <span className="text-center text-xs font-bold w-4" style={{ color: "rgba(13,27,42,0.25)" }}>–</span>
+                    <input type="number" min="0" max="99" value={s.s2} placeholder="0"
+                      onChange={e => { const n = sets.map((x, i) => i === idx ? { ...x, s2: e.target.value } : x); setSets(n); autoDetectWinner(n, resultChallenge) }}
+                      className="rounded-xl px-2 py-2 text-center text-base font-black outline-none"
+                      style={{ background: Number(s.s2) > Number(s.s1) ? "rgba(201,168,76,0.1)" : "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.12)", color: NAVY }} />
+                    {sets.length > 1 && <button type="button" onClick={() => setSets(p => p.filter((_, i) => i !== idx))}><X className="w-3 h-3" style={{ color: "rgba(13,27,42,0.3)" }} /></button>}
+                    {sets.length === 1 && <div className="w-3" />}
+                  </div>
+                ))}
               </div>
               <div>
                 <label className={labelCls} style={{ color: "rgba(13,27,42,0.5)" }}>Ganador</label>

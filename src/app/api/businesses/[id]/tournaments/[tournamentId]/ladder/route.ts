@@ -123,9 +123,18 @@ export async function PATCH(req: Request, { params }: Params) {
     const defenderPos = defender.ladderPosition ?? 999
 
     await prisma.$transaction(async (tx) => {
+      const validSets = Array.isArray(body.sets) ? body.sets : null
+      const setsP1 = validSets ? validSets.filter((s: { s1: number; s2: number }) => s.s1 > s.s2).length : null
+      const setsP2 = validSets ? validSets.filter((s: { s1: number; s2: number }) => s.s2 > s.s1).length : null
       await tx.tournamentMatch.update({
         where: { id: body.matchId },
-        data: { winnerId: body.winnerId, status: "FINISHED", score: body.score ?? null },
+        data: {
+          winnerId: body.winnerId,
+          status: "FINISHED",
+          sets: validSets ?? undefined,
+          score1: setsP1 !== null ? String(setsP1) : undefined,
+          score2: setsP2 !== null ? String(setsP2) : undefined,
+        },
       })
 
       if (body.winnerId === challenger.id) {

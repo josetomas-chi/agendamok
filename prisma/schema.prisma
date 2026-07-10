@@ -1127,6 +1127,7 @@ model TournamentMatch {
   winnerId       String?
   score1         String?
   score2         String?
+  sets           Json?
   courtId        String?
   courtNumber    Int?
   scheduledTime  DateTime?

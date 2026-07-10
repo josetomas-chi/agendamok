@@ -17,7 +17,7 @@ type Category = { id: string; name: string; description: string | null; groupCou
 type Participant = { id: string; name: string; players: { name: string }[]; seed: number | null; status: string; group: string | null; categoryId: string | null }
 type Match = {
   id: string; round: number; matchNumber: number; status: string; stage: string; group: string | null; categoryId: string | null
-  score1: string | null; score2: string | null; courtNumber: number | null; scheduledTime: string | null
+  score1: string | null; score2: string | null; sets: { s1: number; s2: number }[] | null; courtNumber: number | null; scheduledTime: string | null
   participant1: Participant | null; participant2: Participant | null; winner: Participant | null
 }
 type Tournament = {
@@ -77,12 +77,34 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
 
   // Result
   const [resultMatch, setResultMatch] = useState<Match | null>(null)
-  const [score1, setScore1] = useState("")
-  const [score2, setScore2] = useState("")
+  const [sets, setSets] = useState<{ s1: string; s2: string }[]>([{ s1: "", s2: "" }])
   const [winnerId, setWinnerId] = useState("")
   const [editCourt, setEditCourt] = useState("")
   const [editTime, setEditTime] = useState("")
   const [savingResult, setSavingResult] = useState(false)
+
+  function openResultModal(match: Match) {
+    setResultMatch(match)
+    setWinnerId(match.winner?.id ?? "")
+    setSets(match.sets?.length ? match.sets.map(s => ({ s1: String(s.s1), s2: String(s.s2) })) : [{ s1: "", s2: "" }])
+    setEditCourt(match.courtNumber ? String(match.courtNumber) : "")
+    setEditTime(match.scheduledTime ? new Date(match.scheduledTime).toISOString().slice(0, 16) : "")
+  }
+
+  function updateSet(idx: number, key: "s1" | "s2", val: string) {
+    setSets(prev => prev.map((s, i) => i === idx ? { ...s, [key]: val } : s))
+  }
+
+  function addSet() { setSets(prev => [...prev, { s1: "", s2: "" }]) }
+  function removeSet(idx: number) { setSets(prev => prev.filter((_, i) => i !== idx)) }
+
+  // Derivar ganador automáticamente según sets ganados
+  function autoDetectWinner(newSets: { s1: string; s2: string }[], match: Match) {
+    const setsP1 = newSets.filter(s => Number(s.s1) > Number(s.s2)).length
+    const setsP2 = newSets.filter(s => Number(s.s2) > Number(s.s1)).length
+    if (setsP1 > setsP2 && match.participant1) setWinnerId(match.participant1.id)
+    else if (setsP2 > setsP1 && match.participant2) setWinnerId(match.participant2.id)
+  }
 
   const load = useCallback(async () => {
     const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}`)
@@ -226,16 +248,22 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
 
   async function handleSaveResult() {
     if (!resultMatch || !winnerId) { toast.error("Selecciona el ganador"); return }
+    const validSets = sets.filter(s => s.s1 !== "" && s.s2 !== "").map(s => ({ s1: Number(s.s1), s2: Number(s.s2) }))
+    const setsP1 = validSets.filter(s => s.s1 > s.s2).length
+    const setsP2 = validSets.filter(s => s.s2 > s.s1).length
     setSavingResult(true)
     const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}/matches/${resultMatch.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        score1, score2, winnerId, status: "FINISHED",
+        sets: validSets.length > 0 ? validSets : null,
+        score1: validSets.length > 0 ? String(setsP1) : null,
+        score2: validSets.length > 0 ? String(setsP2) : null,
+        winnerId, status: "FINISHED",
         courtNumber: editCourt ? Number(editCourt) : null,
         scheduledTime: editTime || null,
       }),
     })
-    if (r.ok) { toast.success("Resultado guardado"); setResultMatch(null); setScore1(""); setScore2(""); setWinnerId(""); setEditCourt(""); setEditTime(""); load() }
+    if (r.ok) { toast.success("Resultado guardado"); setResultMatch(null); setSets([{ s1: "", s2: "" }]); setWinnerId(""); setEditCourt(""); setEditTime(""); load() }
     else { const d = await r.json(); toast.error(d.error || "Error") }
     setSavingResult(false)
   }
@@ -695,14 +723,7 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
                       <div style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
                         {gMatches.map(m => (
                           <MatchRow key={m.id} match={m} canEdit={tournament.status === "IN_PROGRESS"}
-                            onEdit={() => {
-                              setResultMatch(m)
-                              setScore1(m.score1 ?? "")
-                              setScore2(m.score2 ?? "")
-                              setWinnerId(m.winner?.id ?? "")
-                              setEditCourt(m.courtNumber ? String(m.courtNumber) : "")
-                              setEditTime(m.scheduledTime ? new Date(m.scheduledTime).toISOString().slice(0,16) : "")
-                            }} />
+                            onEdit={() => openResultModal(m)} />
                         ))}
                       </div>
                     )}
@@ -769,14 +790,7 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
                 <div className="space-y-2">
                   {(tournament.format === "ROUND_ROBIN" ? matches : knockoutMatches.filter(m => m.round === r)).map(m => (
                     <MatchRow key={m.id} match={m} canEdit={tournament.status === "IN_PROGRESS"}
-                      onEdit={() => {
-                              setResultMatch(m)
-                              setScore1(m.score1 ?? "")
-                              setScore2(m.score2 ?? "")
-                              setWinnerId(m.winner?.id ?? "")
-                              setEditCourt(m.courtNumber ? String(m.courtNumber) : "")
-                              setEditTime(m.scheduledTime ? new Date(m.scheduledTime).toISOString().slice(0,16) : "")
-                            }} />
+                      onEdit={() => openResultModal(m)} />
                   ))}
                 </div>
               </div>
@@ -825,16 +839,61 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
             )}
 
             <div style={{ borderTop: "1px solid rgba(13,27,42,0.08)", paddingTop: 8 }}>
-              <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "rgba(13,27,42,0.4)" }}>Resultado</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <input value={score1} onChange={e => setScore1(e.target.value)} placeholder="0"
-                className="flex-1 rounded-xl px-3 py-2 text-center text-lg font-black outline-none"
-                style={{ background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.12)", color: NAVY }} />
-              <span className="text-sm font-bold" style={{ color: "rgba(13,27,42,0.3)" }}>–</span>
-              <input value={score2} onChange={e => setScore2(e.target.value)} placeholder="0"
-                className="flex-1 rounded-xl px-3 py-2 text-center text-lg font-black outline-none"
-                style={{ background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.12)", color: NAVY }} />
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "rgba(13,27,42,0.4)" }}>Sets</p>
+                <button type="button" onClick={addSet} className="text-[10px] font-bold px-2 py-0.5 rounded-lg" style={{ background: "rgba(201,168,76,0.1)", color: GOLD }}>+ Set</button>
+              </div>
+              {/* Header */}
+              <div className="grid grid-cols-[1fr_2rem_1fr_1.5rem] gap-1 mb-1 px-1">
+                <p className="text-[10px] font-semibold truncate text-center" style={{ color: "rgba(13,27,42,0.4)" }}>{resultMatch.participant1?.name ?? "J1"}</p>
+                <div />
+                <p className="text-[10px] font-semibold truncate text-center" style={{ color: "rgba(13,27,42,0.4)" }}>{resultMatch.participant2?.name ?? "J2"}</p>
+                <div />
+              </div>
+              {sets.map((s, idx) => (
+                <div key={idx} className="grid grid-cols-[1fr_2rem_1fr_1.5rem] gap-1 mb-1 items-center">
+                  <input
+                    type="number" min="0" max="99" value={s.s1}
+                    onChange={e => {
+                      const next = sets.map((x, i) => i === idx ? { ...x, s1: e.target.value } : x)
+                      setSets(next)
+                      if (resultMatch) autoDetectWinner(next, resultMatch)
+                    }}
+                    placeholder="0"
+                    className="rounded-xl px-2 py-2 text-center text-base font-black outline-none w-full"
+                    style={{ background: Number(s.s1) > Number(s.s2) ? "rgba(201,168,76,0.1)" : "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.12)", color: NAVY }}
+                  />
+                  <span className="text-center text-xs font-bold" style={{ color: "rgba(13,27,42,0.25)" }}>–</span>
+                  <input
+                    type="number" min="0" max="99" value={s.s2}
+                    onChange={e => {
+                      const next = sets.map((x, i) => i === idx ? { ...x, s2: e.target.value } : x)
+                      setSets(next)
+                      if (resultMatch) autoDetectWinner(next, resultMatch)
+                    }}
+                    placeholder="0"
+                    className="rounded-xl px-2 py-2 text-center text-base font-black outline-none w-full"
+                    style={{ background: Number(s.s2) > Number(s.s1) ? "rgba(201,168,76,0.1)" : "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.12)", color: NAVY }}
+                  />
+                  {sets.length > 1 && (
+                    <button type="button" onClick={() => removeSet(idx)} className="flex items-center justify-center w-5 h-5 rounded-full" style={{ color: "rgba(13,27,42,0.3)" }}>
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              {/* Resumen sets */}
+              {sets.some(s => s.s1 !== "" && s.s2 !== "") && (
+                <div className="flex justify-between mt-2 px-1">
+                  <span className="text-xs font-black" style={{ color: NAVY }}>
+                    {sets.filter(s => Number(s.s1) > Number(s.s2)).length} sets
+                  </span>
+                  <span className="text-[10px]" style={{ color: "rgba(13,27,42,0.3)" }}>sets ganados</span>
+                  <span className="text-xs font-black" style={{ color: NAVY }}>
+                    {sets.filter(s => Number(s.s2) > Number(s.s1)).length} sets
+                  </span>
+                </div>
+              )}
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "rgba(13,27,42,0.4)" }}>Ganador *</p>
@@ -904,11 +963,27 @@ function MatchRow({ match: m, canEdit, onEdit }: { match: Match; canEdit: boolea
           </p>
           {m.winner?.id === m.participant1?.id && <Check className="w-3 h-3 flex-shrink-0" style={{ color: "#C9A84C" }} />}
         </div>
-        <div className="flex items-center gap-1 px-2 flex-shrink-0"
+        <div className="flex flex-col items-center justify-center px-2 flex-shrink-0 min-w-[60px]"
           style={{ borderLeft: "1px solid rgba(13,27,42,0.07)", borderRight: "1px solid rgba(13,27,42,0.07)" }}>
-          {isFinished
-            ? <p className="text-xs font-black whitespace-nowrap" style={{ color: "#0d1b2a" }}>{m.score1 ?? "–"} – {m.score2 ?? "–"}</p>
-            : <p className="text-[10px] font-semibold" style={{ color: "rgba(13,27,42,0.25)" }}>vs</p>}
+          {isFinished && m.sets?.length ? (
+            <>
+              <div className="flex gap-1">
+                {m.sets.map((s, i) => (
+                  <span key={i} className="text-[10px] font-black" style={{ color: s.s1 > s.s2 ? NAVY : "rgba(13,27,42,0.3)" }}>{s.s1}</span>
+                ))}
+              </div>
+              <div className="w-full" style={{ borderTop: "1px solid rgba(13,27,42,0.1)", margin: "2px 0" }} />
+              <div className="flex gap-1">
+                {m.sets.map((s, i) => (
+                  <span key={i} className="text-[10px] font-black" style={{ color: s.s2 > s.s1 ? NAVY : "rgba(13,27,42,0.3)" }}>{s.s2}</span>
+                ))}
+              </div>
+            </>
+          ) : isFinished ? (
+            <p className="text-xs font-black whitespace-nowrap" style={{ color: NAVY }}>{m.score1 ?? "–"} – {m.score2 ?? "–"}</p>
+          ) : (
+            <p className="text-[10px] font-semibold" style={{ color: "rgba(13,27,42,0.25)" }}>vs</p>
+          )}
         </div>
         <div className="flex-1 flex items-center gap-2 px-3 py-2 justify-end"
           style={{ background: m.winner?.id === m.participant2?.id ? "rgba(201,168,76,0.06)" : "transparent" }}>

@@ -9,13 +9,14 @@ export async function PATCH(req: Request, { params }: Params) {
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { tournamentId, matchId } = await params
   const body = await req.json()
-  const { score1, score2, winnerId, status, scheduledTime, courtId, courtNumber } = body
+  const { score1, score2, sets, winnerId, status, scheduledTime, courtId, courtNumber } = body
 
   const match = await prisma.tournamentMatch.update({
     where: { id: matchId },
     data: {
       ...(score1 !== undefined && { score1 }),
       ...(score2 !== undefined && { score2 }),
+      ...(sets !== undefined && { sets: sets ?? [] }),
       ...(winnerId !== undefined && { winnerId: winnerId || null }),
       ...(status !== undefined && { status }),
       ...(scheduledTime !== undefined && { scheduledTime: scheduledTime ? new Date(scheduledTime) : null }),
