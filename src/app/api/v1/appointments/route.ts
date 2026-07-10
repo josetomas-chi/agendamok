@@ -67,6 +67,17 @@ export async function POST(req: Request) {
   const start = new Date(startTime)
   const end = addMinutes(start, Number(service.duration))
 
+  const staffConflict = await prisma.appointment.findFirst({
+    where: {
+      staffId, deletedAt: null,
+      status: { in: ["PENDING", "CONFIRMED"] },
+      startTime: { lt: end }, endTime: { gt: start },
+    },
+  })
+  if (staffConflict) {
+    return NextResponse.json({ error: "El profesional ya tiene un turno en ese horario" }, { status: 409 })
+  }
+
   const appointment = await prisma.appointment.create({
     data: {
       businessId,
