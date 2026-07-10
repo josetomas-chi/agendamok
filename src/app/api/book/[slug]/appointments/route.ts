@@ -71,22 +71,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const timeStr = format(start, "HH:mm")
   const staffName = staffMember.name || "Sin asignar"
 
-  // Email al cliente
-  sendBookingConfirmation({
-    clientName,
-    clientEmail,
-    businessName: business.name,
-    serviceName: service.name,
-    staffName,
-    date: dateStr,
-    time: timeStr,
-    duration: Number(service.duration),
-    startTimeISO: start.toISOString(),
-  }).catch(console.error)
-
-  // Alerta al dueño del negocio
-  if (business.owner?.email) {
-    sendNewBookingAlert({
+  // Emails — awaited para que no se corten en serverless
+  await Promise.allSettled([
+    sendBookingConfirmation({
+      clientName,
+      clientEmail,
+      businessName: business.name,
+      serviceName: service.name,
+      staffName,
+      date: dateStr,
+      time: timeStr,
+      duration: Number(service.duration),
+      startTimeISO: start.toISOString(),
+    }),
+    business.owner?.email ? sendNewBookingAlert({
       ownerEmail: business.owner.email,
       ownerName: business.owner.name ?? business.name,
       businessName: business.name,
@@ -97,8 +95,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       staffName,
       date: dateStr,
       time: timeStr,
-    }).catch(console.error)
-  }
+    }) : Promise.resolve(),
+  ])
 
   return NextResponse.json({ appointment }, { status: 201 })
 }
