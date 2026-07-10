@@ -506,6 +506,7 @@ function ApptCard({ appt, compact, height, onDragStart, onApptClick }: {
   onApptClick?: (id: string) => void
 }) {
   const color = appt.staff?.color || appt.service.color || "#38bdf8"
+  if (typeof window !== "undefined") console.log("[appt color]", appt.id, "staff.color:", appt.staff?.color, "service.color:", appt.service.color, "→", color)
   const isCompleted = appt.status === "COMPLETED"
   const isPaid = appt.payment?.status === "PAID"
   return (
