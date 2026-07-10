@@ -111,16 +111,33 @@ export async function PATCH(req: Request, { params }: Params) {
     const challengerPos = challenger.ladderPosition ?? 999
     const defenderPos = defender.ladderPosition ?? 999
 
-    // Si gana el retador → intercambiar posiciones
     await prisma.$transaction(async (tx) => {
       await tx.tournamentMatch.update({
         where: { id: body.matchId },
         data: { winnerId: body.winnerId, status: "FINISHED", score: body.score ?? null },
       })
+
       if (body.winnerId === challenger.id) {
-        await tx.tournamentParticipant.update({ where: { id: challenger.id }, data: { ladderPosition: defenderPos } })
-        await tx.tournamentParticipant.update({ where: { id: defender.id }, data: { ladderPosition: challengerPos } })
+        // Ganó el retador:
+        // - El ganador sube al puesto del perdedor (defenderPos)
+        // - El perdedor y todos los que estaban entre ambos bajan un escalón
+        // Ejemplo: retador en pos 5 vence a defensor en pos 2
+        //   → retador pasa a pos 2
+        //   → quienes estaban en pos 2, 3, 4 pasan a pos 3, 4, 5
+        await tx.tournamentParticipant.updateMany({
+          where: {
+            tournamentId,
+            id: { not: challenger.id },
+            ladderPosition: { gte: defenderPos, lt: challengerPos },
+          },
+          data: { ladderPosition: { increment: 1 } },
+        })
+        await tx.tournamentParticipant.update({
+          where: { id: challenger.id },
+          data: { ladderPosition: defenderPos },
+        })
       }
+      // Si gana el defensor → no cambian posiciones
     })
 
     return NextResponse.json({ ok: true })
