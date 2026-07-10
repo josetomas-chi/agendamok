@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
-import { Check, X, Minus, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight, Star, Percent, MapPin, FileText, Stethoscope, Key, ChevronDown, Rocket, Scissors, HelpCircle, Menu, Layers, CalendarDays, Trophy, CalendarX2, UserCheck, TrendingUp, type LucideIcon } from "lucide-react"
+import { Check, X, Minus, Calendar, Users, CreditCard, Bell, BarChart3, Globe, ArrowRight, Star, Percent, MapPin, FileText, Stethoscope, Key, ChevronDown, Rocket, Scissors, HelpCircle, Menu, Layers, CalendarDays, Trophy, CalendarX2, UserCheck, TrendingUp, Dumbbell, ShieldCheck, type LucideIcon } from "lucide-react"
 import { MokIcon } from "@/components/ui/mok-icon"
 import { BusinessCarousel } from "@/components/landing/business-carousel"
 
@@ -206,13 +206,15 @@ function PricingToggle() {
             <ul className="space-y-3 text-sm text-left mb-8" style={{ color: "rgba(255,255,255,0.7)" }}>
               {[
                 "Canchas ilimitadas con tarifas valle/punta",
-                "Calendario de reservas con drag & drop",
-                "Membresías y control de socios",
+                "Calendario con drag & drop y reservas recurrentes",
+                "Entrenadores con color y perfil propio",
+                "Torneos con categorías e inscripciones",
+                "Membresías: planes y control de socios",
                 "Feriados con recargo automático",
-                "CRM de clientes",
+                "CRM de clientes y socios",
                 "Reportes de ocupación e ingresos",
+                "Pagos online con Flow + POS en local",
                 "Recordatorios automáticos por email",
-                "Pagos online integrados con Flow",
                 "Soporte prioritario",
               ].map(f => (
                 <li key={f} className="flex items-center gap-2.5">
@@ -658,14 +660,17 @@ export default function LandingPage() {
             </div>
 
             {/* Feature cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-16">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-16">
               {[
-                { icon: Layers,      title: "Canchas y tarifas",       desc: "Configura tus canchas con tarifas valle y punta según día y horario. Precios automáticos sin cálculos manuales." },
-                { icon: CalendarDays, title: "Calendario de reservas", desc: "Vista por cancha con drag & drop. Mueve reservas entre canchas y el precio se recalcula automáticamente." },
-                { icon: Trophy,      title: "Membresías",               desc: "Planes mensuales, trimestrales o anuales. Control de vencimientos y acceso diferenciado por tipo de socio." },
-                { icon: CalendarX2,  title: "Feriados con recargo",    desc: "Marca días feriados y define si cierras o abres con recargo porcentual o monto fijo. Se aplica solo." },
-                { icon: UserCheck,   title: "CRM de socios",           desc: "Historial de reservas y pagos por socio. Segmentación y comunicación directa desde el panel." },
-                { icon: TrendingUp,  title: "Reportes de ocupación",   desc: "Métricas de uso por cancha, ingresos por período y KPIs clave para tomar decisiones." },
+                { icon: Layers,       title: "Canchas y tarifas",        desc: "Configura tus canchas con tarifas valle y punta según día y horario. Los precios se aplican solos, sin cálculos manuales." },
+                { icon: CalendarDays, title: "Calendario de reservas",   desc: "Vista por cancha con drag & drop. Crea reservas abiertas o asignadas a cliente con un clic. Soporte para reservas recurrentes." },
+                { icon: Dumbbell,     title: "Entrenadores (Coaches)",   desc: "Asigna un coach a cualquier reserva. El bloque aparece con su color identificador en el calendario. Gestiona su perfil y disponibilidad." },
+                { icon: Trophy,       title: "Torneos",                  desc: "Crea torneos con categorías propias, inscribe equipos o jugadores y lleva el seguimiento desde el panel del club." },
+                { icon: ShieldCheck,  title: "Membresías",               desc: "Planes mensuales, trimestrales o anuales. Controla vencimientos, acceso diferenciado y el estado de cada socio en tiempo real." },
+                { icon: CalendarX2,   title: "Feriados con recargo",     desc: "Marca días feriados y define si cierras o cobras un recargo porcentual o monto fijo. Se aplica automáticamente a las reservas." },
+                { icon: UserCheck,    title: "CRM de socios",            desc: "Historial completo de reservas y pagos por socio. Busca por nombre, filtra por membresía y comunícate desde el panel." },
+                { icon: TrendingUp,   title: "Reportes de ocupación",    desc: "Ingresos por período, uso por cancha y KPIs clave para tomar decisiones con datos reales de tu club." },
+                { icon: CreditCard,   title: "Pagos integrados",         desc: "POS para cobros en el local y pagos online con Flow. Historial filtrable de todos los movimientos del club." },
               ].map(({ icon: Icon, title, desc }) => (
                 <div key={title} className="rounded-2xl p-6 transition-all hover:scale-[1.02]" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,168,76,0.15)" }}>
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: "rgba(201,168,76,0.15)" }}>
