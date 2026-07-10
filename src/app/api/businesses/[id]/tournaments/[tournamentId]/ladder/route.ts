@@ -4,8 +4,8 @@ import { prisma } from "@/lib/prisma"
 
 type Params = { params: Promise<{ id: string; tournamentId: string }> }
 
-// GET — ranking actual de la escalerilla
-export async function GET(_req: Request, { params }: Params) {
+// GET — ranking actual de la escalerilla (filtrado por categoryId si se pasa)
+export async function GET(req: Request, { params }: Params) {
   const { id, tournamentId } = await params
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
@@ -15,18 +15,28 @@ export async function GET(_req: Request, { params }: Params) {
   })
   if (!tournament) return NextResponse.json({ error: "No encontrado" }, { status: 404 })
 
+  const { searchParams } = new URL(req.url)
+  const categoryId = searchParams.get("categoryId") || null
+
   const participants = await prisma.tournamentParticipant.findMany({
-    where: { tournamentId, status: { not: "CANCELLED" } },
+    where: { tournamentId, status: { not: "CANCELLED" }, ...(categoryId ? { categoryId } : {}) },
     orderBy: [{ ladderPosition: "asc" }, { createdAt: "asc" }],
   })
 
+  const participantIds = participants.map(p => p.id)
+
   const challenges = await prisma.tournamentMatch.findMany({
-    where: { tournamentId, status: { not: "CANCELLED" } },
-    include: {
-      participant1: true,
-      participant2: true,
-      winner: true,
+    where: {
+      tournamentId,
+      status: { not: "CANCELLED" },
+      ...(categoryId ? {
+        OR: [
+          { participant1Id: { in: participantIds } },
+          { participant2Id: { in: participantIds } },
+        ]
+      } : {}),
     },
+    include: { participant1: true, participant2: true, winner: true },
     orderBy: { createdAt: "desc" },
   })
 
@@ -39,7 +49,7 @@ export async function POST(req: Request, { params }: Params) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
-  const { challengerId, defenderId, scheduledTime } = await req.json()
+  const { challengerId, defenderId, scheduledTime, categoryId } = await req.json()
   if (!challengerId || !defenderId) {
     return NextResponse.json({ error: "challengerId y defenderId son requeridos" }, { status: 400 })
   }
@@ -61,6 +71,7 @@ export async function POST(req: Request, { params }: Params) {
   const match = await prisma.tournamentMatch.create({
     data: {
       tournamentId,
+      categoryId: categoryId || null,
       round: 1,
       matchNumber: count + 1,
       participant1Id: challengerId,

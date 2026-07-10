@@ -28,11 +28,12 @@ type Challenge = {
   winner: Participant | null
 }
 
-export function LadderView({ businessId, tournamentId, participantType, tournamentStatus }: {
+export function LadderView({ businessId, tournamentId, participantType, tournamentStatus, categoryId }: {
   businessId: string
   tournamentId: string
   participantType: "INDIVIDUAL" | "PAIR" | "TEAM"
   tournamentStatus: string
+  categoryId: string | null
 }) {
   const [participants, setParticipants] = useState<Participant[]>([])
   const [challenges, setChallenges] = useState<Challenge[]>([])
@@ -55,7 +56,8 @@ export function LadderView({ businessId, tournamentId, participantType, tourname
   const [savingResult, setSavingResult] = useState(false)
 
   const load = useCallback(async () => {
-    const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}/ladder`)
+    const qs = categoryId ? `?categoryId=${categoryId}` : ""
+    const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}/ladder${qs}`)
     if (r.ok) {
       const d = await r.json()
       const sorted = [...d.participants].sort((a: Participant, b: Participant) =>
@@ -66,7 +68,7 @@ export function LadderView({ businessId, tournamentId, participantType, tourname
       setChallenges(d.challenges)
     }
     setLoading(false)
-  }, [businessId, tournamentId])
+  }, [businessId, tournamentId, categoryId])
 
   useEffect(() => { load() }, [load])
 
@@ -112,7 +114,7 @@ export function LadderView({ businessId, tournamentId, participantType, tourname
     const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}/ladder`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ challengerId, defenderId, scheduledTime: challengeTime || null }),
+      body: JSON.stringify({ challengerId, defenderId, scheduledTime: challengeTime || null, categoryId }),
     })
     if (r.ok) {
       toast.success("Desafío creado")
