@@ -24,12 +24,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const service = await prisma.service.findFirst({ where: { id: serviceId, businessId: business.id } })
   if (!service) return NextResponse.json({ error: "Servicio no encontrado" }, { status: 404 })
 
-  // Upsert client — actualiza nombre y teléfono con lo que ingresó en el formulario
-  const client = await prisma.client.upsert({
-    where: { businessId_email: { businessId: business.id, email: clientEmail } },
-    update: { name: clientName, phone: clientPhone || null },
-    create: { businessId: business.id, name: clientName, email: clientEmail, phone: clientPhone || null },
-  })
+  // Find or create client, actualizando nombre si ya existe
+  let client = await prisma.client.findFirst({ where: { businessId: business.id, email: clientEmail } })
+  if (client) {
+    client = await prisma.client.update({ where: { id: client.id }, data: { name: clientName, phone: clientPhone || null } })
+  } else {
+    client = await prisma.client.create({ data: { businessId: business.id, name: clientName, email: clientEmail, phone: clientPhone || null } })
+  }
 
   const start = new Date(startTime)
   const end = addMinutes(start, Number(service.duration))
