@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { CheckCircle2, XCircle, Phone, Clock, Loader2 } from "lucide-react"
+import { CheckCircle2, XCircle, Phone, Clock, Loader2, Dumbbell } from "lucide-react"
 import { toast } from "sonner"
 
 type Appt = {
@@ -13,12 +13,22 @@ type Appt = {
   service: { name: string; duration: number; color: string }
 }
 
+type CourtBooking = {
+  id: string
+  time: string
+  endTime: string
+  court: { name: string; color: string; sport: string | null }
+  client: { name: string; phone: string | null } | null
+}
+
 interface Props {
   appointments: Appt[]
+  courtBookings: CourtBooking[]
   today: string
   staffName: string
   businessName: string
   businessLogo: string | null
+  isSports: boolean
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -29,17 +39,13 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELLED: "Cancelado",
 }
 
-export function StaffAgendaClient({ appointments, today, staffName, businessName }: Props) {
+export function StaffAgendaClient({ appointments, courtBookings, today, staffName, businessName, isSports }: Props) {
   const [items, setItems] = useState(appointments)
   const [loading, setLoading] = useState<string | null>(null)
 
   async function updateStatus(id: string, status: "COMPLETED" | "NO_SHOW") {
     setLoading(id)
     try {
-      const appt = items.find(a => a.id === id)
-      if (!appt) return
-
-      // Find businessId via appointment — handled server-side
       const res = await fetch(`/api/staff/appointments/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -57,6 +63,7 @@ export function StaffAgendaClient({ appointments, today, staffName, businessName
 
   const pending = items.filter(a => ["PENDING", "CONFIRMED"].includes(a.status))
   const done = items.filter(a => ["COMPLETED", "NO_SHOW", "CANCELLED"].includes(a.status))
+  const totalEvents = pending.length + courtBookings.length
 
   return (
     <div className="min-h-screen bg-[#1a1a1e] text-white">
@@ -70,22 +77,59 @@ export function StaffAgendaClient({ appointments, today, staffName, businessName
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
-        {/* Pending */}
+
+        {/* Reservas de cancha — solo Sports */}
+        {isSports && courtBookings.length > 0 && (
+          <div>
+            <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <Dumbbell className="w-3 h-3" /> Clases en cancha ({courtBookings.length})
+            </h2>
+            <div className="space-y-3">
+              {courtBookings.map(b => (
+                <div key={b.id} className="bg-[#28282c] rounded-2xl p-4 border border-white/5">
+                  <div className="flex items-start gap-3">
+                    <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: b.court.color }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-white truncate">{b.court.name}</span>
+                        <span className="text-xs text-slate-400 flex-shrink-0 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />{b.time} – {b.endTime}
+                        </span>
+                      </div>
+                      {b.court.sport && (
+                        <p className="text-sm text-slate-400 mt-0.5">{b.court.sport}</p>
+                      )}
+                      {b.client && (
+                        <p className="text-sm text-slate-300 mt-1">{b.client.name}</p>
+                      )}
+                      {b.client?.phone && (
+                        <a href={`tel:${b.client.phone}`} className="inline-flex items-center gap-1 text-xs text-sky-400 mt-2">
+                          <Phone className="w-3 h-3" />{b.client.phone}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Turnos pendientes */}
         <div>
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">
-            Pendientes ({pending.length})
+            {isSports ? "Sesiones" : "Pendientes"} ({pending.length})
           </h2>
           {pending.length === 0 ? (
-            <div className="text-center py-10 text-slate-600 text-sm">Sin turnos pendientes para hoy</div>
+            <div className="text-center py-10 text-slate-600 text-sm">
+              {totalEvents === 0 ? "Sin actividad para hoy" : "Sin sesiones pendientes"}
+            </div>
           ) : (
             <div className="space-y-3">
               {pending.map(appt => (
                 <div key={appt.id} className="bg-[#28282c] rounded-2xl p-4 border border-white/5">
                   <div className="flex items-start gap-3">
-                    <div
-                      className="w-3 h-3 rounded-full mt-1 flex-shrink-0"
-                      style={{ backgroundColor: appt.service.color }}
-                    />
+                    <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: appt.service.color }} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-semibold text-white truncate">{appt.client.name}</span>
@@ -95,16 +139,12 @@ export function StaffAgendaClient({ appointments, today, staffName, businessName
                       </div>
                       <p className="text-sm text-slate-400 mt-0.5">{appt.service.name} · {appt.service.duration} min</p>
                       {appt.client.phone && (
-                        <a
-                          href={`tel:${appt.client.phone}`}
-                          className="inline-flex items-center gap-1 text-xs text-sky-400 mt-2"
-                        >
+                        <a href={`tel:${appt.client.phone}`} className="inline-flex items-center gap-1 text-xs text-sky-400 mt-2">
                           <Phone className="w-3 h-3" />{appt.client.phone}
                         </a>
                       )}
                     </div>
                   </div>
-
                   <div className="flex gap-2 mt-4">
                     <button
                       onClick={() => updateStatus(appt.id, "COMPLETED")}
@@ -129,7 +169,7 @@ export function StaffAgendaClient({ appointments, today, staffName, businessName
           )}
         </div>
 
-        {/* Done */}
+        {/* Finalizados */}
         {done.length > 0 && (
           <div>
             <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">
