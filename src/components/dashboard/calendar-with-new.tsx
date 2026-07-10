@@ -122,6 +122,7 @@ function ClientCombobox({ clients, value, onChange }: {
 }
 
 export function CalendarWithNew({ businessId, services, staff, clients, locations = [] }: Props) {
+  const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(DEFAULT_FORM)
   const [staffLocked, setStaffLocked] = useState(false)
@@ -137,6 +138,8 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
   const [payDiscount, setPayDiscount] = useState(0)
   const [paying, setPaying] = useState(false)
   const [segmentDiscounts, setSegmentDiscounts] = useState<Record<string, number>>({})
+
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     fetch(`/api/businesses/${businessId}`).then(r => r.json()).then(d => {
@@ -332,6 +335,8 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
   function formatTime(dt: Date | string) {
     return new Date(dt).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
   }
+
+  if (!mounted) return null
 
   return (
     <>
