@@ -486,6 +486,7 @@ function InfoEditor({ member, businessId, onSaved }: { member: StaffMember; busi
   const [form, setForm] = useState({
     specialty: member.specialty || "",
     bio: member.bio || "",
+    color: member.color || "#8b5cf6",
     commissionType: member.commissionType || "PERCENTAGE",
     commissionValue: member.commissionValue ?? 0,
   })
@@ -524,6 +525,15 @@ function InfoEditor({ member, businessId, onSaved }: { member: StaffMember; busi
         <textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
           rows={2} className="w-full rounded-md border border-input px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring resize-none"
           style={inputStyle} placeholder="Descripción del profesional..." />
+      </div>
+
+      <div>
+        <label className="text-[10px] text-muted-foreground">Color en calendario</label>
+        <div className="flex items-center gap-2 mt-0.5">
+          <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
+            className="w-8 h-8 rounded cursor-pointer border border-input bg-transparent p-0.5" />
+          <span className="text-xs text-muted-foreground">{form.color}</span>
+        </div>
       </div>
 
       <div>
