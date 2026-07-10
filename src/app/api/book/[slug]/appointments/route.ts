@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { after } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { addMinutes, format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -68,32 +69,34 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const timeStr = format(start, "HH:mm")
   const staffName = staffMember.name || "Sin asignar"
 
-  // Emails — awaited para que no se corten en serverless
-  await Promise.allSettled([
-    sendBookingConfirmation({
-      clientName,
-      clientEmail,
-      businessName: business.name,
-      serviceName: service.name,
-      staffName,
-      date: dateStr,
-      time: timeStr,
-      duration: Number(service.duration),
-      startTimeISO: start.toISOString(),
-    }),
-    business.owner?.email ? sendNewBookingAlert({
-      ownerEmail: business.owner.email,
-      ownerName: business.owner.name ?? business.name,
-      businessName: business.name,
-      clientName,
-      clientEmail,
-      clientPhone: clientPhone || undefined,
-      serviceName: service.name,
-      staffName,
-      date: dateStr,
-      time: timeStr,
-    }) : Promise.resolve(),
-  ])
+  // Emails después de responder — no bloquean la confirmación al cliente
+  after(async () => {
+    await Promise.allSettled([
+      sendBookingConfirmation({
+        clientName,
+        clientEmail,
+        businessName: business.name,
+        serviceName: service.name,
+        staffName,
+        date: dateStr,
+        time: timeStr,
+        duration: Number(service.duration),
+        startTimeISO: start.toISOString(),
+      }),
+      business.owner?.email ? sendNewBookingAlert({
+        ownerEmail: business.owner.email,
+        ownerName: business.owner.name ?? business.name,
+        businessName: business.name,
+        clientName,
+        clientEmail,
+        clientPhone: clientPhone || undefined,
+        serviceName: service.name,
+        staffName,
+        date: dateStr,
+        time: timeStr,
+      }) : Promise.resolve(),
+    ])
+  })
 
   return NextResponse.json({ appointment }, { status: 201 })
 }
