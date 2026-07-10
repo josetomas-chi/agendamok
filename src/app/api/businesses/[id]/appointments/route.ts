@@ -102,7 +102,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         // Use exception capacity instead of service capacity
         const overlapping = await prisma.appointment.count({
           where: {
-            staffId: data.staffId, serviceId: data.serviceId, deletedAt: null,
+            staffId: data.staffId, deletedAt: null,
             status: { in: ["PENDING", "CONFIRMED"] },
             startTime: { lt: endTime }, endTime: { gt: startTime },
           },
@@ -118,22 +118,39 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }
     }
 
+    // Verificar que el profesional no tenga otro turno que se superponga (cualquier servicio)
+    const staffConflict = await prisma.appointment.findFirst({
+      where: {
+        staffId: data.staffId, deletedAt: null,
+        status: { in: ["PENDING", "CONFIRMED"] },
+        startTime: { lt: endTime }, endTime: { gt: startTime },
+      },
+    })
+    if (staffConflict) {
+      return NextResponse.json(
+        { error: "El profesional ya tiene un turno en ese horario" },
+        { status: 409 }
+      )
+    }
+
     // Normal capacity check (only if no CAPACITY_OVERRIDE exception matched)
     const hasOverride = exceptions.some((ex: { type: string; startTime: string | null; endTime: string | null }) => ex.type === "CAPACITY_OVERRIDE" && (!ex.startTime || (ex.startTime <= apptTimeStr && ex.endTime! > apptTimeStr)))
     if (!hasOverride) {
       const capacity = service.capacity ?? 1
-      const overlapping = await prisma.appointment.count({
-        where: {
-          staffId: data.staffId, serviceId: data.serviceId, deletedAt: null,
-          status: { in: ["PENDING", "CONFIRMED"] },
-          startTime: { lt: endTime }, endTime: { gt: startTime },
-        },
-      })
-      if (overlapping >= capacity) {
-        return NextResponse.json(
-          { error: `Este horario ya está completo (capacidad máxima: ${capacity})` },
-          { status: 409 }
-        )
+      if (capacity > 1) {
+        const overlapping = await prisma.appointment.count({
+          where: {
+            staffId: data.staffId, serviceId: data.serviceId, deletedAt: null,
+            status: { in: ["PENDING", "CONFIRMED"] },
+            startTime: { lt: endTime }, endTime: { gt: startTime },
+          },
+        })
+        if (overlapping >= capacity) {
+          return NextResponse.json(
+            { error: `Este horario ya está completo (capacidad máxima: ${capacity})` },
+            { status: 409 }
+          )
+        }
       }
     }
 
