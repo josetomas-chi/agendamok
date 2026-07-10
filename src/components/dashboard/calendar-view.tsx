@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useRef, useEffect } from "react"
+import { useState, useMemo, useRef } from "react"
 import { format, startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth, isSameMonth, addMonths, subMonths, addWeeks, subWeeks } from "date-fns"
 import { es } from "date-fns/locale"
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
@@ -39,19 +39,11 @@ const WEEK_DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
 const SLOT_H = 30 // px per 30-min slot
 
 export function CalendarView({ appointments, staffMembers = [], businessId, onNewAppointment, onAppointmentMoved, onAppointmentClick }: Props) {
-  const [currentDate, setCurrentDate] = useState<Date | null>(null)
+  const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<"week" | "day">("day")
-  const [miniMonth, setMiniMonth] = useState<Date | null>(null)
-
-  useEffect(() => {
-    const now = new Date()
-    setCurrentDate(now)
-    setMiniMonth(now)
-  }, [])
+  const [miniMonth, setMiniMonth] = useState(new Date())
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null)
   const dragApptId = useRef<string | null>(null)
-
-  if (!currentDate || !miniMonth) return null
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
@@ -59,9 +51,9 @@ export function CalendarView({ appointments, staffMembers = [], businessId, onNe
 
   function navigate(dir: 1 | -1) {
     if (view === "week") {
-      setCurrentDate(d => d ? (dir === 1 ? addWeeks(d, 1) : subWeeks(d, 1)) : d)
+      setCurrentDate(d => dir === 1 ? addWeeks(d, 1) : subWeeks(d, 1))
     } else {
-      setCurrentDate(d => { if (!d) return d; const n = new Date(d); n.setDate(n.getDate() + dir); return n })
+      setCurrentDate(d => { const n = new Date(d); n.setDate(n.getDate() + dir); return n })
     }
   }
 
@@ -514,7 +506,6 @@ function ApptCard({ appt, compact, height, onDragStart, onApptClick }: {
   onApptClick?: (id: string) => void
 }) {
   const color = appt.staff?.color || appt.service.color || "#38bdf8"
-  if (typeof window !== "undefined") console.log("[appt color]", appt.id, "staff.color:", appt.staff?.color, "service.color:", appt.service.color, "→", color)
   const isCompleted = appt.status === "COMPLETED"
   const isPaid = appt.payment?.status === "PAID"
   return (
