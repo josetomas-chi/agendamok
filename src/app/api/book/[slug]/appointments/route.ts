@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { addMinutes } from "date-fns"
+import { addMinutes, format } from "date-fns"
+import { es } from "date-fns/locale"
+import { sendBookingConfirmation, sendNewBookingAlert } from "@/lib/email"
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
   const business = await prisma.business.findUnique({
     where: { slug, isActive: true, deletedAt: null },
-    select: { id: true, name: true },
+    select: { id: true, name: true, owner: { select: { name: true, email: true } } },
   })
   if (!business) return NextResponse.json({ error: "No encontrado" }, { status: 404 })
 
@@ -46,6 +48,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   })
   if (conflict) return NextResponse.json({ error: "Ese horario ya no está disponible" }, { status: 409 })
 
+  const staffRecord = await prisma.staffMember.findUnique({
+    where: { id: staffId }, select: { user: { select: { name: true } } },
+  }).catch(() => null)
+  const staffMember = { name: staffRecord?.user.name ?? "" }
+
   const appointment = await prisma.appointment.create({
     data: {
       businessId: business.id,
@@ -59,6 +66,39 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     },
     select: { id: true, startTime: true, endTime: true, status: true },
   })
+
+  const dateStr = format(start, "EEEE d 'de' MMMM yyyy", { locale: es })
+  const timeStr = format(start, "HH:mm")
+  const staffName = staffMember.name || "Sin asignar"
+
+  // Email al cliente
+  sendBookingConfirmation({
+    clientName,
+    clientEmail,
+    businessName: business.name,
+    serviceName: service.name,
+    staffName,
+    date: dateStr,
+    time: timeStr,
+    duration: Number(service.duration),
+    startTimeISO: start.toISOString(),
+  }).catch(console.error)
+
+  // Alerta al dueño del negocio
+  if (business.owner?.email) {
+    sendNewBookingAlert({
+      ownerEmail: business.owner.email,
+      ownerName: business.owner.name ?? business.name,
+      businessName: business.name,
+      clientName,
+      clientEmail,
+      clientPhone: clientPhone || undefined,
+      serviceName: service.name,
+      staffName,
+      date: dateStr,
+      time: timeStr,
+    }).catch(console.error)
+  }
 
   return NextResponse.json({ appointment }, { status: 201 })
 }
