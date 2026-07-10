@@ -1,21 +1,32 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { format, addDays, startOfToday, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
-import { Check, ChevronLeft, ChevronRight, Clock, MapPin, Calendar, User, Loader2, Download, Share2 } from "lucide-react"
+import {
+  Check, ChevronLeft, ChevronRight, Clock, MapPin, Calendar, User,
+  Loader2, Download, Share2, Search, Phone, Star, ChevronDown, X
+} from "lucide-react"
 import { ChatWidget } from "@/components/booking/chat-widget"
 
-type Service = { id: string; name: string; description: string | null; duration: number; price: number; color: string }
-type Staff = { id: string; color: string; user: { name: string | null; image: string | null } }
+type Category = { id: string; name: string; order: number }
+type Service = {
+  id: string; name: string; description: string | null; duration: number
+  price: number; color: string; categoryId: string | null; category: Category | null
+}
+type Staff = {
+  id: string; color: string; specialty: string | null; bio: string | null
+  user: { name: string | null; image: string | null }
+}
 type Business = {
   id: string; name: string; category: string; description: string | null
-  logo: string | null; phone: string | null; address: string | null; city: string | null
+  logo: string | null; coverImage: string | null; phone: string | null
+  address: string | null; city: string | null
   onlinePaymentsEnabled: boolean; primaryColor: string | null
   services: Service[]; staff: Staff[]
 }
 
-type Step = "service" | "staff" | "datetime" | "form" | "confirmed"
+type Step = "home" | "staff" | "datetime" | "form" | "confirmed"
 type PayMethod = "online" | "local"
 
 export default function BookingClient({ slug }: { slug: string }) {
@@ -23,15 +34,18 @@ export default function BookingClient({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
-  const [step, setStep] = useState<Step>("service")
+  const [step, setStep] = useState<Step>("home")
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null)
-  const [selectedDate, setSelectedDate] = useState<string>("")
-  const [selectedTime, setSelectedTime] = useState<string>("")
+  const [selectedDate, setSelectedDate] = useState("")
+  const [selectedTime, setSelectedTime] = useState("")
   const [slots, setSlots] = useState<string[]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [weekOffset, setWeekOffset] = useState(0)
+  const [searchQ, setSearchQ] = useState("")
+  const [activeCategory, setActiveCategory] = useState<string>("all")
   const today = startOfToday()
+  const catBarRef = useRef<HTMLDivElement>(null)
 
   const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "" })
   const [payMethod, setPayMethod] = useState<PayMethod>("local")
@@ -81,7 +95,6 @@ export default function BookingClient({ slug }: { slug: string }) {
       setSubmitting(false)
       return
     }
-
     if (payMethod === "online" && business?.onlinePaymentsEnabled) {
       const apptData = await r.json()
       const payR = await fetch(`/api/book/${slug}/pay`, {
@@ -96,14 +109,9 @@ export default function BookingClient({ slug }: { slug: string }) {
       })
       if (payR.ok) {
         const payData = await payR.json()
-        if (payData.url) {
-          window.location.href = `${payData.url}?token=${payData.token}`
-          return
-        }
+        if (payData.url) { window.location.href = `${payData.url}?token=${payData.token}`; return }
       }
-      // Fall through to confirmed if payment redirect fails
     }
-
     setStep("confirmed")
     setSubmitting(false)
   }
@@ -115,387 +123,534 @@ export default function BookingClient({ slug }: { slug: string }) {
     dtStart.setHours(h, m, 0, 0)
     const dtEnd = new Date(dtStart.getTime() + selectedService.duration * 60000)
     const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"
-    const ics = [
-      "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//AgendaMok//ES",
-      "BEGIN:VEVENT",
-      `DTSTART:${fmt(dtStart)}`,
-      `DTEND:${fmt(dtEnd)}`,
+    const ics = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//AgendaMok//ES","BEGIN:VEVENT",
+      `DTSTART:${fmt(dtStart)}`,`DTEND:${fmt(dtEnd)}`,
       `SUMMARY:${selectedService.name} en ${business.name}`,
-      `DESCRIPTION:Turno reservado via AgendaMok`,
+      "DESCRIPTION:Turno reservado via AgendaMok",
       business.address ? `LOCATION:${business.address}` : "",
-      "END:VEVENT", "END:VCALENDAR",
-    ].filter(Boolean).join("\r\n")
+      "END:VEVENT","END:VCALENDAR"].filter(Boolean).join("\r\n")
     const blob = new Blob([ics], { type: "text/calendar" })
     const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url; a.download = "turno.ics"; a.click()
+    const a = document.createElement("a"); a.href = url; a.download = "turno.ics"; a.click()
     URL.revokeObjectURL(url)
   }
 
   function resetBooking() {
-    setStep("service")
-    setSelectedService(null)
-    setSelectedStaff(null)
-    setSelectedDate("")
-    setSelectedTime("")
+    setStep("home"); setSelectedService(null); setSelectedStaff(null)
+    setSelectedDate(""); setSelectedTime(""); setSearchQ(""); setWeekOffset(0)
     setForm({ name: "", email: "", phone: "", notes: "" })
+  }
+
+  function pickService(s: Service) {
+    setSelectedService(s)
+    setStep("staff")
+    window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(today, weekOffset * 7 + i))
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1c1c1e]">
-      <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "#0f0f11" }}>
+      <div className="flex flex-col items-center gap-3">
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#38bdf8" }} />
+        <p className="text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>Cargando...</p>
+      </div>
     </div>
   )
 
   if (notFound || !business) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1c1c1e] text-white/50">
-      <div className="text-center">
-        <p className="text-lg font-medium text-white/70">Negocio no encontrado</p>
-        <p className="text-sm mt-1">El link que seguiste no existe o esta inactivo.</p>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "#0f0f11" }}>
+      <div className="text-center space-y-2">
+        <p className="text-lg font-semibold" style={{ color: "rgba(255,255,255,0.7)" }}>Negocio no encontrado</p>
+        <p className="text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>El link que seguiste no existe o está inactivo.</p>
       </div>
     </div>
   )
 
   const brand = business.primaryColor || "#38bdf8"
 
+  // Service categories
+  const categories: Category[] = []
+  const seen = new Set<string>()
+  for (const s of business.services) {
+    if (s.category && !seen.has(s.category.id)) {
+      seen.add(s.category.id)
+      categories.push(s.category)
+    }
+  }
+  categories.sort((a, b) => a.order - b.order)
+
+  const filteredServices = business.services.filter(s => {
+    const matchesSearch = !searchQ || s.name.toLowerCase().includes(searchQ.toLowerCase()) || s.description?.toLowerCase().includes(searchQ.toLowerCase())
+    const matchesCat = activeCategory === "all" || s.categoryId === activeCategory
+    return matchesSearch && matchesCat
+  })
+
+  // Group filtered by category
+  const grouped: { cat: Category | null; services: Service[] }[] = []
+  const noCategory = filteredServices.filter(s => !s.categoryId)
+  if (noCategory.length > 0 && activeCategory === "all") grouped.push({ cat: null, services: noCategory })
+  for (const cat of categories) {
+    const svcs = filteredServices.filter(s => s.categoryId === cat.id)
+    if (svcs.length > 0) grouped.push({ cat, services: svcs })
+  }
+
   return (
-    <div className="min-h-screen bg-[#1c1c1e] text-[#f4f4f5]" style={{ "--brand": brand, "--brand-dim": brand + "33", "--brand-mid": brand + "20" } as React.CSSProperties}>
+    <div style={{ background: "#0f0f11", minHeight: "100vh", color: "#f4f4f5" }}>
       <ChatWidget businessId={business.id} businessName={business.name} />
-      <div className="border-b border-white/10 bg-[#2c2c30]">
-        <div className="max-w-2xl mx-auto px-4 py-5 flex items-center gap-4">
-          {business.logo ? (
-            <img src={business.logo} alt={business.name} className="w-12 h-12 rounded-xl object-cover" />
-          ) : (
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "var(--brand-mid)" }}>
-              <Calendar className="w-6 h-6" style={{ color: "var(--brand)" }} />
+
+      {/* ── HERO ─────────────────────────────────────────────── */}
+      {step === "home" && (
+        <>
+          <div className="relative" style={{ height: 260 }}>
+            {business.coverImage ? (
+              <img src={business.coverImage} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${brand}22, ${brand}08)` }} />
+            )}
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(15,15,17,0.1) 0%, rgba(15,15,17,0.7) 70%, #0f0f11 100%)" }} />
+            {/* Logo */}
+            <div className="absolute bottom-0 left-0 right-0 px-5 pb-5 flex items-end gap-4">
+              {business.logo ? (
+                <img src={business.logo} alt={business.name} className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 shadow-xl" style={{ border: "2px solid rgba(255,255,255,0.15)" }} />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-xl" style={{ background: brand, border: "2px solid rgba(255,255,255,0.15)" }}>
+                  <span className="text-2xl font-black text-white">{business.name[0]}</span>
+                </div>
+              )}
+              <div className="pb-1">
+                <h1 className="text-2xl font-black leading-tight">{business.name}</h1>
+                <p className="text-sm mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>{business.category}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Business info strip */}
+          <div className="px-5 pt-4 pb-2 flex flex-wrap gap-x-4 gap-y-1.5">
+            {(business.address || business.city) && (
+              <span className="flex items-center gap-1.5 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                {[business.address, business.city].filter(Boolean).join(", ")}
+              </span>
+            )}
+            {business.phone && (
+              <a href={`tel:${business.phone}`} className="flex items-center gap-1.5 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                <Phone className="w-3.5 h-3.5 flex-shrink-0" /> {business.phone}
+              </a>
+            )}
+            {business.description && (
+              <p className="w-full text-sm mt-1" style={{ color: "rgba(255,255,255,0.45)" }}>{business.description}</p>
+            )}
+          </div>
+
+          {/* ── STAFF ──────────────────────────────────────────── */}
+          {business.staff.length > 0 && (
+            <div className="mt-6">
+              <h2 className="px-5 text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "rgba(255,255,255,0.35)" }}>Nuestro equipo</h2>
+              <div className="flex gap-3 px-5 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+                {business.staff.map(s => (
+                  <div key={s.id} className="flex flex-col items-center gap-2 flex-shrink-0" style={{ width: 72 }}>
+                    {s.user.image ? (
+                      <img src={s.user.image} alt={s.user.name || ""} className="w-14 h-14 rounded-full object-cover" style={{ border: `2.5px solid ${s.color}` }} />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white" style={{ background: s.color + "33", border: `2.5px solid ${s.color}` }}>
+                        {s.user.name?.[0] ?? "?"}
+                      </div>
+                    )}
+                    <div className="text-center">
+                      <p className="text-xs font-semibold leading-tight" style={{ color: "#f4f4f5" }}>{s.user.name?.split(" ")[0]}</p>
+                      {s.specialty && <p className="text-[10px] leading-tight mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{s.specialty}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-          <div>
-            <h1 className="font-bold text-lg">{business.name}</h1>
-            <p className="text-sm text-white/40">{business.category}</p>
-          </div>
-        </div>
-      </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        {step !== "confirmed" && (
-          <div className="flex items-center gap-2 mb-8">
-            {(["service", "staff", "datetime", "form"] as Step[]).map((s, i) => {
-              const stepIndex = ["service", "staff", "datetime", "form"].indexOf(step)
-              const isDone = i < stepIndex
-              const isCurrent = s === step
-              return (
-                <React.Fragment key={s}>
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 transition-all ${
-                    isDone ? "text-white" :
-                    isCurrent ? "text-white/90" :
-                    "bg-white/5 text-white/30"
-                  }`}
-                  style={isDone ? { background: "var(--brand)" } : isCurrent ? { background: "var(--brand-mid)", border: "1px solid var(--brand)", color: "var(--brand)" } : {}}>
-                    {isDone ? <Check className="w-3.5 h-3.5" /> : i + 1}
-                  </div>
-                  {i < 3 && <div className="flex-1 h-px" style={{ background: i < stepIndex ? "var(--brand-dim)" : "rgba(255,255,255,0.1)" }} />}
-                </React.Fragment>
-              )
-            })}
-          </div>
-        )}
+          {/* ── SERVICES ───────────────────────────────────────── */}
+          <div className="mt-8">
+            <h2 className="px-5 text-xs font-bold uppercase tracking-widest mb-4" style={{ color: "rgba(255,255,255,0.35)" }}>Servicios</h2>
 
-        {step === "service" && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Elige un servicio</h2>
-            <div className="grid gap-3">
-              {business.services.map(s => (
-                <button key={s.id} onClick={() => { setSelectedService(s); setStep("staff") }}
-                  className="flex items-center gap-4 p-4 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] transition-all text-left">
-                  <div className="w-3 h-10 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold">{s.name}</p>
-                    {s.description && <p className="text-sm text-white/40 truncate">{s.description}</p>}
-                    <span className="text-xs text-white/40 flex items-center gap-1 mt-1">
-                      <Clock className="w-3 h-3" /> {s.duration} min
-                    </span>
+            {/* Search */}
+            <div className="px-5 mb-4">
+              <div className="flex items-center gap-2 px-3.5 rounded-2xl" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <Search className="w-4 h-4 flex-shrink-0" style={{ color: "rgba(255,255,255,0.3)" }} />
+                <input
+                  value={searchQ}
+                  onChange={e => setSearchQ(e.target.value)}
+                  placeholder="Buscar servicio..."
+                  className="flex-1 py-2.5 text-sm bg-transparent outline-none placeholder:text-white/30"
+                  style={{ color: "#f4f4f5" }}
+                />
+                {searchQ && <button onClick={() => setSearchQ("")}><X className="w-4 h-4" style={{ color: "rgba(255,255,255,0.3)" }} /></button>}
+              </div>
+            </div>
+
+            {/* Category chips */}
+            {categories.length > 0 && (
+              <div ref={catBarRef} className="flex gap-2 px-5 overflow-x-auto pb-1 mb-4" style={{ scrollbarWidth: "none" }}>
+                {[{ id: "all", name: "Todos" }, ...categories].map(cat => (
+                  <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
+                    className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
+                    style={activeCategory === cat.id
+                      ? { background: brand, color: "#fff" }
+                      : { background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Service groups */}
+            <div className="px-5 space-y-6 pb-24">
+              {grouped.length === 0 && (
+                <p className="text-sm py-8 text-center" style={{ color: "rgba(255,255,255,0.3)" }}>Sin servicios que coincidan</p>
+              )}
+              {grouped.map(({ cat, services }) => (
+                <div key={cat?.id ?? "uncategorized"}>
+                  {cat && <h3 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: brand }}>{cat.name}</h3>}
+                  <div className="space-y-2">
+                    {services.map(s => (
+                      <ServiceCard key={s.id} service={s} brand={brand} onSelect={() => pickService(s)} />
+                    ))}
                   </div>
-                  <p className="font-semibold flex-shrink-0" style={{ color: "var(--brand)" }}>${Number(s.price).toLocaleString("es-CL")}</p>
-                </button>
+                </div>
               ))}
             </div>
           </div>
-        )}
 
-        {step === "staff" && (
-          <div className="space-y-4">
-            <button onClick={() => setStep("service")} className="flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors">
-              <ChevronLeft className="w-4 h-4" /> Cambiar servicio
+          {/* Powered by */}
+          <div className="fixed bottom-0 left-0 right-0 py-3 flex items-center justify-center gap-1.5" style={{ background: "linear-gradient(to top, #0f0f11, transparent)", pointerEvents: "none" }}>
+            <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.2)" }}>Reservas por</span>
+            <span className="text-[10px] font-black" style={{ color: "rgba(255,255,255,0.35)" }}>AgendaMok</span>
+          </div>
+        </>
+      )}
+
+      {/* ── STEP: STAFF ────────────────────────────────────────── */}
+      {step === "staff" && selectedService && (
+        <div className="max-w-lg mx-auto">
+          <StepHeader brand={brand} onBack={() => setStep("home")} label={selectedService.name} sub={`${selectedService.duration} min · $${Number(selectedService.price).toLocaleString("es-CL")}`} color={selectedService.color} />
+          <div className="px-5 pb-10 space-y-3">
+            <h2 className="text-base font-bold mb-4">¿Con quién quieres atenderte?</h2>
+            <button onClick={() => { setSelectedStaff(null); setStep("datetime") }}
+              className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(255,255,255,0.08)" }}>
+                <Star className="w-5 h-5" style={{ color: brand }} />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Sin preferencia</p>
+                <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>El primer disponible</p>
+              </div>
             </button>
-            <h2 className="text-lg font-semibold">Elige un profesional</h2>
-            <div className="grid gap-3">
-              <button onClick={() => { setSelectedStaff(null); setStep("datetime") }}
-                className="flex items-center gap-4 p-4 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] transition-all text-left">
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                  <User className="w-5 h-5 text-white/40" />
-                </div>
-                <div>
-                  <p className="font-medium">Sin preferencia</p>
-                  <p className="text-xs text-white/40">Cualquier profesional disponible</p>
-                </div>
-              </button>
-              {business.staff.map(s => (
-                <button key={s.id} onClick={() => { setSelectedStaff(s); setStep("datetime") }}
-                  className="flex items-center gap-4 p-4 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] transition-all text-left">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0"
-                    style={{ backgroundColor: s.color + "40", border: `2px solid ${s.color}` }}>
+            {business!.staff.map(s => (
+              <button key={s.id} onClick={() => { setSelectedStaff(s); setStep("datetime") }}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                {s.user.image ? (
+                  <img src={s.user.image} alt={s.user.name || ""} className="w-12 h-12 rounded-full object-cover flex-shrink-0" style={{ border: `2px solid ${s.color}` }} />
+                ) : (
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0" style={{ background: s.color + "33", border: `2px solid ${s.color}` }}>
                     {s.user.name?.[0] ?? "?"}
                   </div>
-                  <p className="font-medium">{s.user.name}</p>
-                </button>
-              ))}
-            </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm">{s.user.name}</p>
+                  {s.specialty && <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>{s.specialty}</p>}
+                  {s.bio && <p className="text-xs mt-1 line-clamp-2" style={{ color: "rgba(255,255,255,0.3)" }}>{s.bio}</p>}
+                </div>
+                <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "rgba(255,255,255,0.2)" }} />
+              </button>
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {step === "datetime" && (
-          <div className="space-y-5">
-            <button onClick={() => setStep("staff")} className="flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors">
-              <ChevronLeft className="w-4 h-4" /> Cambiar profesional
-            </button>
-            <h2 className="text-lg font-semibold">Elige fecha y hora</h2>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <button onClick={() => setWeekOffset(w => Math.max(0, w - 1))} disabled={weekOffset === 0}
-                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 transition-colors">
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <span className="text-sm text-white/50">
-                  {format(weekDays[0], "d MMM", { locale: es })} - {format(weekDays[6], "d MMM yyyy", { locale: es })}
-                </span>
-                <button onClick={() => setWeekOffset(w => w + 1)}
-                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="grid grid-cols-7 gap-1.5">
-                {weekDays.map(day => {
-                  const key = format(day, "yyyy-MM-dd")
-                  const isPast = day < today
-                  const isSelected = key === selectedDate
-                  return (
-                    <button key={key} disabled={isPast} onClick={() => setSelectedDate(key)}
-                      className={`flex flex-col items-center py-2.5 rounded-xl transition-all disabled:opacity-30 ${
-                        isSelected ? "text-white" : "bg-white/5 hover:bg-white/10 text-white/70"
-                      }`}
-                      style={isSelected ? { background: "var(--brand)" } : {}}>
-                      <span className="text-[10px] uppercase tracking-wide">{format(day, "EEE", { locale: es })}</span>
-                      <span className="text-sm font-semibold mt-0.5">{format(day, "d")}</span>
-                    </button>
-                  )
-                })}
-              </div>
+      {/* ── STEP: DATETIME ─────────────────────────────────────── */}
+      {step === "datetime" && selectedService && (
+        <div className="max-w-lg mx-auto">
+          <StepHeader brand={brand} onBack={() => setStep("staff")} label={selectedService.name} sub={selectedStaff ? `con ${selectedStaff.user.name}` : "cualquier profesional"} color={selectedService.color} />
+          <div className="px-5 pb-10">
+            <h2 className="text-base font-bold mb-5">Elige fecha y hora</h2>
+
+            {/* Week nav */}
+            <div className="flex items-center gap-2 mb-3">
+              <button onClick={() => setWeekOffset(w => Math.max(0, w - 1))} disabled={weekOffset === 0}
+                className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-30"
+                style={{ background: "rgba(255,255,255,0.07)" }}>
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <p className="flex-1 text-center text-xs font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>
+                {format(weekDays[0], "d MMM", { locale: es })} — {format(weekDays[6], "d MMM yyyy", { locale: es })}
+              </p>
+              <button onClick={() => setWeekOffset(w => w + 1)}
+                className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
+                style={{ background: "rgba(255,255,255,0.07)" }}>
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
+
+            {/* Day picker */}
+            <div className="grid grid-cols-7 gap-1 mb-6">
+              {weekDays.map(day => {
+                const key = format(day, "yyyy-MM-dd")
+                const isPast = day < today
+                const isSelected = key === selectedDate
+                return (
+                  <button key={key} disabled={isPast} onClick={() => setSelectedDate(key)}
+                    className="flex flex-col items-center py-3 rounded-2xl transition-all disabled:opacity-25"
+                    style={isSelected
+                      ? { background: brand, color: "#fff" }
+                      : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)" }}>
+                    <span className="text-[9px] font-bold uppercase tracking-wide leading-none mb-1.5">
+                      {format(day, "EEE", { locale: es })}
+                    </span>
+                    <span className="text-sm font-bold">{format(day, "d")}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Time slots */}
             {selectedDate && (
-              <div className="space-y-2">
-                <p className="text-sm text-white/50">
+              <>
+                <p className="text-xs font-semibold mb-3 capitalize" style={{ color: "rgba(255,255,255,0.4)" }}>
                   {format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })}
                 </p>
                 {loadingSlots ? (
-                  <div className="flex items-center gap-2 text-white/30 text-sm py-4">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Cargando horarios...
+                  <div className="flex items-center justify-center gap-2 py-10" style={{ color: "rgba(255,255,255,0.3)" }}>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span className="text-sm">Buscando horarios...</span>
                   </div>
                 ) : slots.length === 0 ? (
-                  <p className="text-sm text-white/30 py-4">Sin horarios disponibles para este dia.</p>
+                  <div className="py-10 text-center">
+                    <p className="text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>Sin horarios disponibles</p>
+                    <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.2)" }}>Prueba otro día</p>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-4 gap-2">
                     {slots.map(slot => (
-                      <button key={slot} onClick={() => { setSelectedTime(slot); setStep("form") }}
-                        className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
-                          selectedTime === slot
-                            ? "text-white"
-                            : "bg-white/5 text-white/70"
-                        }`}
-                        style={selectedTime === slot ? { background: "var(--brand)" } : {}}>
+                      <button key={slot} onClick={() => { setSelectedTime(slot); setStep("form"); window.scrollTo({ top: 0, behavior: "smooth" }) }}
+                        className="py-3 rounded-xl text-sm font-semibold transition-all"
+                        style={selectedTime === slot
+                          ? { background: brand, color: "#fff" }
+                          : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.75)", border: "1px solid rgba(255,255,255,0.08)" }}>
                         {slot}
                       </button>
                     ))}
                   </div>
                 )}
-              </div>
+              </>
             )}
           </div>
-        )}
+        </div>
+      )}
 
-        {step === "form" && (
-          <div className="space-y-5">
-            <button onClick={() => setStep("datetime")} className="flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors">
-              <ChevronLeft className="w-4 h-4" /> Cambiar horario
-            </button>
-            <h2 className="text-lg font-semibold">Tus datos</h2>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: selectedService?.color }} />
-                <span className="font-medium">{selectedService?.name}</span>
-                <span className="text-white/40">· {selectedService?.duration} min</span>
+      {/* ── STEP: FORM ─────────────────────────────────────────── */}
+      {step === "form" && selectedService && (
+        <div className="max-w-lg mx-auto">
+          <StepHeader brand={brand} onBack={() => setStep("datetime")} label={selectedService.name} sub={`${selectedDate ? format(parseISO(selectedDate), "d MMM", { locale: es }) : ""} · ${selectedTime}`} color={selectedService.color} />
+          <div className="px-5 pb-10 space-y-6">
+            {/* Summary card */}
+            <div className="rounded-2xl p-4 space-y-2.5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <div className="flex items-center gap-2.5">
+                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: selectedService.color }} />
+                <span className="font-bold text-sm">{selectedService.name}</span>
+                <span className="ml-auto font-bold text-sm" style={{ color: brand }}>${Number(selectedService.price).toLocaleString("es-CL")}</span>
               </div>
-              {selectedStaff && (
-                <div className="flex items-center gap-2 text-white/50">
-                  <User className="w-3.5 h-3.5" /> {selectedStaff.user.name}
-                </div>
-              )}
-              <div className="flex items-center gap-2 text-white/50">
+              <div className="flex items-center gap-2 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                <Clock className="w-3.5 h-3.5" /> {selectedService.duration} min
+                {selectedStaff && <><span style={{ color: "rgba(255,255,255,0.2)" }}>·</span><User className="w-3.5 h-3.5" /> {selectedStaff.user.name}</>}
+              </div>
+              <div className="flex items-center gap-2 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
                 <Calendar className="w-3.5 h-3.5" />
                 {selectedDate && format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })} a las {selectedTime}
               </div>
             </div>
-            {business?.onlinePaymentsEnabled && selectedService && Number(selectedService.price) > 0 && (
+
+            {/* Payment method */}
+            {business!.onlinePaymentsEnabled && Number(selectedService.price) > 0 && (
               <div className="space-y-2">
-                <p className="text-sm text-white/50">¿Cómo quieres pagar?</p>
+                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.3)" }}>Forma de pago</label>
                 <div className="grid grid-cols-2 gap-2">
                   {([
-                    { value: "local" as PayMethod, label: "Pagar en el local", sub: "Efectivo, tarjeta o transferencia" },
-                    { value: "online" as PayMethod, label: "Pagar ahora", sub: `$${Number(selectedService.price).toLocaleString("es-CL")} — tarjeta online` },
+                    { value: "local" as PayMethod, label: "En el local", sub: "Efectivo o tarjeta" },
+                    { value: "online" as PayMethod, label: "Pagar ahora", sub: `$${Number(selectedService.price).toLocaleString("es-CL")}` },
                   ]).map(opt => (
                     <button key={opt.value} onClick={() => setPayMethod(opt.value)}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        payMethod === opt.value
-                          ? "border-white/30"
-                          : "border-white/10 bg-white/[0.03] hover:border-white/20"
-                      }`}
-                      style={payMethod === opt.value ? { borderColor: "var(--brand-dim)", background: "var(--brand-mid)" } : {}}>
-                      <p className="text-sm font-medium" style={payMethod === opt.value ? { color: "var(--brand)" } : { color: "rgba(255,255,255,0.8)" }}>{opt.label}</p>
-                      <p className="text-xs text-white/40 mt-0.5">{opt.sub}</p>
+                      className="p-3.5 rounded-2xl text-left transition-all"
+                      style={payMethod === opt.value
+                        ? { background: brand + "20", border: `1.5px solid ${brand}` }
+                        : { background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(255,255,255,0.07)" }}>
+                      <p className="text-sm font-semibold" style={{ color: payMethod === opt.value ? brand : "rgba(255,255,255,0.8)" }}>{opt.label}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{opt.sub}</p>
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
-            <div className="space-y-3">
+            {/* Form fields */}
+            <div className="space-y-4">
+              <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.3)" }}>Tus datos</label>
               {[
-                { key: "name", label: "Nombre *", type: "text", placeholder: "Tu nombre" },
-                { key: "email", label: "Email *", type: "email", placeholder: "tu@email.com" },
-                { key: "phone", label: "Telefono", type: "tel", placeholder: "+56 9 1234 5678" },
+                { key: "name", label: "Nombre completo", type: "text", placeholder: "María González", required: true },
+                { key: "email", label: "Email", type: "email", placeholder: "tu@email.com", required: true },
+                { key: "phone", label: "Teléfono (opcional)", type: "tel", placeholder: "+56 9 1234 5678", required: false },
               ].map(({ key, label, type, placeholder }) => (
-                <div key={key}>
-                  <label className="text-sm text-white/50 block mb-1.5">{label}</label>
-                  <input type={type} value={(form as Record<string, string>)[key]}
+                <div key={key} className="relative">
+                  <input
+                    type={type}
+                    value={(form as Record<string, string>)[key]}
                     onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                    placeholder={placeholder}
-                    className="w-full h-10 rounded-xl border border-white/10 px-4 text-sm focus:outline-none focus:ring-1"
-                  style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5", "--tw-ring-color": "var(--brand)" } as React.CSSProperties}
-                    style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }} />
+                    placeholder=" "
+                    className="peer w-full rounded-2xl px-4 pt-5 pb-2.5 text-sm outline-none transition-all"
+                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "#f4f4f5" }}
+                    id={`field-${key}`}
+                  />
+                  <label htmlFor={`field-${key}`}
+                    className="absolute left-4 top-3.5 text-xs transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-focus:top-2 peer-focus:text-xs"
+                    style={{ color: "rgba(255,255,255,0.35)", pointerEvents: "none" }}>
+                    {label}
+                  </label>
+                  {/* manually set actual placeholder via value check */}
+                  {!(form as Record<string, string>)[key] && (
+                    <span className="absolute left-4 top-4 text-sm pointer-events-none select-none" style={{ color: "rgba(255,255,255,0.2)" }}>{placeholder}</span>
+                  )}
                 </div>
               ))}
-              <div>
-                <label className="text-sm text-white/50 block mb-1.5">Notas (opcional)</label>
-                <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3}
-                  placeholder="Algun comentario para el profesional..."
-                  className="w-full rounded-xl border border-white/10 px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-1"
-                  style={{ backgroundColor: "#3a3a3c", color: "#f4f4f5" }} />
+              <div className="relative">
+                <textarea
+                  value={form.notes}
+                  onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                  rows={3}
+                  placeholder="Comentario para el profesional (opcional)"
+                  className="w-full rounded-2xl px-4 py-3.5 text-sm outline-none resize-none placeholder:text-white/20"
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "#f4f4f5" }}
+                />
               </div>
             </div>
+
             <button onClick={handleConfirm} disabled={submitting || !form.name || !form.email}
-              className="w-full py-3 rounded-xl disabled:opacity-50 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2"
-              style={{ background: "var(--brand)" }}>
+              className="w-full py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-40"
+              style={{ background: brand, color: "#fff" }}>
               {submitting
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> {payMethod === "online" ? "Redirigiendo al pago..." : "Confirmando..."}</>
-                : payMethod === "online" && business?.onlinePaymentsEnabled
-                  ? `Pagar $${Number(selectedService?.price).toLocaleString("es-CL")} ahora`
-                  : "Confirmar turno"
-              }
+                ? <><Loader2 className="w-4 h-4 animate-spin" />{payMethod === "online" ? "Redirigiendo al pago..." : "Confirmando..."}</>
+                : payMethod === "online" && business!.onlinePaymentsEnabled
+                  ? `Pagar $${Number(selectedService.price).toLocaleString("es-CL")} →`
+                  : "Confirmar reserva →"}
             </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {step === "confirmed" && (
-          <ConfirmedView
-            form={form}
-            business={business}
-            selectedService={selectedService}
-            selectedStaff={selectedStaff}
-            selectedDate={selectedDate}
-            selectedTime={selectedTime}
-            onReset={resetBooking}
-            onDownloadIcs={downloadIcs}
-          />
-        )}
-      </div>
+      {/* ── STEP: CONFIRMED ────────────────────────────────────── */}
+      {step === "confirmed" && (
+        <div className="max-w-lg mx-auto px-5 py-16 flex flex-col items-center text-center space-y-6">
+          <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ background: "rgba(34,197,94,0.15)" }}>
+            <Check className="w-12 h-12" style={{ color: "#22c55e" }} />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black">¡Reserva confirmada!</h2>
+            <p className="text-sm mt-2" style={{ color: "rgba(255,255,255,0.4)" }}>Enviamos la confirmación a {form.email}</p>
+          </div>
+
+          <div className="w-full rounded-2xl p-5 space-y-3 text-left" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="flex items-center gap-2.5">
+              <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: selectedService?.color }} />
+              <span className="font-bold text-sm">{selectedService?.name}</span>
+            </div>
+            {selectedStaff && (
+              <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+                <User className="w-4 h-4" /> {selectedStaff.user.name}
+              </div>
+            )}
+            <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+              <Calendar className="w-4 h-4" />
+              {selectedDate && format(parseISO(selectedDate), "EEEE d 'de' MMMM yyyy", { locale: es })} · {selectedTime}
+            </div>
+            {(business!.address || business!.city) && (
+              <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+                <MapPin className="w-4 h-4" />
+                {[business!.address, business!.city].filter(Boolean).join(", ")}
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 w-full">
+            <button onClick={downloadIcs}
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold transition-all"
+              style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <Download className="w-4 h-4" /> Calendario
+            </button>
+            <a href={`https://wa.me/?text=${encodeURIComponent(`Reservé ${selectedService?.name} en ${business!.name} — ${selectedDate ? format(parseISO(selectedDate), "d MMM", { locale: es }) : ""} ${selectedTime} 🗓️`)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold transition-all"
+              style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <Share2 className="w-4 h-4" /> Compartir
+            </a>
+          </div>
+
+          <button onClick={resetBooking} className="text-sm font-semibold" style={{ color: brand }}>
+            Reservar otro turno →
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
-function ConfirmedView({ form, business, selectedService, selectedStaff, selectedDate, selectedTime, onReset, onDownloadIcs }: {
-  form: { name: string; email: string }
-  business: { name: string; address: string | null; city: string | null; slug?: string }
-  selectedService: { name: string; color: string; duration: number } | null
-  selectedStaff: { user: { name: string | null } } | null
-  selectedDate: string
-  selectedTime: string
-  onReset: () => void
-  onDownloadIcs: () => void
-}) {
-  const dateLabel = selectedDate
-    ? format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })
-    : ""
+// ── Sub-components ──────────────────────────────────────────────
 
-  const waText = encodeURIComponent(
-    `Reservé un turno en ${business.name} — ${selectedService?.name} el ${dateLabel} a las ${selectedTime} hs 🗓️`
-  )
-
+function ServiceCard({ service, brand, onSelect }: { service: Service; brand: string; onSelect: () => void }) {
+  const [expanded, setExpanded] = useState(false)
+  const hasDesc = !!service.description
   return (
-    <div className="text-center space-y-6 py-6">
-      <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto animate-bounce-once">
-        <Check className="w-10 h-10 text-emerald-400" />
-      </div>
-      <div>
-        <h2 className="text-xl font-bold text-white">¡Turno confirmado!</h2>
-        <p className="text-white/40 mt-1 text-sm">Te enviamos la confirmación a {form.email}</p>
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-left space-y-3">
-        <div className="flex items-center gap-2 text-sm">
-          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: selectedService?.color }} />
-          <span className="font-medium text-white">{selectedService?.name}</span>
-        </div>
-        {selectedStaff && (
-          <div className="flex items-center gap-2 text-sm text-white/50">
-            <User className="w-3.5 h-3.5" /> {selectedStaff.user.name}
+    <div className="rounded-2xl overflow-hidden transition-all" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+      <button className="w-full flex items-center gap-4 p-4 text-left" onClick={() => hasDesc ? setExpanded(e => !e) : onSelect()}>
+        <div className="w-1 self-stretch rounded-full flex-shrink-0" style={{ backgroundColor: service.color }} />
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm leading-tight">{service.name}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}><Clock className="w-3 h-3 inline mr-1" />{service.duration} min</span>
           </div>
-        )}
-        <div className="flex items-center gap-2 text-sm text-white/50">
-          <Calendar className="w-3.5 h-3.5" />
-          {dateLabel} a las {selectedTime}
         </div>
-        {(business.address || business.city) && (
-          <div className="flex items-center gap-2 text-sm text-white/50">
-            <MapPin className="w-3.5 h-3.5" />
-            {[business.address, business.city].filter(Boolean).join(", ")}
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-3">
-        <button
-          onClick={onDownloadIcs}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 text-white/70 hover:bg-white/5 transition-colors text-sm font-medium"
-        >
-          <Download className="w-4 h-4" />
-          Agregar al calendario
-        </button>
-        <a
-          href={`https://wa.me/?text=${waText}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 text-white/70 hover:bg-white/5 transition-colors text-sm font-medium"
-        >
-          <Share2 className="w-4 h-4" />
-          Compartir
-        </a>
-      </div>
-
-      <button onClick={onReset} className="text-sm text-sky-400 hover:text-sky-300 transition-colors">
-        Reservar otro turno →
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="font-bold text-sm" style={{ color: brand }}>${Number(service.price).toLocaleString("es-CL")}</span>
+          {hasDesc && (
+            <ChevronDown className="w-4 h-4 transition-transform" style={{ color: "rgba(255,255,255,0.25)", transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }} />
+          )}
+        </div>
       </button>
+      {expanded && hasDesc && (
+        <div className="px-4 pb-4 space-y-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+          <p className="text-xs pt-3" style={{ color: "rgba(255,255,255,0.45)" }}>{service.description}</p>
+          <button onClick={onSelect}
+            className="w-full py-2.5 rounded-xl text-sm font-bold transition-all"
+            style={{ background: brand, color: "#fff" }}>
+            Reservar
+          </button>
+        </div>
+      )}
+      {!hasDesc && null}
+    </div>
+  )
+}
+
+function StepHeader({ brand, onBack, label, sub, color }: { brand: string; onBack: () => void; label: string; sub: string; color: string }) {
+  return (
+    <div className="sticky top-0 z-20 px-5 py-4 flex items-center gap-3" style={{ background: "rgba(15,15,17,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      <button onClick={onBack} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all" style={{ background: "rgba(255,255,255,0.07)" }}>
+        <ChevronLeft className="w-5 h-5" />
+      </button>
+      <div className="flex items-center gap-2.5 flex-1 min-w-0">
+        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+        <div className="min-w-0">
+          <p className="text-sm font-bold truncate">{label}</p>
+          <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.4)" }}>{sub}</p>
+        </div>
+      </div>
     </div>
   )
 }

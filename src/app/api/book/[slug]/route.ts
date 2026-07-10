@@ -10,14 +10,16 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
     select: {
       id: true, name: true, category: true, description: true, logo: true, phone: true,
       address: true, city: true, onlinePaymentsEnabled: true, primaryColor: true,
+      coverImage: true,
       services: {
         where: { isActive: true, deletedAt: null },
-        select: { id: true, name: true, description: true, duration: true, price: true, color: true },
-        orderBy: { name: "asc" },
+        select: { id: true, name: true, description: true, duration: true, price: true, color: true, categoryId: true,
+          category: { select: { id: true, name: true, order: true } } },
+        orderBy: [{ category: { order: "asc" } }, { name: "asc" }],
       },
       staff: {
         where: { isActive: true, deletedAt: null },
-        select: { id: true, color: true, user: { select: { name: true, image: true } } },
+        select: { id: true, color: true, specialty: true, bio: true, user: { select: { name: true, image: true } } },
       },
     },
   })
