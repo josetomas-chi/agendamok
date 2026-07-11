@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { ArrowLeft, UserPlus, Play, Trophy, X, Check, ChevronRight, Swords, Tag, Plus, Pencil, Link2 } from "lucide-react"
 import { LadderView } from "./ladder-view"
+import { StatsView } from "./stats-view"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -49,7 +50,7 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
 }) {
   const [tournament, setTournament] = useState<Tournament | null>(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<"participants" | "groups" | "fixture" | "ladder">("participants")
+  const [tab, setTab] = useState<"participants" | "groups" | "fixture" | "ladder" | "stats">("participants")
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null)
 
   // Participant add
@@ -321,11 +322,14 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
 
   const isLadder = tournament.format === "LADDER"
 
+  const finishedMatches = matches.filter(m => m.status === "FINISHED")
+
   const tabs = [
     { key: "participants", label: `Inscritos (${participants.length})` },
     ...(isGroupStage ? [{ key: "groups", label: "Grupos" }] : []),
     ...(!isLadder ? [{ key: "fixture", label: isGroupStage ? "Llaves" : "Fixture" }] : []),
     ...(isLadder ? [{ key: "ladder", label: "Escalerilla" }] : []),
+    ...(finishedMatches.length > 0 ? [{ key: "stats", label: "Estadísticas" }] : []),
   ] as { key: typeof tab; label: string }[]
 
   return (
@@ -916,6 +920,14 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
             </button>
           </div>
         </div>
+      )}
+
+      {tab === "stats" && (
+        <StatsView
+          participants={participants}
+          matches={finishedMatches}
+          participantType={tournament.participantType}
+        />
       )}
 
       {tab === "ladder" && isLadder && (
