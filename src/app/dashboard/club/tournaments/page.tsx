@@ -287,7 +287,7 @@ export default function TournamentsPage() {
             {/* Formato */}
             <div>
               <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Formato</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {(["ELIMINATION", "ROUND_ROBIN", "GROUP_STAGE", "LADDER"] as const).map(fmt => (
                   <button key={fmt} type="button" onClick={() => setForm(f => ({ ...f, format: fmt }))}
                     className="rounded-xl py-2.5 text-xs font-bold uppercase tracking-wide transition-all text-center"
