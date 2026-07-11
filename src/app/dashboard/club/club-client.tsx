@@ -301,12 +301,12 @@ function CalendarSkeleton() {
   const NAVY = "#0d1b2a"
   const skeletonCols = 3
   return (
-    <div className="rounded-2xl overflow-hidden animate-pulse" style={{ border: BORDER, background: "#111f2d", boxShadow: "0 1px 8px rgba(0,0,0,0.08)" }}>
+    <div className="rounded-2xl overflow-hidden animate-pulse" style={{ border: BORDER, background: "#ffffff", boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}>
       {/* Date nav skeleton */}
-      <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: BORDER, background: "#111f2d" }}>
-        <div className="w-8 h-8 rounded-lg" style={{ background: "rgba(255,255,255,0.06)" }} />
-        <div className="w-40 h-4 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }} />
-        <div className="w-8 h-8 rounded-lg" style={{ background: "rgba(255,255,255,0.06)" }} />
+      <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: BORDER, background: "#ffffff" }}>
+        <div className="w-8 h-8 rounded-lg" style={{ background: "rgba(13,27,42,0.06)" }} />
+        <div className="w-40 h-4 rounded-full" style={{ background: "rgba(13,27,42,0.08)" }} />
+        <div className="w-8 h-8 rounded-lg" style={{ background: "rgba(13,27,42,0.06)" }} />
       </div>
       {/* Grid skeleton */}
       <div className="flex" style={{ minWidth: `${44 + skeletonCols * 130}px` }}>
@@ -315,18 +315,18 @@ function CalendarSkeleton() {
           <div className="h-8" style={{ borderBottom: BORDER }} />
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="flex items-start justify-end pr-2.5" style={{ height: 56 }}>
-              <div className="w-6 h-2 rounded-full mt-1" style={{ background: "rgba(255,255,255,0.06)" }} />
+              <div className="w-6 h-2 rounded-full mt-1" style={{ background: "rgba(13,27,42,0.06)" }} />
             </div>
           ))}
         </div>
         {/* Court cols */}
         {Array.from({ length: skeletonCols }).map((_, ci) => (
-          <div key={ci} className="flex-1" style={{ minWidth: 120, borderRight: ci < skeletonCols - 1 ? "1px solid rgba(255,255,255,0.08)" : undefined }}>
-            <div className="h-8 flex items-center gap-1.5 px-2" style={{ borderBottom: BORDER, background: NAVY }}>
-              <div className="w-2 h-2 rounded-full" style={{ background: "rgba(255,255,255,0.15)" }} />
-              <div className="w-20 h-2.5 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }} />
+          <div key={ci} className="flex-1" style={{ minWidth: 120, borderRight: ci < skeletonCols - 1 ? "1px solid rgba(13,27,42,0.08)" : undefined }}>
+            <div className="h-8 flex items-center gap-1.5 px-2" style={{ borderBottom: BORDER, background: "#f5f5f7" }}>
+              <div className="w-2 h-2 rounded-full" style={{ background: "rgba(13,27,42,0.12)" }} />
+              <div className="w-20 h-2.5 rounded-full" style={{ background: "rgba(13,27,42,0.08)" }} />
             </div>
-            <div style={{ background: "#111f2d", height: 448 }}>
+            <div style={{ background: "#ffffff", height: 448 }}>
               {/* Fake booking block */}
               {ci === 1 && (
                 <div className="mx-1 rounded-md mt-4" style={{ height: 56, background: "rgba(201,168,76,0.12)", borderLeft: "3px solid rgba(201,168,76,0.3)" }} />
@@ -564,16 +564,16 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
   const SLOT_BORDER_HALF = "rgba(13,27,42,0.03)"
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ border: BORDER, background: "#111f2d", boxShadow: "0 1px 8px rgba(0,0,0,0.08)" }}>
+    <div className="rounded-2xl overflow-hidden" style={{ border: BORDER, background: "#ffffff", boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}>
       {/* Date nav */}
-      <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: BORDER, background: "#111f2d" }}>
+      <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: BORDER, background: "#ffffff" }}>
         <button onClick={() => onDateChange(subDays(selectedDate, 1))}
           className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
           style={{ border: BORDER, color: GOLD }}>
           <ChevronLeft className="w-4 h-4" />
         </button>
         <div className="text-center">
-          <p className="text-sm font-black uppercase tracking-wide capitalize text-white">{format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}</p>
+          <p className="text-sm font-black uppercase tracking-wide capitalize" style={{ color: NAVY }}>{format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}</p>
           {!isSameDay(selectedDate, new Date()) && (
             <button onClick={() => onDateChange(new Date())} className="text-[10px] font-semibold transition-colors" style={{ color: GOLD }}>Hoy</button>
           )}
@@ -596,7 +596,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
               {slots.map((slot) => (
                 <div key={slot} className="flex items-start justify-end pr-2.5" style={{ height: SLOT_HEIGHT }}>
                   {slot.endsWith(":00") && (
-                    <span className="text-[10px] -mt-2 font-medium" style={{ color: "rgba(255,255,255,0.25)" }}>{slot}</span>
+                    <span className="text-[10px] -mt-2 font-medium" style={{ color: "rgba(13,27,42,0.3)" }}>{slot}</span>
                   )}
                 </div>
               ))}
@@ -604,17 +604,17 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
 
             {/* Court columns */}
             {courts.map(court => (
-              <div key={court.id} className="flex-1 last:border-r-0" style={{ minWidth: 120, borderRight: "1px solid rgba(255,255,255,0.12)" }}
+              <div key={court.id} className="flex-1 last:border-r-0" style={{ minWidth: 120, borderRight: "1px solid rgba(13,27,42,0.08)" }}
                 data-court-col data-court-id={court.id} data-court-sport={court.sport ?? ""}>
                 {/* Court header */}
-                <div className="h-8 flex items-center gap-1.5 px-2 sticky top-0 z-10" style={{ borderBottom: BORDER, background: NAVY }}>
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: court.color, boxShadow: `0 0 6px ${court.color}` }} />
-                  <span className="text-[11px] font-black uppercase tracking-wide text-white truncate">{court.name}</span>
-                  {court.sport && <span className="text-[9px] truncate" style={{ color: "rgba(201,168,76,0.6)" }}>{court.sport}</span>}
+                <div className="h-8 flex items-center gap-1.5 px-2 sticky top-0 z-10" style={{ borderBottom: BORDER, background: "#f5f5f7" }}>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: court.color }} />
+                  <span className="text-[11px] font-black uppercase tracking-wide truncate" style={{ color: NAVY }}>{court.name}</span>
+                  {court.sport && <span className="text-[9px] truncate" style={{ color: "rgba(13,27,42,0.4)" }}>{court.sport}</span>}
                 </div>
 
                 {/* Slots */}
-                <div className="relative" data-slots-root style={{ background: "#111f2d" }}>
+                <div className="relative" data-slots-root style={{ background: "#ffffff" }}>
                   {slots.map((slot) => {
                     const isDropOver = dropTarget?.courtId === court.id && dropTarget?.slot === slot
                     return (
@@ -624,8 +624,8 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                         className="cursor-pointer transition-colors"
                         style={{
                           height: SLOT_HEIGHT,
-                          borderBottom: slot.endsWith(":30") ? `1px solid rgba(255,255,255,0.1)` : `1px solid rgba(255,255,255,0.22)`,
-                          background: isDropOver ? "rgba(201,168,76,0.18)" : "transparent",
+                          borderBottom: slot.endsWith(":30") ? `1px solid rgba(13,27,42,0.05)` : `1px solid rgba(13,27,42,0.1)`,
+                          background: isDropOver ? "rgba(201,168,76,0.12)" : "transparent",
                         }}
                         onMouseEnter={e => { if (!customDragRef.current) (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.07)" }}
                         onMouseLeave={e => { if (!customDragRef.current) (e.currentTarget as HTMLElement).style.background = "transparent" }}
