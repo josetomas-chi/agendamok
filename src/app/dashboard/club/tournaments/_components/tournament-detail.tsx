@@ -937,6 +937,7 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
           participantType={tournament.participantType}
           tournamentStatus={tournament.status}
           categoryId={hasCategories ? activeCategoryId : null}
+          endDate={tournament.endDate}
         />
       )}
     </div>

@@ -29,12 +29,13 @@ type Challenge = {
   winner: Participant | null
 }
 
-export function LadderView({ businessId, tournamentId, participantType, tournamentStatus, categoryId }: {
+export function LadderView({ businessId, tournamentId, participantType, tournamentStatus, categoryId, endDate }: {
   businessId: string
   tournamentId: string
   participantType: "INDIVIDUAL" | "PAIR" | "TEAM"
   tournamentStatus: string
   categoryId: string | null
+  endDate: string
 }) {
   const [participants, setParticipants] = useState<Participant[]>([])
   const [challenges, setChallenges] = useState<Challenge[]>([])
@@ -177,9 +178,26 @@ export function LadderView({ businessId, tournamentId, participantType, tourname
       {/* Ranking */}
       <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(13,27,42,0.08)" }}>
         <div className="flex items-center justify-between px-4 py-3" style={{ background: "rgba(13,27,42,0.03)", borderBottom: "1px solid rgba(13,27,42,0.06)" }}>
-          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "rgba(13,27,42,0.4)" }}>
-            Escalerilla — {localOrder.length} participantes
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "rgba(13,27,42,0.4)" }}>
+              Escalerilla — {localOrder.length} participantes
+            </span>
+            {endDate && (() => {
+              const end = new Date(endDate)
+              const now = new Date()
+              const expired = end < now
+              return (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                  style={{
+                    background: expired ? "rgba(239,68,68,0.08)" : "rgba(201,168,76,0.1)",
+                    color: expired ? "#ef4444" : GOLD,
+                    border: `1px solid ${expired ? "rgba(239,68,68,0.2)" : "rgba(201,168,76,0.25)"}`,
+                  }}>
+                  {expired ? "Venció" : "Vigente hasta"} {format(end, "d MMM yyyy", { locale: es })}
+                </span>
+              )
+            })()}
+          </div>
           <div className="flex items-center gap-2">
             {orderChanged && (
               <button
