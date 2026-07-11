@@ -41,12 +41,11 @@ export default function TournamentsPage() {
     name: "", sport: "",
     format: "ELIMINATION" as "ELIMINATION" | "ROUND_ROBIN" | "GROUP_STAGE" | "LADDER",
     participantType: "INDIVIDUAL" as "INDIVIDUAL" | "PAIR" | "TEAM",
+    startDate: "", endDate: "",
     maxParticipants: "", courtCount: "", entryFee: "", description: "",
     groupCount: "2", groupSize: "4", advanceCount: "2",
   })
-  const [scheduleDays, setScheduleDays] = useState<ScheduleDay[]>([
-    { date: "", startTime: "09:00", endTime: "20:00" }
-  ])
+  const [scheduleDays, setScheduleDays] = useState<ScheduleDay[]>([])
   const [categories, setCategories] = useState<CategoryDraft[]>([])
   const [catInput, setCatInput] = useState("")
   const [catGroups, setCatGroups] = useState("2")
@@ -82,8 +81,8 @@ export default function TournamentsPage() {
   }
 
   const resetForm = () => {
-    setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", maxParticipants: "", courtCount: "", entryFee: "", description: "", groupCount: "2", groupSize: "4", advanceCount: "2" })
-    setScheduleDays([{ date: "", startTime: "09:00", endTime: "20:00" }])
+    setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", startDate: "", endDate: "", maxParticipants: "", courtCount: "", entryFee: "", description: "", groupCount: "2", groupSize: "4", advanceCount: "2" })
+    setScheduleDays([])
     setCategories([])
     setCatInput(""); setCatGroups("2"); setCatGroupSize("4")
   }
@@ -93,13 +92,14 @@ export default function TournamentsPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    const validDays = scheduleDays.filter(d => d.date && d.startTime && d.endTime)
-    if (!businessId || !form.name || validDays.length === 0) {
-      toast.error("Agrega al menos una jornada con fecha"); return
+    if (!businessId || !form.name || !form.startDate) {
+      toast.error("Completa el nombre y la fecha de inicio"); return
     }
+    const validDays = scheduleDays.filter(d => d.date && d.startTime && d.endTime)
     const sorted = [...validDays].sort((a, b) => a.date.localeCompare(b.date))
-    const startDate = `${sorted[0].date}T${sorted[0].startTime}:00`
-    const endDate = `${sorted[sorted.length - 1].date}T${sorted[sorted.length - 1].endTime}:00`
+    const endDate = form.endDate || form.startDate
+    const startDate = `${form.startDate}T00:00:00`
+    const endDateFull = `${endDate}T23:59:00`
 
     setSaving(true)
     const r = await fetch(`/api/businesses/${businessId}/tournaments`, {
@@ -108,7 +108,7 @@ export default function TournamentsPage() {
       body: JSON.stringify({
         ...form,
         startDate,
-        endDate,
+        endDate: endDateFull,
         maxParticipants: isGroupStage && categories.length === 0 && form.groupCount && form.groupSize
           ? Number(form.groupCount) * Number(form.groupSize)
           : (form.maxParticipants ? Number(form.maxParticipants) : null),
@@ -211,8 +211,19 @@ export default function TournamentsPage() {
                       <p className="text-[10px] uppercase tracking-wide" style={{ color: "rgba(13,27,42,0.35)" }}>inscritos</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-bold" style={{ color: NAVY }}>{format(new Date(t.startDate), "d MMM", { locale: es })}</p>
-                      <p className="text-[10px] uppercase tracking-wide" style={{ color: "rgba(13,27,42,0.35)" }}>{format(new Date(t.startDate), "HH:mm")} hrs</p>
+                      {(() => {
+                        const start = new Date(t.startDate)
+                        const end = new Date(t.endDate)
+                        const sameDay = start.toDateString() === end.toDateString()
+                        return sameDay ? (
+                          <p className="text-xs font-bold" style={{ color: NAVY }}>{format(start, "d MMM yyyy", { locale: es })}</p>
+                        ) : (
+                          <>
+                            <p className="text-xs font-bold" style={{ color: NAVY }}>{format(start, "d MMM", { locale: es })}</p>
+                            <p className="text-[10px] font-semibold" style={{ color: "rgba(13,27,42,0.4)" }}>→ {format(end, "d MMM yyyy", { locale: es })}</p>
+                          </>
+                        )
+                      })()}
                     </div>
                   </div>
                   <button onClick={e => { e.stopPropagation(); handleDelete(t) }}
@@ -382,12 +393,27 @@ export default function TournamentsPage() {
               </div>
             )}
 
+            {/* Rango de fechas */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha de inicio *</label>
+                <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value, endDate: f.endDate || e.target.value }))}
+                  className={inputCls} style={inputStyle} required />
+              </div>
+              <div>
+                <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha de término</label>
+                <input type="date" value={form.endDate} min={form.startDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
+                  className={inputCls} style={inputStyle} />
+              </div>
+            </div>
+
             {/* ── JORNADAS ── */}
             <div className="rounded-xl p-3 space-y-2" style={{ background: "rgba(13,27,42,0.02)", border: "1px solid rgba(13,27,42,0.1)" }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <CalendarDays className="w-3.5 h-3.5" style={{ color: NAVY }} />
-                  <label className="text-[10px] font-black uppercase tracking-[0.12em]" style={{ color: NAVY }}>Jornadas *</label>
+                  <label className="text-[10px] font-black uppercase tracking-[0.12em]" style={{ color: NAVY }}>Jornadas</label>
+                  <span className="text-[10px]" style={{ color: "rgba(13,27,42,0.35)" }}>(opcional)</span>
                 </div>
                 <button type="button" onClick={addScheduleDay}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide"
