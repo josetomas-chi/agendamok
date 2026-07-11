@@ -168,14 +168,14 @@ export default function CourtsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-20 text-white/30 text-sm">Cargando…</div>
+        <div className="text-center py-20 text-sm" style={{ color: "rgba(13,27,42,0.3)" }}>Cargando…</div>
       ) : courts.length === 0 ? (
         <div className="text-center py-20">
-          <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-            <Trophy className="w-7 h-7 text-white/20" />
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(13,27,42,0.05)" }}>
+            <Trophy className="w-7 h-7" style={{ color: "rgba(13,27,42,0.2)" }} />
           </div>
-          <p className="text-white/40 text-sm">No hay canchas aún</p>
-          <p className="text-white/20 text-xs mt-1">Crea tu primera cancha para empezar a recibir reservas</p>
+          <p className="text-sm" style={{ color: "rgba(13,27,42,0.4)" }}>No hay canchas aún</p>
+          <p className="text-xs mt-1" style={{ color: "rgba(13,27,42,0.25)" }}>Crea tu primera cancha para empezar a recibir reservas</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
