@@ -76,9 +76,9 @@ export default function BookingClient({ slug }: { slug: string }) {
 // ─────────────────────────────────────────────────────────────────
 
 const SPORTS_BG = "#0d1b2a"
-const SPORTS_CARD = "#0f2236"
+const SPORTS_CARD = "#0f2a3f"
 const SPORTS_ACCENT = "#38bdf8"
-const SPORTS_BORDER = "rgba(56,189,248,0.15)"
+const SPORTS_BORDER = "rgba(56,189,248,0.18)"
 
 type CourtResult = Court & { slots: { time: string; price: number }[] }
 
@@ -173,11 +173,16 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
       <ChatWidget businessId={business.id} businessName={business.name} />
 
       {/* ── HEADER AgendaMok Sports ────────────────────── */}
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${SPORTS_BORDER}` }}>
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm font-black text-white">Agenda</span>
-          <span className="text-sm font-black" style={{ color: SPORTS_ACCENT }}>Mok</span>
-          <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ml-1" style={{ background: "rgba(56,189,248,0.12)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>Sports</span>
+      <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: `1px solid ${SPORTS_BORDER}`, background: "rgba(13,27,42,0.95)", backdropFilter: "blur(12px)" }}>
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: SPORTS_ACCENT }}>
+            <Calendar className="w-4 h-4" style={{ color: SPORTS_BG }} />
+          </div>
+          <div className="flex items-baseline gap-0.5">
+            <span className="text-sm font-black text-white">Agenda</span>
+            <span className="text-sm font-black" style={{ color: SPORTS_ACCENT }}>Mok</span>
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: "rgba(56,189,248,0.12)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>Sports</span>
         </div>
         {business.phone && (
           <a href={`tel:${business.phone}`} className="flex items-center gap-1 text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
@@ -199,7 +204,9 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
           {/* Club identity */}
           <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 flex items-end gap-3">
             {business.logo ? (
-              <img src={business.logo} alt={business.name} className="w-14 h-14 rounded-2xl object-cover flex-shrink-0 shadow-xl" style={{ border: `2px solid ${SPORTS_ACCENT}40` }} />
+              <div className="flex-shrink-0 rounded-2xl shadow-xl overflow-hidden" style={{ background: "white", padding: 5, border: `2px solid rgba(255,255,255,0.2)` }}>
+                <img src={business.logo} alt={business.name} className="w-12 h-12 object-contain block" style={{ borderRadius: 10 }} />
+              </div>
             ) : (
               <div className="w-14 h-14 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-xl text-xl font-black text-white" style={{ background: SPORTS_CARD, border: `2px solid ${SPORTS_BORDER}` }}>
                 {business.name[0]}
