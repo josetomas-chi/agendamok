@@ -19,7 +19,7 @@ type Staff = {
   user: { name: string | null; image: string | null }
 }
 type PricingRule = { days: number[]; startTime: string; endTime: string; price: number }
-type Court = { id: string; name: string; sport: string | null; color: string; description: string | null; pricingRules: PricingRule[] }
+type Court = { id: string; name: string; sport: string | null; color: string; description: string | null; sponsorName: string | null; sponsorLogo: string | null; sponsorUrl: string | null; pricingRules: PricingRule[] }
 type Business = {
   id: string; name: string; category: string; description: string | null
   logo: string | null; coverImage: string | null; phone: string | null
@@ -212,7 +212,13 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
                             </p>
                           )}
                         </div>
-                        <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "rgba(255,255,255,0.2)" }} />
+                        {court.sponsorLogo ? (
+                          court.sponsorUrl
+                            ? <img src={court.sponsorLogo} alt={court.sponsorName || ""} className="h-8 w-auto max-w-[64px] object-contain rounded flex-shrink-0 opacity-80" onClick={e => { e.stopPropagation(); window.open(court.sponsorUrl!, "_blank") }} />
+                            : <img src={court.sponsorLogo} alt={court.sponsorName || ""} className="h-8 w-auto max-w-[64px] object-contain rounded flex-shrink-0 opacity-80" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "rgba(255,255,255,0.2)" }} />
+                        )}
                       </button>
                     ))}
                   </div>
@@ -245,6 +251,9 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
               <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: selectedCourt.color }} />
               <p className="text-sm font-bold truncate">{selectedCourt.name}</p>
             </div>
+            {selectedCourt.sponsorLogo && (
+              <img src={selectedCourt.sponsorLogo} alt={selectedCourt.sponsorName || ""} className="h-7 w-auto max-w-[56px] object-contain opacity-70 flex-shrink-0" />
+            )}
           </div>
 
           <div className="px-5 pb-10">
