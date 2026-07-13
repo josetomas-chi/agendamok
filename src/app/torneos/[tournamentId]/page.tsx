@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const title = tournament.name
     const description = tournament.description
       || `${tournament.sport ? tournament.sport + " · " : ""}Inscripciones abiertas en ${tournament.business?.name ?? "AgendaMok"}`
-    const image = tournament.flyer || `${baseUrl}/og-default.png`
+    const image = tournament.flyer || `${baseUrl}/og-image.png`
 
     return {
       title,
