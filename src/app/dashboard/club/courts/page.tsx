@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { toast } from "sonner"
 
-type PricingRule = { id?: string; name: string; days: number[]; startTime: string; endTime: string; price: number }
+type PricingRule = { id?: string; name: string; days: number[]; startTime: string; endTime: string; price: number; fixedSlots: string[] }
 type Court = { id: string; name: string; sport: string | null; description: string | null; color: string; isActive: boolean; sponsorName: string | null; sponsorLogo: string | null; sponsorUrl: string | null; pricingRules: PricingRule[] }
 
 const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
-const EMPTY_RULE: PricingRule = { name: "", days: [1, 2, 3, 4, 5], startTime: "08:00", endTime: "18:00", price: 0 }
+const EMPTY_RULE: PricingRule = { name: "", days: [1, 2, 3, 4, 5], startTime: "08:00", endTime: "18:00", price: 0, fixedSlots: [] }
 
 export default function CourtsPage() {
   const { businessId } = useBusiness()
@@ -385,7 +385,43 @@ export default function CourtsPage() {
                           className="w-full h-8 rounded-lg border border-white/[0.08] bg-white/[0.05] pl-6 pr-2 text-xs text-white focus:outline-none focus:border-sky-500/60" />
                       </div>
                     </div>
-                    <p className="text-[10px] text-white/25">Precio por hora en este rango</p>
+                    {/* Bloques fijos */}
+                    <div>
+                      <button type="button"
+                        onClick={() => updateRule(idx, "fixedSlots", rule.fixedSlots.length > 0 ? [] : [rule.startTime])}
+                        className="flex items-center gap-2 text-xs transition-colors"
+                        style={{ color: rule.fixedSlots.length > 0 ? "#38bdf8" : "rgba(255,255,255,0.3)" }}>
+                        <div className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center transition-colors ${rule.fixedSlots.length > 0 ? "bg-sky-500 border-sky-500" : "border-white/20"}`}>
+                          {rule.fixedSlots.length > 0 && <span className="text-[8px] font-black text-white">✓</span>}
+                        </div>
+                        Bloques fijos (solo estos horarios de inicio)
+                      </button>
+                      {rule.fixedSlots.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {rule.fixedSlots.map((slot, si) => (
+                            <div key={si} className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs" style={{ background: "rgba(56,189,248,0.1)", border: "1px solid rgba(56,189,248,0.2)" }}>
+                              <input type="time" value={slot}
+                                onChange={e => {
+                                  const updated = [...rule.fixedSlots]
+                                  updated[si] = e.target.value
+                                  updateRule(idx, "fixedSlots", updated)
+                                }}
+                                className="w-[72px] bg-transparent text-sky-300 text-xs focus:outline-none [color-scheme:dark]" />
+                              <button onClick={() => updateRule(idx, "fixedSlots", rule.fixedSlots.filter((_, i) => i !== si))}
+                                className="text-white/30 hover:text-red-400 transition-colors ml-0.5">
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                          <button onClick={() => updateRule(idx, "fixedSlots", [...rule.fixedSlots, ""])}
+                            className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-sky-400 hover:text-sky-300 transition-colors"
+                            style={{ border: "1px dashed rgba(56,189,248,0.3)" }}>
+                            <Plus className="w-3 h-3" /> Agregar horario
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-white/25">{rule.fixedSlots.length > 0 ? "Solo se ofrecerán los horarios de inicio configurados arriba" : "Precio por hora · slots cada 30 min"}</p>
                   </div>
                 ))}
               </div>

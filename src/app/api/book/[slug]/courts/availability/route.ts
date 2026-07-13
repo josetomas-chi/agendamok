@@ -26,7 +26,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     select: {
       id: true, name: true, sport: true, color: true,
       sponsorName: true, sponsorLogo: true, sponsorUrl: true,
-      pricingRules: { select: { days: true, startTime: true, endTime: true, price: true } },
+      pricingRules: { select: { days: true, startTime: true, endTime: true, price: true, fixedSlots: true } },
     },
     orderBy: { sortOrder: "asc" },
   })
@@ -67,30 +67,54 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
 
     const courtBookings = bookings.filter(b => b.courtId === court.id)
     const slots: { time: string; price: number }[] = []
-    let cursor = new Date(dayStart)
-    cursor.setHours(Math.floor(openMinutes / 60), openMinutes % 60, 0, 0)
-    const cutoff = new Date(dayStart)
-    cutoff.setHours(Math.floor(closeMinutes / 60), closeMinutes % 60, 0, 0)
 
-    while (cursor < cutoff) {
-      const slotEnd = addMinutes(cursor, duration)
-      if (slotEnd > cutoff) break
-      if (cursor > now) {
-        const overlaps = courtBookings.some(b => {
-          const bStart = new Date(b.startTime)
-          const bEnd = new Date(b.endTime)
-          return cursor < bEnd && slotEnd > bStart
-        })
-        if (!overlaps) {
-          const cursorMinutes = cursor.getHours() * 60 + cursor.getMinutes()
-          const rule = rulesForDay.find(r => {
-            return cursorMinutes >= timeToMinutes(r.startTime) && cursorMinutes < timeToMinutes(r.endTime)
-          })
-          slots.push({ time: format(cursor, "HH:mm"), price: rule ? Number(rule.price) : 0 })
+    function isBooked(start: Date, end: Date) {
+      return courtBookings.some(b => start < new Date(b.endTime) && end > new Date(b.startTime))
+    }
+
+    // Separate rules: fixed-slot rules vs flexible rules
+    const fixedRules = rulesForDay.filter(r => r.fixedSlots && r.fixedSlots.length > 0)
+    const flexRules  = rulesForDay.filter(r => !r.fixedSlots || r.fixedSlots.length === 0)
+
+    // 1. Fixed-slot rules — only offer the configured start times
+    for (const rule of fixedRules) {
+      for (const slotTime of rule.fixedSlots) {
+        const [sh, sm] = slotTime.split(":").map(Number)
+        const start = new Date(dayStart)
+        start.setHours(sh, sm, 0, 0)
+        const end = addMinutes(start, duration)
+        if (start <= now) continue
+        if (!isBooked(start, end)) {
+          slots.push({ time: slotTime, price: Number(rule.price) })
         }
       }
-      cursor = addMinutes(cursor, 30)
     }
+
+    // 2. Flexible rules — every 30 min within the rule's window
+    if (flexRules.length > 0) {
+      const flexOpen  = Math.min(...flexRules.map(r => timeToMinutes(r.startTime)))
+      const flexClose = Math.max(...flexRules.map(r => timeToMinutes(r.endTime)))
+      let cursor = new Date(dayStart)
+      cursor.setHours(Math.floor(flexOpen / 60), flexOpen % 60, 0, 0)
+      const cutoff = new Date(dayStart)
+      cutoff.setHours(Math.floor(flexClose / 60), flexClose % 60, 0, 0)
+
+      while (cursor < cutoff) {
+        const slotEnd = addMinutes(cursor, duration)
+        if (slotEnd > cutoff) break
+        if (cursor > now && !isBooked(cursor, slotEnd)) {
+          const cursorMinutes = cursor.getHours() * 60 + cursor.getMinutes()
+          const rule = flexRules.find(r =>
+            cursorMinutes >= timeToMinutes(r.startTime) && cursorMinutes < timeToMinutes(r.endTime)
+          )
+          slots.push({ time: format(cursor, "HH:mm"), price: rule ? Number(rule.price) : 0 })
+        }
+        cursor = addMinutes(cursor, 30)
+      }
+    }
+
+    // Sort all slots by time
+    slots.sort((a, b) => a.time.localeCompare(b.time))
 
     return {
       id: court.id, name: court.name, sport: court.sport, color: court.color,

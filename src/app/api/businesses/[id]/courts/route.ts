@@ -20,12 +20,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params
   const body = await req.json()
   const { pricingRules = [], ...courtData } = body
-  const cleanRules = pricingRules.map(({ id: _id, ...r }: { id?: string; name: string; days: number[]; startTime: string; endTime: string; price: number }) => ({
+  const cleanRules = pricingRules.map(({ id: _id, ...r }: { id?: string; name: string; days: number[]; startTime: string; endTime: string; price: number; fixedSlots?: string[] }) => ({
     name: r.name,
     days: r.days.map(Number),
     startTime: r.startTime,
     endTime: r.endTime,
     price: Number(r.price),
+    fixedSlots: (r.fixedSlots ?? []).filter(Boolean),
   }))
   const court = await prisma.court.create({
     data: {

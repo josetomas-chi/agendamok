@@ -14,7 +14,17 @@ export async function PATCH(req: Request, { params }: Params) {
   const court = await prisma.$transaction(async (tx) => {
     if (pricingRules) {
       await tx.courtPricingRule.deleteMany({ where: { courtId } })
-      await tx.courtPricingRule.createMany({ data: pricingRules.map((r: object) => ({ ...r, courtId })) })
+      await tx.courtPricingRule.createMany({
+        data: pricingRules.map((r: { id?: string; name: string; days: number[]; startTime: string; endTime: string; price: number; fixedSlots?: string[] }) => ({
+          courtId,
+          name: r.name,
+          days: r.days.map(Number),
+          startTime: r.startTime,
+          endTime: r.endTime,
+          price: Number(r.price),
+          fixedSlots: (r.fixedSlots ?? []).filter(Boolean),
+        }))
+      })
     }
     return tx.court.update({
       where: { id: courtId, businessId: id },

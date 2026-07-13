@@ -835,13 +835,14 @@ model Court {
 }
 
 model CourtPricingRule {
-  id        String  @id @default(cuid())
-  courtId   String
-  name      String
-  days      Int[]
-  startTime String
-  endTime   String
-  price     Decimal @db.Decimal(10, 2)
+  id         String   @id @default(cuid())
+  courtId    String
+  name       String
+  days       Int[]
+  startTime  String
+  endTime    String
+  price      Decimal  @db.Decimal(10, 2)
+  fixedSlots String[] @default([])
 
   court Court @relation(fields: [courtId], references: [id], onDelete: Cascade)
 
