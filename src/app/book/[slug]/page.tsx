@@ -20,11 +20,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const business = await getBusiness(slug)
   if (!business) return { title: "Negocio no encontrado" }
 
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.vercel.app"
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"
   const url = `${base}/book/${slug}`
   const title = `Reservar en ${business.name}`
   const description = business.description
     ?? `Reserva tu hora en ${business.name}${business.city ? ` — ${business.city}` : ""}. Booking online 24/7 sin llamadas.`
+  const ogImage = `${base}/book/${slug}/opengraph-image`
 
   return {
     title,
@@ -35,9 +36,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url,
       type: "website",
       locale: "es_CL",
-      images: business.logo ? [{ url: business.logo, alt: business.name }] : [],
+      images: [{ url: ogImage, width: 1200, height: 1200, alt: title }],
     },
-    twitter: { card: "summary", title, description },
+    twitter: { card: "summary_large_image", title, description, images: [ogImage] },
     alternates: { canonical: url },
   }
 }
@@ -47,7 +48,7 @@ export default async function BookingPage({ params }: Props) {
   const business = await getBusiness(slug)
   if (!business) notFound()
 
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.vercel.app"
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"
 
   const jsonLd = {
     "@context": "https://schema.org",
