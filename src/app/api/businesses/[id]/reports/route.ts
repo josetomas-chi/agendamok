@@ -16,16 +16,21 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const monthStart = fromParam ? new Date(fromParam) : startOfMonth(now)
   const monthEnd = toParam ? new Date(toParam) : endOfMonth(now)
 
+  const paymentWhere = (extra: object) => ({
+    status: "PAID" as const,
+    OR: [
+      { appointment: { businessId: id, deletedAt: null } },
+      { courtBooking: { businessId: id, deletedAt: null } },
+    ],
+    ...extra,
+  })
+
   // Revenue by month (last 6 months)
   const revenueByMonth = await Promise.all(
     Array.from({ length: 6 }, (_, i) => {
       const d = subMonths(now, 5 - i)
       return prisma.payment.aggregate({
-        where: {
-          status: "PAID",
-          appointment: { businessId: id, deletedAt: null },
-          paidAt: { gte: startOfMonth(d), lte: endOfMonth(d) },
-        },
+        where: paymentWhere({ paidAt: { gte: startOfMonth(d), lte: endOfMonth(d) } }),
         _sum: { amount: true },
       }).then((r: { _sum: { amount: unknown } }) => ({ month: format(d, "MMM"), revenue: Number(r._sum.amount || 0) }))
     })
@@ -38,7 +43,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     prisma.appointment.count({ where: { businessId: id, deletedAt: null, status: "CANCELLED", startTime: { gte: monthStart, lte: monthEnd } } }),
     prisma.appointment.count({ where: { businessId: id, deletedAt: null, status: "NO_SHOW", startTime: { gte: monthStart, lte: monthEnd } } }),
     prisma.payment.aggregate({
-      where: { status: "PAID", appointment: { businessId: id, deletedAt: null }, paidAt: { gte: monthStart, lte: monthEnd } },
+      where: paymentWhere({ paidAt: { gte: monthStart, lte: monthEnd } }),
       _sum: { amount: true },
     }),
   ])
