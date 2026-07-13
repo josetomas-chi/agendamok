@@ -15,7 +15,7 @@ export default async function OGImage({ params }: Props) {
     where: { slug, isActive: true, deletedAt: null },
     select: {
       name: true, city: true, businessType: true, logo: true, category: true,
-      courts: { select: { sport: true }, distinct: ["sport"], where: { deletedAt: null } },
+      courts: { select: { sport: true }, where: { isActive: true } },
     },
   })
 
