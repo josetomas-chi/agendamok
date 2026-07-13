@@ -9,7 +9,7 @@ export async function GET(_: Request, { params }: Params) {
   const tournament = await prisma.tournament.findUnique({
     where: { id: tournamentId },
     include: {
-      business: { select: { name: true, slug: true, logoUrl: true, onlinePaymentsEnabled: true, flowApiKey: true, flowSecretKey: true } },
+      business: { select: { name: true, slug: true, logo: true, onlinePaymentsEnabled: true, flowApiKey: true, flowSecretKey: true } },
       categories: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       _count: { select: { participants: { where: { status: "REGISTERED" } } } },
     },
@@ -35,7 +35,7 @@ export async function GET(_: Request, { params }: Params) {
       description: tournament.description,
       categories: tournament.categories,
       registeredCount: tournament._count.participants,
-      business: { name: tournament.business.name, logoUrl: tournament.business.logoUrl },
+      business: { name: tournament.business.name, logoUrl: tournament.business.logo },
       paymentEnabled,
     }
   })

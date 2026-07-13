@@ -83,7 +83,8 @@ function SettingsContent() {
   const [creatingKey, setCreatingKey] = useState(false)
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set())
 
-  const { businessId: bid } = useBusiness()
+  const { businessId: bid, businessType } = useBusiness()
+  const isSports = businessType === "SPORTS_CLUB"
 
   useEffect(() => {
     if (!bid) return
@@ -324,16 +325,21 @@ function SettingsContent() {
 
   async function handleSubscribe(plan: string) {
     setSubscribing(true)
-    const r = await fetch("/api/flow/subscribe", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan }),
-    })
-    const d = await r.json()
-    if (d.url) {
-      window.location.href = d.url
-    } else {
-      toast.error(d.error || "Error al procesar")
+    try {
+      const r = await fetch("/api/flow/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      })
+      const d = await r.json()
+      if (d.url) {
+        window.location.href = d.url
+      } else {
+        toast.error(d.error || "Error al procesar")
+        setSubscribing(false)
+      }
+    } catch {
+      toast.error("Error de conexión")
       setSubscribing(false)
     }
   }
@@ -891,7 +897,7 @@ function SettingsContent() {
 
           {/* Plan cards — show all, highlight current, allow switching */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {(Object.entries(PLAN_INFO) as [string, typeof PLAN_INFO[string]][]).map(([key, plan]) => {
+            {(isSports ? [["PRO", PLAN_INFO.PRO]] as [string, typeof PLAN_INFO[string]][] : Object.entries(PLAN_INFO) as [string, typeof PLAN_INFO[string]][]).map(([key, plan]) => {
               const isCurrent = key === currentPlan && subscription?.status === "ACTIVE"
               return (
                 <Card key={key} className={`relative border ${isCurrent ? "border-sky-400/50 bg-sky-500/5" : ""}`}>
