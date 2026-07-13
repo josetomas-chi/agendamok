@@ -505,7 +505,8 @@ model Appointment {
 
 model Payment {
   id                      String        @id @default(cuid())
-  appointmentId           String        @unique
+  appointmentId           String?       @unique
+  courtBookingId          String?       @unique
   amount                  Decimal       @db.Decimal(10, 2)
   currency                String        @default("ARS")
   status                  PaymentStatus @default(PENDING)
@@ -518,8 +519,9 @@ model Payment {
   createdAt               DateTime      @default(now())
   updatedAt               DateTime      @updatedAt
 
-  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  invoice     Invoice?
+  appointment  Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  courtBooking CourtBooking? @relation(fields: [courtBookingId], references: [id], onDelete: Cascade)
+  invoice      Invoice?
 
   @@map("payments")
 }
@@ -890,6 +892,7 @@ model CourtBooking {
   client         Client?                @relation(fields: [clientId], references: [id])
   recurringGroup RecurringBookingGroup? @relation(fields: [recurringGroupId], references: [id])
   coach          ClubCoach?             @relation(fields: [coachId], references: [id])
+  payment        Payment?
 
   @@index([businessId, startTime])
   @@index([courtId, startTime])

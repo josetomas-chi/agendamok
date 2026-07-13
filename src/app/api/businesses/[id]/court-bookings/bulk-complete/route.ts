@@ -10,9 +10,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!Array.isArray(bookingIds) || bookingIds.length === 0)
     return NextResponse.json({ error: "bookingIds requerido" }, { status: 400 })
 
+  const bookings = await prisma.courtBooking.findMany({
+    where: { id: { in: bookingIds }, businessId: id, deletedAt: null },
+    select: { id: true, price: true },
+  })
+
   await prisma.courtBooking.updateMany({
     where: { id: { in: bookingIds }, businessId: id, deletedAt: null },
     data: { status: "COMPLETED" },
   })
+
+  await Promise.all(bookings.map(b =>
+    prisma.payment.upsert({
+      where: { courtBookingId: b.id },
+      create: { courtBookingId: b.id, amount: b.price, status: "COMPLETED", method: "CASH", paidAt: new Date() },
+      update: { amount: b.price, status: "COMPLETED", paidAt: new Date() },
+    })
+  ))
+
   return NextResponse.json({ updated: bookingIds.length })
 }

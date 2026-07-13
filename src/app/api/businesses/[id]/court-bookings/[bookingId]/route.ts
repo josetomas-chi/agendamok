@@ -82,6 +82,25 @@ export async function PATCH(req: Request, { params }: Params) {
       },
     })
 
+    // Crear o actualizar Payment al completar
+    if (status === "COMPLETED") {
+      await prisma.payment.upsert({
+        where: { courtBookingId: bookingId },
+        create: {
+          courtBookingId: bookingId,
+          amount: booking.price,
+          status: "COMPLETED",
+          method: "CASH",
+          paidAt: new Date(),
+        },
+        update: {
+          amount: booking.price,
+          status: "COMPLETED",
+          paidAt: new Date(),
+        },
+      })
+    }
+
     // Email de modificación si cambió horario/cancha y hay cliente con email
     const timeChanged = startTime !== undefined || endTime !== undefined || courtId !== undefined
     if (timeChanged && booking.client?.email && status === undefined) {
