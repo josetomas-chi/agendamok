@@ -8,7 +8,8 @@ import { toast } from "sonner"
 import NewBookingModal from "./_components/new-booking-modal"
 import CoachesTab from "./_components/coaches-tab"
 
-type Court = { id: string; name: string; sport: string | null; color: string; isActive: boolean }
+type PricingRule = { days: number[]; startTime: string; endTime: string; fixedSlots: string[] }
+type Court = { id: string; name: string; sport: string | null; color: string; isActive: boolean; pricingRules?: PricingRule[] }
 type Client = { id: string; name: string; email: string | null; phone: string | null }
 type Booking = {
   id: string; courtId: string; clientId: string | null
@@ -432,6 +433,30 @@ function MiniCalendarClock({ selectedDate, onDateChange }: { selectedDate: Date;
   )
 }
 
+// Returns fixed blocks [{top, height, label}] for a court on a given day
+function getFixedBlocks(court: Court, date: Date) {
+  if (!court.pricingRules) return []
+  const dayOfWeek = date.getDay()
+  const origin = START_HOUR * 60
+  const blocks: { top: number; height: number; startLabel: string; endLabel: string }[] = []
+
+  for (const rule of court.pricingRules) {
+    if (!rule.fixedSlots || rule.fixedSlots.length === 0) continue
+    if (!rule.days.includes(dayOfWeek)) continue
+    const ruleEndMins = timeToMinutes(rule.endTime)
+    const sorted = [...rule.fixedSlots].filter(Boolean).sort()
+    sorted.forEach((slotStart, i) => {
+      const startMins = timeToMinutes(slotStart)
+      // End = next fixed slot start, or rule endTime
+      const endMins = i + 1 < sorted.length ? timeToMinutes(sorted[i + 1]) : ruleEndMins
+      const top = ((startMins - origin) / SLOT_MINUTES) * SLOT_HEIGHT
+      const height = ((endMins - startMins) / SLOT_MINUTES) * SLOT_HEIGHT
+      blocks.push({ top, height, startLabel: slotStart, endLabel: sorted[i + 1] ?? rule.endTime })
+    })
+  }
+  return blocks
+}
+
 // ─── Calendar grid ────────────────────────────────────────────────────────────
 
 function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotClick, onBookingClick, businessId, onSaved }: {
@@ -632,6 +657,22 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                       />
                     )
                   })}
+
+                  {/* Fixed blocks overlay */}
+                  {getFixedBlocks(court, selectedDate).map((block, bi) => (
+                    <div key={bi} className="absolute left-0 right-0 pointer-events-none z-[1]"
+                      style={{ top: block.top, height: block.height }}>
+                      {/* Top border line */}
+                      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "rgba(56,189,248,0.4)" }} />
+                      {/* Subtle fill */}
+                      <div className="absolute inset-0" style={{ background: "rgba(56,189,248,0.04)" }} />
+                      {/* Time label */}
+                      <span className="absolute top-1 left-1.5 text-[9px] font-bold leading-none select-none"
+                        style={{ color: "rgba(56,189,248,0.5)" }}>
+                        {block.startLabel}–{block.endLabel}
+                      </span>
+                    </div>
+                  ))}
 
                   {/* Bookings overlay */}
                   {getBookingsForCourt(court.id).map(b => {
