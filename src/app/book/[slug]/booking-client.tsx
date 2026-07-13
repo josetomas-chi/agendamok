@@ -75,10 +75,14 @@ export default function BookingClient({ slug }: { slug: string }) {
 // COURT BOOKING FLOW (Sports Club)
 // ─────────────────────────────────────────────────────────────────
 
+const SPORTS_BG = "#0d1b2a"
+const SPORTS_CARD = "#0f2236"
+const SPORTS_ACCENT = "#38bdf8"
+const SPORTS_BORDER = "rgba(56,189,248,0.15)"
+
 type CourtResult = Court & { slots: { time: string; price: number }[] }
 
 function CourtBookingFlow({ business, slug }: { business: Business; slug: string }) {
-  const brand = business.primaryColor || "#38bdf8"
   const today = startOfToday()
 
   // Search state
@@ -153,31 +157,47 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
   }
 
   return (
-    <div style={{ background: "#0f0f11", minHeight: "100vh", color: "#f4f4f5" }}>
+    <div style={{ background: SPORTS_BG, minHeight: "100vh", color: "#f0f6ff", fontFamily: "sans-serif" }}>
       <ChatWidget businessId={business.id} businessName={business.name} />
 
-      {/* HERO */}
+      {/* ── HEADER AgendaMok Sports ────────────────────── */}
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${SPORTS_BORDER}` }}>
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-black text-white">Agenda</span>
+          <span className="text-sm font-black" style={{ color: SPORTS_ACCENT }}>Mok</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ml-1" style={{ background: "rgba(56,189,248,0.12)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>Sports</span>
+        </div>
+        {business.phone && (
+          <a href={`tel:${business.phone}`} className="flex items-center gap-1 text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
+            <Phone className="w-3 h-3" /> {business.phone}
+          </a>
+        )}
+      </div>
+
+      {/* ── HERO (cover image del club) ────────────────── */}
       {step !== "confirmed" && (
-        <div className="relative" style={{ height: 200 }}>
+        <div className="relative" style={{ height: 220 }}>
           {business.coverImage ? (
-            <img src={business.coverImage} alt="" className="w-full h-full object-cover" />
+            <img src={business.coverImage} alt={business.name} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${brand}33, ${brand}11)` }} />
+            <div className="w-full h-full" style={{ background: `linear-gradient(135deg, rgba(56,189,248,0.2) 0%, rgba(13,27,42,0.8) 100%)` }} />
           )}
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(15,15,17,0.2) 0%, rgba(15,15,17,0.75) 70%, #0f0f11 100%)" }} />
-          <div className="absolute bottom-0 left-0 right-0 px-5 pb-4 flex items-end gap-3">
+          {/* gradient fade to bg */}
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(13,27,42,0) 30%, rgba(13,27,42,0.5) 70%, rgba(13,27,42,1) 100%)" }} />
+          {/* Club identity */}
+          <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 flex items-end gap-3">
             {business.logo ? (
-              <img src={business.logo} alt={business.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" style={{ border: "2px solid rgba(255,255,255,0.15)" }} />
+              <img src={business.logo} alt={business.name} className="w-14 h-14 rounded-2xl object-cover flex-shrink-0 shadow-xl" style={{ border: `2px solid ${SPORTS_ACCENT}40` }} />
             ) : (
-              <div className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center" style={{ background: brand }}>
-                <span className="text-xl font-black text-white">{business.name[0]}</span>
+              <div className="w-14 h-14 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-xl text-xl font-black text-white" style={{ background: SPORTS_CARD, border: `2px solid ${SPORTS_BORDER}` }}>
+                {business.name[0]}
               </div>
             )}
-            <div className="pb-0.5">
-              <h1 className="text-xl font-black leading-tight">{business.name}</h1>
+            <div>
+              <h1 className="text-xl font-black leading-tight text-white">{business.name}</h1>
               {(business.address || business.city) && (
-                <p className="text-xs mt-0.5 flex items-center gap-1" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  <MapPin className="w-3 h-3" />{[business.address, business.city].filter(Boolean).join(", ")}
+                <p className="text-xs mt-0.5 flex items-center gap-1" style={{ color: "rgba(255,255,255,0.45)" }}>
+                  <MapPin className="w-3 h-3 flex-shrink-0" />{[business.address, business.city].filter(Boolean).join(", ")}
                 </p>
               )}
             </div>
@@ -185,23 +205,24 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
         </div>
       )}
 
-      {/* SEARCH PANEL + RESULTS */}
+      {/* ── SEARCH + RESULTS ───────────────────────────── */}
       {(step === "home" || step === "court") && (
-        <div className="max-w-lg mx-auto">
-          {/* Search card */}
-          <div className="mx-4 -mt-4 rounded-2xl p-4 space-y-4 relative z-10" style={{ background: "#1a1a1d", border: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="max-w-lg mx-auto px-4 pb-24">
 
-            {/* Sport chips */}
+          {/* Search card */}
+          <div className="rounded-2xl p-4 mt-4 space-y-4" style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}` }}>
+
+            {/* Sport tabs */}
             {sports.length > 1 && (
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>Deporte</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: SPORTS_ACCENT }}>Deporte</p>
                 <div className="flex gap-2 flex-wrap">
                   {sports.map(s => (
                     <button key={s} onClick={() => setSelectedSport(s)}
                       className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
                       style={selectedSport === s
-                        ? { background: brand, color: "#fff" }
-                        : { background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                        ? { background: SPORTS_ACCENT, color: SPORTS_BG }
+                        : { background: "rgba(56,189,248,0.08)", color: "rgba(255,255,255,0.5)", border: `1px solid ${SPORTS_BORDER}` }}>
                       {s}
                     </button>
                   ))}
@@ -211,14 +232,14 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
 
             {/* Duration */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>Duración</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: SPORTS_ACCENT }}>Duración</p>
               <div className="flex gap-2">
                 {[60, 90, 120].map(d => (
                   <button key={d} onClick={() => setDuration(d)}
                     className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
                     style={duration === d
-                      ? { background: brand, color: "#fff" }
-                      : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                      ? { background: SPORTS_ACCENT, color: SPORTS_BG }
+                      : { background: "rgba(56,189,248,0.07)", color: "rgba(255,255,255,0.45)", border: `1px solid ${SPORTS_BORDER}` }}>
                     {d} min
                   </button>
                 ))}
@@ -227,19 +248,19 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
 
             {/* Date picker */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>Fecha</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: SPORTS_ACCENT }}>Fecha</p>
               <div className="flex items-center gap-2 mb-2">
                 <button onClick={() => setWeekOffset(w => Math.max(0, w - 1))} disabled={weekOffset === 0}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center disabled:opacity-30"
-                  style={{ background: "rgba(255,255,255,0.07)" }}>
+                  className="w-7 h-7 rounded-lg flex items-center justify-center disabled:opacity-30 transition-all"
+                  style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT }}>
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
-                <p className="flex-1 text-center text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
+                <p className="flex-1 text-center text-xs font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>
                   {format(weekDays[0], "d MMM", { locale: es })} — {format(weekDays[6], "d MMM", { locale: es })}
                 </p>
                 <button onClick={() => setWeekOffset(w => w + 1)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center"
-                  style={{ background: "rgba(255,255,255,0.07)" }}>
+                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
+                  style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT }}>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -252,8 +273,8 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
                     <button key={key} disabled={isPast} onClick={() => setSelectedDate(key)}
                       className="flex flex-col items-center py-2.5 rounded-xl transition-all disabled:opacity-25"
                       style={isSelected
-                        ? { background: brand, color: "#fff" }
-                        : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.55)" }}>
+                        ? { background: SPORTS_ACCENT, color: SPORTS_BG }
+                        : { background: "rgba(56,189,248,0.07)", color: "rgba(255,255,255,0.5)", border: `1px solid ${SPORTS_BORDER}` }}>
                       <span className="text-[8px] font-bold uppercase tracking-wide leading-none mb-1">{format(day, "EEE", { locale: es })}</span>
                       <span className="text-sm font-bold">{format(day, "d")}</span>
                     </button>
@@ -264,78 +285,77 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
 
             <button onClick={search} disabled={searching}
               className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60"
-              style={{ background: brand, color: "#fff" }}>
+              style={{ background: SPORTS_ACCENT, color: SPORTS_BG }}>
               {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
               {searching ? "Buscando..." : "Buscar canchas disponibles"}
             </button>
           </div>
 
           {/* Results */}
-          <div className="px-4 pb-24 mt-6 space-y-3">
+          <div className="mt-5 space-y-3">
             {searching && (
               <div className="flex items-center justify-center gap-2 py-10" style={{ color: "rgba(255,255,255,0.3)" }}>
-                <Loader2 className="w-5 h-5 animate-spin" /><span className="text-sm">Buscando disponibilidad...</span>
+                <Loader2 className="w-5 h-5 animate-spin" style={{ color: SPORTS_ACCENT }} />
+                <span className="text-sm">Buscando disponibilidad...</span>
               </div>
             )}
 
-            {!searching && hasSearched && results.length === 0 && (
-              <div className="py-10 text-center">
-                <p className="text-sm" style={{ color: "rgba(255,255,255,0.35)" }}>Sin canchas disponibles</p>
-                <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.2)" }}>Prueba otro día o duración</p>
-              </div>
-            )}
-
-            {!searching && hasSearched && results.length > 0 && (
+            {!searching && hasSearched && (
               <>
-                <p className="text-xs font-bold uppercase tracking-widest px-1" style={{ color: "rgba(255,255,255,0.3)" }}>
-                  {format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })} · {duration} min
-                </p>
-                {results.filter(c => c.slots.length > 0).map(court => (
-                  <div key={court.id} className="rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                    {/* Court header */}
-                    <div className="px-4 pt-4 pb-3 flex items-center gap-3">
-                      <div className="w-1 self-stretch rounded-full flex-shrink-0" style={{ backgroundColor: court.color }} />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm">{court.name}</p>
-                        {court.slots[0]?.price > 0 && (
-                          <p className="text-xs mt-0.5" style={{ color: brand }}>
-                            desde ${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")}/hr
-                          </p>
-                        )}
+                {results.filter(c => c.slots.length > 0).length === 0 ? (
+                  <div className="py-10 text-center">
+                    <p className="text-sm" style={{ color: "rgba(255,255,255,0.35)" }}>Sin canchas disponibles</p>
+                    <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.2)" }}>Prueba otro día o duración</p>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs font-bold uppercase tracking-widest capitalize px-1" style={{ color: SPORTS_ACCENT }}>
+                      {format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })} · {duration} min
+                    </p>
+                    {results.filter(c => c.slots.length > 0).map(court => (
+                      <div key={court.id} className="rounded-2xl overflow-hidden" style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}` }}>
+                        {/* Color bar */}
+                        <div className="h-1" style={{ background: court.color }} />
+                        {/* Court header */}
+                        <div className="px-4 pt-3 pb-2 flex items-center gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-sm text-white">{court.name}</p>
+                            {court.slots[0]?.price > 0 && (
+                              <p className="text-xs mt-0.5 font-semibold" style={{ color: SPORTS_ACCENT }}>
+                                desde ${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")}/hr
+                              </p>
+                            )}
+                          </div>
+                          {court.sponsorLogo && (
+                            <img src={court.sponsorLogo} alt={court.sponsorName || ""}
+                              className="h-9 w-auto max-w-[72px] object-contain flex-shrink-0 rounded"
+                              style={{ background: "rgba(255,255,255,0.06)", padding: "3px" }} />
+                          )}
+                        </div>
+                        {/* Time slots */}
+                        <div className="px-4 pb-4 grid grid-cols-4 gap-1.5">
+                          {court.slots.map(slot => (
+                            <button key={slot.time}
+                              onClick={() => {
+                                setSelectedCourt(court); setSelectedSlot(slot)
+                                setStep("form"); window.scrollTo({ top: 0, behavior: "smooth" })
+                              }}
+                              className="py-2.5 px-1 rounded-xl text-sm font-bold transition-all flex flex-col items-center gap-0.5 hover:scale-105"
+                              style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT, border: `1px solid rgba(56,189,248,0.2)` }}>
+                              <span>{slot.time}</span>
+                              {slot.price > 0 && <span className="text-[9px] font-normal opacity-70">${slot.price.toLocaleString("es-CL")}</span>}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      {court.sponsorLogo && (
-                        <img src={court.sponsorLogo} alt={court.sponsorName || ""} className="h-8 w-auto max-w-[60px] object-contain opacity-75 flex-shrink-0" />
-                      )}
-                    </div>
-                    {/* Time slots */}
-                    <div className="px-4 pb-4 grid grid-cols-4 gap-1.5">
-                      {court.slots.map(slot => (
-                        <button key={slot.time}
-                          onClick={() => {
-                            setSelectedCourt(court); setSelectedSlot(slot)
-                            setStep("form"); window.scrollTo({ top: 0, behavior: "smooth" })
-                          }}
-                          className="py-2.5 px-1 rounded-xl text-sm font-semibold transition-all flex flex-col items-center gap-0.5"
-                          style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.8)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                          <span>{slot.time}</span>
-                          {slot.price > 0 && <span className="text-[9px] font-normal opacity-60">${(slot.price).toLocaleString("es-CL")}</span>}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-
-                {results.filter(c => c.slots.length > 0).length === 0 && (
-                  <div className="py-8 text-center">
-                    <p className="text-sm" style={{ color: "rgba(255,255,255,0.35)" }}>Sin horarios disponibles para este día</p>
-                    <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.2)" }}>Prueba otra fecha o duración</p>
-                  </div>
+                    ))}
+                  </>
                 )}
               </>
             )}
 
             {!hasSearched && (
-              <p className="text-xs text-center py-6" style={{ color: "rgba(255,255,255,0.2)" }}>
+              <p className="text-xs text-center py-4" style={{ color: "rgba(255,255,255,0.2)" }}>
                 Selecciona fecha y presiona buscar
               </p>
             )}
@@ -343,90 +363,93 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
         </div>
       )}
 
-      {/* FORM */}
+      {/* ── FORM ───────────────────────────────────────── */}
       {step === "form" && selectedCourt && selectedSlot && (
         <div className="max-w-lg mx-auto">
-          <div className="sticky top-0 z-20 px-5 py-4 flex items-center gap-3" style={{ background: "rgba(15,15,17,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <button onClick={() => setStep("home")} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(255,255,255,0.07)" }}>
+          <div className="sticky top-0 z-20 px-4 py-3 flex items-center gap-3" style={{ background: `${SPORTS_BG}ee`, backdropFilter: "blur(12px)", borderBottom: `1px solid ${SPORTS_BORDER}` }}>
+            <button onClick={() => setStep("home")} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
+              style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT }}>
               <ChevronLeft className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
               <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: selectedCourt.color }} />
               <div className="min-w-0">
-                <p className="text-sm font-bold truncate">{selectedCourt.name}</p>
-                <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.4)" }}>
+                <p className="text-sm font-bold truncate text-white">{selectedCourt.name}</p>
+                <p className="text-xs truncate" style={{ color: SPORTS_ACCENT }}>
                   {format(parseISO(selectedDate), "d MMM", { locale: es })} · {selectedSlot.time} · {duration} min
                 </p>
               </div>
             </div>
             {selectedCourt.sponsorLogo && (
-              <img src={selectedCourt.sponsorLogo} alt={selectedCourt.sponsorName || ""} className="h-7 w-auto max-w-[56px] object-contain opacity-70 flex-shrink-0" />
+              <img src={selectedCourt.sponsorLogo} alt={selectedCourt.sponsorName || ""} className="h-7 w-auto max-w-[56px] object-contain flex-shrink-0 rounded" style={{ background: "rgba(255,255,255,0.06)", padding: "2px" }} />
             )}
           </div>
 
-          <div className="px-5 pb-10 space-y-6 pt-6">
-            <div className="rounded-2xl p-4 space-y-2.5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+          <div className="px-4 pb-10 pt-5 space-y-5">
+            {/* Summary */}
+            <div className="rounded-2xl p-4 space-y-2.5" style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}` }}>
               <div className="flex items-center gap-2.5">
                 <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: selectedCourt.color }} />
-                <span className="font-bold text-sm">{selectedCourt.name}</span>
+                <span className="font-bold text-sm text-white">{selectedCourt.name}</span>
                 {selectedSlot.price > 0 && (
-                  <span className="ml-auto font-bold text-sm" style={{ color: brand }}>${selectedSlot.price.toLocaleString("es-CL")}</span>
+                  <span className="ml-auto font-bold text-sm" style={{ color: SPORTS_ACCENT }}>${selectedSlot.price.toLocaleString("es-CL")}</span>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+              <div className="flex items-center gap-2 text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
                 <Clock className="w-3.5 h-3.5" /> {duration} min
               </div>
-              <div className="flex items-center gap-2 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+              <div className="flex items-center gap-2 text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
                 <Calendar className="w-3.5 h-3.5" />
                 {format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })} a las {selectedSlot.time}
               </div>
             </div>
 
-            <div className="space-y-4">
-              <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.3)" }}>Tus datos</label>
+            {/* Fields */}
+            <div className="space-y-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: SPORTS_ACCENT }}>Tus datos</p>
               {[
                 { key: "name", label: "Nombre completo", type: "text", placeholder: "María González" },
                 { key: "email", label: "Email", type: "email", placeholder: "tu@email.com" },
                 { key: "phone", label: "Teléfono (opcional)", type: "tel", placeholder: "+56 9 1234 5678" },
               ].map(({ key, label, type, placeholder }) => (
-                <div key={key} className="space-y-1.5">
-                  <label className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</label>
+                <div key={key} className="space-y-1">
+                  <label className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.4)" }}>{label}</label>
                   <input type={type} value={(form as Record<string, string>)[key]}
                     onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
                     placeholder={placeholder}
-                    className="w-full rounded-2xl px-4 py-3 text-sm outline-none placeholder:text-white/25"
-                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "#f4f4f5" }} />
+                    className="w-full rounded-xl px-4 py-3 text-sm outline-none placeholder:opacity-25 transition-all"
+                    style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}`, color: "#f0f6ff" }} />
                 </div>
               ))}
               <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                 rows={3} placeholder="Comentario (opcional)"
-                className="w-full rounded-2xl px-4 py-3.5 text-sm outline-none resize-none placeholder:text-white/20"
-                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "#f4f4f5" }} />
+                className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none placeholder:opacity-25"
+                style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}`, color: "#f0f6ff" }} />
             </div>
 
             <button onClick={handleConfirm} disabled={submitting || !form.name || !form.email}
-              className="w-full py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40"
-              style={{ background: brand, color: "#fff" }}>
+              className="w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
+              style={{ background: SPORTS_ACCENT, color: SPORTS_BG }}>
               {submitting ? <><Loader2 className="w-4 h-4 animate-spin" />Confirmando...</> : "Confirmar reserva →"}
             </button>
           </div>
         </div>
       )}
 
-      {/* CONFIRMED */}
+      {/* ── CONFIRMED ──────────────────────────────────── */}
       {step === "confirmed" && selectedCourt && selectedSlot && (
-        <div className="max-w-lg mx-auto px-5 py-16 flex flex-col items-center text-center space-y-6">
-          <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ background: "rgba(34,197,94,0.15)" }}>
+        <div className="max-w-lg mx-auto px-4 py-16 flex flex-col items-center text-center space-y-6">
+          <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)" }}>
             <Check className="w-12 h-12" style={{ color: "#22c55e" }} />
           </div>
           <div>
-            <h2 className="text-2xl font-black">¡Reserva confirmada!</h2>
+            <h2 className="text-2xl font-black text-white">¡Reserva confirmada!</h2>
             <p className="text-sm mt-2" style={{ color: "rgba(255,255,255,0.4)" }}>Enviamos la confirmación a {form.email}</p>
           </div>
-          <div className="w-full rounded-2xl p-5 space-y-3 text-left" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="w-full rounded-2xl p-5 space-y-3 text-left" style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}` }}>
             <div className="flex items-center gap-2.5">
               <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: selectedCourt.color }} />
-              <span className="font-bold text-sm">{selectedCourt.name}</span>
+              <span className="font-bold text-sm text-white">{selectedCourt.name}</span>
             </div>
             <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
               <Clock className="w-4 h-4" /> {duration} min
@@ -444,19 +467,20 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
           </div>
           <a href={`https://wa.me/?text=${encodeURIComponent(`Reservé ${selectedCourt.name} en ${business.name} — ${format(parseISO(selectedDate), "d MMM", { locale: es })} ${selectedSlot.time} 🎾`)}`}
             target="_blank" rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold"
-            style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <Share2 className="w-4 h-4" /> Compartir
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold transition-all"
+            style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>
+            <Share2 className="w-4 h-4" /> Compartir por WhatsApp
           </a>
-          <button onClick={reset} className="text-sm font-semibold" style={{ color: brand }}>
+          <button onClick={reset} className="text-sm font-semibold" style={{ color: SPORTS_ACCENT }}>
             Reservar otra cancha →
           </button>
         </div>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 py-3 flex items-center justify-center gap-1.5 pointer-events-none">
+      {/* Footer */}
+      <div className="fixed bottom-0 left-0 right-0 py-2.5 flex items-center justify-center gap-1.5 pointer-events-none" style={{ background: `linear-gradient(to top, ${SPORTS_BG}, transparent)` }}>
         <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.15)" }}>Reservas por</span>
-        <span className="text-[10px] font-black" style={{ color: "rgba(255,255,255,0.25)" }}>AgendaMok</span>
+        <span className="text-[10px] font-black" style={{ color: "rgba(56,189,248,0.4)" }}>AgendaMok Sports</span>
       </div>
     </div>
   )
