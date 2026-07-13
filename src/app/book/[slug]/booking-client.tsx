@@ -465,12 +465,13 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
               </div>
             )}
           </div>
-          <a href={`https://wa.me/?text=${encodeURIComponent(`Reservé ${selectedCourt.name} en ${business.name} — ${format(parseISO(selectedDate), "d MMM", { locale: es })} ${selectedSlot.time} 🎾`)}`}
+          <a href={`https://wa.me/?text=${encodeURIComponent(`🎾 *${business.name}*\n📅 ${format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })}\n🕐 ${selectedSlot.time} · ${duration} min\n🏟️ ${selectedCourt.name}${selectedSlot.price > 0 ? `\n💰 $${selectedSlot.price.toLocaleString("es-CL")}` : ""}\n\nReservado con AgendaMok Sports`)}`}
             target="_blank" rel="noopener noreferrer"
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold transition-all"
             style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>
             <Share2 className="w-4 h-4" /> Compartir por WhatsApp
           </a>
+
           <button onClick={reset} className="text-sm font-semibold" style={{ color: SPORTS_ACCENT }}>
             Reservar otra cancha →
           </button>
