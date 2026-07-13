@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   keywords: ["agenda online", "reservas online", "turnos online", "software peluquería", "software clínica", "booking Chile", "AgendaMok"],
   authors: [{ name: "AgendaMok" }],
   creator: "AgendaMok",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"),
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
