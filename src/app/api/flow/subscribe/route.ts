@@ -15,12 +15,12 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { business: { include: { subscription: true } } },
+      include: { businessOwner: { include: { subscription: true } } },
     })
 
-    if (!user?.business) return NextResponse.json({ error: "No tienes un negocio" }, { status: 400 })
+    if (!user?.businessOwner) return NextResponse.json({ error: "No tienes un negocio" }, { status: 400 })
 
-    const business = user.business
+    const business = user.businessOwner
     const subscription = business.subscription
 
     let flowCustomerId = subscription?.flowCustomerId
