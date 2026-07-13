@@ -329,7 +329,7 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
                           {court.sponsorLogo && (
                             <img src={court.sponsorLogo} alt={court.sponsorName || ""}
                               className="h-9 w-auto max-w-[72px] object-contain flex-shrink-0 rounded"
-                              style={{ background: "rgba(255,255,255,0.06)", padding: "3px" }} />
+                              style={{ background: "white", padding: "4px" }} />
                           )}
                         </div>
                         {/* Time slots */}
@@ -381,7 +381,7 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
               </div>
             </div>
             {selectedCourt.sponsorLogo && (
-              <img src={selectedCourt.sponsorLogo} alt={selectedCourt.sponsorName || ""} className="h-7 w-auto max-w-[56px] object-contain flex-shrink-0 rounded" style={{ background: "rgba(255,255,255,0.06)", padding: "2px" }} />
+              <img src={selectedCourt.sponsorLogo} alt={selectedCourt.sponsorName || ""} className="h-7 w-auto max-w-[56px] object-contain flex-shrink-0 rounded" style={{ background: "white", padding: "3px" }} />
             )}
           </div>
 
