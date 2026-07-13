@@ -520,7 +520,7 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
               </div>
             )}
           </div>
-          <a href={`https://wa.me/?text=${encodeURIComponent(`🎾 *${business.name}*\n📅 ${format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })}\n🕐 ${selectedSlot.time} · ${duration} min\n🏟️ ${selectedCourt.name}${selectedSlot.price > 0 ? `\n💰 $${selectedSlot.price.toLocaleString("es-CL")}` : ""}\n\nReservado con AgendaMok Sports`)}`}
+          <a href={`https://wa.me/?text=${encodeURIComponent(`*${business.name}*\n📅 ${format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })}\n⏰ ${selectedSlot.time} · ${duration} min\n🎾 ${selectedCourt.name}${selectedSlot.price > 0 ? `\n💵 $${selectedSlot.price.toLocaleString("es-CL")}` : ""}\n\n_Reservado con AgendaMok Sports_`)}`}
             target="_blank" rel="noopener noreferrer"
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold transition-all"
             style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>
