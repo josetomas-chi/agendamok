@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { addMinutes, parseISO } from "date-fns"
+import { sendCourtBookingConfirmation } from "@/lib/email"
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -13,7 +14,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   const business = await prisma.business.findUnique({
     where: { slug, isActive: true, deletedAt: null },
-    select: { id: true },
+    select: { id: true, name: true },
   })
   if (!business) return NextResponse.json({ error: "No encontrado" }, { status: 404 })
 
@@ -41,6 +42,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     })
   }
 
+  const court = await prisma.court.findUnique({
+    where: { id: courtId },
+    select: { name: true, sponsorName: true, sponsorLogo: true, sponsorUrl: true },
+  })
+
   const booking = await prisma.courtBooking.create({
     data: {
       businessId: business.id,
@@ -53,6 +59,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       status: "CONFIRMED",
     },
   })
+
+  // Send confirmation email (non-blocking)
+  sendCourtBookingConfirmation({
+    clientName,
+    clientEmail,
+    businessName: business.name,
+    courtName: court?.name ?? courtId,
+    startTime: startTime.toISOString(),
+    endTime: endTime.toISOString(),
+    price,
+    sponsorName: court?.sponsorName ?? undefined,
+    sponsorLogo: court?.sponsorLogo ?? undefined,
+    sponsorUrl: court?.sponsorUrl ?? undefined,
+  }).catch(() => {})
 
   return NextResponse.json({ booking })
 }
