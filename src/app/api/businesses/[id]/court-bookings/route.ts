@@ -10,19 +10,21 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const { searchParams } = new URL(req.url)
   const from = searchParams.get("from")
   const to = searchParams.get("to")
+  const statusFilter = searchParams.get("status")
   const bookings = await prisma.courtBooking.findMany({
     where: {
       businessId: id,
       deletedAt: null,
-      status: { not: "CANCELLED" },
+      status: statusFilter ? statusFilter : { not: "CANCELLED" },
       ...(from && to && { startTime: { gte: new Date(from), lte: new Date(to) } }),
     },
     include: {
       court: { select: { id: true, name: true, sport: true, color: true } },
       client: { select: { id: true, name: true, email: true, phone: true } },
       coach: { select: { id: true, name: true, color: true } },
+      payment: { select: { amount: true, method: true, paidAt: true } },
     },
-    orderBy: { startTime: "asc" },
+    orderBy: { startTime: "desc" },
   })
   return NextResponse.json({ bookings })
 }
