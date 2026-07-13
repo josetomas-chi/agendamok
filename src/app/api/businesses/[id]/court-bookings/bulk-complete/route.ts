@@ -23,8 +23,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   await Promise.all(bookings.map(b =>
     prisma.payment.upsert({
       where: { courtBookingId: b.id },
-      create: { courtBookingId: b.id, amount: b.price, status: "COMPLETED", method: "CASH", paidAt: new Date() },
-      update: { amount: b.price, status: "COMPLETED", paidAt: new Date() },
+      create: { courtBookingId: b.id, amount: b.price, status: "PAID", method: "CASH", paidAt: new Date() },
+      update: { amount: b.price, status: "PAID", paidAt: new Date() },
     })
   ))
 

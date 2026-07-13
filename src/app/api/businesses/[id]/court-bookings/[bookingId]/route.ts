@@ -89,13 +89,13 @@ export async function PATCH(req: Request, { params }: Params) {
         create: {
           courtBookingId: bookingId,
           amount: booking.price,
-          status: "COMPLETED",
+          status: "PAID",
           method: "CASH",
           paidAt: new Date(),
         },
         update: {
           amount: booking.price,
-          status: "COMPLETED",
+          status: "PAID",
           paidAt: new Date(),
         },
       })
