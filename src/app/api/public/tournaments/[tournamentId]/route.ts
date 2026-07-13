@@ -29,6 +29,7 @@ export async function GET(_: Request, { params }: Params) {
       participantType: tournament.participantType,
       startDate: tournament.startDate,
       endDate: tournament.endDate,
+      flyer: tournament.flyer,
       maxParticipants: tournament.maxParticipants,
       entryFee: tournament.entryFee,
       status: tournament.status,

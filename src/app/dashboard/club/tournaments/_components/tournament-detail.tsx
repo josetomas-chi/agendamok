@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect, useCallback } from "react"
-import { ArrowLeft, UserPlus, Play, Trophy, X, Check, ChevronRight, Swords, Tag, Plus, Pencil, Link2 } from "lucide-react"
+import { ArrowLeft, UserPlus, Play, Trophy, X, Check, ChevronRight, Swords, Tag, Plus, Pencil, Link2, ImagePlus, Loader2 } from "lucide-react"
 import { LadderView } from "./ladder-view"
 import { StatsView } from "./stats-view"
 import { toast } from "sonner"
@@ -28,6 +28,7 @@ type Tournament = {
   startDate: string; endDate: string; maxParticipants: number | null
   entryFee: string | null; status: "DRAFT" | "OPEN" | "IN_PROGRESS" | "FINISHED"
   description: string | null; groupCount: number | null; advanceCount: number | null; courtCount: number | null
+  flyer: string | null
   categories: Category[]; participants: Participant[]; matches: Match[]
   scheduleDays: { id: string; date: string; startTime: string; endTime: string }[]
 }
@@ -71,6 +72,9 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
   const [catDesc, setCatDesc] = useState("")
   const [catSaving, setCatSaving] = useState(false)
   const [editCat, setEditCat] = useState<Category | null>(null)
+
+  // Flyer upload
+  const [uploadingFlyer, setUploadingFlyer] = useState(false)
 
   // Fixture
   const [generating, setGenerating] = useState(false)
@@ -362,6 +366,31 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+          {/* Flyer upload */}
+          <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all cursor-pointer"
+            style={{ background: tournament.flyer ? "rgba(201,168,76,0.15)" : "rgba(13,27,42,0.06)", border: `1px solid ${tournament.flyer ? "rgba(201,168,76,0.4)" : "rgba(13,27,42,0.15)"}`, color: tournament.flyer ? GOLD : "rgba(13,27,42,0.45)" }}
+            title={tournament.flyer ? "Cambiar flyer para WhatsApp" : "Subir flyer para previsualización en WhatsApp"}>
+            {uploadingFlyer ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImagePlus className="w-3.5 h-3.5" />}
+            {tournament.flyer ? "Flyer ✓" : "Subir flyer"}
+            <input type="file" accept="image/*" className="hidden" disabled={uploadingFlyer}
+              onChange={async e => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                setUploadingFlyer(true)
+                const fd = new FormData()
+                fd.append("file", file)
+                const r = await fetch("/api/upload", { method: "POST", body: fd })
+                const d = await r.json()
+                if (!r.ok) { toast.error(d.error || "Error al subir"); setUploadingFlyer(false); return }
+                await fetch(`/api/businesses/${businessId}/tournaments/${tournament.id}`, {
+                  method: "PATCH", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ flyer: d.url }),
+                })
+                setTournament(t => t ? { ...t, flyer: d.url } : t)
+                toast.success("Flyer guardado — la previsualización de WhatsApp se actualizará")
+                setUploadingFlyer(false)
+              }} />
+          </label>
           {tournament.status === "OPEN" && (
             <button onClick={() => {
               const url = `${window.location.origin}/torneos/${tournament.id}`
