@@ -51,18 +51,26 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
 
   const result = courts.map(court => {
     const rulesForDay = court.pricingRules.filter(r => r.days.includes(dayOfWeek))
-    let openHour = 8, closeHour = 22
+
+    // Parse HH:MM properly (including minutes)
+    function parseTime(t: string): { h: number; m: number } {
+      const [h, m] = t.split(":").map(Number)
+      return { h: h || 0, m: m || 0 }
+    }
+    function timeToMinutes(t: string) { const { h, m } = parseTime(t); return h * 60 + m }
+
+    let openMinutes = 8 * 60, closeMinutes = 23 * 60
     if (rulesForDay.length > 0) {
-      openHour = Math.min(...rulesForDay.map(r => Number(r.startTime.split(":")[0])))
-      closeHour = Math.max(...rulesForDay.map(r => Number(r.endTime.split(":")[0])))
+      openMinutes = Math.min(...rulesForDay.map(r => timeToMinutes(r.startTime)))
+      closeMinutes = Math.max(...rulesForDay.map(r => timeToMinutes(r.endTime)))
     }
 
     const courtBookings = bookings.filter(b => b.courtId === court.id)
     const slots: { time: string; price: number }[] = []
     let cursor = new Date(dayStart)
-    cursor.setHours(openHour, 0, 0, 0)
+    cursor.setHours(Math.floor(openMinutes / 60), openMinutes % 60, 0, 0)
     const cutoff = new Date(dayStart)
-    cutoff.setHours(closeHour, 0, 0, 0)
+    cutoff.setHours(Math.floor(closeMinutes / 60), closeMinutes % 60, 0, 0)
 
     while (cursor < cutoff) {
       const slotEnd = addMinutes(cursor, duration)
@@ -74,11 +82,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
           return cursor < bEnd && slotEnd > bStart
         })
         if (!overlaps) {
-          const slotHour = cursor.getHours()
+          const cursorMinutes = cursor.getHours() * 60 + cursor.getMinutes()
           const rule = rulesForDay.find(r => {
-            const rStart = Number(r.startTime.split(":")[0])
-            const rEnd = Number(r.endTime.split(":")[0])
-            return slotHour >= rStart && slotHour < rEnd
+            return cursorMinutes >= timeToMinutes(r.startTime) && cursorMinutes < timeToMinutes(r.endTime)
           })
           slots.push({ time: format(cursor, "HH:mm"), price: rule ? Number(rule.price) : 0 })
         }
