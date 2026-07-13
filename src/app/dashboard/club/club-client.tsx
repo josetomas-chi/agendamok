@@ -658,20 +658,10 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                     )
                   })}
 
-                  {/* Fixed blocks overlay */}
+                  {/* Fixed blocks overlay — hides internal 30-min grid lines */}
                   {getFixedBlocks(court, selectedDate).map((block, bi) => (
                     <div key={bi} className="absolute left-0 right-0 pointer-events-none z-[1]"
-                      style={{ top: block.top, height: block.height }}>
-                      {/* Top border line */}
-                      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "rgba(56,189,248,0.4)" }} />
-                      {/* Subtle fill */}
-                      <div className="absolute inset-0" style={{ background: "rgba(56,189,248,0.04)" }} />
-                      {/* Time label */}
-                      <span className="absolute top-1 left-1.5 text-[9px] font-bold leading-none select-none"
-                        style={{ color: "rgba(56,189,248,0.5)" }}>
-                        {block.startLabel}–{block.endLabel}
-                      </span>
-                    </div>
+                      style={{ top: block.top, height: block.height, background: "#ffffff", borderTop: "1px solid rgba(13,27,42,0.1)" }} />
                   ))}
 
                   {/* Bookings overlay */}
