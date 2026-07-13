@@ -104,6 +104,7 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
   const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "" })
   const [createAccount, setCreateAccount] = useState(false)
   const [password, setPassword] = useState("")
+  const [emailExists, setEmailExists] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(today, weekOffset * 7 + i))
@@ -428,7 +429,6 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
               <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: SPORTS_ACCENT }}>Tus datos</p>
               {[
                 { key: "name", label: "Nombre completo", type: "text", placeholder: "María González" },
-                { key: "email", label: "Email", type: "email", placeholder: "tu@email.com" },
                 { key: "phone", label: "Teléfono (opcional)", type: "tel", placeholder: "+56 9 1234 5678" },
               ].map(({ key, label, type, placeholder }) => (
                 <div key={key} className="space-y-1">
@@ -440,13 +440,37 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
                     style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}`, color: "#f0f6ff" }} />
                 </div>
               ))}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.4)" }}>Email</label>
+                <input type="email" value={form.email}
+                  onChange={e => { setForm(f => ({ ...f, email: e.target.value })); setEmailExists(false) }}
+                  onBlur={async e => {
+                    const email = e.target.value.trim()
+                    if (!email || !email.includes("@")) return
+                    const r = await fetch(`/api/book/${slug}/check-email?email=${encodeURIComponent(email)}`)
+                    const d = await r.json()
+                    setEmailExists(d.exists)
+                  }}
+                  placeholder="tu@email.com"
+                  className="w-full rounded-xl px-4 py-3 text-sm outline-none placeholder:opacity-25 transition-all"
+                  style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}`, color: "#f0f6ff" }} />
+              </div>
               <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                 rows={3} placeholder="Comentario (opcional)"
                 className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none placeholder:opacity-25"
                 style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}`, color: "#f0f6ff" }} />
             </div>
 
-            {/* Account creation invite */}
+            {/* Account creation / already registered */}
+            {emailExists ? (
+              <div className="rounded-2xl px-4 py-3.5 flex items-center gap-3" style={{ background: "rgba(56,189,248,0.06)", border: `1px solid ${SPORTS_ACCENT}40` }}>
+                <Check className="w-4 h-4 flex-shrink-0" style={{ color: SPORTS_ACCENT }} />
+                <div>
+                  <p className="text-sm font-bold text-white">Ya tienes cuenta</p>
+                  <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>Tu reserva quedará asociada a tu perfil automáticamente</p>
+                </div>
+              </div>
+            ) : (
             <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${createAccount ? SPORTS_ACCENT + "50" : SPORTS_BORDER}`, background: createAccount ? "rgba(56,189,248,0.05)" : SPORTS_CARD }}>
               <button
                 type="button"
@@ -481,8 +505,9 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
                 </div>
               )}
             </div>
+            )}
 
-            <button onClick={handleConfirm} disabled={submitting || !form.name || !form.email || (createAccount && password.length > 0 && password.length < 6)}
+            <button onClick={handleConfirm} disabled={submitting || !form.name || !form.email || (!emailExists && createAccount && password.length > 0 && password.length < 6)}
               className="w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
               style={{ background: SPORTS_ACCENT, color: SPORTS_BG }}>
               {submitting ? <><Loader2 className="w-4 h-4 animate-spin" />Confirmando...</> : "Confirmar reserva →"}
