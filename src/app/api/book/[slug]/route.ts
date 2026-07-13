@@ -10,7 +10,12 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
     select: {
       id: true, name: true, category: true, description: true, logo: true, phone: true,
       address: true, city: true, onlinePaymentsEnabled: true, primaryColor: true,
-      coverImage: true,
+      coverImage: true, businessType: true,
+      courts: {
+        where: { isActive: true },
+        select: { id: true, name: true, sport: true, color: true, description: true, pricingRules: { select: { days: true, startTime: true, endTime: true, price: true } } },
+        orderBy: { sortOrder: "asc" },
+      },
       services: {
         where: { isActive: true, deletedAt: null },
         select: { id: true, name: true, description: true, duration: true, price: true, color: true, categoryId: true,

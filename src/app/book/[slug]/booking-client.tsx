@@ -18,21 +18,443 @@ type Staff = {
   id: string; color: string; specialty: string | null; bio: string | null
   user: { name: string | null; image: string | null }
 }
+type PricingRule = { days: number[]; startTime: string; endTime: string; price: number }
+type Court = { id: string; name: string; sport: string | null; color: string; description: string | null; pricingRules: PricingRule[] }
 type Business = {
   id: string; name: string; category: string; description: string | null
   logo: string | null; coverImage: string | null; phone: string | null
   address: string | null; city: string | null
   onlinePaymentsEnabled: boolean; primaryColor: string | null
+  businessType: string
+  courts: Court[]
   services: Service[]; staff: Staff[]
 }
 
 type Step = "home" | "staff" | "datetime" | "form" | "confirmed"
+type CourtStep = "home" | "court" | "datetime" | "form" | "confirmed"
 type PayMethod = "online" | "local"
 
 export default function BookingClient({ slug }: { slug: string }) {
   const [business, setBusiness] = useState<Business | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+
+  useEffect(() => {
+    fetch(`/api/book/${slug}`)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(d => setBusiness(d.business))
+      .catch(() => setNotFound(true))
+      .finally(() => setLoading(false))
+  }, [slug])
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "#0f0f11" }}>
+      <div className="flex flex-col items-center gap-3">
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#38bdf8" }} />
+        <p className="text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>Cargando...</p>
+      </div>
+    </div>
+  )
+
+  if (notFound || !business) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "#0f0f11" }}>
+      <div className="text-center space-y-2">
+        <p className="text-lg font-semibold" style={{ color: "rgba(255,255,255,0.7)" }}>Negocio no encontrado</p>
+        <p className="text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>El link que seguiste no existe o está inactivo.</p>
+      </div>
+    </div>
+  )
+
+  if (business.businessType === "SPORTS_CLUB") {
+    return <CourtBookingFlow business={business} slug={slug} />
+  }
+  return <ServiceBookingFlow business={business} slug={slug} />
+}
+
+// ─────────────────────────────────────────────────────────────────
+// COURT BOOKING FLOW (Sports Club)
+// ─────────────────────────────────────────────────────────────────
+
+function CourtBookingFlow({ business, slug }: { business: Business; slug: string }) {
+  const brand = business.primaryColor || "#38bdf8"
+  const today = startOfToday()
+
+  const [step, setStep] = useState<CourtStep>("home")
+  const [selectedCourt, setSelectedCourt] = useState<Court | null>(null)
+  const [selectedDate, setSelectedDate] = useState("")
+  const [selectedSlot, setSelectedSlot] = useState<{ time: string; price: number } | null>(null)
+  const [duration, setDuration] = useState(60)
+  const [slots, setSlots] = useState<{ time: string; price: number }[]>([])
+  const [loadingSlots, setLoadingSlots] = useState(false)
+  const [weekOffset, setWeekOffset] = useState(0)
+  const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "" })
+  const [submitting, setSubmitting] = useState(false)
+
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(today, weekOffset * 7 + i))
+
+  useEffect(() => {
+    if (!selectedDate || !selectedCourt) return
+    setLoadingSlots(true)
+    setSelectedSlot(null)
+    const params = new URLSearchParams({ courtId: selectedCourt.id, date: selectedDate, duration: String(duration) })
+    fetch(`/api/book/${slug}/courts/slots?${params}`)
+      .then(r => r.json())
+      .then(d => setSlots(d.slots || []))
+      .finally(() => setLoadingSlots(false))
+  }, [selectedDate, selectedCourt, duration, slug])
+
+  async function handleConfirm() {
+    if (!selectedCourt || !selectedDate || !selectedSlot || !form.name || !form.email) return
+    setSubmitting(true)
+    const r = await fetch(`/api/book/${slug}/courts/book`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        courtId: selectedCourt.id,
+        date: selectedDate,
+        time: selectedSlot.time,
+        duration,
+        clientName: form.name,
+        clientEmail: form.email,
+        clientPhone: form.phone || undefined,
+        notes: form.notes || undefined,
+        price: selectedSlot.price,
+      }),
+    })
+    if (!r.ok) {
+      const d = await r.json()
+      alert(d.error || "Error al confirmar")
+      setSubmitting(false)
+      return
+    }
+    setStep("confirmed")
+    setSubmitting(false)
+  }
+
+  function reset() {
+    setStep("home"); setSelectedCourt(null); setSelectedDate(""); setSelectedSlot(null)
+    setWeekOffset(0); setForm({ name: "", email: "", phone: "", notes: "" })
+  }
+
+  // Group courts by sport
+  const sports = [...new Set(business.courts.map(c => c.sport || "General"))]
+
+  return (
+    <div style={{ background: "#0f0f11", minHeight: "100vh", color: "#f4f4f5" }}>
+      <ChatWidget businessId={business.id} businessName={business.name} />
+
+      {/* HERO */}
+      {(step === "home" || step === "court") && (
+        <div className="relative" style={{ height: 220 }}>
+          {business.coverImage ? (
+            <img src={business.coverImage} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${brand}33, ${brand}11)` }} />
+          )}
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(15,15,17,0.1) 0%, rgba(15,15,17,0.7) 70%, #0f0f11 100%)" }} />
+          <div className="absolute bottom-0 left-0 right-0 px-5 pb-5 flex items-end gap-4">
+            {business.logo ? (
+              <img src={business.logo} alt={business.name} className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 shadow-xl" style={{ border: "2px solid rgba(255,255,255,0.15)" }} />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-xl" style={{ background: brand }}>
+                <span className="text-2xl font-black text-white">{business.name[0]}</span>
+              </div>
+            )}
+            <div className="pb-1">
+              <h1 className="text-2xl font-black leading-tight">{business.name}</h1>
+              <p className="text-sm mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>{business.category}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HOME — court list */}
+      {step === "home" && (
+        <>
+          <div className="px-5 pt-4 pb-2 flex flex-wrap gap-x-4 gap-y-1.5">
+            {(business.address || business.city) && (
+              <span className="flex items-center gap-1.5 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                {[business.address, business.city].filter(Boolean).join(", ")}
+              </span>
+            )}
+            {business.phone && (
+              <a href={`tel:${business.phone}`} className="flex items-center gap-1.5 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                <Phone className="w-3.5 h-3.5 flex-shrink-0" /> {business.phone}
+              </a>
+            )}
+          </div>
+
+          <div className="mt-6 px-5 pb-24 space-y-6">
+            <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.35)" }}>Reservar cancha</h2>
+
+            {sports.map(sport => {
+              const courts = business.courts.filter(c => (c.sport || "General") === sport)
+              return (
+                <div key={sport}>
+                  {sports.length > 1 && (
+                    <h3 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: brand }}>{sport}</h3>
+                  )}
+                  <div className="space-y-2">
+                    {courts.map(court => (
+                      <button key={court.id} onClick={() => { setSelectedCourt(court); setStep("court") }}
+                        className="w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all"
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                        <div className="w-3 h-10 rounded-full flex-shrink-0" style={{ backgroundColor: court.color }} />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm">{court.name}</p>
+                          {court.description && (
+                            <p className="text-xs mt-0.5 line-clamp-1" style={{ color: "rgba(255,255,255,0.35)" }}>{court.description}</p>
+                          )}
+                          {court.pricingRules.length > 0 && (
+                            <p className="text-xs mt-1" style={{ color: brand }}>
+                              desde ${Math.min(...court.pricingRules.map(r => Number(r.price))).toLocaleString("es-CL")}/hr
+                            </p>
+                          )}
+                        </div>
+                        <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "rgba(255,255,255,0.2)" }} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+
+            {business.courts.length === 0 && (
+              <p className="text-sm text-center py-10" style={{ color: "rgba(255,255,255,0.3)" }}>Sin canchas disponibles</p>
+            )}
+          </div>
+
+          <div className="fixed bottom-0 left-0 right-0 py-3 flex items-center justify-center gap-1.5" style={{ background: "linear-gradient(to top, #0f0f11, transparent)", pointerEvents: "none" }}>
+            <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.2)" }}>Reservas por</span>
+            <span className="text-[10px] font-black" style={{ color: "rgba(255,255,255,0.35)" }}>AgendaMok</span>
+          </div>
+        </>
+      )}
+
+      {/* COURT DETAIL — duration + date/time */}
+      {step === "court" && selectedCourt && (
+        <div className="max-w-lg mx-auto">
+          <div className="sticky top-0 z-20 px-5 py-4 flex items-center gap-3" style={{ background: "rgba(15,15,17,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <button onClick={() => { setStep("home"); setSelectedDate(""); setSelectedSlot(null) }}
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: "rgba(255,255,255,0.07)" }}>
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: selectedCourt.color }} />
+              <p className="text-sm font-bold truncate">{selectedCourt.name}</p>
+            </div>
+          </div>
+
+          <div className="px-5 pb-10">
+            {/* Duration picker */}
+            <div className="mt-6 mb-6">
+              <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "rgba(255,255,255,0.35)" }}>Duración</p>
+              <div className="flex gap-2">
+                {[60, 90, 120].map(d => (
+                  <button key={d} onClick={() => setDuration(d)}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                    style={duration === d
+                      ? { background: brand, color: "#fff" }
+                      : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    {d} min
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Week nav */}
+            <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "rgba(255,255,255,0.35)" }}>Fecha</p>
+            <div className="flex items-center gap-2 mb-3">
+              <button onClick={() => setWeekOffset(w => Math.max(0, w - 1))} disabled={weekOffset === 0}
+                className="w-8 h-8 rounded-xl flex items-center justify-center disabled:opacity-30"
+                style={{ background: "rgba(255,255,255,0.07)" }}>
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <p className="flex-1 text-center text-xs font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>
+                {format(weekDays[0], "d MMM", { locale: es })} — {format(weekDays[6], "d MMM yyyy", { locale: es })}
+              </p>
+              <button onClick={() => setWeekOffset(w => w + 1)}
+                className="w-8 h-8 rounded-xl flex items-center justify-center"
+                style={{ background: "rgba(255,255,255,0.07)" }}>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-7 gap-1 mb-6">
+              {weekDays.map(day => {
+                const key = format(day, "yyyy-MM-dd")
+                const isPast = day < today
+                const isSelected = key === selectedDate
+                return (
+                  <button key={key} disabled={isPast} onClick={() => setSelectedDate(key)}
+                    className="flex flex-col items-center py-3 rounded-2xl transition-all disabled:opacity-25"
+                    style={isSelected ? { background: brand, color: "#fff" } : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)" }}>
+                    <span className="text-[9px] font-bold uppercase tracking-wide leading-none mb-1.5">{format(day, "EEE", { locale: es })}</span>
+                    <span className="text-sm font-bold">{format(day, "d")}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Slots */}
+            {selectedDate && (
+              <>
+                <p className="text-xs font-semibold mb-3 capitalize" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  {format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })}
+                </p>
+                {loadingSlots ? (
+                  <div className="flex items-center justify-center gap-2 py-10" style={{ color: "rgba(255,255,255,0.3)" }}>
+                    <Loader2 className="w-5 h-5 animate-spin" /><span className="text-sm">Buscando horarios...</span>
+                  </div>
+                ) : slots.length === 0 ? (
+                  <div className="py-10 text-center">
+                    <p className="text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>Sin horarios disponibles</p>
+                    <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.2)" }}>Prueba otro día</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    {slots.map(slot => (
+                      <button key={slot.time}
+                        onClick={() => { setSelectedSlot(slot); setStep("form"); window.scrollTo({ top: 0, behavior: "smooth" }) }}
+                        className="py-3 px-2 rounded-xl text-sm font-semibold transition-all flex flex-col items-center gap-0.5"
+                        style={selectedSlot?.time === slot.time
+                          ? { background: brand, color: "#fff" }
+                          : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.75)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                        <span>{slot.time}</span>
+                        {slot.price > 0 && (
+                          <span className="text-[10px] font-normal opacity-70">${slot.price.toLocaleString("es-CL")}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* FORM */}
+      {step === "form" && selectedCourt && selectedSlot && (
+        <div className="max-w-lg mx-auto">
+          <div className="sticky top-0 z-20 px-5 py-4 flex items-center gap-3" style={{ background: "rgba(15,15,17,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <button onClick={() => setStep("court")} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(255,255,255,0.07)" }}>
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: selectedCourt.color }} />
+              <div className="min-w-0">
+                <p className="text-sm font-bold truncate">{selectedCourt.name}</p>
+                <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  {selectedDate ? format(parseISO(selectedDate), "d MMM", { locale: es }) : ""} · {selectedSlot.time} · {duration} min
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-5 pb-10 space-y-6 pt-6">
+            {/* Summary */}
+            <div className="rounded-2xl p-4 space-y-2.5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <div className="flex items-center gap-2.5">
+                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: selectedCourt.color }} />
+                <span className="font-bold text-sm">{selectedCourt.name}</span>
+                {selectedSlot.price > 0 && (
+                  <span className="ml-auto font-bold text-sm" style={{ color: brand }}>${selectedSlot.price.toLocaleString("es-CL")}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                <Clock className="w-3.5 h-3.5" /> {duration} min
+              </div>
+              <div className="flex items-center gap-2 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                <Calendar className="w-3.5 h-3.5" />
+                {selectedDate && format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })} a las {selectedSlot.time}
+              </div>
+            </div>
+
+            {/* Fields */}
+            <div className="space-y-4">
+              <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.3)" }}>Tus datos</label>
+              {[
+                { key: "name", label: "Nombre completo", type: "text", placeholder: "María González" },
+                { key: "email", label: "Email", type: "email", placeholder: "tu@email.com" },
+                { key: "phone", label: "Teléfono (opcional)", type: "tel", placeholder: "+56 9 1234 5678" },
+              ].map(({ key, label, type, placeholder }) => (
+                <div key={key} className="space-y-1.5">
+                  <label className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</label>
+                  <input type={type} value={(form as Record<string, string>)[key]}
+                    onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    className="w-full rounded-2xl px-4 py-3 text-sm outline-none placeholder:text-white/25"
+                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "#f4f4f5" }} />
+                </div>
+              ))}
+              <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                rows={3} placeholder="Comentario (opcional)"
+                className="w-full rounded-2xl px-4 py-3.5 text-sm outline-none resize-none placeholder:text-white/20"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "#f4f4f5" }} />
+            </div>
+
+            <button onClick={handleConfirm} disabled={submitting || !form.name || !form.email}
+              className="w-full py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-40"
+              style={{ background: brand, color: "#fff" }}>
+              {submitting ? <><Loader2 className="w-4 h-4 animate-spin" />Confirmando...</> : "Confirmar reserva →"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRMED */}
+      {step === "confirmed" && selectedCourt && selectedSlot && (
+        <div className="max-w-lg mx-auto px-5 py-16 flex flex-col items-center text-center space-y-6">
+          <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ background: "rgba(34,197,94,0.15)" }}>
+            <Check className="w-12 h-12" style={{ color: "#22c55e" }} />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black">¡Reserva confirmada!</h2>
+            <p className="text-sm mt-2" style={{ color: "rgba(255,255,255,0.4)" }}>Enviamos la confirmación a {form.email}</p>
+          </div>
+          <div className="w-full rounded-2xl p-5 space-y-3 text-left" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="flex items-center gap-2.5">
+              <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: selectedCourt.color }} />
+              <span className="font-bold text-sm">{selectedCourt.name}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+              <Clock className="w-4 h-4" /> {duration} min
+            </div>
+            <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+              <Calendar className="w-4 h-4" />
+              {selectedDate && format(parseISO(selectedDate), "EEEE d 'de' MMMM yyyy", { locale: es })} · {selectedSlot.time}
+            </div>
+            {(business.address || business.city) && (
+              <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+                <MapPin className="w-4 h-4" />
+                {[business.address, business.city].filter(Boolean).join(", ")}
+              </div>
+            )}
+          </div>
+          <a href={`https://wa.me/?text=${encodeURIComponent(`Reservé ${selectedCourt.name} en ${business.name} — ${selectedDate ? format(parseISO(selectedDate), "d MMM", { locale: es }) : ""} ${selectedSlot.time} 🎾`)}`}
+            target="_blank" rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold"
+            style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <Share2 className="w-4 h-4" /> Compartir
+          </a>
+          <button onClick={reset} className="text-sm font-semibold" style={{ color: brand }}>
+            Reservar otra cancha →
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────
+// SERVICE BOOKING FLOW (regular businesses)
+// ─────────────────────────────────────────────────────────────────
+
+function ServiceBookingFlow({ business, slug }: { business: Business; slug: string }) {
+  const brand = business.primaryColor || "#38bdf8"
+  const today = startOfToday()
 
   const [step, setStep] = useState<Step>("home")
   const [selectedService, setSelectedService] = useState<Service | null>(null)
@@ -44,20 +466,13 @@ export default function BookingClient({ slug }: { slug: string }) {
   const [weekOffset, setWeekOffset] = useState(0)
   const [searchQ, setSearchQ] = useState("")
   const [activeCategory, setActiveCategory] = useState<string>("all")
-  const today = startOfToday()
   const catBarRef = useRef<HTMLDivElement>(null)
 
   const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "" })
   const [payMethod, setPayMethod] = useState<PayMethod>("local")
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
-    fetch(`/api/book/${slug}`)
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then(d => setBusiness(d.business))
-      .catch(() => setNotFound(true))
-      .finally(() => setLoading(false))
-  }, [slug])
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(today, weekOffset * 7 + i))
 
   useEffect(() => {
     if (!selectedDate || !selectedService) return
@@ -95,7 +510,7 @@ export default function BookingClient({ slug }: { slug: string }) {
       setSubmitting(false)
       return
     }
-    if (payMethod === "online" && business?.onlinePaymentsEnabled) {
+    if (payMethod === "online" && business.onlinePaymentsEnabled) {
       const apptData = await r.json()
       const payR = await fetch(`/api/book/${slug}/pay`, {
         method: "POST",
@@ -147,29 +562,6 @@ export default function BookingClient({ slug }: { slug: string }) {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(today, weekOffset * 7 + i))
-
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: "#0f0f11" }}>
-      <div className="flex flex-col items-center gap-3">
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#38bdf8" }} />
-        <p className="text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>Cargando...</p>
-      </div>
-    </div>
-  )
-
-  if (notFound || !business) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: "#0f0f11" }}>
-      <div className="text-center space-y-2">
-        <p className="text-lg font-semibold" style={{ color: "rgba(255,255,255,0.7)" }}>Negocio no encontrado</p>
-        <p className="text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>El link que seguiste no existe o está inactivo.</p>
-      </div>
-    </div>
-  )
-
-  const brand = business.primaryColor || "#38bdf8"
-
-  // Service categories
   const categories: Category[] = []
   const seen = new Set<string>()
   for (const s of business.services) {
@@ -186,7 +578,6 @@ export default function BookingClient({ slug }: { slug: string }) {
     return matchesSearch && matchesCat
   })
 
-  // Group filtered by category
   const grouped: { cat: Category | null; services: Service[] }[] = []
   const noCategory = filteredServices.filter(s => !s.categoryId)
   if (noCategory.length > 0 && activeCategory === "all") grouped.push({ cat: null, services: noCategory })
@@ -199,7 +590,6 @@ export default function BookingClient({ slug }: { slug: string }) {
     <div style={{ background: "#0f0f11", minHeight: "100vh", color: "#f4f4f5" }}>
       <ChatWidget businessId={business.id} businessName={business.name} />
 
-      {/* ── HERO ─────────────────────────────────────────────── */}
       {step === "home" && (
         <>
           <div className="relative" style={{ height: 260 }}>
@@ -209,7 +599,6 @@ export default function BookingClient({ slug }: { slug: string }) {
               <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${brand}22, ${brand}08)` }} />
             )}
             <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(15,15,17,0.1) 0%, rgba(15,15,17,0.7) 70%, #0f0f11 100%)" }} />
-            {/* Logo */}
             <div className="absolute bottom-0 left-0 right-0 px-5 pb-5 flex items-end gap-4">
               {business.logo ? (
                 <img src={business.logo} alt={business.name} className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 shadow-xl" style={{ border: "2px solid rgba(255,255,255,0.15)" }} />
@@ -225,7 +614,6 @@ export default function BookingClient({ slug }: { slug: string }) {
             </div>
           </div>
 
-          {/* Business info strip */}
           <div className="px-5 pt-4 pb-2 flex flex-wrap gap-x-4 gap-y-1.5">
             {(business.address || business.city) && (
               <span className="flex items-center gap-1.5 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
@@ -243,7 +631,6 @@ export default function BookingClient({ slug }: { slug: string }) {
             )}
           </div>
 
-          {/* ── STAFF ──────────────────────────────────────────── */}
           {business.staff.length > 0 && (
             <div className="mt-6">
               <h2 className="px-5 text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "rgba(255,255,255,0.35)" }}>Nuestro equipo</h2>
@@ -267,26 +654,16 @@ export default function BookingClient({ slug }: { slug: string }) {
             </div>
           )}
 
-          {/* ── SERVICES ───────────────────────────────────────── */}
           <div className="mt-8">
             <h2 className="px-5 text-xs font-bold uppercase tracking-widest mb-4" style={{ color: "rgba(255,255,255,0.35)" }}>Servicios</h2>
-
-            {/* Search */}
             <div className="px-5 mb-4">
               <div className="flex items-center gap-2 px-3.5 rounded-2xl" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <Search className="w-4 h-4 flex-shrink-0" style={{ color: "rgba(255,255,255,0.3)" }} />
-                <input
-                  value={searchQ}
-                  onChange={e => setSearchQ(e.target.value)}
-                  placeholder="Buscar servicio..."
-                  className="flex-1 py-2.5 text-sm bg-transparent outline-none placeholder:text-white/30"
-                  style={{ color: "#f4f4f5" }}
-                />
+                <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Buscar servicio..."
+                  className="flex-1 py-2.5 text-sm bg-transparent outline-none placeholder:text-white/30" style={{ color: "#f4f4f5" }} />
                 {searchQ && <button onClick={() => setSearchQ("")}><X className="w-4 h-4" style={{ color: "rgba(255,255,255,0.3)" }} /></button>}
               </div>
             </div>
-
-            {/* Category chips */}
             {categories.length > 0 && (
               <div ref={catBarRef} className="flex gap-2 px-5 overflow-x-auto pb-1 mb-4" style={{ scrollbarWidth: "none" }}>
                 {[{ id: "all", name: "Todos" }, ...categories].map(cat => (
@@ -300,8 +677,6 @@ export default function BookingClient({ slug }: { slug: string }) {
                 ))}
               </div>
             )}
-
-            {/* Service groups */}
             <div className="px-5 space-y-6 pb-24">
               {grouped.length === 0 && (
                 <p className="text-sm py-8 text-center" style={{ color: "rgba(255,255,255,0.3)" }}>Sin servicios que coincidan</p>
@@ -319,7 +694,6 @@ export default function BookingClient({ slug }: { slug: string }) {
             </div>
           </div>
 
-          {/* Powered by */}
           <div className="fixed bottom-0 left-0 right-0 py-3 flex items-center justify-center gap-1.5" style={{ background: "linear-gradient(to top, #0f0f11, transparent)", pointerEvents: "none" }}>
             <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.2)" }}>Reservas por</span>
             <span className="text-[10px] font-black" style={{ color: "rgba(255,255,255,0.35)" }}>AgendaMok</span>
@@ -327,7 +701,6 @@ export default function BookingClient({ slug }: { slug: string }) {
         </>
       )}
 
-      {/* ── STEP: STAFF ────────────────────────────────────────── */}
       {step === "staff" && selectedService && (
         <div className="max-w-lg mx-auto">
           <StepHeader brand={brand} onBack={() => setStep("home")} label={selectedService.name} sub={`${selectedService.duration} min · $${Number(selectedService.price).toLocaleString("es-CL")}`} color={selectedService.color} />
@@ -344,7 +717,7 @@ export default function BookingClient({ slug }: { slug: string }) {
                 <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>El primer disponible</p>
               </div>
             </button>
-            {business!.staff.map(s => (
+            {business.staff.map(s => (
               <button key={s.id} onClick={() => { setSelectedStaff(s); setStep("datetime") }}
                 className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left"
                 style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
@@ -367,14 +740,11 @@ export default function BookingClient({ slug }: { slug: string }) {
         </div>
       )}
 
-      {/* ── STEP: DATETIME ─────────────────────────────────────── */}
       {step === "datetime" && selectedService && (
         <div className="max-w-lg mx-auto">
           <StepHeader brand={brand} onBack={() => setStep("staff")} label={selectedService.name} sub={selectedStaff ? `con ${selectedStaff.user.name}` : "cualquier profesional"} color={selectedService.color} />
           <div className="px-5 pb-10">
             <h2 className="text-base font-bold mb-5">Elige fecha y hora</h2>
-
-            {/* Week nav */}
             <div className="flex items-center gap-2 mb-3">
               <button onClick={() => setWeekOffset(w => Math.max(0, w - 1))} disabled={weekOffset === 0}
                 className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-30"
@@ -390,8 +760,6 @@ export default function BookingClient({ slug }: { slug: string }) {
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
-
-            {/* Day picker */}
             <div className="grid grid-cols-7 gap-1 mb-6">
               {weekDays.map(day => {
                 const key = format(day, "yyyy-MM-dd")
@@ -400,19 +768,13 @@ export default function BookingClient({ slug }: { slug: string }) {
                 return (
                   <button key={key} disabled={isPast} onClick={() => setSelectedDate(key)}
                     className="flex flex-col items-center py-3 rounded-2xl transition-all disabled:opacity-25"
-                    style={isSelected
-                      ? { background: brand, color: "#fff" }
-                      : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)" }}>
-                    <span className="text-[9px] font-bold uppercase tracking-wide leading-none mb-1.5">
-                      {format(day, "EEE", { locale: es })}
-                    </span>
+                    style={isSelected ? { background: brand, color: "#fff" } : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)" }}>
+                    <span className="text-[9px] font-bold uppercase tracking-wide leading-none mb-1.5">{format(day, "EEE", { locale: es })}</span>
                     <span className="text-sm font-bold">{format(day, "d")}</span>
                   </button>
                 )
               })}
             </div>
-
-            {/* Time slots */}
             {selectedDate && (
               <>
                 <p className="text-xs font-semibold mb-3 capitalize" style={{ color: "rgba(255,255,255,0.4)" }}>
@@ -420,8 +782,7 @@ export default function BookingClient({ slug }: { slug: string }) {
                 </p>
                 {loadingSlots ? (
                   <div className="flex items-center justify-center gap-2 py-10" style={{ color: "rgba(255,255,255,0.3)" }}>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span className="text-sm">Buscando horarios...</span>
+                    <Loader2 className="w-5 h-5 animate-spin" /><span className="text-sm">Buscando horarios...</span>
                   </div>
                 ) : slots.length === 0 ? (
                   <div className="py-10 text-center">
@@ -447,12 +808,10 @@ export default function BookingClient({ slug }: { slug: string }) {
         </div>
       )}
 
-      {/* ── STEP: FORM ─────────────────────────────────────────── */}
       {step === "form" && selectedService && (
         <div className="max-w-lg mx-auto">
           <StepHeader brand={brand} onBack={() => setStep("datetime")} label={selectedService.name} sub={`${selectedDate ? format(parseISO(selectedDate), "d MMM", { locale: es }) : ""} · ${selectedTime}`} color={selectedService.color} />
           <div className="px-5 pb-10 space-y-6">
-            {/* Summary card */}
             <div className="rounded-2xl p-4 space-y-2.5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
               <div className="flex items-center gap-2.5">
                 <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: selectedService.color }} />
@@ -468,9 +827,7 @@ export default function BookingClient({ slug }: { slug: string }) {
                 {selectedDate && format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })} a las {selectedTime}
               </div>
             </div>
-
-            {/* Payment method */}
-            {business!.onlinePaymentsEnabled && Number(selectedService.price) > 0 && (
+            {business.onlinePaymentsEnabled && Number(selectedService.price) > 0 && (
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.3)" }}>Forma de pago</label>
                 <div className="grid grid-cols-2 gap-2">
@@ -490,8 +847,6 @@ export default function BookingClient({ slug }: { slug: string }) {
                 </div>
               </div>
             )}
-
-            {/* Form fields */}
             <div className="space-y-4">
               <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.3)" }}>Tus datos</label>
               {[
@@ -501,34 +856,24 @@ export default function BookingClient({ slug }: { slug: string }) {
               ].map(({ key, label, type, placeholder }) => (
                 <div key={key} className="space-y-1.5">
                   <label className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</label>
-                  <input
-                    type={type}
-                    value={(form as Record<string, string>)[key]}
+                  <input type={type} value={(form as Record<string, string>)[key]}
                     onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
                     placeholder={placeholder}
                     className="w-full rounded-2xl px-4 py-3 text-sm outline-none transition-all placeholder:text-white/25"
-                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "#f4f4f5" }}
-                  />
+                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "#f4f4f5" }} />
                 </div>
               ))}
-              <div className="relative">
-                <textarea
-                  value={form.notes}
-                  onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                  rows={3}
-                  placeholder="Comentario para el profesional (opcional)"
-                  className="w-full rounded-2xl px-4 py-3.5 text-sm outline-none resize-none placeholder:text-white/20"
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "#f4f4f5" }}
-                />
-              </div>
+              <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                rows={3} placeholder="Comentario para el profesional (opcional)"
+                className="w-full rounded-2xl px-4 py-3.5 text-sm outline-none resize-none placeholder:text-white/20"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "#f4f4f5" }} />
             </div>
-
             <button onClick={handleConfirm} disabled={submitting || !form.name || !form.email}
               className="w-full py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-40"
               style={{ background: brand, color: "#fff" }}>
               {submitting
                 ? <><Loader2 className="w-4 h-4 animate-spin" />{payMethod === "online" ? "Redirigiendo al pago..." : "Confirmando..."}</>
-                : payMethod === "online" && business!.onlinePaymentsEnabled
+                : payMethod === "online" && business.onlinePaymentsEnabled
                   ? `Pagar $${Number(selectedService.price).toLocaleString("es-CL")} →`
                   : "Confirmar reserva →"}
             </button>
@@ -536,7 +881,6 @@ export default function BookingClient({ slug }: { slug: string }) {
         </div>
       )}
 
-      {/* ── STEP: CONFIRMED ────────────────────────────────────── */}
       {step === "confirmed" && (
         <div className="max-w-lg mx-auto px-5 py-16 flex flex-col items-center text-center space-y-6">
           <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ background: "rgba(34,197,94,0.15)" }}>
@@ -546,7 +890,6 @@ export default function BookingClient({ slug }: { slug: string }) {
             <h2 className="text-2xl font-black">¡Reserva confirmada!</h2>
             <p className="text-sm mt-2" style={{ color: "rgba(255,255,255,0.4)" }}>Enviamos la confirmación a {form.email}</p>
           </div>
-
           <div className="w-full rounded-2xl p-5 space-y-3 text-left" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <div className="flex items-center gap-2.5">
               <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: selectedService?.color }} />
@@ -561,28 +904,26 @@ export default function BookingClient({ slug }: { slug: string }) {
               <Calendar className="w-4 h-4" />
               {selectedDate && format(parseISO(selectedDate), "EEEE d 'de' MMMM yyyy", { locale: es })} · {selectedTime}
             </div>
-            {(business!.address || business!.city) && (
+            {(business.address || business.city) && (
               <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
                 <MapPin className="w-4 h-4" />
-                {[business!.address, business!.city].filter(Boolean).join(", ")}
+                {[business.address, business.city].filter(Boolean).join(", ")}
               </div>
             )}
           </div>
-
           <div className="flex gap-3 w-full">
             <button onClick={downloadIcs}
               className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold transition-all"
               style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.08)" }}>
               <Download className="w-4 h-4" /> Calendario
             </button>
-            <a href={`https://wa.me/?text=${encodeURIComponent(`Reservé ${selectedService?.name} en ${business!.name} — ${selectedDate ? format(parseISO(selectedDate), "d MMM", { locale: es }) : ""} ${selectedTime} 🗓️`)}`}
+            <a href={`https://wa.me/?text=${encodeURIComponent(`Reservé ${selectedService?.name} en ${business.name} — ${selectedDate ? format(parseISO(selectedDate), "d MMM", { locale: es }) : ""} ${selectedTime} 🗓️`)}`}
               target="_blank" rel="noopener noreferrer"
               className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold transition-all"
               style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.08)" }}>
               <Share2 className="w-4 h-4" /> Compartir
             </a>
           </div>
-
           <button onClick={resetBooking} className="text-sm font-semibold" style={{ color: brand }}>
             Reservar otro turno →
           </button>
@@ -624,7 +965,6 @@ function ServiceCard({ service, brand, onSelect }: { service: Service; brand: st
           </button>
         </div>
       )}
-      {!hasDesc && null}
     </div>
   )
 }
