@@ -102,6 +102,8 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
   const [selectedSlot, setSelectedSlot] = useState<{ time: string; price: number } | null>(null)
   const [step, setStep] = useState<CourtStep>("home")
   const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "" })
+  const [createAccount, setCreateAccount] = useState(false)
+  const [password, setPassword] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(today, weekOffset * 7 + i))
@@ -147,6 +149,15 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
       setSubmitting(false)
       return
     }
+    // Optional account creation
+    if (createAccount && password.length >= 6) {
+      await fetch(`/api/book/${slug}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: form.name, email: form.email, password }),
+      })
+    }
+
     setStep("confirmed")
     setSubmitting(false)
   }
@@ -154,6 +165,7 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
   function reset() {
     setStep("home"); setSelectedCourt(null); setSelectedSlot(null)
     setForm({ name: "", email: "", phone: "", notes: "" })
+    setCreateAccount(false); setPassword("")
   }
 
   return (
@@ -427,7 +439,43 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
                 style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}`, color: "#f0f6ff" }} />
             </div>
 
-            <button onClick={handleConfirm} disabled={submitting || !form.name || !form.email}
+            {/* Account creation invite */}
+            <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${createAccount ? SPORTS_ACCENT + "50" : SPORTS_BORDER}`, background: createAccount ? "rgba(56,189,248,0.05)" : SPORTS_CARD }}>
+              <button
+                type="button"
+                onClick={() => setCreateAccount(v => !v)}
+                className="w-full px-4 py-3.5 flex items-center gap-3 text-left transition-all"
+              >
+                <div className="w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center transition-all"
+                  style={{ background: createAccount ? SPORTS_ACCENT : "rgba(56,189,248,0.1)", border: `1.5px solid ${createAccount ? SPORTS_ACCENT : SPORTS_BORDER}` }}>
+                  {createAccount && <Check className="w-3 h-3" style={{ color: SPORTS_BG }} />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-white">Crear cuenta gratis</p>
+                  <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>Accede a tu historial, cancela reservas y acumula beneficios</p>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: "rgba(56,189,248,0.12)", color: SPORTS_ACCENT }}>Gratis</span>
+              </button>
+
+              {createAccount && (
+                <div className="px-4 pb-4 space-y-2">
+                  <div className="h-px" style={{ background: SPORTS_BORDER }} />
+                  <p className="text-[11px] pt-1" style={{ color: "rgba(255,255,255,0.35)" }}>
+                    ✓ Reservas guardadas &nbsp;·&nbsp; ✓ Cancelación online &nbsp;·&nbsp; ✓ Acceso prioritario
+                  </p>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Crea una contraseña (mín. 6 caracteres)"
+                    className="w-full rounded-xl px-4 py-3 text-sm outline-none placeholder:opacity-30 mt-1"
+                    style={{ background: "rgba(56,189,248,0.07)", border: `1px solid ${SPORTS_BORDER}`, color: "#f0f6ff" }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <button onClick={handleConfirm} disabled={submitting || !form.name || !form.email || (createAccount && password.length > 0 && password.length < 6)}
               className="w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
               style={{ background: SPORTS_ACCENT, color: SPORTS_BG }}>
               {submitting ? <><Loader2 className="w-4 h-4 animate-spin" />Confirmando...</> : "Confirmar reserva →"}
