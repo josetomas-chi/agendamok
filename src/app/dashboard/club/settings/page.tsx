@@ -152,7 +152,7 @@ export default function ClubSettingsPage() {
                   <select value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
                     className="w-full h-10 rounded-lg px-3 pr-8 text-sm outline-none appearance-none"
                     style={{ background: "rgba(201,168,76,0.06)", border: BORDER, color: NAVY }}>
-                    {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+                    {TIME_SLOTS.filter(t => field === "closeTime" ? t > form.openTime : true).map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                   <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ color: "rgba(13,27,42,0.3)" }}><path d="m6 9 6 6 6-6"/></svg>
                 </div>

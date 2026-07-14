@@ -64,6 +64,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const dayOfWeek = start.getDay()
   const timeStr = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`
+  const endTimeStr = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`
+
+  // Validate fixed slots: a booking cannot partially overlap a rigid block
+  for (const rule of court.pricingRules) {
+    if (!rule.fixedSlots?.length || !rule.days.includes(dayOfWeek)) continue
+    const fs = rule.fixedSlots
+    for (let i = 0; i < fs.length - 1; i++) {
+      const slotStart = fs[i]
+      const slotEnd = fs[i + 1]
+      const overlaps = timeStr < slotEnd && endTimeStr > slotStart
+      if (overlaps && (timeStr !== slotStart || endTimeStr !== slotEnd)) {
+        return NextResponse.json({
+          error: `El horario ${slotStart}–${slotEnd} es un bloque fijo. Debes reservar ese bloque completo.`,
+        }, { status: 400 })
+      }
+    }
+  }
 
   let price = 0
 

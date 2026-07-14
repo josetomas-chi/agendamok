@@ -18,7 +18,7 @@ const BORDER = "rgba(201,168,76,0.2)"
 
 type BookingType = "simple" | "recurring" | "class"
 
-function TimeSelect({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+function TimeSelect({ value, onChange, label, minTime }: { value: string; onChange: (v: string) => void; label: string; minTime?: string }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -26,6 +26,7 @@ function TimeSelect({ value, onChange, label }: { value: string; onChange: (v: s
     document.addEventListener("mousedown", onClick)
     return () => document.removeEventListener("mousedown", onClick)
   }, [])
+  const slots = minTime ? TIME_SLOTS.filter(t => t > minTime) : TIME_SLOTS
   return (
     <div>
       <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1.5" style={{ color: "rgba(13,27,42,0.4)" }}>{label}</p>
@@ -39,7 +40,7 @@ function TimeSelect({ value, onChange, label }: { value: string; onChange: (v: s
         {open && (
           <div className="absolute z-50 mt-1 w-full rounded-xl border shadow-2xl overflow-y-auto max-h-48"
             style={{ border: BORDER, background: "#ffffff" }}>
-            {TIME_SLOTS.map(t => (
+            {slots.map(t => (
               <button key={t} type="button" onClick={() => { onChange(t); setOpen(false) }}
                 className="w-full px-4 py-2 text-sm text-left transition-colors"
                 style={t === value ? { background: "rgba(201,168,76,0.12)", color: GOLD, fontWeight: 700 } : { color: NAVY }}>
@@ -481,7 +482,7 @@ export default function NewBookingModal({
           ) : (
             <div className="grid grid-cols-2 gap-2">
               <TimeSelect label="Inicio" value={form.startTime} onChange={v => setForm(f => ({ ...f, startTime: v }))} />
-              <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} />
+              <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} minTime={form.startTime} />
             </div>
           )}
 

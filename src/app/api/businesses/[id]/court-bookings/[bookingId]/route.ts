@@ -49,7 +49,7 @@ export async function PATCH(req: Request, { params }: Params) {
       }
     }
 
-    // Validar solapamiento si cambia horario o cancha
+    // Validar solapamiento y fixed slots si cambia horario o cancha
     if (startTime !== undefined || endTime !== undefined || courtId !== undefined) {
       const current = await prisma.courtBooking.findUnique({ where: { id: bookingId }, select: { courtId: true, startTime: true, endTime: true } })
       if (current) {
@@ -70,6 +70,24 @@ export async function PATCH(req: Request, { params }: Params) {
           },
         })
         if (conflict) return NextResponse.json({ error: "La cancha ya tiene una reserva en ese horario" }, { status: 409 })
+
+        // Validate fixed slots
+        const resolvedCourt = await prisma.court.findUnique({ where: { id: resolvedCourtId }, include: { pricingRules: true } })
+        if (resolvedCourt) {
+          const sStr = `${String(resolvedStart.getHours()).padStart(2, "0")}:${String(resolvedStart.getMinutes()).padStart(2, "0")}`
+          const eStr = `${String(resolvedEnd.getHours()).padStart(2, "0")}:${String(resolvedEnd.getMinutes()).padStart(2, "0")}`
+          const dow = resolvedStart.getDay()
+          for (const rule of resolvedCourt.pricingRules) {
+            if (!rule.fixedSlots?.length || !rule.days.includes(dow)) continue
+            const fs = rule.fixedSlots
+            for (let i = 0; i < fs.length - 1; i++) {
+              const slotStart = fs[i], slotEnd = fs[i + 1]
+              if (sStr < slotEnd && eStr > slotStart && (sStr !== slotStart || eStr !== slotEnd)) {
+                return NextResponse.json({ error: `El horario ${slotStart}–${slotEnd} es un bloque fijo. Debes reservar ese bloque completo.` }, { status: 400 })
+              }
+            }
+          }
+        }
       }
     }
 
