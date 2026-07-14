@@ -652,26 +652,24 @@ export default function LandingPage() {
               </div>
               <div className="relative inline-block">
                 {/* Padel court lines — decorative */}
-                <svg viewBox="0 0 560 200" className="absolute inset-0 w-full h-full" style={{ opacity: 0.45 }} aria-hidden="true" preserveAspectRatio="xMidYMid meet">
-                  {/* Outer boundary */}
-                  <rect x="20" y="12" width="520" height="176" fill="none" stroke="#C9A84C" strokeWidth="1.8" />
-                  {/* Center net line */}
-                  <line x1="280" y1="12" x2="280" y2="188" stroke="#C9A84C" strokeWidth="1.8" />
-                  {/* Service boxes left */}
-                  <line x1="20" y1="100" x2="176" y2="100" stroke="#C9A84C" strokeWidth="1.2" />
-                  <line x1="176" y1="12" x2="176" y2="188" stroke="#C9A84C" strokeWidth="1.2" />
-                  {/* Service boxes right */}
-                  <line x1="384" y1="12" x2="384" y2="188" stroke="#C9A84C" strokeWidth="1.2" />
-                  <line x1="384" y1="100" x2="540" y2="100" stroke="#C9A84C" strokeWidth="1.2" />
-                  {/* Center service line left */}
-                  <line x1="176" y1="100" x2="280" y2="100" stroke="#C9A84C" strokeWidth="1.2" />
-                  {/* Center service line right */}
-                  <line x1="280" y1="100" x2="384" y2="100" stroke="#C9A84C" strokeWidth="1.2" />
-                  {/* Glass walls corners — short ticks */}
-                  <line x1="20" y1="38" x2="46" y2="38" stroke="#C9A84C" strokeWidth="1" />
-                  <line x1="20" y1="162" x2="46" y2="162" stroke="#C9A84C" strokeWidth="1" />
-                  <line x1="514" y1="38" x2="540" y2="38" stroke="#C9A84C" strokeWidth="1" />
-                  <line x1="514" y1="162" x2="540" y2="162" stroke="#C9A84C" strokeWidth="1" />
+                <svg viewBox="0 0 560 200" className="absolute inset-0 w-full h-full" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
+                  <defs>
+                    <filter id="courtGlow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="3.5" result="blur" />
+                      <feMerge><feMergeNode in="blur" /><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                    </filter>
+                  </defs>
+                  <g filter="url(#courtGlow)" stroke="#C9A84C" fill="none" opacity="0.6">
+                    {/* Outer boundary */}
+                    <rect x="20" y="10" width="520" height="180" strokeWidth="3" />
+                    {/* Center net line */}
+                    <line x1="280" y1="10" x2="280" y2="190" strokeWidth="3" />
+                    {/* Service lines */}
+                    <line x1="176" y1="10" x2="176" y2="190" strokeWidth="2" />
+                    <line x1="384" y1="10" x2="384" y2="190" strokeWidth="2" />
+                    {/* Center service horizontal */}
+                    <line x1="176" y1="100" x2="384" y2="100" strokeWidth="2" />
+                  </g>
                 </svg>
                 <h2 className="relative text-4xl sm:text-6xl font-bold mb-4 px-8 py-4">
                   <span className="text-white">AgendaMok </span>
