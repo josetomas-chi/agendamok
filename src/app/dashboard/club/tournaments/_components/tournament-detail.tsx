@@ -33,7 +33,7 @@ type Tournament = {
   description: string | null; groupCount: number | null; advanceCount: number | null; courtCount: number | null
   flyer: string | null
   categories: Category[]; participants: Participant[]; matches: Match[]
-  scheduleDays: { id: string; date: string; startTime: string; endTime: string }[]
+  scheduleDays: { id: string; date: string; startTime: string; endTime: string; allowRestrictions: boolean }[]
 }
 
 function fmt(n: number) { return n.toLocaleString("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }) }
@@ -575,16 +575,43 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
 
       {/* Jornadas */}
       {tournament.scheduleDays?.length > 0 && (
-        <div className="rounded-xl px-4 py-3 flex flex-wrap gap-x-5 gap-y-1.5" style={{ background: "#fff", border: "1px solid rgba(201,168,76,0.2)" }}>
+        <div className="rounded-xl overflow-hidden" style={{ background: "#fff", border: "1px solid rgba(201,168,76,0.2)" }}>
+          <div className="px-4 py-2.5 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(13,27,42,0.06)" }}>
+            <p className="text-[10px] font-black uppercase tracking-wide" style={{ color: "rgba(13,27,42,0.4)" }}>Jornadas</p>
+            <p className="text-[10px] font-semibold" style={{ color: "rgba(13,27,42,0.3)" }}>Restricciones</p>
+          </div>
           {tournament.scheduleDays.map(d => {
             const dateObj = new Date(d.date + "T12:00:00")
             const dayName = dateObj.toLocaleDateString("es-CL", { weekday: "short" })
             const dateStr = dateObj.toLocaleDateString("es-CL", { day: "numeric", month: "short" })
             return (
-              <div key={d.id} className="flex items-center gap-1.5">
-                <span className="text-[11px] font-black uppercase" style={{ color: NAVY }}>{dayName} {dateStr}</span>
-                <span className="text-[11px]" style={{ color: "rgba(13,27,42,0.35)"}}>·</span>
-                <span className="text-[11px] font-semibold" style={{ color: GOLD }}>{d.startTime} – {d.endTime}</span>
+              <div key={d.id} className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: "1px solid rgba(13,27,42,0.05)" }}>
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] font-black uppercase" style={{ color: NAVY }}>{dayName} {dateStr}</span>
+                  <span className="text-[11px] font-semibold" style={{ color: GOLD }}>{d.startTime} – {d.endTime}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const next = !d.allowRestrictions
+                    const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournament.id}/schedule-days/${d.id}`, {
+                      method: "PATCH", headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ allowRestrictions: next }),
+                    })
+                    if (r.ok) {
+                      setTournament(t => t ? {
+                        ...t,
+                        scheduleDays: t.scheduleDays.map(s => s.id === d.id ? { ...s, allowRestrictions: next } : s)
+                      } : t)
+                    }
+                  }}
+                  className="relative w-9 h-5 rounded-full transition-colors flex-shrink-0"
+                  style={{ background: d.allowRestrictions ? GOLD : "rgba(13,27,42,0.15)" }}
+                  title={d.allowRestrictions ? "Bloquear restricciones" : "Permitir restricciones"}
+                >
+                  <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all"
+                    style={{ left: d.allowRestrictions ? "calc(100% - 1.125rem)" : "0.125rem" }} />
+                </button>
               </div>
             )
           })}
