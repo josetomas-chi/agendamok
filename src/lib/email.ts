@@ -630,3 +630,56 @@ export async function sendTournamentRegistrationConfirmation({
     }).catch(() => {})
   }
 }
+
+export async function sendTournamentMatchAdvance({
+  winner, opponent, tournamentName, round, scheduledTime, courtNumber,
+}: {
+  winner: { name: string; email: string; players?: { name: string; email?: string }[] }
+  opponent: { name: string }
+  tournamentName: string
+  round: number
+  scheduledTime?: string | null
+  courtNumber?: number | null
+}) {
+  if (!process.env.RESEND_API_KEY) return
+
+  const recipients: { name: string; email: string }[] = [{ name: winner.name, email: winner.email }]
+  if (Array.isArray(winner.players)) {
+    for (const p of winner.players) {
+      if (p.email && p.email !== winner.email && p.email.includes("@")) {
+        recipients.push({ name: p.name, email: p.email })
+      }
+    }
+  }
+
+  const validRecipients = recipients.filter(r => r.email?.includes("@"))
+  if (!validRecipients.length) return
+
+  const roundLabel = `Ronda ${round}`
+  const timeRow = scheduledTime
+    ? `<div class="row"><span class="label">Horario</span><span class="value">${new Date(scheduledTime).toLocaleString("es-CL", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</span></div>`
+    : ""
+  const courtRow = courtNumber
+    ? `<div class="row"><span class="label">Cancha</span><span class="value">Cancha ${courtNumber}</span></div>`
+    : ""
+
+  for (const recipient of validRecipients) {
+    resend.emails.send({
+      from: FROM,
+      to: recipient.email,
+      subject: `¡Avanzas a la siguiente ronda! — ${tournamentName}`,
+      html: base(`
+        <h1>¡Felicitaciones, ${recipient.name}! 🏆</h1>
+        <p class="subtitle">Avanzaste a la <strong style="color:#C9A84C">${roundLabel}</strong> de <strong style="color:#fff">${tournamentName}</strong>. ¡Sigue así!</p>
+        <div class="box">
+          <div class="row"><span class="label">Torneo</span><span class="value">${tournamentName}</span></div>
+          <div class="row"><span class="label">Ronda</span><span class="value" style="color:#C9A84C">${roundLabel}</span></div>
+          <div class="row"><span class="label">Próximo rival</span><span class="value" style="color:#fff;font-weight:700">${opponent.name}</span></div>
+          ${timeRow}
+          ${courtRow}
+        </div>
+        <p class="subtitle" style="font-size:13px;margin-top:8px">Prepárate bien para el próximo enfrentamiento. ¡Mucha suerte!</p>
+      `),
+    }).catch(() => {})
+  }
+}
