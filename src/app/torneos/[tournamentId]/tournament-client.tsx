@@ -1,12 +1,13 @@
 "use client"
 import React, { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
-import { Trophy, Calendar, Users, Tag, ChevronRight, Loader2, Plus, X } from "lucide-react"
+import { Trophy, Calendar, Users, Tag, ChevronRight, Loader2, Plus, X, MapPin } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
 const GOLD = "#C9A84C"
 const NAVY = "#0d1b2a"
+const BG = "#f2f3f5"
 
 const FORMAT_LABELS: Record<string, string> = {
   ELIMINATION: "Eliminación directa",
@@ -19,9 +20,14 @@ const TYPE_LABELS: Record<string, string> = {
   TEAM: "Equipos",
 }
 const STATUS_LABELS: Record<string, string> = {
-  OPEN: "Inscripciones abiertas",
-  IN_PROGRESS: "En curso",
+  OPEN: "Torneo activo",
+  IN_PROGRESS: "En juego",
   FINISHED: "Finalizado",
+}
+const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
+  OPEN:        { bg: "rgba(201,168,76,0.15)",  text: GOLD,      dot: GOLD },
+  IN_PROGRESS: { bg: "rgba(34,197,94,0.15)",   text: "#22c55e", dot: "#22c55e" },
+  FINISHED:    { bg: "rgba(255,255,255,0.12)", text: "rgba(255,255,255,0.4)", dot: "rgba(255,255,255,0.3)" },
 }
 
 function fmt(n: number) {
@@ -43,14 +49,11 @@ type Tournament = {
 
 type Restriction = { date: string; time: string }
 
-// Generate hourly slots between startTime and endTime
 function buildHourlySlots(startTime: string, endTime: string): string[] {
   const slots: string[] = []
   const [sh] = startTime.split(":").map(Number)
   const [eh] = endTime.split(":").map(Number)
-  for (let h = sh; h < eh; h++) {
-    slots.push(`${String(h).padStart(2, "0")}:00`)
-  }
+  for (let h = sh; h < eh; h++) slots.push(`${String(h).padStart(2, "0")}:00`)
   return slots
 }
 
@@ -60,37 +63,25 @@ function formatDayLabel(dateStr: string): string {
 }
 
 function ScheduleRestrictionsModal({
-  scheduleDays,
-  maxRestrictions,
-  restrictions,
-  onChange,
-  onClose,
+  scheduleDays, maxRestrictions, restrictions, onChange, onClose,
 }: {
-  scheduleDays: ScheduleDay[]
-  maxRestrictions: number
-  restrictions: Restriction[]
-  onChange: (r: Restriction[]) => void
-  onClose: () => void
+  scheduleDays: ScheduleDay[]; maxRestrictions: number; restrictions: Restriction[]
+  onChange: (r: Restriction[]) => void; onClose: () => void
 }) {
   const toggle = (date: string, time: string) => {
     const key = `${date}|${time}`
     const exists = restrictions.some(r => `${r.date}|${r.time}` === key)
-    if (exists) {
-      onChange(restrictions.filter(r => `${r.date}|${r.time}` !== key))
-    } else {
+    if (exists) onChange(restrictions.filter(r => `${r.date}|${r.time}` !== key))
+    else {
       if (maxRestrictions > 0 && restrictions.length >= maxRestrictions) return
       onChange([...restrictions, { date, time }])
     }
   }
-
-  const isBlocked = (date: string, time: string) =>
-    restrictions.some(r => r.date === date && r.time === time)
-
+  const isBlocked = (date: string, time: string) => restrictions.some(r => r.date === date && r.time === time)
   const remaining = maxRestrictions > 0 ? maxRestrictions - restrictions.length : null
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: NAVY }}>
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3.5" style={{ background: "rgba(201,168,76,0.08)", borderBottom: "1px solid rgba(201,168,76,0.15)" }}>
         <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl" style={{ color: "rgba(255,255,255,0.5)" }}>
           <X className="w-5 h-5" />
@@ -107,38 +98,24 @@ function ScheduleRestrictionsModal({
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
         </button>
       </div>
-
-      {/* Body */}
       <div className="flex-1 overflow-y-auto">
         {scheduleDays.map(day => {
           const slots = buildHourlySlots(day.startTime, day.endTime)
           return (
             <div key={day.id}>
-              {/* Day header */}
               <div className="px-4 py-2.5 sticky top-0 z-10" style={{ background: day.allowRestrictions ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.04)" }}>
                 <p className="text-xs font-bold" style={{ color: day.allowRestrictions ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.3)" }}>
                   {formatDayLabel(day.date)}
                   {!day.allowRestrictions && <span className="ml-2 text-[10px]" style={{ color: "rgba(255,255,255,0.25)" }}>(No seleccionable)</span>}
                 </p>
               </div>
-              {/* Slots */}
               {slots.map(time => {
                 const blocked = isBlocked(day.date, time)
                 const canBlock = day.allowRestrictions && (remaining === null || remaining > 0 || blocked)
                 return (
-                  <button
-                    key={time}
-                    type="button"
-                    disabled={!canBlock}
-                    onClick={() => canBlock && toggle(day.date, time)}
+                  <button key={time} type="button" disabled={!canBlock} onClick={() => canBlock && toggle(day.date, time)}
                     className="w-full flex items-center justify-between px-4 py-3.5 transition-colors"
-                    style={{
-                      background: blocked ? "rgba(239,68,68,0.08)" : "transparent",
-                      borderBottom: "1px solid rgba(255,255,255,0.06)",
-                      cursor: canBlock ? "pointer" : "default",
-                      opacity: !day.allowRestrictions ? 0.35 : 1,
-                    }}
-                  >
+                    style={{ background: blocked ? "rgba(239,68,68,0.08)" : "transparent", borderBottom: "1px solid rgba(255,255,255,0.06)", cursor: canBlock ? "pointer" : "default", opacity: !day.allowRestrictions ? 0.35 : 1 }}>
                     <span className="text-sm font-medium" style={{ color: blocked ? "#f87171" : "rgba(255,255,255,0.7)" }}>{time}</span>
                     {blocked && (
                       <div className="w-6 h-6 rounded flex items-center justify-center" style={{ background: "rgba(239,68,68,0.15)", border: "1.5px solid #f87171" }}>
@@ -157,17 +134,13 @@ function ScheduleRestrictionsModal({
 }
 
 const labelCls = "text-[10px] font-bold uppercase tracking-[0.1em] block mb-1.5"
-const inputCls = "w-full rounded-xl px-4 py-3 text-sm placeholder:opacity-30 outline-none"
-const inputStyle = {
-  background: "rgba(255,255,255,0.06)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  color: "white",
-}
+const inputCls = "w-full rounded-2xl px-4 py-3 text-sm placeholder:opacity-40 outline-none"
+const inputStyle = { background: "#f7f8fa", border: "1.5px solid #e8eaed", color: NAVY }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className={labelCls} style={{ color: "rgba(255,255,255,0.4)" }}>{label}</label>
+      <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>{label}</label>
       {children}
     </div>
   )
@@ -190,8 +163,7 @@ function PhoneField({ label, value, onChange, placeholder }: { label: string; va
         </span>
         <input type="tel" value={value} onChange={e => onChange(e.target.value)}
           placeholder={placeholder ?? "+56 9 1234 5678"}
-          className={inputCls}
-          style={{ ...inputStyle, paddingLeft: "2.25rem" }} />
+          className={inputCls} style={{ ...inputStyle, paddingLeft: "2.25rem" }} />
       </div>
     </Field>
   )
@@ -206,25 +178,18 @@ export default function TournamentPublicPage() {
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState("")
   const [success, setSuccess] = useState(false)
-
-  // Schedule restrictions
   const [restrictions, setRestrictions] = useState<Restriction[]>([])
   const [showRestrictionsModal, setShowRestrictionsModal] = useState(false)
 
-  // INDIVIDUAL
   const [indName, setIndName] = useState("")
   const [indEmail, setIndEmail] = useState("")
   const [indPhone, setIndPhone] = useState("")
-
-  // PAIR
   const [p1Name, setP1Name] = useState("")
   const [p1Email, setP1Email] = useState("")
   const [p1Phone, setP1Phone] = useState("")
   const [p2Name, setP2Name] = useState("")
   const [p2Email, setP2Email] = useState("")
   const [p2Phone, setP2Phone] = useState("")
-
-  // TEAM
   const [teamName, setTeamName] = useState("")
   const [teamEmail, setTeamEmail] = useState("")
   const [teamPhone, setTeamPhone] = useState("")
@@ -247,35 +212,27 @@ export default function TournamentPublicPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setFormError("")
-
-    if (tournament?.categories?.length && !categoryId) {
-      setFormError("Selecciona una categoría"); return
-    }
+    if (tournament?.categories?.length && !categoryId) { setFormError("Selecciona una categoría"); return }
 
     const type = tournament!.participantType
-    let submitName = ""
-    let submitEmail = ""
+    let submitName = "", submitEmail = "", submitPhone = ""
     let submitPlayers: { name: string; email?: string }[] = []
-    let submitPhone = ""
 
     if (type === "INDIVIDUAL") {
       if (!indName.trim()) { setFormError("Ingresa tu nombre"); return }
       if (!indEmail.trim()) { setFormError("Ingresa tu email"); return }
       if (!indPhone.trim()) { setFormError("Ingresa tu teléfono WhatsApp"); return }
-      submitName = indName.trim()
-      submitEmail = indEmail.trim()
-      submitPhone = indPhone.trim()
+      submitName = indName.trim(); submitEmail = indEmail.trim(); submitPhone = indPhone.trim()
     } else if (type === "PAIR") {
       if (!p1Name.trim() || !p1Email.trim()) { setFormError("Completa los datos del Jugador 1"); return }
       if (!p1Phone.trim()) { setFormError("Ingresa el teléfono WhatsApp del Jugador 1"); return }
       if (!p2Name.trim() || !p2Email.trim()) { setFormError("Completa los datos del Jugador 2"); return }
       if (!p2Phone.trim()) { setFormError("Ingresa el teléfono WhatsApp del Jugador 2"); return }
       submitName = `${p1Name.trim()} / ${p2Name.trim()}`
-      submitEmail = p1Email.trim()
-      submitPhone = p1Phone.trim()
+      submitEmail = p1Email.trim(); submitPhone = p1Phone.trim()
       submitPlayers = [
-        { name: p1Name.trim(), email: p1Email.trim(), phone: p1Phone.trim() },
-        { name: p2Name.trim(), email: p2Email.trim(), phone: p2Phone.trim() },
+        { name: p1Name.trim(), email: p1Email.trim() },
+        { name: p2Name.trim(), email: p2Email.trim() },
       ]
     } else if (type === "TEAM") {
       if (!teamName.trim()) { setFormError("Ingresa el nombre del equipo"); return }
@@ -283,9 +240,7 @@ export default function TournamentPublicPage() {
       if (!teamPhone.trim()) { setFormError("Ingresa el teléfono WhatsApp de contacto"); return }
       const validPlayers = teamPlayers.map(p => p.trim()).filter(Boolean)
       if (validPlayers.length < 2) { setFormError("Agrega al menos 2 integrantes"); return }
-      submitName = teamName.trim()
-      submitEmail = teamEmail.trim()
-      submitPhone = teamPhone.trim()
+      submitName = teamName.trim(); submitEmail = teamEmail.trim(); submitPhone = teamPhone.trim()
       submitPlayers = validPlayers.map(n => ({ name: n }))
     }
 
@@ -296,13 +251,7 @@ export default function TournamentPublicPage() {
       body: JSON.stringify({ name: submitName, email: submitEmail, phone: submitPhone, players: submitPlayers, categoryId: categoryId || null, restrictions }),
     })
     const data = await res.json()
-
-    if (!res.ok) {
-      setFormError(data.error || "Error al inscribirse")
-      setSubmitting(false)
-      return
-    }
-
+    if (!res.ok) { setFormError(data.error || "Error al inscribirse"); setSubmitting(false); return }
     if (data.requiresPayment && data.paymentUrl) {
       window.location.href = `${data.paymentUrl}?token=${data.token}`
     } else {
@@ -312,16 +261,16 @@ export default function TournamentPublicPage() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: NAVY }}>
-      <Loader2 className="w-8 h-8 animate-spin" style={{ color: GOLD }} />
+    <div className="min-h-screen flex items-center justify-center" style={{ background: BG }}>
+      <Loader2 className="w-8 h-8 animate-spin" style={{ color: NAVY }} />
     </div>
   )
 
   if (error || !tournament) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: NAVY }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: BG }}>
       <div className="text-center space-y-3">
-        <Trophy className="w-12 h-12 mx-auto opacity-30" style={{ color: GOLD }} />
-        <p className="text-white font-bold">{error || "Torneo no encontrado"}</p>
+        <Trophy className="w-12 h-12 mx-auto opacity-20" style={{ color: NAVY }} />
+        <p className="font-bold" style={{ color: NAVY }}>{error || "Torneo no encontrado"}</p>
       </div>
     </div>
   )
@@ -331,275 +280,284 @@ export default function TournamentPublicPage() {
   const entryFee = tournament.entryFee ? Number(tournament.entryFee) : 0
   const requiresPayment = entryFee > 0 && tournament.paymentEnabled
   const type = tournament.participantType
-
-  // Info cards — shared between layouts
-  const infoCards = (
-    <div className="grid grid-cols-2 gap-3">
-      <div className="rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-        <Calendar className="w-4 h-4 mx-auto mb-1" style={{ color: GOLD }} />
-        <p className="text-xs font-bold text-white">{format(new Date(tournament.startDate), "d MMM", { locale: es })}</p>
-        <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>{format(new Date(tournament.startDate), "HH:mm")} hrs</p>
-      </div>
-      <div className="rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-        <Users className="w-4 h-4 mx-auto mb-1" style={{ color: GOLD }} />
-        <p className="text-xs font-bold text-white">
-          {tournament.registeredCount}{tournament.maxParticipants ? `/${tournament.maxParticipants}` : ""} inscritos
-        </p>
-        <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>{TYPE_LABELS[type]}</p>
-      </div>
-      <div className="rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-        <Trophy className="w-4 h-4 mx-auto mb-1" style={{ color: GOLD }} />
-        <p className="text-xs font-bold text-white">{FORMAT_LABELS[tournament.format]}</p>
-        <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>Formato</p>
-      </div>
-      <div className="rounded-xl p-3 text-center" style={{ background: entryFee ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.05)", border: entryFee ? `1px solid rgba(201,168,76,0.3)` : "1px solid rgba(255,255,255,0.08)" }}>
-        <p className="text-sm font-black mt-1" style={{ color: entryFee ? GOLD : "rgba(255,255,255,0.5)" }}>
-          {entryFee ? fmt(entryFee) : "Gratis"}
-        </p>
-        <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>
-          {type === "INDIVIDUAL" ? "por persona" : type === "PAIR" ? "por pareja" : "por equipo"}
-        </p>
-      </div>
-    </div>
-  )
-
-  // Registration form content — shared
-  const formContent = !canRegister ? (
-    <div className="rounded-2xl p-6 text-center" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
-      <p className="font-bold text-white">
-        {tournament.status === "OPEN" && isFull ? "Torneo lleno" : STATUS_LABELS[tournament.status] ?? "Inscripciones cerradas"}
-      </p>
-      <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>Las inscripciones ya no están disponibles.</p>
-    </div>
-  ) : success ? (
-    <div className="rounded-2xl p-8 text-center space-y-3" style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.3)" }}>
-      <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto" style={{ background: "rgba(34,197,94,0.15)" }}>
-        <Trophy className="w-7 h-7" style={{ color: "#22c55e" }} />
-      </div>
-      <p className="text-xl font-black text-white">¡Inscripción confirmada!</p>
-      <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
-        {type === "PAIR"
-          ? `La pareja ha sido inscrita en ${tournament.name}.`
-          : type === "TEAM"
-          ? `El equipo ha sido inscrito en ${tournament.name}.`
-          : `Te has inscrito en ${tournament.name}.`}
-        {" "}Recibirás información por email.
-      </p>
-    </div>
-  ) : (
-    <form onSubmit={handleSubmit} className="rounded-2xl p-6 space-y-5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
-      <div>
-        <p className="text-sm font-black uppercase tracking-wide text-white">
-          {type === "PAIR" ? "Inscripción de pareja" : type === "TEAM" ? "Inscripción de equipo" : "Inscripción"}
-        </p>
-        {type === "PAIR" && <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>Completa los datos de ambos jugadores</p>}
-        {type === "TEAM" && <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>Datos del equipo e integrantes</p>}
-      </div>
-
-      {tournament.categories?.length > 0 && (
-        <Field label="Categoría *">
-          <div className="flex flex-wrap gap-2 mt-1">
-            {tournament.categories.map(cat => (
-              <button key={cat.id} type="button" onClick={() => setCategoryId(cat.id)}
-                className="px-3 py-2 rounded-xl text-xs font-bold transition-all"
-                style={categoryId === cat.id
-                  ? { background: "rgba(201,168,76,0.2)", border: `1.5px solid ${GOLD}`, color: GOLD }
-                  : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)" }}>
-                <Tag className="w-3 h-3 inline mr-1" />{cat.name}
-              </button>
-            ))}
-          </div>
-        </Field>
-      )}
-
-      {type === "INDIVIDUAL" && (
-        <>
-          <Field label="Nombre completo *">
-            <input value={indName} onChange={e => setIndName(e.target.value)}
-              placeholder="Ej: Juan Pérez" className={inputCls} style={inputStyle} />
-          </Field>
-          <Field label="Email *">
-            <input type="email" value={indEmail} onChange={e => setIndEmail(e.target.value)}
-              placeholder="tu@email.com" className={inputCls} style={inputStyle} />
-          </Field>
-          <PhoneField label="WhatsApp *" value={indPhone} onChange={setIndPhone} />
-        </>
-      )}
-
-      {type === "PAIR" && (
-        <>
-          <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: GOLD }}>Jugador 1</p>
-            <Field label="Nombre completo *">
-              <input value={p1Name} onChange={e => setP1Name(e.target.value)}
-                placeholder="Ej: Juan Pérez" className={inputCls} style={inputStyle} />
-            </Field>
-            <Field label="Email *">
-              <input type="email" value={p1Email} onChange={e => setP1Email(e.target.value)}
-                placeholder="juan@email.com" className={inputCls} style={inputStyle} />
-            </Field>
-            <PhoneField label="WhatsApp *" value={p1Phone} onChange={setP1Phone} />
-          </div>
-          <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: GOLD }}>Jugador 2</p>
-            <Field label="Nombre completo *">
-              <input value={p2Name} onChange={e => setP2Name(e.target.value)}
-                placeholder="Ej: María García" className={inputCls} style={inputStyle} />
-            </Field>
-            <Field label="Email *">
-              <input type="email" value={p2Email} onChange={e => setP2Email(e.target.value)}
-                placeholder="maria@email.com" className={inputCls} style={inputStyle} />
-            </Field>
-            <PhoneField label="WhatsApp *" value={p2Phone} onChange={setP2Phone} />
-          </div>
-        </>
-      )}
-
-      {type === "TEAM" && (
-        <>
-          <Field label="Nombre del equipo *">
-            <input value={teamName} onChange={e => setTeamName(e.target.value)}
-              placeholder="Ej: Los Campeones" className={inputCls} style={inputStyle} />
-          </Field>
-          <Field label="Email de contacto *">
-            <input type="email" value={teamEmail} onChange={e => setTeamEmail(e.target.value)}
-              placeholder="capitan@email.com" className={inputCls} style={inputStyle} />
-          </Field>
-          <PhoneField label="WhatsApp de contacto *" value={teamPhone} onChange={setTeamPhone} />
-          <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: GOLD }}>
-                Integrantes <span style={{ color: "rgba(255,255,255,0.3)" }}>(mín. 2)</span>
-              </p>
-              <button type="button" onClick={() => setTeamPlayers(p => [...p, ""])}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold"
-                style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }}>
-                <Plus className="w-3 h-3" /> Agregar
-              </button>
-            </div>
-            <div className="space-y-2">
-              {teamPlayers.map((p, i) => (
-                <div key={i} className="flex gap-2 items-center">
-                  <span className="text-[10px] font-bold w-5 text-center flex-shrink-0" style={{ color: "rgba(255,255,255,0.3)" }}>{i + 1}</span>
-                  <input value={p} onChange={e => setTeamPlayers(pl => pl.map((x, j) => j === i ? e.target.value : x))}
-                    placeholder={`Jugador ${i + 1}`}
-                    className="flex-1 rounded-xl px-3 py-2.5 text-sm placeholder:opacity-30 outline-none"
-                    style={inputStyle} />
-                  {teamPlayers.length > 2 && (
-                    <button type="button" onClick={() => setTeamPlayers(pl => pl.filter((_, j) => j !== i))}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg flex-shrink-0"
-                      style={{ color: "rgba(255,255,255,0.3)" }}>
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-
-      {tournament.allowScheduleRestrictions && tournament.scheduleDays.length > 0 && (
-        <button type="button" onClick={() => setShowRestrictionsModal(true)}
-          className="w-full h-12 rounded-xl font-bold text-sm flex items-center justify-between px-4 transition-all"
-          style={{ background: "rgba(239,68,68,0.07)", border: `1px solid ${restrictions.length > 0 ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.12)"}`, color: restrictions.length > 0 ? "#f87171" : "rgba(255,255,255,0.55)" }}>
-          <span>¿Cuándo no puedes jugar?</span>
-          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: restrictions.length > 0 ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.07)", color: restrictions.length > 0 ? "#f87171" : "rgba(255,255,255,0.4)" }}>
-            {restrictions.length > 0 ? `${restrictions.length} bloqueo${restrictions.length !== 1 ? "s" : ""}` : "Opcional"}
-          </span>
-        </button>
-      )}
-
-      {formError && (
-        <p className="text-xs font-semibold px-3 py-2 rounded-lg" style={{ background: "rgba(239,68,68,0.1)", color: "#f87171" }}>
-          {formError}
-        </p>
-      )}
-
-      <button type="submit" disabled={submitting}
-        className="w-full h-12 rounded-xl font-black text-sm uppercase tracking-wide flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-        style={{ background: requiresPayment ? GOLD : "rgba(34,197,94,0.2)", color: requiresPayment ? NAVY : "#22c55e", border: requiresPayment ? "none" : "1px solid rgba(34,197,94,0.4)" }}>
-        {submitting
-          ? <Loader2 className="w-4 h-4 animate-spin" />
-          : <>
-              {requiresPayment ? `Pagar ${fmt(entryFee)} e inscribirse` : "Inscribirse gratis"}
-              <ChevronRight className="w-4 h-4" />
-            </>}
-      </button>
-
-      {requiresPayment && (
-        <p className="text-[10px] text-center" style={{ color: "rgba(255,255,255,0.3)" }}>
-          Serás redirigido a Flow para completar el pago de forma segura.
-        </p>
-      )}
-    </form>
-  )
+  const statusColor = STATUS_COLORS[tournament.status] ?? STATUS_COLORS.FINISHED
 
   return (
-    <div className="min-h-screen" style={{ background: NAVY }}>
+    <div className="min-h-screen" style={{ background: BG }}>
+      <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
 
-      {tournament.flyer ? (
-        /* ── Desktop: flyer izquierda + info+form derecha ── */
-        <div className="min-h-screen flex flex-col lg:flex-row">
+        {/* ── Tarjeta principal ── */}
+        <div className="rounded-3xl overflow-hidden shadow-xl" style={{ background: NAVY }}>
 
-          {/* Columna izquierda — flyer sticky */}
-          <div className="lg:w-[45%] lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden flex-shrink-0">
-            <img
-              src={tournament.flyer}
-              alt={tournament.name}
-              className="w-full h-full object-cover lg:object-cover"
-              style={{ display: "block", maxHeight: "100svh" }}
-            />
-          </div>
-
-          {/* Columna derecha — scroll */}
-          <div className="flex-1 overflow-y-auto">
-            {/* Header */}
-            <div className="px-6 pt-10 pb-4">
-              <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>{tournament.business.name}</p>
-              <h1 className="text-3xl font-black text-white uppercase tracking-wide leading-tight">{tournament.name}</h1>
-              {tournament.sport && <p className="text-sm mt-1 font-medium" style={{ color: GOLD }}>{tournament.sport}</p>}
-            </div>
-
-            {/* Info cards */}
-            <div className="px-6 mb-6">{infoCards}</div>
-
-            {/* Description */}
-            {tournament.description && (
-              <div className="px-6 mb-6">
-                <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>{tournament.description}</p>
+          {/* Imagen / flyer con badges */}
+          {tournament.flyer ? (
+            <div className="relative">
+              <img src={tournament.flyer} alt={tournament.name} className="w-full block" />
+              {/* Status badge — top right */}
+              <div className="absolute top-3 right-3">
+                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wide"
+                  style={{ background: "rgba(13,27,42,0.75)", backdropFilter: "blur(8px)", color: statusColor.text, border: `1px solid ${statusColor.dot}30` }}>
+                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor.dot }} />
+                  {STATUS_LABELS[tournament.status] ?? tournament.status}
+                </span>
               </div>
-            )}
-
-            {/* Form */}
-            <div className="px-6 pb-16">{formContent}</div>
-          </div>
-        </div>
-      ) : (
-        /* ── Sin flyer: layout single-column centrado ── */
-        <div>
-          <div className="px-4 pt-10 pb-6 max-w-lg mx-auto text-center">
-            {tournament.business.logoUrl
-              ? <img src={tournament.business.logoUrl} alt="" className="w-14 h-14 rounded-2xl object-cover mx-auto mb-4" />
-              : <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(201,168,76,0.15)" }}>
-                  <Trophy className="w-7 h-7" style={{ color: GOLD }} />
+              {/* Category badge — bottom left */}
+              {tournament.categories?.length > 0 && (
+                <div className="absolute bottom-3 left-3">
+                  <span className="px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wide"
+                    style={{ background: "rgba(13,27,42,0.75)", backdropFilter: "blur(8px)", color: "white" }}>
+                    {tournament.categories.length} {tournament.categories.length === 1 ? "categoría" : "categorías"}
+                  </span>
                 </div>
-            }
-            <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>{tournament.business.name}</p>
-            <h1 className="text-2xl font-black text-white uppercase tracking-wide">{tournament.name}</h1>
-            {tournament.sport && <p className="text-sm mt-1" style={{ color: GOLD }}>{tournament.sport}</p>}
-          </div>
-          <div className="max-w-lg mx-auto px-4 mb-6">{infoCards}</div>
-          {tournament.description && (
-            <div className="max-w-lg mx-auto px-4 mb-6">
-              <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>{tournament.description}</p>
+              )}
+            </div>
+          ) : (
+            /* Sin flyer — header con gradiente */
+            <div className="px-6 pt-8 pb-4 relative" style={{ background: `linear-gradient(135deg, ${NAVY} 0%, #1a2f45 100%)` }}>
+              <div className="absolute top-4 right-4">
+                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wide"
+                  style={{ background: "rgba(255,255,255,0.08)", color: statusColor.text }}>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor.dot }} />
+                  {STATUS_LABELS[tournament.status] ?? tournament.status}
+                </span>
+              </div>
+              {tournament.business.logoUrl
+                ? <img src={tournament.business.logoUrl} alt="" className="w-12 h-12 rounded-2xl object-cover mb-4" />
+                : <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4" style={{ background: "rgba(201,168,76,0.15)" }}>
+                    <Trophy className="w-6 h-6" style={{ color: GOLD }} />
+                  </div>
+              }
             </div>
           )}
-          <div className="max-w-lg mx-auto px-4 pb-16">{formContent}</div>
-        </div>
-      )}
 
-      {/* Schedule restrictions modal */}
+          {/* Info del torneo */}
+          <div className="px-5 pt-5 pb-6 space-y-4">
+            {/* Status label (sin flyer ya lo mostramos arriba; con flyer lo repetimos en texto) */}
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest mb-1" style={{ color: statusColor.text }}>
+                {STATUS_LABELS[tournament.status] ?? tournament.status}
+              </p>
+              <h1 className="text-2xl font-black text-white uppercase leading-tight tracking-wide">{tournament.name}</h1>
+              {(tournament.sport || tournament.format) && (
+                <p className="text-xs font-semibold mt-1 uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  {[tournament.sport, FORMAT_LABELS[tournament.format]].filter(Boolean).join(" · ")}
+                </p>
+              )}
+            </div>
+
+            {/* Fecha + tipo */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <Calendar className="w-3.5 h-3.5" style={{ color: GOLD }} />
+                </div>
+                <span className="text-sm font-semibold text-white">
+                  {format(new Date(tournament.startDate), "d 'de' MMMM yyyy", { locale: es })}
+                </span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <Users className="w-3.5 h-3.5" style={{ color: GOLD }} />
+                </div>
+                <span className="text-sm font-semibold text-white">
+                  {tournament.registeredCount}{tournament.maxParticipants ? `/${tournament.maxParticipants}` : ""} inscritos · {TYPE_LABELS[type]}
+                </span>
+              </div>
+            </div>
+
+            {/* Precio pill */}
+            <div className="flex items-center gap-3">
+              <div className="px-4 py-2 rounded-2xl" style={{ background: entryFee ? "rgba(201,168,76,0.15)" : "rgba(255,255,255,0.06)", border: entryFee ? `1px solid rgba(201,168,76,0.3)` : "1px solid rgba(255,255,255,0.08)" }}>
+                <p className="text-base font-black" style={{ color: entryFee ? GOLD : "rgba(255,255,255,0.5)" }}>
+                  {entryFee ? fmt(entryFee) : "Gratis"}
+                </p>
+                <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+                  {type === "INDIVIDUAL" ? "por persona" : type === "PAIR" ? "por pareja" : "por equipo"}
+                </p>
+              </div>
+              {tournament.description && (
+                <p className="flex-1 text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.45)" }}>{tournament.description}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Formulario de inscripción ── */}
+        <div className="rounded-3xl overflow-hidden shadow-sm" style={{ background: "white" }}>
+          {!canRegister ? (
+            <div className="p-6 text-center space-y-2">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: "#f2f3f5" }}>
+                <Trophy className="w-6 h-6 opacity-30" style={{ color: NAVY }} />
+              </div>
+              <p className="font-black text-lg" style={{ color: NAVY }}>
+                {tournament.status === "OPEN" && isFull ? "Torneo lleno" : STATUS_LABELS[tournament.status] ?? "Inscripciones cerradas"}
+              </p>
+              <p className="text-sm" style={{ color: "rgba(13,27,42,0.4)" }}>Las inscripciones ya no están disponibles.</p>
+            </div>
+          ) : success ? (
+            <div className="p-8 text-center space-y-3">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto" style={{ background: "rgba(34,197,94,0.1)" }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <p className="text-xl font-black" style={{ color: NAVY }}>¡Inscripción confirmada!</p>
+              <p className="text-sm" style={{ color: "rgba(13,27,42,0.5)" }}>
+                {type === "PAIR" ? `La pareja ha sido inscrita en ${tournament.name}.`
+                  : type === "TEAM" ? `El equipo ha sido inscrito en ${tournament.name}.`
+                  : `Te has inscrito en ${tournament.name}.`}
+                {" "}Recibirás información por email.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="p-5 space-y-4">
+              <div className="pb-1">
+                <p className="text-base font-black uppercase tracking-wide" style={{ color: NAVY }}>
+                  {type === "PAIR" ? "Inscripción de pareja" : type === "TEAM" ? "Inscripción de equipo" : "Inscripción"}
+                </p>
+                {type === "PAIR" && <p className="text-xs mt-0.5" style={{ color: "rgba(13,27,42,0.4)" }}>Completa los datos de ambos jugadores</p>}
+                {type === "TEAM" && <p className="text-xs mt-0.5" style={{ color: "rgba(13,27,42,0.4)" }}>Datos del equipo e integrantes</p>}
+              </div>
+
+              {tournament.categories?.length > 0 && (
+                <Field label="Categoría *">
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {tournament.categories.map(cat => (
+                      <button key={cat.id} type="button" onClick={() => setCategoryId(cat.id)}
+                        className="px-3 py-2 rounded-xl text-xs font-bold transition-all"
+                        style={categoryId === cat.id
+                          ? { background: NAVY, color: "white" }
+                          : { background: "#f2f3f5", color: "rgba(13,27,42,0.5)" }}>
+                        <Tag className="w-3 h-3 inline mr-1" />{cat.name}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+              )}
+
+              {type === "INDIVIDUAL" && (
+                <>
+                  <Field label="Nombre completo *">
+                    <input value={indName} onChange={e => setIndName(e.target.value)} placeholder="Ej: Juan Pérez" className={inputCls} style={inputStyle} />
+                  </Field>
+                  <Field label="Email *">
+                    <input type="email" value={indEmail} onChange={e => setIndEmail(e.target.value)} placeholder="tu@email.com" className={inputCls} style={inputStyle} />
+                  </Field>
+                  <PhoneField label="WhatsApp *" value={indPhone} onChange={setIndPhone} />
+                </>
+              )}
+
+              {type === "PAIR" && (
+                <>
+                  <div className="rounded-2xl p-4 space-y-3" style={{ background: "#f7f8fa" }}>
+                    <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: NAVY }}>Jugador 1</p>
+                    <Field label="Nombre completo *">
+                      <input value={p1Name} onChange={e => setP1Name(e.target.value)} placeholder="Ej: Juan Pérez" className={inputCls} style={inputStyle} />
+                    </Field>
+                    <Field label="Email *">
+                      <input type="email" value={p1Email} onChange={e => setP1Email(e.target.value)} placeholder="juan@email.com" className={inputCls} style={inputStyle} />
+                    </Field>
+                    <PhoneField label="WhatsApp *" value={p1Phone} onChange={setP1Phone} />
+                  </div>
+                  <div className="rounded-2xl p-4 space-y-3" style={{ background: "#f7f8fa" }}>
+                    <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: NAVY }}>Jugador 2</p>
+                    <Field label="Nombre completo *">
+                      <input value={p2Name} onChange={e => setP2Name(e.target.value)} placeholder="Ej: María García" className={inputCls} style={inputStyle} />
+                    </Field>
+                    <Field label="Email *">
+                      <input type="email" value={p2Email} onChange={e => setP2Email(e.target.value)} placeholder="maria@email.com" className={inputCls} style={inputStyle} />
+                    </Field>
+                    <PhoneField label="WhatsApp *" value={p2Phone} onChange={setP2Phone} />
+                  </div>
+                </>
+              )}
+
+              {type === "TEAM" && (
+                <>
+                  <Field label="Nombre del equipo *">
+                    <input value={teamName} onChange={e => setTeamName(e.target.value)} placeholder="Ej: Los Campeones" className={inputCls} style={inputStyle} />
+                  </Field>
+                  <Field label="Email de contacto *">
+                    <input type="email" value={teamEmail} onChange={e => setTeamEmail(e.target.value)} placeholder="capitan@email.com" className={inputCls} style={inputStyle} />
+                  </Field>
+                  <PhoneField label="WhatsApp de contacto *" value={teamPhone} onChange={setTeamPhone} />
+                  <div className="rounded-2xl p-4 space-y-3" style={{ background: "#f7f8fa" }}>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: NAVY }}>
+                        Integrantes <span style={{ color: "rgba(13,27,42,0.3)" }}>(mín. 2)</span>
+                      </p>
+                      <button type="button" onClick={() => setTeamPlayers(p => [...p, ""])}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold"
+                        style={{ background: NAVY, color: "white" }}>
+                        <Plus className="w-3 h-3" /> Agregar
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {teamPlayers.map((p, i) => (
+                        <div key={i} className="flex gap-2 items-center">
+                          <span className="text-[10px] font-bold w-5 text-center flex-shrink-0" style={{ color: "rgba(13,27,42,0.3)" }}>{i + 1}</span>
+                          <input value={p} onChange={e => setTeamPlayers(pl => pl.map((x, j) => j === i ? e.target.value : x))}
+                            placeholder={`Jugador ${i + 1}`}
+                            className="flex-1 rounded-xl px-3 py-2.5 text-sm placeholder:opacity-30 outline-none"
+                            style={inputStyle} />
+                          {teamPlayers.length > 2 && (
+                            <button type="button" onClick={() => setTeamPlayers(pl => pl.filter((_, j) => j !== i))}
+                              className="w-7 h-7 flex items-center justify-center rounded-lg flex-shrink-0"
+                              style={{ color: "rgba(13,27,42,0.3)" }}>
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {tournament.allowScheduleRestrictions && tournament.scheduleDays.length > 0 && (
+                <button type="button" onClick={() => setShowRestrictionsModal(true)}
+                  className="w-full h-12 rounded-2xl font-bold text-sm flex items-center justify-between px-4 transition-all"
+                  style={{ background: "#f7f8fa", border: `1.5px solid ${restrictions.length > 0 ? "#fca5a5" : "#e8eaed"}`, color: restrictions.length > 0 ? "#ef4444" : "rgba(13,27,42,0.45)" }}>
+                  <span>¿Cuándo no puedes jugar?</span>
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: restrictions.length > 0 ? "#fee2e2" : "#e8eaed", color: restrictions.length > 0 ? "#ef4444" : "rgba(13,27,42,0.4)" }}>
+                    {restrictions.length > 0 ? `${restrictions.length} bloqueo${restrictions.length !== 1 ? "s" : ""}` : "Opcional"}
+                  </span>
+                </button>
+              )}
+
+              {formError && (
+                <p className="text-xs font-semibold px-3 py-2.5 rounded-xl" style={{ background: "#fee2e2", color: "#dc2626" }}>
+                  {formError}
+                </p>
+              )}
+
+              <button type="submit" disabled={submitting}
+                className="w-full h-14 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                style={{ background: NAVY, color: "white" }}>
+                {submitting
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <>
+                      {requiresPayment
+                        ? <><span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" />{`Pagar ${fmt(entryFee)} e inscribirse`}</>
+                        : "Inscribirse gratis"
+                      }
+                      <ChevronRight className="w-4 h-4" />
+                    </>}
+              </button>
+
+              {requiresPayment && (
+                <p className="text-[10px] text-center" style={{ color: "rgba(13,27,42,0.35)" }}>
+                  Serás redirigido a Flow para completar el pago de forma segura.
+                </p>
+              )}
+            </form>
+          )}
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-[10px] pb-4" style={{ color: "rgba(13,27,42,0.25)" }}>
+          {tournament.business.name} · agendamok.cl
+        </p>
+      </div>
+
       {showRestrictionsModal && tournament.allowScheduleRestrictions && (
         <ScheduleRestrictionsModal
           scheduleDays={tournament.scheduleDays}
@@ -612,4 +570,3 @@ export default function TournamentPublicPage() {
     </div>
   )
 }
-
