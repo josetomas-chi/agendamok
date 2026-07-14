@@ -272,9 +272,11 @@ export default function NewBookingModal({
   const selectedDayOfWeek = form.date ? new Date(form.date + "T00:00:00Z").getUTCDay() : -1
   const sessionCount = bookingType === "recurring" ? countOccurrences(form.date, rangeEnd, selectedDayOfWeek) : 0
 
-  // Fixed slots: if the active pricing rule has fixedSlots, restrict time selection
+  // Fixed slots: only activate if the selected start time falls within the rule's time range
   const activeRuleWithSlots = selectedCourt?.pricingRules?.find(rule =>
-    (rule.fixedSlots?.length ?? 0) > 0 && rule.days.includes(selectedDayOfWeek)
+    (rule.fixedSlots?.length ?? 0) > 0 &&
+    rule.days.includes(selectedDayOfWeek) &&
+    (!form.startTime || (form.startTime >= rule.startTime && form.startTime < rule.endTime))
   )
   const fixedSlots: string[] = activeRuleWithSlots?.fixedSlots ?? []
 
