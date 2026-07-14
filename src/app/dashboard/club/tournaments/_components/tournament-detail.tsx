@@ -500,6 +500,50 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
         ))}
       </div>
 
+      {/* Fechas del torneo — editables inline */}
+      <div className="rounded-xl px-4 py-3 flex items-center justify-between gap-3" style={{ background: "#fff", border: "1px solid rgba(201,168,76,0.2)" }}>
+        <div className="flex-1 grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-wide font-semibold mb-1" style={{ color: "rgba(13,27,42,0.35)" }}>Fecha de inicio</p>
+            <input
+              type="date"
+              defaultValue={tournament.startDate.split("T")[0]}
+              className="w-full rounded-xl px-3 py-2 text-sm font-bold outline-none"
+              style={{ background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.12)", color: NAVY }}
+              onChange={async e => {
+                const val = e.target.value
+                if (!val) return
+                const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournament.id}`, {
+                  method: "PATCH", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ startDate: `${val}T00:00:00`, endDate: `${val}T23:59:00` }),
+                })
+                if (r.ok) { setTournament(t => t ? { ...t, startDate: `${val}T00:00:00.000Z`, endDate: `${val}T23:59:00.000Z` } : t); toast.success("Fecha actualizada") }
+                else toast.error("Error al actualizar fecha")
+              }}
+            />
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wide font-semibold mb-1" style={{ color: "rgba(13,27,42,0.35)" }}>Fecha de término</p>
+            <input
+              type="date"
+              defaultValue={tournament.endDate.split("T")[0]}
+              className="w-full rounded-xl px-3 py-2 text-sm font-bold outline-none"
+              style={{ background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.12)", color: NAVY }}
+              onChange={async e => {
+                const val = e.target.value
+                if (!val) return
+                const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournament.id}`, {
+                  method: "PATCH", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ endDate: `${val}T23:59:00` }),
+                })
+                if (r.ok) { setTournament(t => t ? { ...t, endDate: `${val}T23:59:00.000Z` } : t); toast.success("Fecha de término actualizada") }
+                else toast.error("Error al actualizar fecha")
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Fecha límite de inscripción — editable inline */}
       <div className="rounded-xl px-4 py-3 flex items-center justify-between gap-3" style={{ background: "#fff", border: "1px solid rgba(201,168,76,0.2)" }}>
         <div>
