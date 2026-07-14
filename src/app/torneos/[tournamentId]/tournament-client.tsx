@@ -437,12 +437,12 @@ export default function TournamentPublicPage() {
                 type="button"
                 onClick={() => {
                   const url = window.location.href
-                  const text = `¡Me inscribí en ${tournament.name}! 🏆 Inscríbete tú también: ${url}`
+                  const text = `¡Me inscribí en ${tournament.name}! 🏆 Inscríbete tú también 👉 ${url}`
                   if (navigator.share) {
                     navigator.share({ title: tournament.name, text, url })
                   } else {
-                    navigator.clipboard.writeText(url)
-                    alert("Link copiado al portapapeles")
+                    navigator.clipboard.writeText(text)
+                    alert("Mensaje copiado al portapapeles")
                   }
                 }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold mx-auto transition-all"
