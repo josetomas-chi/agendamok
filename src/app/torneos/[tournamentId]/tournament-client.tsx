@@ -334,29 +334,40 @@ export default function TournamentPublicPage() {
 
   return (
     <div className="min-h-screen" style={{ background: NAVY }}>
-      {/* Flyer hero — shown if organizer uploaded one */}
-      {tournament.flyer && (
-        <div className="w-full" style={{ maxHeight: 280, overflow: "hidden" }}>
-          <img src={tournament.flyer} alt={tournament.name} className="w-full object-cover" style={{ maxHeight: 280 }} />
+
+      {/* Hero */}
+      {tournament.flyer ? (
+        <div className="max-w-lg mx-auto">
+          {/* Full flyer — no crop */}
+          <img
+            src={tournament.flyer}
+            alt={tournament.name}
+            className="w-full block"
+            style={{ display: "block" }}
+          />
+          {/* Name strip below flyer */}
+          <div className="px-5 pt-5 pb-2 text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>{tournament.business.name}</p>
+            <h1 className="text-2xl font-black text-white uppercase tracking-wide leading-tight">{tournament.name}</h1>
+            {tournament.sport && <p className="text-sm mt-1 font-medium" style={{ color: GOLD }}>{tournament.sport}</p>}
+          </div>
+        </div>
+      ) : (
+        <div className="px-4 pt-10 pb-6 max-w-lg mx-auto text-center">
+          {tournament.business.logoUrl
+            ? <img src={tournament.business.logoUrl} alt="" className="w-14 h-14 rounded-2xl object-cover mx-auto mb-4" />
+            : <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(201,168,76,0.15)" }}>
+                <Trophy className="w-7 h-7" style={{ color: GOLD }} />
+              </div>
+          }
+          <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>{tournament.business.name}</p>
+          <h1 className="text-2xl font-black text-white uppercase tracking-wide">{tournament.name}</h1>
+          {tournament.sport && <p className="text-sm mt-1" style={{ color: GOLD }}>{tournament.sport}</p>}
         </div>
       )}
 
-      {/* Header */}
-      <div className="px-4 pt-8 pb-6 max-w-lg mx-auto text-center">
-        {!tournament.flyer && (
-          tournament.business.logoUrl
-            ? <img src={tournament.business.logoUrl} alt="" className="w-12 h-12 rounded-xl object-cover mx-auto mb-4" />
-            : <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(201,168,76,0.15)" }}>
-                <Trophy className="w-6 h-6" style={{ color: GOLD }} />
-              </div>
-        )}
-        <p className="text-xs font-semibold mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>{tournament.business.name}</p>
-        <h1 className="text-2xl font-black text-white uppercase tracking-wide">{tournament.name}</h1>
-        {tournament.sport && <p className="text-sm mt-1" style={{ color: GOLD }}>{tournament.sport}</p>}
-      </div>
-
       {/* Info cards */}
-      <div className="max-w-lg mx-auto px-4 grid grid-cols-2 gap-3 mb-6">
+      <div className="max-w-lg mx-auto px-4 grid grid-cols-2 gap-3 mt-5 mb-6">
         <div className="rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
           <Calendar className="w-4 h-4 mx-auto mb-1" style={{ color: GOLD }} />
           <p className="text-xs font-bold text-white">{format(new Date(tournament.startDate), "d MMM", { locale: es })}</p>
