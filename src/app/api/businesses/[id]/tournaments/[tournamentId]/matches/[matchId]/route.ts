@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendTournamentMatchAdvance } from "@/lib/email"
+import { sendTournamentMatchAdvance, sendTournamentElimination } from "@/lib/email"
 
 type Params = { params: Promise<{ id: string; tournamentId: string; matchId: string }> }
 
@@ -48,6 +48,20 @@ export async function PATCH(req: Request, { params }: Params) {
           data: isSlot1 ? { participant1Id: winnerId } : { participant2Id: winnerId },
           include: { participant1: true, participant2: true },
         })
+
+        // Send elimination email to loser
+        const loserParticipant = match.participant1?.id === winnerId ? match.participant2 : match.participant1
+        if (loserParticipant && match.winner) {
+          const loserPlayers = Array.isArray(loserParticipant.players)
+            ? (loserParticipant.players as { name: string; email?: string }[])
+            : []
+          sendTournamentElimination({
+            loser: { name: loserParticipant.name, email: loserParticipant.email, players: loserPlayers },
+            winner: { name: match.winner.name },
+            tournamentName: tournament.name,
+            round: match.round,
+          }).catch(() => {})
+        }
 
         // Send advance email if both rivals are now known
         const p1 = updated.participant1

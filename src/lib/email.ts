@@ -631,6 +631,47 @@ export async function sendTournamentRegistrationConfirmation({
   }
 }
 
+export async function sendTournamentElimination({
+  loser, winner, tournamentName, round,
+}: {
+  loser: { name: string; email: string; players?: { name: string; email?: string }[] }
+  winner: { name: string }
+  tournamentName: string
+  round: number
+}) {
+  if (!process.env.RESEND_API_KEY) return
+
+  const recipients: { name: string; email: string }[] = [{ name: loser.name, email: loser.email }]
+  if (Array.isArray(loser.players)) {
+    for (const p of loser.players) {
+      if (p.email && p.email !== loser.email && p.email.includes("@")) {
+        recipients.push({ name: p.name, email: p.email })
+      }
+    }
+  }
+
+  const validRecipients = recipients.filter(r => r.email?.includes("@"))
+  if (!validRecipients.length) return
+
+  for (const recipient of validRecipients) {
+    resend.emails.send({
+      from: FROM,
+      to: recipient.email,
+      subject: `Hasta la próxima — ${tournamentName}`,
+      html: base(`
+        <h1>¡Gracias por competir, ${recipient.name}!</h1>
+        <p class="subtitle">Tu participación en <strong style="color:#fff">${tournamentName}</strong> llegó hasta la <strong style="color:#C9A84C">Ronda ${round}</strong>. Fue una gran batalla contra <strong style="color:#fff">${winner.name}</strong>.</p>
+        <div class="box">
+          <div class="row"><span class="label">Torneo</span><span class="value">${tournamentName}</span></div>
+          <div class="row"><span class="label">Ronda eliminado</span><span class="value">Ronda ${round}</span></div>
+          <div class="row"><span class="label">Ganador del partido</span><span class="value">${winner.name}</span></div>
+        </div>
+        <p class="subtitle" style="font-size:13px;margin-top:8px">Esto no termina aquí — te esperamos en el próximo torneo. ¡Sigue entrenando y vuelve con todo! 💪</p>
+      `),
+    }).catch(() => {})
+  }
+}
+
 export async function sendTournamentMatchAdvance({
   winner, opponent, tournamentName, round, scheduledTime, courtNumber,
 }: {
