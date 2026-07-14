@@ -226,14 +226,12 @@ export default function TournamentPublicPage() {
     } else if (type === "PAIR") {
       if (!p1Name.trim() || !p1Email.trim()) { setFormError("Completa los datos del Jugador 1"); return }
       if (!p1Phone.trim()) { setFormError("Ingresa el teléfono WhatsApp del Jugador 1"); return }
-      if (!p2Name.trim() || !p2Email.trim()) { setFormError("Completa los datos del Jugador 2"); return }
-      if (!p2Phone.trim()) { setFormError("Ingresa el teléfono WhatsApp del Jugador 2"); return }
-      submitName = `${p1Name.trim()} / ${p2Name.trim()}`
+      const p2Filled = p2Name.trim() || p2Email.trim() || p2Phone.trim()
+      if (p2Filled && (!p2Name.trim() || !p2Email.trim())) { setFormError("Completa nombre y email del Jugador 2, o déjalo vacío"); return }
+      submitName = p2Name.trim() ? `${p1Name.trim()} / ${p2Name.trim()}` : p1Name.trim()
       submitEmail = p1Email.trim(); submitPhone = p1Phone.trim()
-      submitPlayers = [
-        { name: p1Name.trim(), email: p1Email.trim() },
-        { name: p2Name.trim(), email: p2Email.trim() },
-      ]
+      submitPlayers = [{ name: p1Name.trim(), email: p1Email.trim() }]
+      if (p2Name.trim()) submitPlayers.push({ name: p2Name.trim(), email: p2Email.trim() })
     } else if (type === "TEAM") {
       if (!teamName.trim()) { setFormError("Ingresa el nombre del equipo"); return }
       if (!teamEmail.trim()) { setFormError("Ingresa el email de contacto"); return }
@@ -284,7 +282,7 @@ export default function TournamentPublicPage() {
 
   return (
     <div className="min-h-screen" style={{ background: BG }}>
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
+      <div className="max-w-md mx-auto px-4 py-6 space-y-4">
 
         {/* ── Tarjeta principal ── */}
         <div className="rounded-3xl overflow-hidden shadow-xl" style={{ background: NAVY }}>
@@ -458,14 +456,17 @@ export default function TournamentPublicPage() {
                     <PhoneField label="WhatsApp *" value={p1Phone} onChange={setP1Phone} />
                   </div>
                   <div className="rounded-2xl p-4 space-y-3" style={{ background: "#f7f8fa" }}>
-                    <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: NAVY }}>Jugador 2</p>
-                    <Field label="Nombre completo *">
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: NAVY }}>Jugador 2</p>
+                      <span className="text-[10px]" style={{ color: "rgba(13,27,42,0.35)" }}>— opcional, puede agregarse después</span>
+                    </div>
+                    <Field label="Nombre completo">
                       <input value={p2Name} onChange={e => setP2Name(e.target.value)} placeholder="Ej: María García" className={inputCls} style={inputStyle} />
                     </Field>
-                    <Field label="Email *">
+                    <Field label="Email">
                       <input type="email" value={p2Email} onChange={e => setP2Email(e.target.value)} placeholder="maria@email.com" className={inputCls} style={inputStyle} />
                     </Field>
-                    <PhoneField label="WhatsApp *" value={p2Phone} onChange={setP2Phone} />
+                    <PhoneField label="WhatsApp" value={p2Phone} onChange={setP2Phone} />
                   </div>
                 </>
               )}
