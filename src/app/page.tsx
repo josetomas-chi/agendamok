@@ -650,10 +650,34 @@ export default function LandingPage() {
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold tracking-wider mb-6" style={{ background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.3)", color: "#C9A84C" }}>
                 ✦ NUEVO
               </div>
-              <h2 className="text-4xl sm:text-6xl font-bold mb-4">
-                <span className="text-white">AgendaMok </span>
-                <span style={{ color: "#C9A84C" }}>Sports</span>
-              </h2>
+              <div className="relative inline-block">
+                {/* Padel court lines — decorative */}
+                <svg viewBox="0 0 560 200" className="absolute inset-0 w-full h-full" style={{ opacity: 0.13 }} aria-hidden="true" preserveAspectRatio="xMidYMid meet">
+                  {/* Outer boundary */}
+                  <rect x="20" y="12" width="520" height="176" fill="none" stroke="#C9A84C" strokeWidth="1.8" />
+                  {/* Center net line */}
+                  <line x1="280" y1="12" x2="280" y2="188" stroke="#C9A84C" strokeWidth="1.8" />
+                  {/* Service boxes left */}
+                  <line x1="20" y1="100" x2="176" y2="100" stroke="#C9A84C" strokeWidth="1.2" />
+                  <line x1="176" y1="12" x2="176" y2="188" stroke="#C9A84C" strokeWidth="1.2" />
+                  {/* Service boxes right */}
+                  <line x1="384" y1="12" x2="384" y2="188" stroke="#C9A84C" strokeWidth="1.2" />
+                  <line x1="384" y1="100" x2="540" y2="100" stroke="#C9A84C" strokeWidth="1.2" />
+                  {/* Center service line left */}
+                  <line x1="176" y1="100" x2="280" y2="100" stroke="#C9A84C" strokeWidth="1.2" />
+                  {/* Center service line right */}
+                  <line x1="280" y1="100" x2="384" y2="100" stroke="#C9A84C" strokeWidth="1.2" />
+                  {/* Glass walls corners — short ticks */}
+                  <line x1="20" y1="38" x2="46" y2="38" stroke="#C9A84C" strokeWidth="1" />
+                  <line x1="20" y1="162" x2="46" y2="162" stroke="#C9A84C" strokeWidth="1" />
+                  <line x1="514" y1="38" x2="540" y2="38" stroke="#C9A84C" strokeWidth="1" />
+                  <line x1="514" y1="162" x2="540" y2="162" stroke="#C9A84C" strokeWidth="1" />
+                </svg>
+                <h2 className="relative text-4xl sm:text-6xl font-bold mb-4 px-8 py-4">
+                  <span className="text-white">AgendaMok </span>
+                  <span style={{ color: "#C9A84C" }}>Sports</span>
+                </h2>
+              </div>
               <p className="text-lg max-w-2xl mx-auto" style={{ color: "rgba(255,255,255,0.55)" }}>
                 La plataforma completa para clubes deportivos. Gestiona canchas, reservas por hora y membresías desde un solo lugar.
               </p>
