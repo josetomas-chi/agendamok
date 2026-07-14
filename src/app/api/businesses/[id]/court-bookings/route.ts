@@ -38,7 +38,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const start = new Date(startTime)
   const end = new Date(endTime)
-  const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
+  const durationMinutes = (end.getTime() - start.getTime()) / (1000 * 60)
+  const durationHours = durationMinutes / 60
 
   // Calculate price from pricing rules
   const court = await prisma.court.findUnique({
@@ -46,6 +47,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     include: { pricingRules: true },
   })
   if (!court) return NextResponse.json({ error: "Cancha no encontrada" }, { status: 404 })
+
+  // Validar duración mínima
+  const settings = await prisma.clubSettings.findUnique({ where: { businessId: id }, select: { slotMinutes: true } })
+  const minMinutes = settings?.slotMinutes ?? 60
+  if (durationMinutes < minMinutes) {
+    return NextResponse.json({ error: `La duración mínima de reserva es ${minMinutes} minutos.` }, { status: 400 })
+  }
 
   // Validar solapamiento
   const conflict = await prisma.courtBooking.findFirst({

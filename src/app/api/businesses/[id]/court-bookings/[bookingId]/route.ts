@@ -21,6 +21,21 @@ export async function PATCH(req: Request, { params }: Params) {
     if (status !== undefined) data.status = status
     if (price !== undefined) data.price = price
 
+    // Validar duración mínima si cambia horario
+    if (startTime !== undefined || endTime !== undefined) {
+      const cur = await prisma.courtBooking.findUnique({ where: { id: bookingId }, select: { startTime: true, endTime: true } })
+      const resolvedStart = startTime ? new Date(startTime) : cur?.startTime
+      const resolvedEnd = endTime ? new Date(endTime) : cur?.endTime
+      if (resolvedStart && resolvedEnd) {
+        const durationMinutes = (resolvedEnd.getTime() - resolvedStart.getTime()) / (1000 * 60)
+        const settings = await prisma.clubSettings.findUnique({ where: { businessId: id }, select: { slotMinutes: true } })
+        const minMinutes = settings?.slotMinutes ?? 60
+        if (durationMinutes < minMinutes) {
+          return NextResponse.json({ error: `La duración mínima de reserva es ${minMinutes} minutos.` }, { status: 400 })
+        }
+      }
+    }
+
     // Recalcular precio si cambia cancha o horario (y no viene precio explícito)
     if (price === undefined && (courtId !== undefined || startTime !== undefined || endTime !== undefined)) {
       const current = await prisma.courtBooking.findUnique({ where: { id: bookingId }, select: { courtId: true, startTime: true, endTime: true } })
