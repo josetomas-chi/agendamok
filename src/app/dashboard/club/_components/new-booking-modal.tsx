@@ -168,7 +168,7 @@ function ClientCombobox({ clients, value, onSelect }: {
   )
 }
 
-type PricingRule = { id: string; name: string; days: number[]; startTime: string; endTime: string; price: number }
+type PricingRule = { id: string; name: string; days: number[]; startTime: string; endTime: string; price: number; fixedSlots?: string[]; paymentPlayers?: number }
 type Court = { id: string; name: string; sport: string | null; color: string; isActive?: boolean; pricingRules?: PricingRule[] }
 
 function calcPrice(court: Court | undefined, startTime: string, endTime: string, date: string): number {
@@ -271,6 +271,20 @@ export default function NewBookingModal({
     : calcPrice(selectedCourt, form.startTime, form.endTime, form.date)
   const selectedDayOfWeek = form.date ? new Date(form.date + "T00:00:00Z").getUTCDay() : -1
   const sessionCount = bookingType === "recurring" ? countOccurrences(form.date, rangeEnd, selectedDayOfWeek) : 0
+
+  // Fixed slots: if the active pricing rule has fixedSlots, restrict time selection
+  const activeRuleWithSlots = selectedCourt?.pricingRules?.find(rule =>
+    (rule.fixedSlots?.length ?? 0) > 0 && rule.days.includes(selectedDayOfWeek)
+  )
+  const fixedSlots: string[] = activeRuleWithSlots?.fixedSlots ?? []
+
+  function getSlotEnd(startStr: string): string {
+    const idx = fixedSlots.indexOf(startStr)
+    if (idx >= 0 && idx < fixedSlots.length - 1) return fixedSlots[idx + 1]
+    const [h, m] = startStr.split(":").map(Number)
+    const endMins = h * 60 + m + 90
+    return `${String(Math.floor(endMins / 60)).padStart(2, "0")}:${String(endMins % 60).padStart(2, "0")}`
+  }
 
   async function resolveClientId(): Promise<string | null> {
     if (!selectedClient) return null
@@ -441,10 +455,33 @@ export default function NewBookingModal({
           </div>
 
           {/* Horario */}
-          <div className="grid grid-cols-2 gap-2">
-            <TimeSelect label="Inicio" value={form.startTime} onChange={v => setForm(f => ({ ...f, startTime: v }))} />
-            <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} />
-          </div>
+          {fixedSlots.length > 0 ? (
+            <div>
+              <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Horario — elige un bloque</p>
+              <div className="grid grid-cols-3 gap-1.5">
+                {fixedSlots.map(slot => {
+                  const end = getSlotEnd(slot)
+                  const isSelected = form.startTime === slot
+                  return (
+                    <button key={slot} type="button"
+                      onClick={() => setForm(f => ({ ...f, startTime: slot, endTime: end }))}
+                      className="rounded-xl py-2.5 text-center transition-all"
+                      style={isSelected
+                        ? { background: "rgba(201,168,76,0.15)", border: `1.5px solid ${GOLD}`, color: "#8a6520" }
+                        : { background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.1)", color: NAVY }}>
+                      <p className="text-xs font-black">{slot}</p>
+                      <p className="text-[9px]" style={{ color: isSelected ? "rgba(138,101,32,0.6)" : "rgba(13,27,42,0.35)" }}>– {end}</p>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <TimeSelect label="Inicio" value={form.startTime} onChange={v => setForm(f => ({ ...f, startTime: v }))} />
+              <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} />
+            </div>
+          )}
 
           {/* Panel recurrencia */}
           {bookingType === "recurring" && (
