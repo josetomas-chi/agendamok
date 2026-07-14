@@ -433,6 +433,26 @@ export default function TournamentPublicPage() {
                   : `Te has inscrito en ${tournament.name}.`}
                 {" "}Recibirás información por email.
               </p>
+              <button
+                type="button"
+                onClick={() => {
+                  const url = window.location.href
+                  const text = `¡Me inscribí en ${tournament.name}! 🏆 Inscríbete tú también: ${url}`
+                  if (navigator.share) {
+                    navigator.share({ title: tournament.name, text, url })
+                  } else {
+                    navigator.clipboard.writeText(url)
+                    alert("Link copiado al portapapeles")
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold mx-auto transition-all"
+                style={{ background: "rgba(13,27,42,0.06)", color: NAVY, border: "1px solid rgba(13,27,42,0.12)" }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+                Compartir link a un amigo
+              </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
