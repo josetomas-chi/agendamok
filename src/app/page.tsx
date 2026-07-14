@@ -652,7 +652,7 @@ export default function LandingPage() {
               </div>
               <div className="relative inline-block">
                 {/* Padel court lines — decorative */}
-                <svg viewBox="0 0 560 200" className="absolute inset-0 w-full h-full" style={{ opacity: 0.13 }} aria-hidden="true" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 560 200" className="absolute inset-0 w-full h-full" style={{ opacity: 0.45 }} aria-hidden="true" preserveAspectRatio="xMidYMid meet">
                   {/* Outer boundary */}
                   <rect x="20" y="12" width="520" height="176" fill="none" stroke="#C9A84C" strokeWidth="1.8" />
                   {/* Center net line */}
