@@ -1072,8 +1072,10 @@ model Tournament {
   groupCount      Int?
   groupSize       Int?
   advanceCount    Int?
-  courtCount      Int?
-  flyer           String?
+  courtCount                  Int?
+  flyer                       String?
+  allowScheduleRestrictions   Boolean  @default(false)
+  maxRestrictionsPerParticipant Int    @default(0)
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
 
@@ -1090,10 +1092,11 @@ model Tournament {
 model TournamentScheduleDay {
   id           String   @id @default(cuid())
   tournamentId String
-  date         String   // "YYYY-MM-DD"
-  startTime    String   // "08:00"
-  endTime      String   // "21:00"
-  sortOrder    Int      @default(0)
+  date             String   // "YYYY-MM-DD"
+  startTime        String   // "08:00"
+  endTime          String   // "21:00"
+  sortOrder        Int      @default(0)
+  allowRestrictions Boolean @default(true)
 
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 
@@ -1116,14 +1119,29 @@ model TournamentParticipant {
   paymentOrderId String?
   createdAt      DateTime         @default(now())
 
-  tournament Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  category   TournamentCategory?    @relation(fields: [categoryId], references: [id])
-  matchesAs1 TournamentMatch[]      @relation("MatchParticipant1")
-  matchesAs2 TournamentMatch[]      @relation("MatchParticipant2")
-  wonMatches TournamentMatch[]      @relation("MatchWinner")
+  tournament    Tournament                      @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  category      TournamentCategory?             @relation(fields: [categoryId], references: [id])
+  matchesAs1    TournamentMatch[]               @relation("MatchParticipant1")
+  matchesAs2    TournamentMatch[]               @relation("MatchParticipant2")
+  wonMatches    TournamentMatch[]               @relation("MatchWinner")
+  restrictions  TournamentScheduleRestriction[]
 
   @@index([tournamentId])
   @@map("tournament_participants")
+}
+
+model TournamentScheduleRestriction {
+  id            String   @id @default(cuid())
+  participantId String
+  date          String   // "YYYY-MM-DD"
+  time          String   // "HH:MM"
+  createdAt     DateTime @default(now())
+
+  participant TournamentParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([participantId, date, time])
+  @@index([participantId])
+  @@map("tournament_schedule_restrictions")
 }
 
 model TournamentMatch {

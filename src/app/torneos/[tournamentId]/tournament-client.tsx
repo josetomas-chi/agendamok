@@ -29,12 +29,131 @@ function fmt(n: number) {
 }
 
 type Category = { id: string; name: string; description: string | null }
+type ScheduleDay = { id: string; date: string; startTime: string; endTime: string; sortOrder: number; allowRestrictions: boolean }
 type Tournament = {
   id: string; name: string; sport: string | null; format: string; participantType: string
   startDate: string; endDate: string; maxParticipants: number | null; entryFee: string | null
   status: string; description: string | null; categories: Category[]; registeredCount: number
   business: { name: string; logoUrl: string | null }; paymentEnabled: boolean
   flyer: string | null
+  scheduleDays: ScheduleDay[]
+  allowScheduleRestrictions: boolean
+  maxRestrictionsPerParticipant: number
+}
+
+type Restriction = { date: string; time: string }
+
+// Generate hourly slots between startTime and endTime
+function buildHourlySlots(startTime: string, endTime: string): string[] {
+  const slots: string[] = []
+  const [sh] = startTime.split(":").map(Number)
+  const [eh] = endTime.split(":").map(Number)
+  for (let h = sh; h < eh; h++) {
+    slots.push(`${String(h).padStart(2, "0")}:00`)
+  }
+  return slots
+}
+
+function formatDayLabel(dateStr: string): string {
+  const d = new Date(`${dateStr}T12:00:00`)
+  return d.toLocaleDateString("es-CL", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
+}
+
+function ScheduleRestrictionsModal({
+  scheduleDays,
+  maxRestrictions,
+  restrictions,
+  onChange,
+  onClose,
+}: {
+  scheduleDays: ScheduleDay[]
+  maxRestrictions: number
+  restrictions: Restriction[]
+  onChange: (r: Restriction[]) => void
+  onClose: () => void
+}) {
+  const toggle = (date: string, time: string) => {
+    const key = `${date}|${time}`
+    const exists = restrictions.some(r => `${r.date}|${r.time}` === key)
+    if (exists) {
+      onChange(restrictions.filter(r => `${r.date}|${r.time}` !== key))
+    } else {
+      if (maxRestrictions > 0 && restrictions.length >= maxRestrictions) return
+      onChange([...restrictions, { date, time }])
+    }
+  }
+
+  const isBlocked = (date: string, time: string) =>
+    restrictions.some(r => r.date === date && r.time === time)
+
+  const remaining = maxRestrictions > 0 ? maxRestrictions - restrictions.length : null
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: NAVY }}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3.5" style={{ background: "rgba(201,168,76,0.08)", borderBottom: "1px solid rgba(201,168,76,0.15)" }}>
+        <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl" style={{ color: "rgba(255,255,255,0.5)" }}>
+          <X className="w-5 h-5" />
+        </button>
+        <div className="text-center">
+          <p className="text-sm font-black text-white">Horario</p>
+          {remaining !== null && (
+            <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>
+              {remaining > 0 ? `${remaining} bloqueo${remaining !== 1 ? "s" : ""} disponible${remaining !== 1 ? "s" : ""}` : "Límite alcanzado"}
+            </p>
+          )}
+        </div>
+        <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl" style={{ background: "rgba(201,168,76,0.15)", color: GOLD }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+        </button>
+      </div>
+
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto">
+        {scheduleDays.map(day => {
+          const slots = buildHourlySlots(day.startTime, day.endTime)
+          return (
+            <div key={day.id}>
+              {/* Day header */}
+              <div className="px-4 py-2.5 sticky top-0 z-10" style={{ background: day.allowRestrictions ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.04)" }}>
+                <p className="text-xs font-bold" style={{ color: day.allowRestrictions ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.3)" }}>
+                  {formatDayLabel(day.date)}
+                  {!day.allowRestrictions && <span className="ml-2 text-[10px]" style={{ color: "rgba(255,255,255,0.25)" }}>(No seleccionable)</span>}
+                </p>
+              </div>
+              {/* Slots */}
+              {slots.map(time => {
+                const blocked = isBlocked(day.date, time)
+                const canBlock = day.allowRestrictions && (remaining === null || remaining > 0 || blocked)
+                return (
+                  <button
+                    key={time}
+                    type="button"
+                    disabled={!canBlock}
+                    onClick={() => canBlock && toggle(day.date, time)}
+                    className="w-full flex items-center justify-between px-4 py-3.5 transition-colors"
+                    style={{
+                      background: blocked ? "rgba(239,68,68,0.08)" : "transparent",
+                      borderBottom: "1px solid rgba(255,255,255,0.06)",
+                      cursor: canBlock ? "pointer" : "default",
+                      opacity: !day.allowRestrictions ? 0.35 : 1,
+                    }}
+                  >
+                    <span className="text-sm font-medium" style={{ color: blocked ? "#f87171" : "rgba(255,255,255,0.7)" }}>{time}</span>
+                    {blocked && (
+                      <div className="w-6 h-6 rounded flex items-center justify-center" style={{ background: "rgba(239,68,68,0.15)", border: "1.5px solid #f87171" }}>
+                        <X className="w-3.5 h-3.5" style={{ color: "#f87171" }} />
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 const labelCls = "text-[10px] font-bold uppercase tracking-[0.1em] block mb-1.5"
@@ -87,6 +206,10 @@ export default function TournamentPublicPage() {
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState("")
   const [success, setSuccess] = useState(false)
+
+  // Schedule restrictions
+  const [restrictions, setRestrictions] = useState<Restriction[]>([])
+  const [showRestrictionsModal, setShowRestrictionsModal] = useState(false)
 
   // INDIVIDUAL
   const [indName, setIndName] = useState("")
@@ -170,7 +293,7 @@ export default function TournamentPublicPage() {
     const res = await fetch(`/api/public/tournaments/${tournamentId}/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: submitName, email: submitEmail, phone: submitPhone, players: submitPlayers, categoryId: categoryId || null }),
+      body: JSON.stringify({ name: submitName, email: submitEmail, phone: submitPhone, players: submitPlayers, categoryId: categoryId || null, restrictions }),
     })
     const data = await res.json()
 
@@ -413,6 +536,18 @@ export default function TournamentPublicPage() {
               </>
             )}
 
+            {/* Schedule restrictions button */}
+            {tournament.allowScheduleRestrictions && tournament.scheduleDays.length > 0 && (
+              <button type="button" onClick={() => setShowRestrictionsModal(true)}
+                className="w-full h-12 rounded-xl font-bold text-sm flex items-center justify-between px-4 transition-all"
+                style={{ background: "rgba(239,68,68,0.07)", border: `1px solid ${restrictions.length > 0 ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.12)"}`, color: restrictions.length > 0 ? "#f87171" : "rgba(255,255,255,0.55)" }}>
+                <span>¿Cuándo no puedes jugar?</span>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: restrictions.length > 0 ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.07)", color: restrictions.length > 0 ? "#f87171" : "rgba(255,255,255,0.4)" }}>
+                  {restrictions.length > 0 ? `${restrictions.length} bloqueo${restrictions.length !== 1 ? "s" : ""}` : "Opcional"}
+                </span>
+              </button>
+            )}
+
             {formError && (
               <p className="text-xs font-semibold px-3 py-2 rounded-lg" style={{ background: "rgba(239,68,68,0.1)", color: "#f87171" }}>
                 {formError}
@@ -438,6 +573,17 @@ export default function TournamentPublicPage() {
           </form>
         )}
       </div>
+
+      {/* Schedule restrictions modal */}
+      {showRestrictionsModal && tournament.allowScheduleRestrictions && (
+        <ScheduleRestrictionsModal
+          scheduleDays={tournament.scheduleDays}
+          maxRestrictions={tournament.maxRestrictionsPerParticipant}
+          restrictions={restrictions}
+          onChange={setRestrictions}
+          onClose={() => setShowRestrictionsModal(false)}
+        />
+      )}
     </div>
   )
 }

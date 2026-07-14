@@ -17,6 +17,15 @@ function shuffle<T>(arr: T[]): T[] {
 
 type ScheduleSlot = { time: Date; court: number }
 
+// "YYYY-MM-DD" + "HH:MM" from a Date
+function slotKey(d: Date): { date: string; time: string } {
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return {
+    date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+    time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+  }
+}
+
 // Build a flat list of available (time, court) slots from schedule days
 function buildSlots(
   days: { date: string; startTime: string; endTime: string }[],
@@ -28,8 +37,6 @@ function buildSlots(
   const sorted = [...days].sort((a, b) => a.date.localeCompare(b.date))
 
   for (const day of sorted) {
-    const [sh, sm] = day.startTime.split(":").map(Number)
-    const [eh, em] = day.endTime.split(":").map(Number)
     const dayStart = new Date(`${day.date}T${day.startTime}:00`)
     const dayEndMs = new Date(`${day.date}T${day.endTime}:00`).getTime()
 
@@ -43,9 +50,18 @@ function buildSlots(
       }
       slotIndex++
     }
-    void sh; void sm; void eh; void em
   }
   return slots
+}
+
+type RestrictionMap = Map<string, Set<string>> // participantId → Set<"YYYY-MM-DD|HH:MM">
+
+function hasConflict(slot: ScheduleSlot, p1Id: string | null, p2Id: string | null, restrictions: RestrictionMap): boolean {
+  const { date, time } = slotKey(slot.time)
+  const key = `${date}|${time}`
+  if (p1Id && restrictions.get(p1Id)?.has(key)) return true
+  if (p2Id && restrictions.get(p2Id)?.has(key)) return true
+  return false
 }
 
 function assignSchedule(
@@ -53,12 +69,23 @@ function assignSchedule(
   slots: ScheduleSlot[],
   fallbackStart: Date,
   courtCount: number,
+  restrictions: RestrictionMap,
   slotMinutes = 90
 ) {
   const courts = Math.max(courtCount, 1)
+  const availableSlots = [...slots]
+
   return matches.map((m, i) => {
-    if (slots.length > 0 && i < slots.length) {
-      return { ...m, scheduledTime: slots[i].time, courtNumber: slots[i].court }
+    if (availableSlots.length > 0) {
+      // Find first slot with no restriction conflict
+      const idx = availableSlots.findIndex(s => !hasConflict(s, m.participant1Id, m.participant2Id, restrictions))
+      if (idx !== -1) {
+        const [slot] = availableSlots.splice(idx, 1)
+        return { ...m, scheduledTime: slot.time, courtNumber: slot.court }
+      }
+      // All remaining slots have conflicts — just take the first one anyway
+      const slot = availableSlots.shift()!
+      return { ...m, scheduledTime: slot.time, courtNumber: slot.court }
     }
     // Fallback: simple sequential if slots exhausted
     const slotIndex = Math.floor(i / courts)
@@ -78,7 +105,11 @@ export async function POST(req: Request, { params }: Params) {
   const tournament = await prisma.tournament.findFirst({
     where: { id: tournamentId, businessId: id },
     include: {
-      participants: { where: categoryId ? { categoryId } : {}, orderBy: [{ seed: "asc" }, { createdAt: "asc" }] },
+      participants: {
+        where: categoryId ? { categoryId } : {},
+        orderBy: [{ seed: "asc" }, { createdAt: "asc" }],
+        include: { restrictions: true },
+      },
       categories: true,
       scheduleDays: { orderBy: { sortOrder: "asc" } },
     },
@@ -97,6 +128,14 @@ export async function POST(req: Request, { params }: Params) {
   const slots = tournament.scheduleDays.length > 0
     ? buildSlots(tournament.scheduleDays, courtCount)
     : []
+
+  // Build restriction map: participantId → Set<"YYYY-MM-DD|HH:MM">
+  const restrictionMap: RestrictionMap = new Map()
+  for (const p of tournament.participants) {
+    if (p.restrictions && p.restrictions.length > 0) {
+      restrictionMap.set(p.id, new Set(p.restrictions.map((r: { date: string; time: string }) => `${r.date}|${r.time}`)))
+    }
+  }
 
   // Use category-specific groupCount when generating fixture for a specific category
   const activeCategory = categoryId ? tournament.categories.find(c => c.id === categoryId) : null
@@ -180,7 +219,7 @@ export async function POST(req: Request, { params }: Params) {
   const playableFirst = matchesRaw.filter(m => m.participant1Id && m.participant2Id && m.round === 1)
   const futureMatches = matchesRaw.filter(m => !(m.participant1Id && m.participant2Id && m.round === 1))
 
-  const scheduled = assignSchedule(playableFirst, slots, startDate, courtCount)
+  const scheduled = assignSchedule(playableFirst, slots, startDate, courtCount, restrictionMap)
 
   const matchesData: MatchData[] = [
     ...scheduled.map(m => ({

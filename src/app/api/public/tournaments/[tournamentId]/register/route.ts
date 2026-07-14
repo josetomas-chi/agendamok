@@ -21,7 +21,8 @@ export async function POST(req: Request, { params }: Params) {
   if (tournament.status !== "OPEN") return NextResponse.json({ error: "Las inscripciones están cerradas" }, { status: 400 })
 
   const body = await req.json()
-  const { name, email, phone, players, categoryId } = body
+  const { name, email, phone, players, categoryId, restrictions } = body
+  // restrictions: Array<{ date: string; time: string }>
 
   if (!name?.trim()) return NextResponse.json({ error: "Nombre requerido" }, { status: 400 })
   if (!email?.trim()) return NextResponse.json({ error: "Email requerido" }, { status: 400 })
@@ -56,6 +57,15 @@ export async function POST(req: Request, { params }: Params) {
   // Create participant — PENDING_PAYMENT if fee required, REGISTERED if free
   const initialStatus = hasEntryFee && paymentEnabled ? "PENDING_PAYMENT" : "REGISTERED"
 
+  // Validate restriction count if limit is set
+  const maxR = tournament.maxRestrictionsPerParticipant ?? 0
+  const sanitizedRestrictions: { date: string; time: string }[] =
+    tournament.allowScheduleRestrictions && Array.isArray(restrictions)
+      ? (maxR > 0 ? restrictions.slice(0, maxR) : restrictions).filter(
+          (r: { date?: unknown; time?: unknown }) => typeof r.date === "string" && typeof r.time === "string"
+        )
+      : []
+
   const participant = await prisma.tournamentParticipant.create({
     data: {
       tournamentId,
@@ -65,6 +75,9 @@ export async function POST(req: Request, { params }: Params) {
       players: players || [],
       categoryId: categoryId || null,
       status: initialStatus,
+      restrictions: sanitizedRestrictions.length > 0
+        ? { create: sanitizedRestrictions.map(r => ({ date: r.date, time: r.time })) }
+        : undefined,
     },
   })
 

@@ -15,7 +15,7 @@ const TYPE_LABELS = { INDIVIDUAL: "Individual", PAIR: "Parejas", TEAM: "Equipos"
 const STATUS_LABELS = { DRAFT: "Borrador", OPEN: "Inscripciones abiertas", IN_PROGRESS: "En curso", FINISHED: "Finalizado" }
 
 type Category = { id: string; name: string; description: string | null; groupCount?: number | null; groupSize?: number | null }
-type Participant = { id: string; name: string; players: { name: string }[]; seed: number | null; status: string; group: string | null; categoryId: string | null }
+type Participant = { id: string; name: string; players: { name: string }[]; seed: number | null; status: string; group: string | null; categoryId: string | null; restrictions?: { date: string; time: string }[] }
 type Match = {
   id: string; round: number; matchNumber: number; status: string; stage: string; group: string | null; categoryId: string | null
   score1: string | null; score2: string | null; sets: { s1: number; s2: number }[] | null; courtNumber: number | null; scheduledTime: string | null
@@ -677,6 +677,13 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
                       {catLabel && activeCategoryId === null && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
                           style={{ background: "rgba(201,168,76,0.1)", color: GOLD }}>{catLabel}</span>
+                      )}
+                      {p.restrictions && p.restrictions.length > 0 && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                          title={p.restrictions.map(r => `${r.date} ${r.time}`).join(", ")}
+                          style={{ background: "rgba(239,68,68,0.08)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }}>
+                          {p.restrictions.length} bloqueo{p.restrictions.length !== 1 ? "s" : ""}
+                        </span>
                       )}
                       {/* Grupo editable en torneos fase de grupos */}
                       {isGroupStage && (

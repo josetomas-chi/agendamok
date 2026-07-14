@@ -20,7 +20,7 @@ type Tournament = {
 }
 
 type CategoryDraft = { name: string; groupCount: string; groupSize: string }
-type ScheduleDay = { date: string; startTime: string; endTime: string }
+type ScheduleDay = { date: string; startTime: string; endTime: string; allowRestrictions: boolean }
 
 const GOLD = "#C9A84C"
 const NAVY = "#0d1b2a"
@@ -44,6 +44,7 @@ export default function TournamentsPage() {
     startDate: "", endDate: "",
     maxParticipants: "", courtCount: "", entryFee: "", description: "",
     groupCount: "2", groupSize: "4", advanceCount: "2",
+    allowScheduleRestrictions: false, maxRestrictionsPerParticipant: "0",
   })
   const [scheduleDays, setScheduleDays] = useState<ScheduleDay[]>([])
   const [categories, setCategories] = useState<CategoryDraft[]>([])
@@ -69,10 +70,10 @@ export default function TournamentsPage() {
   }
 
   function addScheduleDay() {
-    setScheduleDays(d => [...d, { date: "", startTime: "09:00", endTime: "20:00" }])
+    setScheduleDays(d => [...d, { date: "", startTime: "09:00", endTime: "20:00", allowRestrictions: true }])
   }
 
-  function updateScheduleDay(i: number, field: keyof ScheduleDay, value: string) {
+  function updateScheduleDay(i: number, field: keyof ScheduleDay, value: string | boolean) {
     setScheduleDays(days => days.map((d, idx) => idx === i ? { ...d, [field]: value } : d))
   }
 
@@ -81,7 +82,7 @@ export default function TournamentsPage() {
   }
 
   const resetForm = () => {
-    setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", startDate: "", endDate: "", maxParticipants: "", courtCount: "", entryFee: "", description: "", groupCount: "2", groupSize: "4", advanceCount: "2" })
+    setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", startDate: "", endDate: "", maxParticipants: "", courtCount: "", entryFee: "", description: "", groupCount: "2", groupSize: "4", advanceCount: "2", allowScheduleRestrictions: false, maxRestrictionsPerParticipant: "0" })
     setScheduleDays([])
     setCategories([])
     setCatInput(""); setCatGroups("2"); setCatGroupSize("4")
@@ -117,7 +118,9 @@ export default function TournamentsPage() {
         groupCount: isGroupStage && categories.length === 0 ? Number(form.groupCount) : null,
         groupSize: isGroupStage && categories.length === 0 ? Number(form.groupSize) : null,
         advanceCount: isGroupStage ? Number(form.advanceCount) : null,
-        scheduleDays: sorted.map((d, i) => ({ ...d, sortOrder: i })),
+        allowScheduleRestrictions: form.allowScheduleRestrictions,
+        maxRestrictionsPerParticipant: Number(form.maxRestrictionsPerParticipant) || 0,
+        scheduleDays: sorted.map((d, i) => ({ ...d, sortOrder: i, allowRestrictions: d.allowRestrictions ?? true })),
         categories: categories.map((c, i) => ({
           name: c.name, sortOrder: i,
           groupCount: isGroupStage && c.groupCount ? Number(c.groupCount) : null,
@@ -445,6 +448,12 @@ export default function TournamentsPage() {
                           className="rounded-lg px-2.5 py-1.5 text-xs outline-none"
                           style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)", color: NAVY }} />
                       </div>
+                      <button type="button" title={day.allowRestrictions ? "Jornada seleccionable" : "Jornada no seleccionable"}
+                        onClick={() => updateScheduleDay(i, "allowRestrictions", !day.allowRestrictions)}
+                        className="w-6 h-6 flex items-center justify-center rounded-lg flex-shrink-0 text-[9px] font-black transition-all"
+                        style={{ background: day.allowRestrictions ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", color: day.allowRestrictions ? "#16a34a" : "#ef4444", border: `1px solid ${day.allowRestrictions ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}` }}>
+                        {day.allowRestrictions ? "✓" : "✕"}
+                      </button>
                       {scheduleDays.length > 1 && (
                         <button type="button" onClick={() => removeScheduleDay(i)} className="w-6 h-6 flex items-center justify-center rounded-lg flex-shrink-0" style={{ color: "#ef4444" }}>
                           <X className="w-3.5 h-3.5" />
@@ -463,6 +472,34 @@ export default function TournamentsPage() {
                       {DAY_NAMES[new Date(d.date + "T12:00:00").getDay()]} {d.startTime}–{d.endTime}
                     </span>
                   ))}
+                </div>
+              )}
+            </div>
+
+            {/* Restricciones de horario */}
+            <div className="rounded-xl p-3 space-y-3" style={{ background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.08)" }}>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.12em]" style={{ color: NAVY }}>Restricciones de horario</p>
+                  <p className="text-[10px] mt-0.5" style={{ color: "rgba(13,27,42,0.4)" }}>Los inscritos pueden indicar cuándo no pueden jugar</p>
+                </div>
+                <button type="button" onClick={() => setForm(f => ({ ...f, allowScheduleRestrictions: !f.allowScheduleRestrictions }))}
+                  className="relative w-10 h-6 rounded-full transition-all flex-shrink-0"
+                  style={{ background: form.allowScheduleRestrictions ? GOLD : "rgba(13,27,42,0.15)" }}>
+                  <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all"
+                    style={{ left: form.allowScheduleRestrictions ? "calc(100% - 1.375rem)" : "0.125rem" }} />
+                </button>
+              </div>
+              {form.allowScheduleRestrictions && (
+                <div>
+                  <label className="text-[10px] font-semibold block mb-1" style={{ color: "rgba(13,27,42,0.45)" }}>
+                    Máximo de bloqueos por inscrito <span style={{ color: "rgba(13,27,42,0.3)" }}>(0 = ilimitado)</span>
+                  </label>
+                  <input type="number" min="0" value={form.maxRestrictionsPerParticipant}
+                    onChange={e => setForm(f => ({ ...f, maxRestrictionsPerParticipant: e.target.value }))}
+                    placeholder="0"
+                    className="rounded-lg px-3 py-1.5 text-xs outline-none w-24"
+                    style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)", color: NAVY }} />
                 </div>
               )}
             </div>

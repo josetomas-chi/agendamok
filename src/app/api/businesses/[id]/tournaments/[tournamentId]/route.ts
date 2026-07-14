@@ -13,7 +13,7 @@ export async function GET(_: Request, { params }: Params) {
     where: { id: tournamentId, businessId: id },
     include: {
       categories: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
-      participants: { orderBy: [{ seed: "asc" }, { createdAt: "asc" }] },
+      participants: { orderBy: [{ seed: "asc" }, { createdAt: "asc" }], include: { restrictions: true } },
       matches: {
         include: { participant1: true, participant2: true, winner: true },
         orderBy: [{ round: "asc" }, { matchNumber: "asc" }],
@@ -30,7 +30,7 @@ export async function PATCH(req: Request, { params }: Params) {
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id, tournamentId } = await params
   const body = await req.json()
-  const { name, sport, format, participantType, startDate, endDate, maxParticipants, courtCount, entryFee, description, status, flyer } = body
+  const { name, sport, format, participantType, startDate, endDate, maxParticipants, courtCount, entryFee, description, status, flyer, allowScheduleRestrictions, maxRestrictionsPerParticipant } = body
 
   const tournament = await prisma.tournament.update({
     where: { id: tournamentId, businessId: id },
@@ -47,6 +47,8 @@ export async function PATCH(req: Request, { params }: Params) {
       ...(description !== undefined && { description: description || null }),
       ...(status !== undefined && { status }),
       ...(flyer !== undefined && { flyer: flyer || null }),
+      ...(allowScheduleRestrictions !== undefined && { allowScheduleRestrictions: !!allowScheduleRestrictions }),
+      ...(maxRestrictionsPerParticipant !== undefined && { maxRestrictionsPerParticipant: Number(maxRestrictionsPerParticipant) }),
     },
   })
   return NextResponse.json({ tournament })

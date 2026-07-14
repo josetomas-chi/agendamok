@@ -11,6 +11,7 @@ export async function GET(_: Request, { params }: Params) {
     include: {
       business: { select: { name: true, slug: true, logo: true, onlinePaymentsEnabled: true, flowApiKey: true, flowSecretKey: true } },
       categories: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+      scheduleDays: { orderBy: { sortOrder: "asc" } },
       _count: { select: { participants: { where: { status: "REGISTERED" } } } },
     },
   })
@@ -35,6 +36,9 @@ export async function GET(_: Request, { params }: Params) {
       status: tournament.status,
       description: tournament.description,
       categories: tournament.categories,
+      scheduleDays: tournament.scheduleDays,
+      allowScheduleRestrictions: tournament.allowScheduleRestrictions,
+      maxRestrictionsPerParticipant: tournament.maxRestrictionsPerParticipant,
       registeredCount: tournament._count.participants,
       business: { name: tournament.business.name, logoUrl: tournament.business.logo },
       paymentEnabled,
