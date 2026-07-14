@@ -1,11 +1,14 @@
 "use client"
 import React, { useState, useEffect, useCallback } from "react"
-import { ArrowLeft, UserPlus, Play, Trophy, X, Check, ChevronRight, Swords, Tag, Plus, Pencil, Link2, ImagePlus, Loader2 } from "lucide-react"
+import { ArrowLeft, UserPlus, Play, Trophy, X, Check, ChevronRight, Swords, Tag, Plus, Pencil, Link2, ImagePlus, Loader2, GripVertical, RefreshCw, CalendarDays, List } from "lucide-react"
 import { LadderView } from "./ladder-view"
 import { StatsView } from "./stats-view"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import { DndContext, DragEndEvent, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core"
+import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
 const GOLD = "#C9A84C"
 const NAVY = "#0d1b2a"
@@ -79,6 +82,10 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
   // Fixture
   const [generating, setGenerating] = useState(false)
   const [advancing, setAdvancing] = useState(false)
+  const [regenSaving, setRegenSaving] = useState(false)
+  const [fixtureView, setFixtureView] = useState<"list" | "calendar">("list")
+  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
+  const [swapping, setSwapping] = useState(false)
 
   // Result
   const [resultMatch, setResultMatch] = useState<Match | null>(null)
@@ -285,6 +292,53 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
     else toast.error("Error al guardar")
   }
 
+  async function handlePartialRegen() {
+    const hasFinished = matches.some(m => m.status === "FINISHED" || m.winner !== null)
+    const msg = hasFinished
+      ? "¿Regenerar fixture? Los partidos ya jugados se conservarán, solo se redistribuirán los pendientes."
+      : "¿Regenerar fixture? Se reemplazarán todos los partidos."
+    if (!confirm(msg)) return
+    setRegenSaving(true)
+    const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}/generate-fixture`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ categoryId: activeCategoryId, preserveFinished: hasFinished }),
+    })
+    if (r.ok) { toast.success("Fixture regenerado"); load() }
+    else { const d = await r.json(); toast.error(d.error || "Error") }
+    setRegenSaving(false)
+  }
+
+  async function handleMoveMatch(matchId: string, isoTime: string, court: number) {
+    const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}/matches/${matchId}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scheduledTime: isoTime, courtNumber: court }),
+    })
+    if (r.ok) { toast.success("Partido movido"); setSelectedMatchId(null); load() }
+    else toast.error("Error al mover partido")
+  }
+
+  async function handleSwapMatches(matchAId: string, matchBId: string) {
+    setSwapping(true)
+    const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}/matches/swap`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ matchAId, matchBId }),
+    })
+    if (r.ok) { toast.success("Partidos intercambiados"); load() }
+    else toast.error("Error al intercambiar")
+    setSwapping(false)
+  }
+
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  )
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    handleSwapMatches(String(active.id), String(over.id))
+  }
+
   async function handleChangeStatus(status: string) {
     const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
@@ -413,6 +467,13 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all disabled:opacity-50"
               style={{ background: "rgba(201,168,76,0.12)", border: `1px solid ${GOLD}`, color: "#8a6520" }}>
               <Swords className="w-3.5 h-3.5" /> {advancing ? "Generando…" : "Avanzar a llaves"}
+            </button>
+          )}
+          {tournament.status === "IN_PROGRESS" && matches.length > 0 && (
+            <button onClick={handlePartialRegen} disabled={regenSaving}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all disabled:opacity-50"
+              style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.35)", color: "#1d4ed8" }}>
+              <RefreshCw className="w-3.5 h-3.5" /> {regenSaving ? "Regenerando…" : "Regenerar fixture"}
             </button>
           )}
           {tournament.status === "IN_PROGRESS" && (
@@ -787,6 +848,33 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
       {/* ── FIXTURE / KNOCKOUT TAB ── */}
       {tab === "fixture" && (
         <div className="space-y-4">
+          {/* Toolbar: vista + controles */}
+          {matches.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex gap-1 p-1 rounded-xl" style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)" }}>
+                <button onClick={() => setFixtureView("list")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
+                  style={fixtureView === "list" ? { background: "#fff", color: GOLD, boxShadow: "0 1px 4px rgba(0,0,0,0.08)" } : { color: "rgba(13,27,42,0.4)" }}>
+                  <List className="w-3.5 h-3.5" /> Lista
+                </button>
+                <button onClick={() => { setFixtureView("calendar"); setSelectedMatchId(null) }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
+                  style={fixtureView === "calendar" ? { background: "#fff", color: GOLD, boxShadow: "0 1px 4px rgba(0,0,0,0.08)" } : { color: "rgba(13,27,42,0.4)" }}>
+                  <CalendarDays className="w-3.5 h-3.5" /> Calendario
+                </button>
+              </div>
+              {fixtureView === "list" && tournament.status === "IN_PROGRESS" && !swapping && (
+                <p className="text-[10px]" style={{ color: "rgba(13,27,42,0.35)" }}>⣿ Arrastra los partidos para intercambiar horarios</p>
+              )}
+              {fixtureView === "calendar" && selectedMatchId && (
+                <p className="text-[10px] font-bold" style={{ color: GOLD }}>Selecciona un slot vacío para mover el partido</p>
+              )}
+              {fixtureView === "calendar" && !selectedMatchId && tournament.status === "IN_PROGRESS" && (
+                <p className="text-[10px]" style={{ color: "rgba(13,27,42,0.35)" }}>Toca un partido para seleccionarlo y luego un slot vacío para moverlo</p>
+              )}
+            </div>
+          )}
+
           {tournament.format === "ROUND_ROBIN" && matches.some(m => m.status === "FINISHED") && (
             <div className="rounded-2xl overflow-hidden" style={{ background: "#fff", border: "1px solid rgba(201,168,76,0.2)" }}>
               <div className="px-5 py-3" style={{ borderBottom: "1px solid rgba(201,168,76,0.15)", background: "rgba(201,168,76,0.06)" }}>
@@ -819,22 +907,47 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
                   : "Sin partidos generados aún"}
               </p>
             </div>
+          ) : fixtureView === "calendar" ? (
+            <MatchCalendar
+              matches={tournament.format === "ROUND_ROBIN" ? matches : knockoutMatches}
+              courtCount={tournament.courtCount ?? 1}
+              canEdit={tournament.status === "IN_PROGRESS"}
+              selectedId={selectedMatchId}
+              onSelectMatch={setSelectedMatchId}
+              onMoveMatch={handleMoveMatch}
+            />
           ) : (
-            (tournament.format === "ROUND_ROBIN" ? [1] : knockoutRounds).map(r => (
-              <div key={r}>
-                {tournament.format !== "ROUND_ROBIN" && (
-                  <p className="text-[11px] font-black uppercase tracking-widest mb-2" style={{ color: GOLD }}>
-                    {roundName(r, totalKnockoutRounds)}
-                  </p>
-                )}
-                <div className="space-y-2">
-                  {(tournament.format === "ROUND_ROBIN" ? matches : knockoutMatches.filter(m => m.round === r)).map(m => (
-                    <MatchRow key={m.id} match={m} canEdit={tournament.status === "IN_PROGRESS"}
-                      onEdit={() => openResultModal(m)} />
-                  ))}
+            (tournament.format === "ROUND_ROBIN" ? [1] : knockoutRounds).map(r => {
+              const roundMatches = tournament.format === "ROUND_ROBIN" ? matches : knockoutMatches.filter(m => m.round === r)
+              const canDrag = tournament.status === "IN_PROGRESS" && !swapping
+              return (
+                <div key={r}>
+                  {tournament.format !== "ROUND_ROBIN" && (
+                    <p className="text-[11px] font-black uppercase tracking-widest mb-2" style={{ color: GOLD }}>
+                      {roundName(r, totalKnockoutRounds)}
+                    </p>
+                  )}
+                  {canDrag ? (
+                    <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                      <SortableContext items={roundMatches.map(m => m.id)} strategy={verticalListSortingStrategy}>
+                        <div className="space-y-2">
+                          {roundMatches.map(m => (
+                            <SortableMatchRow key={m.id} match={m} canEdit onEdit={() => openResultModal(m)} />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  ) : (
+                    <div className="space-y-2">
+                      {roundMatches.map(m => (
+                        <MatchRow key={m.id} match={m} canEdit={tournament.status === "IN_PROGRESS"}
+                          onEdit={() => openResultModal(m)} />
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
       )}
@@ -975,6 +1088,143 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
           categoryId={hasCategories ? activeCategoryId : null}
           endDate={tournament.endDate}
         />
+      )}
+    </div>
+  )
+}
+
+// Drag-to-reorder wrapper for MatchRow
+function SortableMatchRow({ match, canEdit, onEdit }: { match: Match; canEdit: boolean; onEdit: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: match.id })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: "relative" as const,
+  }
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div className="flex items-stretch rounded-xl overflow-hidden" style={{ background: "#fff", border: "1px solid rgba(201,168,76,0.15)" }}>
+        <button {...attributes} {...listeners}
+          className="px-2 flex items-center cursor-grab active:cursor-grabbing flex-shrink-0"
+          style={{ background: "rgba(13,27,42,0.03)", borderRight: "1px solid rgba(13,27,42,0.06)", color: "rgba(13,27,42,0.25)", touchAction: "none" }}>
+          <GripVertical className="w-3.5 h-3.5" />
+        </button>
+        <div className="flex-1">
+          <MatchRow match={match} canEdit={canEdit} onEdit={onEdit} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Calendar grid view — rows=times, cols=courts
+function MatchCalendar({ matches, courtCount, canEdit, selectedId, onSelectMatch, onMoveMatch }: {
+  matches: Match[]; courtCount: number; canEdit: boolean
+  selectedId: string | null; onSelectMatch: (id: string | null) => void
+  onMoveMatch: (matchId: string, isoTime: string, court: number) => void
+}) {
+  const courts = Array.from({ length: Math.max(courtCount, 1) }, (_, i) => i + 1)
+  const scheduledMatches = matches.filter(m => m.scheduledTime)
+  const unscheduledMatches = matches.filter(m => !m.scheduledTime)
+
+  // Unique (date+time) sorted
+  const times = [...new Set(scheduledMatches.map(m => new Date(m.scheduledTime!).toISOString()))].sort()
+
+  const matchMap = new Map<string, Match>()
+  scheduledMatches.forEach(m => {
+    if (m.courtNumber) matchMap.set(`${new Date(m.scheduledTime!).toISOString()}|${m.courtNumber}`, m)
+  })
+
+  if (times.length === 0 && unscheduledMatches.length === 0) return null
+
+  return (
+    <div className="space-y-4">
+      {times.length > 0 && (
+        <div className="rounded-2xl overflow-hidden" style={{ background: "#fff", border: "1px solid rgba(201,168,76,0.2)" }}>
+          <div className="overflow-x-auto">
+            <div style={{ minWidth: courts.length * 130 + 72 }}>
+              {/* Header */}
+              <div className="grid" style={{ gridTemplateColumns: `72px repeat(${courts.length}, 1fr)`, borderBottom: "1px solid rgba(201,168,76,0.15)", background: "rgba(201,168,76,0.05)" }}>
+                <div className="py-2" />
+                {courts.map(c => (
+                  <div key={c} className="py-2 text-center text-[10px] font-black uppercase tracking-wide" style={{ color: GOLD }}>
+                    Cancha {c}
+                  </div>
+                ))}
+              </div>
+              {/* Rows */}
+              {times.map((iso, rowIdx) => (
+                <div key={iso} className="grid" style={{ gridTemplateColumns: `72px repeat(${courts.length}, 1fr)`, borderBottom: rowIdx < times.length - 1 ? "1px solid rgba(201,168,76,0.08)" : "none" }}>
+                  <div className="flex flex-col items-end justify-center pr-2 py-2 flex-shrink-0">
+                    <span className="text-[10px] font-black" style={{ color: NAVY }}>{format(new Date(iso), "HH:mm")}</span>
+                    <span className="text-[9px]" style={{ color: "rgba(13,27,42,0.3)" }}>{format(new Date(iso), "dd/MM")}</span>
+                  </div>
+                  {courts.map(c => {
+                    const m = matchMap.get(`${iso}|${c}`)
+                    const isSelected = m?.id === selectedId
+                    if (m) {
+                      return (
+                        <div key={c} className="p-1">
+                          <button
+                            onClick={() => canEdit ? onSelectMatch(isSelected ? null : m.id) : undefined}
+                            className="w-full rounded-xl p-2 text-left transition-all"
+                            style={{
+                              background: isSelected ? "rgba(201,168,76,0.18)" : m.status === "FINISHED" ? "rgba(34,197,94,0.07)" : "rgba(13,27,42,0.04)",
+                              border: isSelected ? `1.5px solid ${GOLD}` : m.status === "FINISHED" ? "1px solid rgba(34,197,94,0.25)" : "1px solid rgba(13,27,42,0.08)",
+                              cursor: canEdit ? "pointer" : "default",
+                            }}>
+                            <p className="text-[9px] font-bold truncate" style={{ color: NAVY }}>{m.participant1?.name ?? "?"}</p>
+                            <p className="text-[9px] text-center my-0.5" style={{ color: "rgba(13,27,42,0.3)" }}>vs</p>
+                            <p className="text-[9px] font-bold truncate" style={{ color: NAVY }}>{m.participant2?.name ?? "?"}</p>
+                            {m.status === "FINISHED" && <p className="text-[9px] text-center font-black mt-0.5" style={{ color: "#16a34a" }}>✓ Finalizado</p>}
+                          </button>
+                        </div>
+                      )
+                    }
+                    return (
+                      <div key={c} className="p-1">
+                        {selectedId && canEdit ? (
+                          <button onClick={() => onMoveMatch(selectedId, iso, c)}
+                            className="w-full min-h-[64px] rounded-xl border-2 border-dashed flex items-center justify-center transition-all"
+                            style={{ borderColor: "rgba(201,168,76,0.4)", background: "rgba(201,168,76,0.04)" }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.1)" }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.04)" }}>
+                            <span className="text-[9px] font-bold" style={{ color: "rgba(201,168,76,0.6)" }}>Mover aquí</span>
+                          </button>
+                        ) : (
+                          <div className="w-full min-h-[64px] rounded-xl" style={{ background: "rgba(13,27,42,0.02)", border: "1px solid rgba(13,27,42,0.05)" }} />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {unscheduledMatches.length > 0 && (
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "rgba(13,27,42,0.4)" }}>Sin horario asignado</p>
+          <div className="flex flex-wrap gap-2">
+            {unscheduledMatches.map(m => {
+              const isSelected = m.id === selectedId
+              return (
+                <button key={m.id}
+                  onClick={() => canEdit ? onSelectMatch(isSelected ? null : m.id) : undefined}
+                  className="rounded-xl px-3 py-2 text-[10px] font-bold transition-all"
+                  style={{
+                    background: isSelected ? "rgba(201,168,76,0.18)" : "rgba(13,27,42,0.05)",
+                    border: isSelected ? `1.5px solid ${GOLD}` : "1px solid rgba(13,27,42,0.1)",
+                    color: NAVY, cursor: canEdit ? "pointer" : "default",
+                  }}>
+                  {m.participant1?.name ?? "?"} vs {m.participant2?.name ?? "?"}
+                </button>
+              )
+            })}
+          </div>
+        </div>
       )}
     </div>
   )

@@ -101,6 +101,7 @@ export async function POST(req: Request, { params }: Params) {
   const { id, tournamentId } = await params
   const body = await req.json().catch(() => ({}))
   const categoryId: string | null = body.categoryId ?? null
+  const preserveFinished: boolean = body.preserveFinished ?? false
 
   const tournament = await prisma.tournament.findFirst({
     where: { id: tournamentId, businessId: id },
@@ -119,15 +120,49 @@ export async function POST(req: Request, { params }: Params) {
   const participants = tournament.participants
   if (participants.length < 2) return NextResponse.json({ error: "Se necesitan al menos 2 participantes" }, { status: 400 })
 
-  await prisma.tournamentMatch.deleteMany({ where: { tournamentId, ...(categoryId ? { categoryId } : {}) } })
-
   const courtCount = tournament.courtCount ?? 1
   const startDate = tournament.startDate
 
+  // Load finished matches before deleting anything
+  let finishedMatches: { scheduledTime: Date | null; courtNumber: number | null }[] = []
+  if (preserveFinished) {
+    finishedMatches = await prisma.tournamentMatch.findMany({
+      where: {
+        tournamentId,
+        ...(categoryId ? { categoryId } : {}),
+        OR: [{ status: "FINISHED" }, { winnerId: { not: null } }],
+      },
+      select: { scheduledTime: true, courtNumber: true },
+    })
+    // Delete only non-finished matches
+    await prisma.tournamentMatch.deleteMany({
+      where: {
+        tournamentId,
+        ...(categoryId ? { categoryId } : {}),
+        AND: [{ status: { not: "FINISHED" } }, { winnerId: null }],
+      },
+    })
+  } else {
+    await prisma.tournamentMatch.deleteMany({ where: { tournamentId, ...(categoryId ? { categoryId } : {}) } })
+  }
+
   // Build slots from schedule days if defined, otherwise fall back to sequential
-  const slots = tournament.scheduleDays.length > 0
+  // Exclude slots already occupied by finished matches
+  const usedSlotKeys = new Set(
+    finishedMatches
+      .filter(m => m.scheduledTime && m.courtNumber)
+      .map(m => {
+        const { date, time } = slotKey(m.scheduledTime!)
+        return `${date}|${time}|${m.courtNumber}`
+      })
+  )
+  const allSlots = tournament.scheduleDays.length > 0
     ? buildSlots(tournament.scheduleDays, courtCount)
     : []
+  const slots = allSlots.filter(s => {
+    const { date, time } = slotKey(s.time)
+    return !usedSlotKeys.has(`${date}|${time}|${s.court}`)
+  })
 
   // Build restriction map: participantId → Set<"YYYY-MM-DD|HH:MM">
   const restrictionMap: RestrictionMap = new Map()
