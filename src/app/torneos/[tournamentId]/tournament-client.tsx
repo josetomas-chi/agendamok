@@ -284,10 +284,10 @@ export default function TournamentPublicPage() {
 
   return (
     <div className="min-h-screen" style={{ background: BG }}>
-      <div className="max-w-md mx-auto lg:max-w-3xl px-4 py-6 lg:py-10 flex flex-col lg:flex-row lg:items-start gap-4">
+      <div className="max-w-md mx-auto lg:max-w-[900px] px-4 py-6 lg:py-10 flex flex-col lg:flex-row lg:items-start gap-4">
 
         {/* ── Tarjeta principal ── */}
-        <div className="rounded-3xl overflow-hidden shadow-xl" style={{ background: NAVY }}>
+        <div className="rounded-3xl overflow-hidden shadow-xl lg:w-[420px] lg:flex-shrink-0" style={{ background: NAVY }}>
 
           {/* Imagen / flyer con badges */}
           {tournament.flyer ? (
@@ -395,7 +395,7 @@ export default function TournamentPublicPage() {
         </div>
 
         {/* ── Formulario de inscripción ── */}
-        <div className="rounded-3xl overflow-hidden shadow-sm" style={{ background: "white" }}>
+        <div className="rounded-3xl overflow-hidden shadow-sm lg:flex-1 lg:min-w-[360px]" style={{ background: "white" }}>
           {!canRegister ? (
             <div className="p-6 text-center space-y-2">
               <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: "#f2f3f5" }}>
