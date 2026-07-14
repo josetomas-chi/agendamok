@@ -633,7 +633,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
               <div key={court.id} className="flex-1 last:border-r-0" style={{ minWidth: 120, borderRight: "1px solid rgba(13,27,42,0.08)" }}
                 data-court-col data-court-id={court.id} data-court-sport={court.sport ?? ""}>
                 {/* Court header */}
-                <div className="h-8 flex items-center gap-1.5 px-2 sticky top-0 z-10" style={{ borderBottom: BORDER, background: "#f5f5f7" }}>
+                <div className="h-8 flex items-center gap-1.5 px-2 sticky top-0 z-30" style={{ borderBottom: BORDER, background: "#f5f5f7" }}>
                   <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: court.color }} />
                   <span className="text-[11px] font-black uppercase tracking-wide truncate" style={{ color: NAVY }}>{court.name}</span>
                   {court.sport && <span className="text-[9px] truncate" style={{ color: "rgba(13,27,42,0.4)" }}>{court.sport}</span>}
