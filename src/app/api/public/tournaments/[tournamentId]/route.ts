@@ -37,6 +37,7 @@ export async function GET(_: Request, { params }: Params) {
       description: tournament.description,
       categories: tournament.categories,
       scheduleDays: tournament.scheduleDays,
+      registrationDeadline: tournament.registrationDeadline,
       allowScheduleRestrictions: tournament.allowScheduleRestrictions,
       maxRestrictionsPerParticipant: tournament.maxRestrictionsPerParticipant,
       registeredCount: tournament._count.participants,

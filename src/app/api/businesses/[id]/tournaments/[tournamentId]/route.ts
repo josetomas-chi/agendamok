@@ -30,7 +30,7 @@ export async function PATCH(req: Request, { params }: Params) {
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id, tournamentId } = await params
   const body = await req.json()
-  const { name, sport, format, participantType, startDate, endDate, maxParticipants, courtCount, entryFee, description, status, flyer, allowScheduleRestrictions, maxRestrictionsPerParticipant } = body
+  const { name, sport, format, participantType, startDate, endDate, registrationDeadline, maxParticipants, courtCount, entryFee, description, status, flyer, allowScheduleRestrictions, maxRestrictionsPerParticipant } = body
 
   const tournament = await prisma.tournament.update({
     where: { id: tournamentId, businessId: id },
@@ -47,6 +47,7 @@ export async function PATCH(req: Request, { params }: Params) {
       ...(description !== undefined && { description: description || null }),
       ...(status !== undefined && { status }),
       ...(flyer !== undefined && { flyer: flyer || null }),
+      ...(registrationDeadline !== undefined && { registrationDeadline: registrationDeadline ? new Date(registrationDeadline) : null }),
       ...(allowScheduleRestrictions !== undefined && { allowScheduleRestrictions: !!allowScheduleRestrictions }),
       ...(maxRestrictionsPerParticipant !== undefined && { maxRestrictionsPerParticipant: Number(maxRestrictionsPerParticipant) }),
     },

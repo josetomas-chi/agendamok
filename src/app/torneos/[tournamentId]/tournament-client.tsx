@@ -42,6 +42,7 @@ type Tournament = {
   status: string; description: string | null; categories: Category[]; registeredCount: number
   business: { name: string; logoUrl: string | null }; paymentEnabled: boolean
   flyer: string | null
+  registrationDeadline: string | null
   scheduleDays: ScheduleDay[]
   allowScheduleRestrictions: boolean
   maxRestrictionsPerParticipant: number
@@ -274,7 +275,8 @@ export default function TournamentPublicPage() {
   )
 
   const isFull = tournament.maxParticipants ? tournament.registeredCount >= tournament.maxParticipants : false
-  const canRegister = tournament.status === "OPEN" && !isFull
+  const deadlinePassed = tournament.registrationDeadline ? new Date() > new Date(tournament.registrationDeadline) : false
+  const canRegister = tournament.status === "OPEN" && !isFull && !deadlinePassed
   const entryFee = tournament.entryFee ? Number(tournament.entryFee) : 0
   const requiresPayment = entryFee > 0 && tournament.paymentEnabled
   const type = tournament.participantType
@@ -363,6 +365,18 @@ export default function TournamentPublicPage() {
               </div>
             </div>
 
+            {/* Deadline */}
+            {tournament.registrationDeadline && (
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: deadlinePassed ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.06)" }}>
+                  <Calendar className="w-3.5 h-3.5" style={{ color: deadlinePassed ? "#f87171" : "rgba(255,255,255,0.5)" }} />
+                </div>
+                <span className="text-sm font-semibold" style={{ color: deadlinePassed ? "#f87171" : "rgba(255,255,255,0.65)" }}>
+                  {deadlinePassed ? "Inscripciones cerradas" : `Inscríbete antes del ${new Date(tournament.registrationDeadline).toLocaleDateString("es-CL", { day: "numeric", month: "long" })}`}
+                </span>
+              </div>
+            )}
+
             {/* Precio pill */}
             <div className="flex items-center gap-3">
               <div className="px-4 py-2 rounded-2xl" style={{ background: entryFee ? "rgba(201,168,76,0.15)" : "rgba(255,255,255,0.06)", border: entryFee ? `1px solid rgba(201,168,76,0.3)` : "1px solid rgba(255,255,255,0.08)" }}>
@@ -388,7 +402,7 @@ export default function TournamentPublicPage() {
                 <Trophy className="w-6 h-6 opacity-30" style={{ color: NAVY }} />
               </div>
               <p className="font-black text-lg" style={{ color: NAVY }}>
-                {tournament.status === "OPEN" && isFull ? "Torneo lleno" : STATUS_LABELS[tournament.status] ?? "Inscripciones cerradas"}
+                {deadlinePassed ? "Plazo de inscripción vencido" : tournament.status === "OPEN" && isFull ? "Torneo lleno" : STATUS_LABELS[tournament.status] ?? "Inscripciones cerradas"}
               </p>
               <p className="text-sm" style={{ color: "rgba(13,27,42,0.4)" }}>Las inscripciones ya no están disponibles.</p>
             </div>

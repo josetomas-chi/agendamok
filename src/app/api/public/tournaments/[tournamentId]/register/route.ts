@@ -19,6 +19,9 @@ export async function POST(req: Request, { params }: Params) {
 
   if (!tournament) return NextResponse.json({ error: "Torneo no encontrado" }, { status: 404 })
   if (tournament.status !== "OPEN") return NextResponse.json({ error: "Las inscripciones están cerradas" }, { status: 400 })
+  if (tournament.registrationDeadline && new Date() > tournament.registrationDeadline) {
+    return NextResponse.json({ error: "El plazo de inscripción ha vencido" }, { status: 400 })
+  }
 
   const body = await req.json()
   const { name, email, phone, players, categoryId, restrictions } = body

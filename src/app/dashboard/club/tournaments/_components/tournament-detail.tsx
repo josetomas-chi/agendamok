@@ -28,7 +28,7 @@ type Tournament = {
   id: string; name: string; sport: string | null
   format: "ELIMINATION" | "ROUND_ROBIN" | "GROUP_STAGE" | "LADDER"
   participantType: "INDIVIDUAL" | "PAIR" | "TEAM"
-  startDate: string; endDate: string; maxParticipants: number | null
+  startDate: string; endDate: string; registrationDeadline: string | null; maxParticipants: number | null
   entryFee: string | null; status: "DRAFT" | "OPEN" | "IN_PROGRESS" | "FINISHED"
   description: string | null; groupCount: number | null; advanceCount: number | null; courtCount: number | null
   flyer: string | null
@@ -498,6 +498,35 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
             <p className="text-[10px] uppercase tracking-wide font-semibold mt-0.5" style={{ color: "rgba(13,27,42,0.35)" }}>{s.label}</p>
           </div>
         ))}
+      </div>
+
+      {/* Fecha límite de inscripción — editable inline */}
+      <div className="rounded-xl px-4 py-3 flex items-center justify-between gap-3" style={{ background: "#fff", border: "1px solid rgba(201,168,76,0.2)" }}>
+        <div>
+          <p className="text-[10px] uppercase tracking-wide font-semibold" style={{ color: "rgba(13,27,42,0.35)" }}>Fecha límite de inscripción</p>
+          <p className="text-sm font-bold mt-0.5" style={{ color: NAVY }}>
+            {tournament.registrationDeadline
+              ? new Date(tournament.registrationDeadline).toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" })
+              : <span style={{ color: "rgba(13,27,42,0.3)" }}>Sin fecha límite</span>}
+          </p>
+        </div>
+        <input
+          type="date"
+          defaultValue={tournament.registrationDeadline ? tournament.registrationDeadline.split("T")[0] : ""}
+          className="rounded-xl px-3 py-2 text-sm outline-none"
+          style={{ background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.12)", color: NAVY }}
+          onChange={async e => {
+            const val = e.target.value
+            const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournament.id}`, {
+              method: "PATCH", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ registrationDeadline: val ? `${val}T23:59:00` : null }),
+            })
+            if (r.ok) {
+              setTournament(t => t ? { ...t, registrationDeadline: val ? `${val}T23:59:00.000Z` : null } : t)
+              toast.success(val ? "Fecha límite guardada" : "Fecha límite eliminada")
+            }
+          }}
+        />
       </div>
 
       {/* Jornadas */}

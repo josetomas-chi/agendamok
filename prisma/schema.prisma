@@ -1074,6 +1074,7 @@ model Tournament {
   advanceCount    Int?
   courtCount                  Int?
   flyer                       String?
+  registrationDeadline        DateTime?
   allowScheduleRestrictions   Boolean  @default(false)
   maxRestrictionsPerParticipant Int    @default(0)
   createdAt       DateTime                  @default(now())

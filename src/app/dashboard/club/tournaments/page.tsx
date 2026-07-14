@@ -41,7 +41,7 @@ export default function TournamentsPage() {
     name: "", sport: "",
     format: "ELIMINATION" as "ELIMINATION" | "ROUND_ROBIN" | "GROUP_STAGE" | "LADDER",
     participantType: "INDIVIDUAL" as "INDIVIDUAL" | "PAIR" | "TEAM",
-    startDate: "", endDate: "",
+    startDate: "", endDate: "", registrationDeadline: "",
     maxParticipants: "", courtCount: "", entryFee: "", description: "",
     groupCount: "2", groupSize: "4", advanceCount: "2",
     allowScheduleRestrictions: false, maxRestrictionsPerParticipant: "0",
@@ -82,7 +82,7 @@ export default function TournamentsPage() {
   }
 
   const resetForm = () => {
-    setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", startDate: "", endDate: "", maxParticipants: "", courtCount: "", entryFee: "", description: "", groupCount: "2", groupSize: "4", advanceCount: "2", allowScheduleRestrictions: false, maxRestrictionsPerParticipant: "0" })
+    setForm({ name: "", sport: "", format: "ELIMINATION", participantType: "INDIVIDUAL", startDate: "", endDate: "", registrationDeadline: "", maxParticipants: "", courtCount: "", entryFee: "", description: "", groupCount: "2", groupSize: "4", advanceCount: "2", allowScheduleRestrictions: false, maxRestrictionsPerParticipant: "0" })
     setScheduleDays([])
     setCategories([])
     setCatInput(""); setCatGroups("2"); setCatGroupSize("4")
@@ -110,6 +110,7 @@ export default function TournamentsPage() {
         ...form,
         startDate,
         endDate: endDateFull,
+        registrationDeadline: form.registrationDeadline ? new Date(`${form.registrationDeadline}T23:59:00`).toISOString() : null,
         maxParticipants: isGroupStage && categories.length === 0 && form.groupCount && form.groupSize
           ? Number(form.groupCount) * Number(form.groupSize)
           : (form.maxParticipants ? Number(form.maxParticipants) : null),
@@ -408,6 +409,15 @@ export default function TournamentsPage() {
                 <input type="date" value={form.endDate} min={form.startDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
                   className={inputCls} style={inputStyle} />
               </div>
+            </div>
+
+            {/* Fecha límite de inscripción */}
+            <div>
+              <label className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha límite de inscripción</label>
+              <input type="date" value={form.registrationDeadline} max={form.startDate || undefined}
+                onChange={e => setForm(f => ({ ...f, registrationDeadline: e.target.value }))}
+                className={inputCls} style={inputStyle} />
+              <p className="text-[10px] mt-1" style={{ color: "rgba(13,27,42,0.35)" }}>Opcional — si no se define, las inscripciones cierran al iniciar el torneo.</p>
             </div>
 
             {/* ── JORNADAS ── */}
