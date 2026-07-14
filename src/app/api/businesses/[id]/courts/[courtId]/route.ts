@@ -15,7 +15,7 @@ export async function PATCH(req: Request, { params }: Params) {
     if (pricingRules) {
       await tx.courtPricingRule.deleteMany({ where: { courtId } })
       await tx.courtPricingRule.createMany({
-        data: pricingRules.map((r: { id?: string; name: string; days: number[]; startTime: string; endTime: string; price: number; fixedSlots?: string[] }) => ({
+        data: pricingRules.map((r: { id?: string; name: string; days: number[]; startTime: string; endTime: string; price: number; fixedSlots?: string[]; paymentPlayers?: number }) => ({
           courtId,
           name: r.name,
           days: r.days.map(Number),
@@ -23,6 +23,7 @@ export async function PATCH(req: Request, { params }: Params) {
           endTime: r.endTime,
           price: Number(r.price),
           fixedSlots: (r.fixedSlots ?? []).filter(Boolean),
+          paymentPlayers: Number(r.paymentPlayers ?? 1),
         }))
       })
     }

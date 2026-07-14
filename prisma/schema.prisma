@@ -513,6 +513,7 @@ model Payment {
   method                  PaymentMethod @default(CASH)
   stripePaymentIntentId   String?       @unique
   stripeCheckoutSessionId String?       @unique
+  flowToken               String?       @unique
   isDeposit               Boolean       @default(false)
   paidAt                  DateTime?
   invoiceUrl              String?
@@ -835,14 +836,15 @@ model Court {
 }
 
 model CourtPricingRule {
-  id         String   @id @default(cuid())
-  courtId    String
-  name       String
-  days       Int[]
-  startTime  String
-  endTime    String
-  price      Decimal  @db.Decimal(10, 2)
-  fixedSlots String[] @default([])
+  id             String   @id @default(cuid())
+  courtId        String
+  name           String
+  days           Int[]
+  startTime      String
+  endTime        String
+  price          Decimal  @db.Decimal(10, 2)
+  fixedSlots     String[] @default([])
+  paymentPlayers Int      @default(1)
 
   court Court @relation(fields: [courtId], references: [id], onDelete: Cascade)
 
@@ -882,6 +884,8 @@ model CourtBooking {
   startTime          DateTime
   endTime            DateTime
   price              Decimal                @db.Decimal(10, 2)
+  paidAmount         Decimal                @default(0) @db.Decimal(10, 2)
+  paidOnline         Boolean                @default(false)
   status             CourtBookingStatus     @default(CONFIRMED)
   notes              String?                @db.Text
   createdAt          DateTime               @default(now())

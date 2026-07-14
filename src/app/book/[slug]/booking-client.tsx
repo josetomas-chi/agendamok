@@ -80,7 +80,7 @@ const SPORTS_CARD = "#0f2a3f"
 const SPORTS_ACCENT = "#38bdf8"
 const SPORTS_BORDER = "rgba(56,189,248,0.18)"
 
-type CourtResult = Court & { slots: { time: string; price: number }[] }
+type CourtResult = Court & { slots: { time: string; price: number; paymentPlayers: number }[] }
 
 function CourtBookingFlow({ business, slug }: { business: Business; slug: string }) {
   const today = startOfToday()
@@ -99,7 +99,8 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
 
   // Booking state
   const [selectedCourt, setSelectedCourt] = useState<CourtResult | null>(null)
-  const [selectedSlot, setSelectedSlot] = useState<{ time: string; price: number } | null>(null)
+  const [selectedSlot, setSelectedSlot] = useState<{ time: string; price: number; paymentPlayers: number } | null>(null)
+  const [courtPayMethod, setCourtPayMethod] = useState<"local" | "online">("local")
   const [step, setStep] = useState<CourtStep>("home")
   const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "" })
   const [createAccount, setCreateAccount] = useState(false)
@@ -129,6 +130,39 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
   async function handleConfirm() {
     if (!selectedCourt || !selectedSlot || !form.name || !form.email) return
     setSubmitting(true)
+
+    // Online payment path
+    if (courtPayMethod === "online" && business.onlinePaymentsEnabled && selectedSlot.price > 0) {
+      const r = await fetch(`/api/book/${slug}/courts/pay`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courtId: selectedCourt.id,
+          date: selectedDate,
+          time: selectedSlot.time,
+          duration,
+          clientName: form.name,
+          clientEmail: form.email,
+          clientPhone: form.phone || undefined,
+          notes: form.notes || undefined,
+          price: selectedSlot.price,
+          paymentPlayers: selectedSlot.paymentPlayers,
+        }),
+      })
+      const d = await r.json()
+      if (!r.ok) { alert(d.error || "Error al iniciar pago"); setSubmitting(false); return }
+      if (createAccount && password.length >= 6) {
+        await fetch(`/api/book/${slug}/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: form.name, email: form.email, password }),
+        })
+      }
+      window.location.href = d.url
+      return
+    }
+
+    // Local payment path
     const r = await fetch(`/api/book/${slug}/courts/book`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -150,7 +184,6 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
       setSubmitting(false)
       return
     }
-    // Optional account creation
     if (createAccount && password.length >= 6) {
       await fetch(`/api/book/${slug}/register`, {
         method: "POST",
@@ -507,10 +540,45 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
             </div>
             )}
 
+            {/* Payment method selector (only if online payments enabled and price > 0) */}
+            {business.onlinePaymentsEnabled && selectedSlot.price > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: SPORTS_ACCENT }}>Forma de pago</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { value: "local" as const, label: "Pagar en cancha", sub: "Efectivo o tarjeta" },
+                    {
+                      value: "online" as const,
+                      label: "Pagar ahora",
+                      sub: `$${Math.round(selectedSlot.price / Math.max(1, selectedSlot.paymentPlayers)).toLocaleString("es-CL")} con tarjeta`,
+                    },
+                  ]).map(opt => (
+                    <button key={opt.value} type="button" onClick={() => setCourtPayMethod(opt.value)}
+                      className="py-3 px-3 rounded-xl text-left transition-all"
+                      style={courtPayMethod === opt.value
+                        ? { background: "rgba(56,189,248,0.15)", border: `1.5px solid ${SPORTS_ACCENT}`, color: "#f0f6ff" }
+                        : { background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}`, color: "rgba(255,255,255,0.4)" }}>
+                      <p className="text-xs font-bold leading-none text-white">{opt.label}</p>
+                      <p className="text-[10px] mt-0.5 opacity-60">{opt.sub}</p>
+                    </button>
+                  ))}
+                </div>
+                {courtPayMethod === "online" && selectedSlot.paymentPlayers > 1 && (
+                  <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+                    Pagas tu parte ({selectedSlot.paymentPlayers === 2 ? "50%" : "25%"}) · El resto lo pagan los otros jugadores
+                  </p>
+                )}
+              </div>
+            )}
+
             <button onClick={handleConfirm} disabled={submitting || !form.name || !form.email || (!emailExists && createAccount && password.length > 0 && password.length < 6)}
               className="w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
               style={{ background: SPORTS_ACCENT, color: SPORTS_BG }}>
-              {submitting ? <><Loader2 className="w-4 h-4 animate-spin" />Confirmando...</> : "Confirmar reserva →"}
+              {submitting
+                ? <><Loader2 className="w-4 h-4 animate-spin" />{courtPayMethod === "online" ? "Redirigiendo al pago..." : "Confirmando..."}</>
+                : courtPayMethod === "online" && business.onlinePaymentsEnabled && selectedSlot.price > 0
+                  ? `Pagar $${Math.round(selectedSlot.price / Math.max(1, selectedSlot.paymentPlayers)).toLocaleString("es-CL")} →`
+                  : "Confirmar reserva →"}
             </button>
           </div>
         </div>

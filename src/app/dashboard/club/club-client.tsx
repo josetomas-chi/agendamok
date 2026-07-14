@@ -14,6 +14,7 @@ type Client = { id: string; name: string; email: string | null; phone: string | 
 type Booking = {
   id: string; courtId: string; clientId: string | null
   startTime: string; endTime: string; price: number; status: string; notes: string | null
+  paidAmount: number; paidOnline: boolean
   recurringGroupId: string | null
   court: Court; client: Client | null
   coach: { id: string; name: string; color: string } | null
@@ -1091,7 +1092,11 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
               {[
                 { label: "Fecha", value: utcDate(booking.startTime, "EEEE d 'de' MMMM yyyy") },
                 { label: "Horario", value: `${utcTime(booking.startTime)} – ${utcTime(booking.endTime)}` },
-                { label: "Precio", value: `$${Number(booking.price).toLocaleString("es-CL")}` },
+                { label: "Precio total", value: `$${Number(booking.price).toLocaleString("es-CL")}` },
+                ...(booking.paidOnline && booking.paidAmount > 0 ? [
+                  { label: "Pagado online", value: `$${Number(booking.paidAmount).toLocaleString("es-CL")} ✓` },
+                  ...(Number(booking.price) - Number(booking.paidAmount) > 0 ? [{ label: "Pendiente", value: `$${(Number(booking.price) - Number(booking.paidAmount)).toLocaleString("es-CL")}` }] : []),
+                ] : []),
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between px-4 py-2.5" style={{ borderColor: "rgba(13,27,42,0.06)" }}>
                   <span className="text-xs uppercase tracking-wide font-semibold" style={{ color: "rgba(13,27,42,0.4)" }}>{label}</span>

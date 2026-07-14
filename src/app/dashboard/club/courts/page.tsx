@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { toast } from "sonner"
 
-type PricingRule = { id?: string; name: string; days: number[]; startTime: string; endTime: string; price: number; fixedSlots: string[] }
+type PricingRule = { id?: string; name: string; days: number[]; startTime: string; endTime: string; price: number; fixedSlots: string[]; paymentPlayers: number }
 type Court = { id: string; name: string; sport: string | null; description: string | null; color: string; isActive: boolean; sponsorName: string | null; sponsorLogo: string | null; sponsorUrl: string | null; pricingRules: PricingRule[] }
 
 const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
-const EMPTY_RULE: PricingRule = { name: "", days: [1, 2, 3, 4, 5], startTime: "08:00", endTime: "18:00", price: 0, fixedSlots: [] }
+const EMPTY_RULE: PricingRule = { name: "", days: [1, 2, 3, 4, 5], startTime: "08:00", endTime: "18:00", price: 0, fixedSlots: [], paymentPlayers: 1 }
 
 export default function CourtsPage() {
   const { businessId } = useBusiness()
@@ -385,6 +385,28 @@ export default function CourtsPage() {
                           className="w-full h-8 rounded-lg border border-white/[0.08] bg-white/[0.05] pl-6 pr-2 text-xs text-white focus:outline-none focus:border-sky-500/60" />
                       </div>
                     </div>
+                    {/* División de pago online */}
+                    <div>
+                      <p className="text-[10px] font-semibold text-white/30 mb-1.5">Pago online — el cliente paga</p>
+                      <div className="flex gap-1.5">
+                        {[
+                          { value: 1, label: "100%", sub: "Completo" },
+                          { value: 2, label: "50%", sub: "½ cancha" },
+                          { value: 4, label: "25%", sub: "¼ cancha" },
+                        ].map(opt => (
+                          <button key={opt.value} type="button"
+                            onClick={() => updateRule(idx, "paymentPlayers", opt.value)}
+                            className="flex-1 py-1.5 rounded-lg text-center transition-all"
+                            style={rule.paymentPlayers === opt.value
+                              ? { background: "rgba(56,189,248,0.2)", border: "1px solid rgba(56,189,248,0.5)", color: "#38bdf8" }
+                              : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }}>
+                            <p className="text-xs font-bold leading-none">{opt.label}</p>
+                            <p className="text-[9px] leading-none mt-0.5 opacity-70">{opt.sub}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Bloques fijos */}
                     <div>
                       <button type="button"

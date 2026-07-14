@@ -26,7 +26,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     select: {
       id: true, name: true, sport: true, color: true,
       sponsorName: true, sponsorLogo: true, sponsorUrl: true,
-      pricingRules: { select: { days: true, startTime: true, endTime: true, price: true, fixedSlots: true } },
+      pricingRules: { select: { days: true, startTime: true, endTime: true, price: true, fixedSlots: true, paymentPlayers: true } },
     },
     orderBy: { sortOrder: "asc" },
   })
@@ -66,7 +66,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     }
 
     const courtBookings = bookings.filter(b => b.courtId === court.id)
-    const slots: { time: string; price: number }[] = []
+    const slots: { time: string; price: number; paymentPlayers: number }[] = []
 
     function isBooked(start: Date, end: Date) {
       return courtBookings.some(b => start < new Date(b.endTime) && end > new Date(b.startTime))
@@ -85,7 +85,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         const end = addMinutes(start, duration)
         if (start <= now) continue
         if (!isBooked(start, end)) {
-          slots.push({ time: slotTime, price: Number(rule.price) })
+          slots.push({ time: slotTime, price: Number(rule.price), paymentPlayers: rule.paymentPlayers ?? 1 })
         }
       }
     }
@@ -107,7 +107,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
           const rule = flexRules.find(r =>
             cursorMinutes >= timeToMinutes(r.startTime) && cursorMinutes < timeToMinutes(r.endTime)
           )
-          slots.push({ time: format(cursor, "HH:mm"), price: rule ? Number(rule.price) : 0 })
+          slots.push({ time: format(cursor, "HH:mm"), price: rule ? Number(rule.price) : 0, paymentPlayers: rule?.paymentPlayers ?? 1 })
         }
         cursor = addMinutes(cursor, 30)
       }

@@ -458,11 +458,11 @@ function fmtCourtTime(iso: string) {
 }
 
 export async function sendCourtBookingConfirmation({
-  clientName, clientEmail, businessName, courtName, startTime, endTime, price, sponsorName, sponsorLogo, sponsorUrl,
+  clientName, clientEmail, businessName, courtName, startTime, endTime, price, paidAmount, sponsorName, sponsorLogo, sponsorUrl,
 }: {
   clientName: string; clientEmail: string; businessName: string
   courtName: string; startTime: string; endTime: string; price: number
-  sponsorName?: string; sponsorLogo?: string; sponsorUrl?: string
+  paidAmount?: number; sponsorName?: string; sponsorLogo?: string; sponsorUrl?: string
 }) {
   if (!process.env.RESEND_API_KEY) return
   const fmt = (iso: string) => new Date(iso).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"
