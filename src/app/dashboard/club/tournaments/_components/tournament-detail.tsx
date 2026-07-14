@@ -25,7 +25,7 @@ type Match = {
   participant1: Participant | null; participant2: Participant | null; winner: Participant | null
 }
 type Tournament = {
-  id: string; name: string; sport: string | null
+  id: string; name: string; slug: string | null; sport: string | null
   format: "ELIMINATION" | "ROUND_ROBIN" | "GROUP_STAGE" | "LADDER"
   participantType: "INDIVIDUAL" | "PAIR" | "TEAM"
   startDate: string; endDate: string; registrationDeadline: string | null; maxParticipants: number | null
@@ -424,6 +424,32 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
             <h1 className="text-lg font-black uppercase tracking-wide" style={{ color: NAVY }}>{tournament.name}</h1>
             {tournament.sport && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(201,168,76,0.12)", color: GOLD }}>{tournament.sport}</span>}
           </div>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-[10px]" style={{ color: "rgba(13,27,42,0.3)" }}>agendamok.cl/torneos/</span>
+            <input
+              key={tournament.slug ?? ""}
+              defaultValue={tournament.slug ?? ""}
+              placeholder={tournament.id.slice(0, 12) + "…"}
+              className="text-[10px] font-semibold rounded-md px-1.5 py-0.5 outline-none min-w-0 w-40"
+              style={{ background: "rgba(201,168,76,0.07)", border: "1px solid rgba(201,168,76,0.2)", color: NAVY }}
+              onBlur={async e => {
+                const raw = e.target.value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
+                if (raw === (tournament.slug ?? "")) return
+                const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}`, {
+                  method: "PATCH", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ slug: raw || null }),
+                })
+                if (r.ok) {
+                  setTournament(t => t ? { ...t, slug: raw || null } : t)
+                  toast.success(raw ? "Link personalizado guardado" : "Link personalizado eliminado")
+                } else {
+                  const d = await r.json()
+                  toast.error(d.error || "Error al guardar slug")
+                  e.target.value = tournament.slug ?? ""
+                }
+              }}
+            />
+          </div>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.45)" }}>{FORMAT_LABELS[tournament.format]}</span>
             {isGroupStage && (
@@ -501,7 +527,7 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
           </label>
           {tournament.status === "OPEN" && (
             <button onClick={() => {
-              const url = `${window.location.origin}/torneos/${tournament.id}`
+              const url = `${window.location.origin}/torneos/${tournament.slug || tournament.id}`
               navigator.clipboard.writeText(url).then(() => toast.success("Link copiado"))
             }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all"

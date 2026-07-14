@@ -30,12 +30,13 @@ export async function PATCH(req: Request, { params }: Params) {
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id, tournamentId } = await params
   const body = await req.json()
-  const { name, sport, format, participantType, startDate, endDate, registrationDeadline, maxParticipants, courtCount, entryFee, description, status, flyer, allowScheduleRestrictions, maxRestrictionsPerParticipant, groupCount, advanceCount } = body
+  const { name, slug, sport, format, participantType, startDate, endDate, registrationDeadline, maxParticipants, courtCount, entryFee, description, status, flyer, allowScheduleRestrictions, maxRestrictionsPerParticipant, groupCount, advanceCount } = body
 
   const tournament = await prisma.tournament.update({
     where: { id: tournamentId, businessId: id },
     data: {
       ...(name !== undefined && { name }),
+      ...(slug !== undefined && { slug: slug ? slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || null : null }),
       ...(sport !== undefined && { sport: sport || null }),
       ...(format !== undefined && { format }),
       ...(participantType !== undefined && { participantType }),

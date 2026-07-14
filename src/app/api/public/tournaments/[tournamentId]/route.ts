@@ -6,8 +6,8 @@ type Params = { params: Promise<{ tournamentId: string }> }
 export async function GET(_: Request, { params }: Params) {
   const { tournamentId } = await params
 
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
+  const tournament = await prisma.tournament.findFirst({
+    where: { OR: [{ id: tournamentId }, { slug: tournamentId }] },
     include: {
       business: { select: { name: true, slug: true, logo: true, onlinePaymentsEnabled: true, flowApiKey: true, flowSecretKey: true } },
       categories: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },

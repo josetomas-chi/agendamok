@@ -8,8 +8,8 @@ type Params = { params: Promise<{ tournamentId: string }> }
 export async function POST(req: Request, { params }: Params) {
   const { tournamentId } = await params
 
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
+  const tournament = await prisma.tournament.findFirst({
+    where: { OR: [{ id: tournamentId }, { slug: tournamentId }] },
     include: {
       business: {
         select: { id: true, name: true, slug: true, onlinePaymentsEnabled: true, flowApiKey: true, flowSecretKey: true },

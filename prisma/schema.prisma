@@ -1060,6 +1060,7 @@ model Tournament {
   id              String                    @id @default(cuid())
   businessId      String
   name            String
+  slug            String?                   @unique
   sport           String?
   format          TournamentFormat          @default(ELIMINATION)
   participantType TournamentParticipantType @default(INDIVIDUAL)
