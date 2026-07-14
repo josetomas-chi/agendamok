@@ -581,3 +581,52 @@ export async function sendInvoiceEmail({
     `),
   })
 }
+
+export async function sendTournamentRegistrationConfirmation({
+  players, tournamentName, businessName, startDate, category, entryFee,
+}: {
+  players: { name: string; email: string }[]
+  tournamentName: string
+  businessName: string
+  startDate: string
+  category?: string | null
+  entryFee?: number | null
+}) {
+  if (!process.env.RESEND_API_KEY) return
+
+  const validPlayers = players.filter(p => p.email?.includes("@"))
+  if (!validPlayers.length) return
+
+  const feeRow = entryFee
+    ? `<div class="row"><span class="label">Inscripción</span><span class="value">${entryFee.toLocaleString("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 })}</span></div>`
+    : `<div class="row"><span class="label">Inscripción</span><span class="value" style="color:#4ade80">Gratuita</span></div>`
+
+  const categoryRow = category
+    ? `<div class="row"><span class="label">Categoría</span><span class="value">${category}</span></div>`
+    : ""
+
+  const namesRow = validPlayers.length > 1
+    ? `<div class="row"><span class="label">Pareja / Equipo</span><span class="value">${validPlayers.map(p => p.name).join(" &amp; ")}</span></div>`
+    : `<div class="row"><span class="label">Jugador</span><span class="value">${validPlayers[0].name}</span></div>`
+
+  for (const player of validPlayers) {
+    resend.emails.send({
+      from: FROM,
+      to: player.email,
+      subject: `¡Inscripción confirmada! ${tournamentName}`,
+      html: base(`
+        <h1>¡Inscripción confirmada! 🏆</h1>
+        <p class="subtitle">Hola <strong style="color:#fff">${player.name}</strong>, tu inscripción en <strong style="color:#C9A84C">${tournamentName}</strong> ha sido registrada exitosamente.</p>
+        <div class="box">
+          <div class="row"><span class="label">Torneo</span><span class="value">${tournamentName}</span></div>
+          <div class="row"><span class="label">Organiza</span><span class="value">${businessName}</span></div>
+          <div class="row"><span class="label">Fecha</span><span class="value">${startDate}</span></div>
+          ${namesRow}
+          ${categoryRow}
+          ${feeRow}
+        </div>
+        <p class="subtitle" style="font-size:13px;margin-top:8px">Recibirás más información sobre horarios y canchas a medida que se acerque la fecha del torneo. ¡Mucho éxito!</p>
+      `),
+    }).catch(() => {})
+  }
+}

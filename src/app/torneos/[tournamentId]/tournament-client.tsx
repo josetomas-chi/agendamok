@@ -566,10 +566,6 @@ export default function TournamentPublicPage() {
           )}
         </div>
 
-        {/* Footer */}
-        <p className="text-center text-[10px] pb-4" style={{ color: "rgba(13,27,42,0.25)" }}>
-          {tournament.business.name} · agendamok.cl
-        </p>
       </div>
 
       {showRestrictionsModal && tournament.allowScheduleRestrictions && (

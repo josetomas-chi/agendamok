@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { businessCreatePayment } from "@/lib/flow"
+import { sendTournamentRegistrationConfirmation } from "@/lib/email"
 
 type Params = { params: Promise<{ tournamentId: string }> }
 
@@ -84,8 +85,23 @@ export async function POST(req: Request, { params }: Params) {
     },
   })
 
-  // If free or no payment method, done
+  // If free or no payment method, send confirmation and done
   if (initialStatus === "REGISTERED") {
+    const allPlayers: { name: string; email: string }[] = [{ name: name.trim(), email: email.trim() }]
+    if (Array.isArray(players)) {
+      for (const p of players) {
+        if (p?.name && p?.email) allPlayers.push({ name: p.name, email: p.email })
+      }
+    }
+    const cat = tournament.categories.find(c => c.id === categoryId)
+    sendTournamentRegistrationConfirmation({
+      players: allPlayers,
+      tournamentName: tournament.name,
+      businessName: tournament.business.name,
+      startDate: tournament.startDate ? new Date(tournament.startDate).toLocaleDateString("es-CL") : "",
+      category: cat?.name ?? null,
+      entryFee: tournament.entryFee ? Number(tournament.entryFee) : null,
+    }).catch(() => {})
     return NextResponse.json({ participant, requiresPayment: false })
   }
 
