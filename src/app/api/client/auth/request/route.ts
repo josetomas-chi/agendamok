@@ -30,7 +30,11 @@ export async function POST(req: Request) {
     },
   })
 
-  await sendClientOtp({ email: normalizedEmail, code })
+  try {
+    await sendClientOtp({ email: normalizedEmail, code })
+  } catch {
+    return NextResponse.json({ error: "No se pudo enviar el código. Intenta de nuevo." }, { status: 503 })
+  }
 
   return NextResponse.json({ ok: true })
 }

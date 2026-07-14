@@ -105,7 +105,7 @@ export async function PATCH(req: Request, { params }: Params) {
     const timeChanged = startTime !== undefined || endTime !== undefined || courtId !== undefined
     if (timeChanged && booking.client?.email && status === undefined) {
       const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
-      await sendCourtBookingModification({
+      sendCourtBookingModification({
         clientName: booking.client.name,
         clientEmail: booking.client.email,
         businessName: business?.name ?? "Club Deportivo",
@@ -139,7 +139,7 @@ export async function DELETE(_: Request, { params }: Params) {
 
   if (booking.client?.email) {
     const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
-    await sendCourtBookingCancellation({
+    sendCourtBookingCancellation({
       clientName: booking.client.name,
       clientEmail: booking.client.email,
       businessName: business?.name ?? "Club Deportivo",

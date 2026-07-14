@@ -77,7 +77,7 @@ export async function POST(req: Request, { params }: Params) {
 
       // Send confirmation email to client
       if (appt.client.email) {
-        await sendBookingConfirmation({
+        sendBookingConfirmation({
           clientName: appt.client.name,
           clientEmail: appt.client.email,
           businessName: business.name,
@@ -119,7 +119,7 @@ export async function POST(req: Request, { params }: Params) {
               data: { bsaleId: result.bsaleId, number: result.number, pdfUrl: result.pdfUrl, xmlUrl: result.xmlUrl ?? null, status: "EMITTED", emittedAt: new Date() },
             })
             if (appt.client.email && result.pdfUrl) {
-              await sendInvoiceEmail({ clientEmail: appt.client.email, clientName: appt.client.name, businessName: business.name, invoiceNumber: result.number, pdfUrl: result.pdfUrl }).catch(() => {})
+              sendInvoiceEmail({ clientEmail: appt.client.email, clientName: appt.client.name, businessName: business.name, invoiceNumber: result.number, pdfUrl: result.pdfUrl }).catch(() => {})
             }
           }
         } catch (invoiceErr) {
@@ -137,7 +137,7 @@ export async function POST(req: Request, { params }: Params) {
       })
       const owner = biz?.owner
       if (owner?.email) {
-        await sendNewBookingAlert({
+        sendNewBookingAlert({
           ownerEmail: owner.email,
           ownerName: owner.name || "",
           businessName: business.name,

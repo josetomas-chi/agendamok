@@ -104,7 +104,7 @@ export async function POST(
 
     // Enviar PDF por email si hay dirección
     if (finalClientEmail && result.pdfUrl) {
-      await sendInvoiceEmail({
+      sendInvoiceEmail({
         clientEmail: finalClientEmail,
         clientName: finalClientName,
         businessName: business.name,

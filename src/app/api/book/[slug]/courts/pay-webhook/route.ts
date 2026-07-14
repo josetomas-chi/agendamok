@@ -54,7 +54,7 @@ export async function POST(req: Request, { params }: Params) {
       })
 
       if (booking.client.email) {
-        await sendCourtBookingConfirmation({
+        sendCourtBookingConfirmation({
           clientName: booking.client.name,
           clientEmail: booking.client.email,
           businessName: business.name,
