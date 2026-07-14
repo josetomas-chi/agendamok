@@ -332,258 +332,272 @@ export default function TournamentPublicPage() {
   const requiresPayment = entryFee > 0 && tournament.paymentEnabled
   const type = tournament.participantType
 
+  // Info cards — shared between layouts
+  const infoCards = (
+    <div className="grid grid-cols-2 gap-3">
+      <div className="rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+        <Calendar className="w-4 h-4 mx-auto mb-1" style={{ color: GOLD }} />
+        <p className="text-xs font-bold text-white">{format(new Date(tournament.startDate), "d MMM", { locale: es })}</p>
+        <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>{format(new Date(tournament.startDate), "HH:mm")} hrs</p>
+      </div>
+      <div className="rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+        <Users className="w-4 h-4 mx-auto mb-1" style={{ color: GOLD }} />
+        <p className="text-xs font-bold text-white">
+          {tournament.registeredCount}{tournament.maxParticipants ? `/${tournament.maxParticipants}` : ""} inscritos
+        </p>
+        <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>{TYPE_LABELS[type]}</p>
+      </div>
+      <div className="rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+        <Trophy className="w-4 h-4 mx-auto mb-1" style={{ color: GOLD }} />
+        <p className="text-xs font-bold text-white">{FORMAT_LABELS[tournament.format]}</p>
+        <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>Formato</p>
+      </div>
+      <div className="rounded-xl p-3 text-center" style={{ background: entryFee ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.05)", border: entryFee ? `1px solid rgba(201,168,76,0.3)` : "1px solid rgba(255,255,255,0.08)" }}>
+        <p className="text-sm font-black mt-1" style={{ color: entryFee ? GOLD : "rgba(255,255,255,0.5)" }}>
+          {entryFee ? fmt(entryFee) : "Gratis"}
+        </p>
+        <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>
+          {type === "INDIVIDUAL" ? "por persona" : type === "PAIR" ? "por pareja" : "por equipo"}
+        </p>
+      </div>
+    </div>
+  )
+
+  // Registration form content — shared
+  const formContent = !canRegister ? (
+    <div className="rounded-2xl p-6 text-center" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
+      <p className="font-bold text-white">
+        {tournament.status === "OPEN" && isFull ? "Torneo lleno" : STATUS_LABELS[tournament.status] ?? "Inscripciones cerradas"}
+      </p>
+      <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>Las inscripciones ya no están disponibles.</p>
+    </div>
+  ) : success ? (
+    <div className="rounded-2xl p-8 text-center space-y-3" style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.3)" }}>
+      <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto" style={{ background: "rgba(34,197,94,0.15)" }}>
+        <Trophy className="w-7 h-7" style={{ color: "#22c55e" }} />
+      </div>
+      <p className="text-xl font-black text-white">¡Inscripción confirmada!</p>
+      <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+        {type === "PAIR"
+          ? `La pareja ha sido inscrita en ${tournament.name}.`
+          : type === "TEAM"
+          ? `El equipo ha sido inscrito en ${tournament.name}.`
+          : `Te has inscrito en ${tournament.name}.`}
+        {" "}Recibirás información por email.
+      </p>
+    </div>
+  ) : (
+    <form onSubmit={handleSubmit} className="rounded-2xl p-6 space-y-5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
+      <div>
+        <p className="text-sm font-black uppercase tracking-wide text-white">
+          {type === "PAIR" ? "Inscripción de pareja" : type === "TEAM" ? "Inscripción de equipo" : "Inscripción"}
+        </p>
+        {type === "PAIR" && <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>Completa los datos de ambos jugadores</p>}
+        {type === "TEAM" && <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>Datos del equipo e integrantes</p>}
+      </div>
+
+      {tournament.categories?.length > 0 && (
+        <Field label="Categoría *">
+          <div className="flex flex-wrap gap-2 mt-1">
+            {tournament.categories.map(cat => (
+              <button key={cat.id} type="button" onClick={() => setCategoryId(cat.id)}
+                className="px-3 py-2 rounded-xl text-xs font-bold transition-all"
+                style={categoryId === cat.id
+                  ? { background: "rgba(201,168,76,0.2)", border: `1.5px solid ${GOLD}`, color: GOLD }
+                  : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)" }}>
+                <Tag className="w-3 h-3 inline mr-1" />{cat.name}
+              </button>
+            ))}
+          </div>
+        </Field>
+      )}
+
+      {type === "INDIVIDUAL" && (
+        <>
+          <Field label="Nombre completo *">
+            <input value={indName} onChange={e => setIndName(e.target.value)}
+              placeholder="Ej: Juan Pérez" className={inputCls} style={inputStyle} />
+          </Field>
+          <Field label="Email *">
+            <input type="email" value={indEmail} onChange={e => setIndEmail(e.target.value)}
+              placeholder="tu@email.com" className={inputCls} style={inputStyle} />
+          </Field>
+          <PhoneField label="WhatsApp *" value={indPhone} onChange={setIndPhone} />
+        </>
+      )}
+
+      {type === "PAIR" && (
+        <>
+          <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: GOLD }}>Jugador 1</p>
+            <Field label="Nombre completo *">
+              <input value={p1Name} onChange={e => setP1Name(e.target.value)}
+                placeholder="Ej: Juan Pérez" className={inputCls} style={inputStyle} />
+            </Field>
+            <Field label="Email *">
+              <input type="email" value={p1Email} onChange={e => setP1Email(e.target.value)}
+                placeholder="juan@email.com" className={inputCls} style={inputStyle} />
+            </Field>
+            <PhoneField label="WhatsApp *" value={p1Phone} onChange={setP1Phone} />
+          </div>
+          <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: GOLD }}>Jugador 2</p>
+            <Field label="Nombre completo *">
+              <input value={p2Name} onChange={e => setP2Name(e.target.value)}
+                placeholder="Ej: María García" className={inputCls} style={inputStyle} />
+            </Field>
+            <Field label="Email *">
+              <input type="email" value={p2Email} onChange={e => setP2Email(e.target.value)}
+                placeholder="maria@email.com" className={inputCls} style={inputStyle} />
+            </Field>
+            <PhoneField label="WhatsApp *" value={p2Phone} onChange={setP2Phone} />
+          </div>
+        </>
+      )}
+
+      {type === "TEAM" && (
+        <>
+          <Field label="Nombre del equipo *">
+            <input value={teamName} onChange={e => setTeamName(e.target.value)}
+              placeholder="Ej: Los Campeones" className={inputCls} style={inputStyle} />
+          </Field>
+          <Field label="Email de contacto *">
+            <input type="email" value={teamEmail} onChange={e => setTeamEmail(e.target.value)}
+              placeholder="capitan@email.com" className={inputCls} style={inputStyle} />
+          </Field>
+          <PhoneField label="WhatsApp de contacto *" value={teamPhone} onChange={setTeamPhone} />
+          <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: GOLD }}>
+                Integrantes <span style={{ color: "rgba(255,255,255,0.3)" }}>(mín. 2)</span>
+              </p>
+              <button type="button" onClick={() => setTeamPlayers(p => [...p, ""])}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold"
+                style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }}>
+                <Plus className="w-3 h-3" /> Agregar
+              </button>
+            </div>
+            <div className="space-y-2">
+              {teamPlayers.map((p, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <span className="text-[10px] font-bold w-5 text-center flex-shrink-0" style={{ color: "rgba(255,255,255,0.3)" }}>{i + 1}</span>
+                  <input value={p} onChange={e => setTeamPlayers(pl => pl.map((x, j) => j === i ? e.target.value : x))}
+                    placeholder={`Jugador ${i + 1}`}
+                    className="flex-1 rounded-xl px-3 py-2.5 text-sm placeholder:opacity-30 outline-none"
+                    style={inputStyle} />
+                  {teamPlayers.length > 2 && (
+                    <button type="button" onClick={() => setTeamPlayers(pl => pl.filter((_, j) => j !== i))}
+                      className="w-7 h-7 flex items-center justify-center rounded-lg flex-shrink-0"
+                      style={{ color: "rgba(255,255,255,0.3)" }}>
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {tournament.allowScheduleRestrictions && tournament.scheduleDays.length > 0 && (
+        <button type="button" onClick={() => setShowRestrictionsModal(true)}
+          className="w-full h-12 rounded-xl font-bold text-sm flex items-center justify-between px-4 transition-all"
+          style={{ background: "rgba(239,68,68,0.07)", border: `1px solid ${restrictions.length > 0 ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.12)"}`, color: restrictions.length > 0 ? "#f87171" : "rgba(255,255,255,0.55)" }}>
+          <span>¿Cuándo no puedes jugar?</span>
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: restrictions.length > 0 ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.07)", color: restrictions.length > 0 ? "#f87171" : "rgba(255,255,255,0.4)" }}>
+            {restrictions.length > 0 ? `${restrictions.length} bloqueo${restrictions.length !== 1 ? "s" : ""}` : "Opcional"}
+          </span>
+        </button>
+      )}
+
+      {formError && (
+        <p className="text-xs font-semibold px-3 py-2 rounded-lg" style={{ background: "rgba(239,68,68,0.1)", color: "#f87171" }}>
+          {formError}
+        </p>
+      )}
+
+      <button type="submit" disabled={submitting}
+        className="w-full h-12 rounded-xl font-black text-sm uppercase tracking-wide flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+        style={{ background: requiresPayment ? GOLD : "rgba(34,197,94,0.2)", color: requiresPayment ? NAVY : "#22c55e", border: requiresPayment ? "none" : "1px solid rgba(34,197,94,0.4)" }}>
+        {submitting
+          ? <Loader2 className="w-4 h-4 animate-spin" />
+          : <>
+              {requiresPayment ? `Pagar ${fmt(entryFee)} e inscribirse` : "Inscribirse gratis"}
+              <ChevronRight className="w-4 h-4" />
+            </>}
+      </button>
+
+      {requiresPayment && (
+        <p className="text-[10px] text-center" style={{ color: "rgba(255,255,255,0.3)" }}>
+          Serás redirigido a Flow para completar el pago de forma segura.
+        </p>
+      )}
+    </form>
+  )
+
   return (
     <div className="min-h-screen" style={{ background: NAVY }}>
 
-      {/* Hero */}
       {tournament.flyer ? (
-        <div className="max-w-lg mx-auto">
-          {/* Full flyer — no crop */}
-          <img
-            src={tournament.flyer}
-            alt={tournament.name}
-            className="w-full block"
-            style={{ display: "block" }}
-          />
-          {/* Name strip below flyer */}
-          <div className="px-5 pt-5 pb-2 text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>{tournament.business.name}</p>
-            <h1 className="text-2xl font-black text-white uppercase tracking-wide leading-tight">{tournament.name}</h1>
-            {tournament.sport && <p className="text-sm mt-1 font-medium" style={{ color: GOLD }}>{tournament.sport}</p>}
+        /* ── Desktop: flyer izquierda + info+form derecha ── */
+        <div className="min-h-screen flex flex-col lg:flex-row">
+
+          {/* Columna izquierda — flyer sticky */}
+          <div className="lg:w-[45%] lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden flex-shrink-0">
+            <img
+              src={tournament.flyer}
+              alt={tournament.name}
+              className="w-full h-full object-cover lg:object-cover"
+              style={{ display: "block", maxHeight: "100svh" }}
+            />
+          </div>
+
+          {/* Columna derecha — scroll */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Header */}
+            <div className="px-6 pt-10 pb-4">
+              <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>{tournament.business.name}</p>
+              <h1 className="text-3xl font-black text-white uppercase tracking-wide leading-tight">{tournament.name}</h1>
+              {tournament.sport && <p className="text-sm mt-1 font-medium" style={{ color: GOLD }}>{tournament.sport}</p>}
+            </div>
+
+            {/* Info cards */}
+            <div className="px-6 mb-6">{infoCards}</div>
+
+            {/* Description */}
+            {tournament.description && (
+              <div className="px-6 mb-6">
+                <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>{tournament.description}</p>
+              </div>
+            )}
+
+            {/* Form */}
+            <div className="px-6 pb-16">{formContent}</div>
           </div>
         </div>
       ) : (
-        <div className="px-4 pt-10 pb-6 max-w-lg mx-auto text-center">
-          {tournament.business.logoUrl
-            ? <img src={tournament.business.logoUrl} alt="" className="w-14 h-14 rounded-2xl object-cover mx-auto mb-4" />
-            : <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(201,168,76,0.15)" }}>
-                <Trophy className="w-7 h-7" style={{ color: GOLD }} />
-              </div>
-          }
-          <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>{tournament.business.name}</p>
-          <h1 className="text-2xl font-black text-white uppercase tracking-wide">{tournament.name}</h1>
-          {tournament.sport && <p className="text-sm mt-1" style={{ color: GOLD }}>{tournament.sport}</p>}
+        /* ── Sin flyer: layout single-column centrado ── */
+        <div>
+          <div className="px-4 pt-10 pb-6 max-w-lg mx-auto text-center">
+            {tournament.business.logoUrl
+              ? <img src={tournament.business.logoUrl} alt="" className="w-14 h-14 rounded-2xl object-cover mx-auto mb-4" />
+              : <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(201,168,76,0.15)" }}>
+                  <Trophy className="w-7 h-7" style={{ color: GOLD }} />
+                </div>
+            }
+            <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>{tournament.business.name}</p>
+            <h1 className="text-2xl font-black text-white uppercase tracking-wide">{tournament.name}</h1>
+            {tournament.sport && <p className="text-sm mt-1" style={{ color: GOLD }}>{tournament.sport}</p>}
+          </div>
+          <div className="max-w-lg mx-auto px-4 mb-6">{infoCards}</div>
+          {tournament.description && (
+            <div className="max-w-lg mx-auto px-4 mb-6">
+              <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>{tournament.description}</p>
+            </div>
+          )}
+          <div className="max-w-lg mx-auto px-4 pb-16">{formContent}</div>
         </div>
       )}
-
-      {/* Info cards */}
-      <div className="max-w-lg mx-auto px-4 grid grid-cols-2 gap-3 mt-5 mb-6">
-        <div className="rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <Calendar className="w-4 h-4 mx-auto mb-1" style={{ color: GOLD }} />
-          <p className="text-xs font-bold text-white">{format(new Date(tournament.startDate), "d MMM", { locale: es })}</p>
-          <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>{format(new Date(tournament.startDate), "HH:mm")} hrs</p>
-        </div>
-        <div className="rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <Users className="w-4 h-4 mx-auto mb-1" style={{ color: GOLD }} />
-          <p className="text-xs font-bold text-white">
-            {tournament.registeredCount}{tournament.maxParticipants ? `/${tournament.maxParticipants}` : ""} inscritos
-          </p>
-          <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>{TYPE_LABELS[type]}</p>
-        </div>
-        <div className="rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <Trophy className="w-4 h-4 mx-auto mb-1" style={{ color: GOLD }} />
-          <p className="text-xs font-bold text-white">{FORMAT_LABELS[tournament.format]}</p>
-          <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>Formato</p>
-        </div>
-        <div className="rounded-xl p-3 text-center" style={{ background: entryFee ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.05)", border: entryFee ? `1px solid rgba(201,168,76,0.3)` : "1px solid rgba(255,255,255,0.08)" }}>
-          <p className="text-sm font-black mt-1" style={{ color: entryFee ? GOLD : "rgba(255,255,255,0.5)" }}>
-            {entryFee ? fmt(entryFee) : "Gratis"}
-          </p>
-          <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>
-            {type === "INDIVIDUAL" ? "por persona" : type === "PAIR" ? "por pareja" : "por equipo"}
-          </p>
-        </div>
-      </div>
-
-      {tournament.description && (
-        <div className="max-w-lg mx-auto px-4 mb-6">
-          <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>{tournament.description}</p>
-        </div>
-      )}
-
-      {/* Registration form */}
-      <div className="max-w-lg mx-auto px-4 pb-16">
-        {!canRegister ? (
-          <div className="rounded-2xl p-6 text-center" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
-            <p className="font-bold text-white">
-              {tournament.status === "OPEN" && isFull ? "Torneo lleno" : STATUS_LABELS[tournament.status] ?? "Inscripciones cerradas"}
-            </p>
-            <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>Las inscripciones ya no están disponibles.</p>
-          </div>
-        ) : success ? (
-          <div className="rounded-2xl p-8 text-center space-y-3" style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.3)" }}>
-            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto" style={{ background: "rgba(34,197,94,0.15)" }}>
-              <Trophy className="w-7 h-7" style={{ color: "#22c55e" }} />
-            </div>
-            <p className="text-xl font-black text-white">¡Inscripción confirmada!</p>
-            <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
-              {type === "PAIR"
-                ? `La pareja ha sido inscrita en ${tournament.name}.`
-                : type === "TEAM"
-                ? `El equipo ha sido inscrito en ${tournament.name}.`
-                : `Te has inscrito en ${tournament.name}.`}
-              {" "}Recibirás información por email.
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="rounded-2xl p-6 space-y-5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
-
-            <div>
-              <p className="text-sm font-black uppercase tracking-wide text-white">
-                {type === "PAIR" ? "Inscripción de pareja" : type === "TEAM" ? "Inscripción de equipo" : "Inscripción"}
-              </p>
-              {type === "PAIR" && (
-                <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
-                  Completa los datos de ambos jugadores
-                </p>
-              )}
-              {type === "TEAM" && (
-                <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
-                  Datos del equipo e integrantes
-                </p>
-              )}
-            </div>
-
-            {tournament.categories?.length > 0 && (
-              <Field label="Categoría *">
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {tournament.categories.map(cat => (
-                    <button key={cat.id} type="button" onClick={() => setCategoryId(cat.id)}
-                      className="px-3 py-2 rounded-xl text-xs font-bold transition-all"
-                      style={categoryId === cat.id
-                        ? { background: "rgba(201,168,76,0.2)", border: `1.5px solid ${GOLD}`, color: GOLD }
-                        : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)" }}>
-                      <Tag className="w-3 h-3 inline mr-1" />{cat.name}
-                    </button>
-                  ))}
-                </div>
-              </Field>
-            )}
-
-            {type === "INDIVIDUAL" && (
-              <>
-                <Field label="Nombre completo *">
-                  <input value={indName} onChange={e => setIndName(e.target.value)}
-                    placeholder="Ej: Juan Pérez" className={inputCls} style={inputStyle} />
-                </Field>
-                <Field label="Email *">
-                  <input type="email" value={indEmail} onChange={e => setIndEmail(e.target.value)}
-                    placeholder="tu@email.com" className={inputCls} style={inputStyle} />
-                </Field>
-                <PhoneField label="WhatsApp *" value={indPhone} onChange={setIndPhone} />
-              </>
-            )}
-
-            {type === "PAIR" && (
-              <>
-                <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: GOLD }}>Jugador 1</p>
-                  <Field label="Nombre completo *">
-                    <input value={p1Name} onChange={e => setP1Name(e.target.value)}
-                      placeholder="Ej: Juan Pérez" className={inputCls} style={inputStyle} />
-                  </Field>
-                  <Field label="Email *">
-                    <input type="email" value={p1Email} onChange={e => setP1Email(e.target.value)}
-                      placeholder="juan@email.com" className={inputCls} style={inputStyle} />
-                  </Field>
-                  <PhoneField label="WhatsApp *" value={p1Phone} onChange={setP1Phone} />
-                </div>
-                <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: GOLD }}>Jugador 2</p>
-                  <Field label="Nombre completo *">
-                    <input value={p2Name} onChange={e => setP2Name(e.target.value)}
-                      placeholder="Ej: María García" className={inputCls} style={inputStyle} />
-                  </Field>
-                  <Field label="Email *">
-                    <input type="email" value={p2Email} onChange={e => setP2Email(e.target.value)}
-                      placeholder="maria@email.com" className={inputCls} style={inputStyle} />
-                  </Field>
-                  <PhoneField label="WhatsApp *" value={p2Phone} onChange={setP2Phone} />
-                </div>
-              </>
-            )}
-
-            {type === "TEAM" && (
-              <>
-                <Field label="Nombre del equipo *">
-                  <input value={teamName} onChange={e => setTeamName(e.target.value)}
-                    placeholder="Ej: Los Campeones" className={inputCls} style={inputStyle} />
-                </Field>
-                <Field label="Email de contacto *">
-                  <input type="email" value={teamEmail} onChange={e => setTeamEmail(e.target.value)}
-                    placeholder="capitan@email.com" className={inputCls} style={inputStyle} />
-                </Field>
-                <PhoneField label="WhatsApp de contacto *" value={teamPhone} onChange={setTeamPhone} />
-                <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: GOLD }}>
-                      Integrantes <span style={{ color: "rgba(255,255,255,0.3)" }}>(mín. 2)</span>
-                    </p>
-                    <button type="button" onClick={() => setTeamPlayers(p => [...p, ""])}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold"
-                      style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }}>
-                      <Plus className="w-3 h-3" /> Agregar
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {teamPlayers.map((p, i) => (
-                      <div key={i} className="flex gap-2 items-center">
-                        <span className="text-[10px] font-bold w-5 text-center flex-shrink-0" style={{ color: "rgba(255,255,255,0.3)" }}>{i + 1}</span>
-                        <input value={p} onChange={e => setTeamPlayers(pl => pl.map((x, j) => j === i ? e.target.value : x))}
-                          placeholder={`Jugador ${i + 1}`}
-                          className="flex-1 rounded-xl px-3 py-2.5 text-sm placeholder:opacity-30 outline-none"
-                          style={inputStyle} />
-                        {teamPlayers.length > 2 && (
-                          <button type="button" onClick={() => setTeamPlayers(pl => pl.filter((_, j) => j !== i))}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg flex-shrink-0"
-                            style={{ color: "rgba(255,255,255,0.3)" }}>
-                            <X className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Schedule restrictions button */}
-            {tournament.allowScheduleRestrictions && tournament.scheduleDays.length > 0 && (
-              <button type="button" onClick={() => setShowRestrictionsModal(true)}
-                className="w-full h-12 rounded-xl font-bold text-sm flex items-center justify-between px-4 transition-all"
-                style={{ background: "rgba(239,68,68,0.07)", border: `1px solid ${restrictions.length > 0 ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.12)"}`, color: restrictions.length > 0 ? "#f87171" : "rgba(255,255,255,0.55)" }}>
-                <span>¿Cuándo no puedes jugar?</span>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: restrictions.length > 0 ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.07)", color: restrictions.length > 0 ? "#f87171" : "rgba(255,255,255,0.4)" }}>
-                  {restrictions.length > 0 ? `${restrictions.length} bloqueo${restrictions.length !== 1 ? "s" : ""}` : "Opcional"}
-                </span>
-              </button>
-            )}
-
-            {formError && (
-              <p className="text-xs font-semibold px-3 py-2 rounded-lg" style={{ background: "rgba(239,68,68,0.1)", color: "#f87171" }}>
-                {formError}
-              </p>
-            )}
-
-            <button type="submit" disabled={submitting}
-              className="w-full h-12 rounded-xl font-black text-sm uppercase tracking-wide flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-              style={{ background: requiresPayment ? GOLD : "rgba(34,197,94,0.2)", color: requiresPayment ? NAVY : "#22c55e", border: requiresPayment ? "none" : "1px solid rgba(34,197,94,0.4)" }}>
-              {submitting
-                ? <Loader2 className="w-4 h-4 animate-spin" />
-                : <>
-                    {requiresPayment ? `Pagar ${fmt(entryFee)} e inscribirse` : "Inscribirse gratis"}
-                    <ChevronRight className="w-4 h-4" />
-                  </>}
-            </button>
-
-            {requiresPayment && (
-              <p className="text-[10px] text-center" style={{ color: "rgba(255,255,255,0.3)" }}>
-                Serás redirigido a Flow para completar el pago de forma segura.
-              </p>
-            )}
-          </form>
-        )}
-      </div>
 
       {/* Schedule restrictions modal */}
       {showRestrictionsModal && tournament.allowScheduleRestrictions && (
@@ -598,3 +612,4 @@ export default function TournamentPublicPage() {
     </div>
   )
 }
+
