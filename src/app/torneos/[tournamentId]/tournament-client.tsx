@@ -282,7 +282,7 @@ export default function TournamentPublicPage() {
 
   return (
     <div className="min-h-screen" style={{ background: BG }}>
-      <div className="max-w-md mx-auto px-4 py-6 space-y-4">
+      <div className="max-w-md mx-auto lg:max-w-3xl px-4 py-6 lg:py-10 flex flex-col lg:flex-row lg:items-start gap-4">
 
         {/* ── Tarjeta principal ── */}
         <div className="rounded-3xl overflow-hidden shadow-xl" style={{ background: NAVY }}>
