@@ -456,10 +456,7 @@ export default function TournamentPublicPage() {
                     <PhoneField label="WhatsApp *" value={p1Phone} onChange={setP1Phone} />
                   </div>
                   <div className="rounded-2xl p-4 space-y-3" style={{ background: "#f7f8fa" }}>
-                    <div className="flex items-baseline gap-2">
-                      <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: NAVY }}>Jugador 2</p>
-                      <span className="text-[10px]" style={{ color: "rgba(13,27,42,0.35)" }}>— opcional, puede agregarse después</span>
-                    </div>
+                    <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: NAVY }}>Jugador 2</p>
                     <Field label="Nombre completo">
                       <input value={p2Name} onChange={e => setP2Name(e.target.value)} placeholder="Ej: María García" className={inputCls} style={inputStyle} />
                     </Field>
