@@ -108,7 +108,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   })
   if (booking.client?.email) {
     const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
-    await sendCourtBookingConfirmation({
+    sendCourtBookingConfirmation({
       clientName: booking.client.name,
       clientEmail: booking.client.email,
       businessName: business?.name ?? "Club Deportivo",
