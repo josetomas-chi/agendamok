@@ -25,11 +25,19 @@ export async function POST(req: Request, { params }: Params) {
   }
 
   const body = await req.json()
-  const { name, email, phone, players, categoryId, restrictions } = body
+  const { name, email, phone, rut, players, categoryId, restrictions } = body
   // restrictions: Array<{ date: string; time: string }>
 
   if (!name?.trim()) return NextResponse.json({ error: "Nombre requerido" }, { status: 400 })
   if (!email?.trim()) return NextResponse.json({ error: "Email requerido" }, { status: 400 })
+  if (!rut?.trim()) return NextResponse.json({ error: "RUT requerido" }, { status: 400 })
+
+  // Check RUT not already registered in this tournament
+  const normalizedRut = rut.trim().replace(/\./g, "").toUpperCase()
+  const existingRut = await prisma.tournamentParticipant.findFirst({
+    where: { tournamentId, rut: normalizedRut },
+  })
+  if (existingRut) return NextResponse.json({ error: "Este RUT ya está inscrito en el torneo" }, { status: 400 })
 
   // Check global capacity
   if (tournament.maxParticipants) {
@@ -74,6 +82,7 @@ export async function POST(req: Request, { params }: Params) {
     data: {
       tournamentId,
       name: name.trim(),
+      rut: normalizedRut,
       email: email.trim().toLowerCase(),
       phone: phone?.trim() || null,
       players: players || [],

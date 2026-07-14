@@ -185,15 +185,18 @@ export default function TournamentPublicPage() {
   const [indName, setIndName] = useState("")
   const [indEmail, setIndEmail] = useState("")
   const [indPhone, setIndPhone] = useState("")
+  const [indRut, setIndRut] = useState("")
   const [p1Name, setP1Name] = useState("")
   const [p1Email, setP1Email] = useState("")
   const [p1Phone, setP1Phone] = useState("")
+  const [p1Rut, setP1Rut] = useState("")
   const [p2Name, setP2Name] = useState("")
   const [p2Email, setP2Email] = useState("")
   const [p2Phone, setP2Phone] = useState("")
   const [teamName, setTeamName] = useState("")
   const [teamEmail, setTeamEmail] = useState("")
   const [teamPhone, setTeamPhone] = useState("")
+  const [teamRut, setTeamRut] = useState("")
   const [teamPlayers, setTeamPlayers] = useState<string[]>(["", ""])
 
   useEffect(() => {
@@ -216,30 +219,33 @@ export default function TournamentPublicPage() {
     if (tournament?.categories?.length && !categoryId) { setFormError("Selecciona una categoría"); return }
 
     const type = tournament!.participantType
-    let submitName = "", submitEmail = "", submitPhone = ""
+    let submitName = "", submitEmail = "", submitPhone = "", submitRut = ""
     let submitPlayers: { name: string; email?: string }[] = []
 
     if (type === "INDIVIDUAL") {
       if (!indName.trim()) { setFormError("Ingresa tu nombre"); return }
+      if (!indRut.trim()) { setFormError("Ingresa tu RUT"); return }
       if (!indEmail.trim()) { setFormError("Ingresa tu email"); return }
       if (!indPhone.trim()) { setFormError("Ingresa tu teléfono WhatsApp"); return }
-      submitName = indName.trim(); submitEmail = indEmail.trim(); submitPhone = indPhone.trim()
+      submitName = indName.trim(); submitEmail = indEmail.trim(); submitPhone = indPhone.trim(); submitRut = indRut.trim()
     } else if (type === "PAIR") {
       if (!p1Name.trim() || !p1Email.trim()) { setFormError("Completa los datos del Jugador 1"); return }
+      if (!p1Rut.trim()) { setFormError("Ingresa el RUT del Jugador 1"); return }
       if (!p1Phone.trim()) { setFormError("Ingresa el teléfono WhatsApp del Jugador 1"); return }
       const p2Filled = p2Name.trim() || p2Email.trim() || p2Phone.trim()
       if (p2Filled && (!p2Name.trim() || !p2Email.trim())) { setFormError("Completa nombre y email del Jugador 2, o déjalo vacío"); return }
       submitName = p2Name.trim() ? `${p1Name.trim()} / ${p2Name.trim()}` : p1Name.trim()
-      submitEmail = p1Email.trim(); submitPhone = p1Phone.trim()
+      submitEmail = p1Email.trim(); submitPhone = p1Phone.trim(); submitRut = p1Rut.trim()
       submitPlayers = [{ name: p1Name.trim(), email: p1Email.trim() }]
       if (p2Name.trim()) submitPlayers.push({ name: p2Name.trim(), email: p2Email.trim() })
     } else if (type === "TEAM") {
       if (!teamName.trim()) { setFormError("Ingresa el nombre del equipo"); return }
+      if (!teamRut.trim()) { setFormError("Ingresa el RUT del contacto"); return }
       if (!teamEmail.trim()) { setFormError("Ingresa el email de contacto"); return }
       if (!teamPhone.trim()) { setFormError("Ingresa el teléfono WhatsApp de contacto"); return }
       const validPlayers = teamPlayers.map(p => p.trim()).filter(Boolean)
       if (validPlayers.length < 2) { setFormError("Agrega al menos 2 integrantes"); return }
-      submitName = teamName.trim(); submitEmail = teamEmail.trim(); submitPhone = teamPhone.trim()
+      submitName = teamName.trim(); submitEmail = teamEmail.trim(); submitPhone = teamPhone.trim(); submitRut = teamRut.trim()
       submitPlayers = validPlayers.map(n => ({ name: n }))
     }
 
@@ -247,7 +253,7 @@ export default function TournamentPublicPage() {
     const res = await fetch(`/api/public/tournaments/${tournamentId}/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: submitName, email: submitEmail, phone: submitPhone, players: submitPlayers, categoryId: categoryId || null, restrictions }),
+      body: JSON.stringify({ name: submitName, email: submitEmail, phone: submitPhone, rut: submitRut, players: submitPlayers, categoryId: categoryId || null, restrictions }),
     })
     const data = await res.json()
     if (!res.ok) { setFormError(data.error || "Error al inscribirse"); setSubmitting(false); return }
@@ -450,6 +456,9 @@ export default function TournamentPublicPage() {
                   <Field label="Nombre completo *">
                     <input value={indName} onChange={e => setIndName(e.target.value)} placeholder="Ej: Juan Pérez" className={inputCls} style={inputStyle} />
                   </Field>
+                  <Field label="RUT *">
+                    <input value={indRut} onChange={e => setIndRut(e.target.value)} placeholder="Ej: 12.345.678-9" className={inputCls} style={inputStyle} />
+                  </Field>
                   <Field label="Email *">
                     <input type="email" value={indEmail} onChange={e => setIndEmail(e.target.value)} placeholder="tu@email.com" className={inputCls} style={inputStyle} />
                   </Field>
@@ -463,6 +472,9 @@ export default function TournamentPublicPage() {
                     <p className="text-[11px] font-black uppercase tracking-wide" style={{ color: NAVY }}>Jugador 1</p>
                     <Field label="Nombre completo *">
                       <input value={p1Name} onChange={e => setP1Name(e.target.value)} placeholder="Ej: Juan Pérez" className={inputCls} style={inputStyle} />
+                    </Field>
+                    <Field label="RUT *">
+                      <input value={p1Rut} onChange={e => setP1Rut(e.target.value)} placeholder="Ej: 12.345.678-9" className={inputCls} style={inputStyle} />
                     </Field>
                     <Field label="Email *">
                       <input type="email" value={p1Email} onChange={e => setP1Email(e.target.value)} placeholder="juan@email.com" className={inputCls} style={inputStyle} />
@@ -486,6 +498,9 @@ export default function TournamentPublicPage() {
                 <>
                   <Field label="Nombre del equipo *">
                     <input value={teamName} onChange={e => setTeamName(e.target.value)} placeholder="Ej: Los Campeones" className={inputCls} style={inputStyle} />
+                  </Field>
+                  <Field label="RUT del contacto *">
+                    <input value={teamRut} onChange={e => setTeamRut(e.target.value)} placeholder="Ej: 12.345.678-9" className={inputCls} style={inputStyle} />
                   </Field>
                   <Field label="Email de contacto *">
                     <input type="email" value={teamEmail} onChange={e => setTeamEmail(e.target.value)} placeholder="capitan@email.com" className={inputCls} style={inputStyle} />

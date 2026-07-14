@@ -1109,6 +1109,7 @@ model TournamentParticipant {
   id             String           @id @default(cuid())
   tournamentId   String
   name           String
+  rut            String?
   email          String?
   phone          String?
   players        Json             @default("[]")
