@@ -138,6 +138,15 @@ const labelCls = "text-[10px] font-bold uppercase tracking-[0.1em] block mb-1.5"
 const inputCls = "w-full rounded-2xl px-4 py-3 text-sm placeholder:opacity-40 outline-none"
 const inputStyle = { background: "#f7f8fa", border: "1.5px solid #e8eaed", color: NAVY }
 
+function formatRut(value: string): string {
+  const clean = value.replace(/[^0-9kK]/g, "").toUpperCase()
+  if (clean.length < 2) return clean
+  const dv = clean.slice(-1)
+  const body = clean.slice(0, -1)
+  const formatted = body.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+  return `${formatted}-${dv}`
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
@@ -457,7 +466,7 @@ export default function TournamentPublicPage() {
                     <input value={indName} onChange={e => setIndName(e.target.value)} placeholder="Ej: Juan Pérez" className={inputCls} style={inputStyle} />
                   </Field>
                   <Field label="RUT *">
-                    <input value={indRut} onChange={e => setIndRut(e.target.value)} placeholder="Ej: 12.345.678-9" className={inputCls} style={inputStyle} />
+                    <input value={indRut} onChange={e => setIndRut(formatRut(e.target.value))} placeholder="Ej: 12.345.678-9" className={inputCls} style={inputStyle} />
                   </Field>
                   <Field label="Email *">
                     <input type="email" value={indEmail} onChange={e => setIndEmail(e.target.value)} placeholder="tu@email.com" className={inputCls} style={inputStyle} />
@@ -474,7 +483,7 @@ export default function TournamentPublicPage() {
                       <input value={p1Name} onChange={e => setP1Name(e.target.value)} placeholder="Ej: Juan Pérez" className={inputCls} style={inputStyle} />
                     </Field>
                     <Field label="RUT *">
-                      <input value={p1Rut} onChange={e => setP1Rut(e.target.value)} placeholder="Ej: 12.345.678-9" className={inputCls} style={inputStyle} />
+                      <input value={p1Rut} onChange={e => setP1Rut(formatRut(e.target.value))} placeholder="Ej: 12.345.678-9" className={inputCls} style={inputStyle} />
                     </Field>
                     <Field label="Email *">
                       <input type="email" value={p1Email} onChange={e => setP1Email(e.target.value)} placeholder="juan@email.com" className={inputCls} style={inputStyle} />
@@ -500,7 +509,7 @@ export default function TournamentPublicPage() {
                     <input value={teamName} onChange={e => setTeamName(e.target.value)} placeholder="Ej: Los Campeones" className={inputCls} style={inputStyle} />
                   </Field>
                   <Field label="RUT del contacto *">
-                    <input value={teamRut} onChange={e => setTeamRut(e.target.value)} placeholder="Ej: 12.345.678-9" className={inputCls} style={inputStyle} />
+                    <input value={teamRut} onChange={e => setTeamRut(formatRut(e.target.value))} placeholder="Ej: 12.345.678-9" className={inputCls} style={inputStyle} />
                   </Field>
                   <Field label="Email de contacto *">
                     <input type="email" value={teamEmail} onChange={e => setTeamEmail(e.target.value)} placeholder="capitan@email.com" className={inputCls} style={inputStyle} />
