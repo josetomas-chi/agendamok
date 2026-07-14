@@ -103,7 +103,7 @@ export async function POST(req: Request, { params }: Params) {
       }
     }
     const cat = tournament.categories.find(c => c.id === categoryId)
-    sendTournamentRegistrationConfirmation({
+    await sendTournamentRegistrationConfirmation({
       players: allPlayers,
       tournamentName: tournament.name,
       businessName: tournament.business.name,

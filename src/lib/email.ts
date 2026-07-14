@@ -610,7 +610,7 @@ export async function sendTournamentRegistrationConfirmation({
     : `<div class="row"><span class="label">Jugador</span><span class="value">${validPlayers[0].name}</span></div>`
 
   for (const player of validPlayers) {
-    resend.emails.send({
+    await resend.emails.send({
       from: FROM,
       to: player.email,
       subject: `¡Inscripción confirmada! ${tournamentName}`,
@@ -627,7 +627,7 @@ export async function sendTournamentRegistrationConfirmation({
         </div>
         <p class="subtitle" style="font-size:13px;margin-top:8px">Recibirás más información sobre horarios y canchas a medida que se acerque la fecha del torneo. ¡Mucho éxito!</p>
       `),
-    }).catch(() => {})
+    })
   }
 }
 
