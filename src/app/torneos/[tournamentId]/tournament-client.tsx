@@ -549,6 +549,8 @@ export default function TournamentPublicPage() {
                   : <>
                       {requiresPayment
                         ? <><span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" />{`Pagar ${fmt(entryFee)} e inscribirse`}</>
+                        : entryFee > 0
+                        ? `Inscribirse — ${fmt(entryFee)}`
                         : "Inscribirse gratis"
                       }
                       <ChevronRight className="w-4 h-4" />
