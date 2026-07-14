@@ -208,9 +208,28 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
       players = addTeamPlayers.map(p => p.trim()).filter(Boolean).map(n => ({ name: n }))
     }
 
+    // Auto-assign group for GROUP_STAGE tournaments
+    let autoGroup: string | null = null
+    if (tournament?.format === "GROUP_STAGE") {
+      const activeCategory = tournament.categories.find(c => c.id === activeCategoryId)
+      const gc = (activeCategory as { groupCount?: number | null } | undefined)?.groupCount ?? tournament.groupCount ?? 0
+      if (gc > 0) {
+        const catParticipants = tournament.participants.filter(p =>
+          activeCategoryId ? p.categoryId === activeCategoryId : !p.categoryId
+        )
+        const counts = Array.from({ length: gc }, (_, i) => {
+          const letter = String.fromCharCode(65 + i)
+          return { letter, count: catParticipants.filter(p => p.group === letter).length }
+        })
+        const minCount = Math.min(...counts.map(c => c.count))
+        const candidates = counts.filter(c => c.count === minCount)
+        autoGroup = candidates[Math.floor(Math.random() * candidates.length)].letter
+      }
+    }
+
     const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}/participants`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, phone, players, categoryId: activeCategoryId }),
+      body: JSON.stringify({ name, phone, players, categoryId: activeCategoryId, ...(autoGroup && { group: autoGroup }) }),
     })
     if (r.ok) {
       toast.success("Participante agregado")
@@ -407,9 +426,44 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
           </div>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.45)" }}>{FORMAT_LABELS[tournament.format]}</span>
-            {isGroupStage && tournament.groupCount && (
+            {isGroupStage && (
               <><span style={{ color: "rgba(13,27,42,0.2)" }}>·</span>
-              <span className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.45)" }}>{tournament.groupCount} grupos · Top {tournament.advanceCount} clasifican</span></>
+              <span className="flex items-center gap-1 text-xs font-semibold" style={{ color: "rgba(13,27,42,0.45)" }}>
+                <input
+                  type="number" min="1" max="26"
+                  defaultValue={tournament.groupCount ?? 2}
+                  className="w-8 text-center rounded-md px-1 py-0 text-xs font-bold outline-none"
+                  style={{ background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.25)", color: NAVY }}
+                  title="Número de grupos"
+                  onBlur={async e => {
+                    const val = Number(e.target.value)
+                    if (!val || val === tournament.groupCount) return
+                    const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}`, {
+                      method: "PATCH", headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ groupCount: val }),
+                    })
+                    if (r.ok) { setTournament(t => t ? { ...t, groupCount: val } : t); toast.success("Grupos actualizados") }
+                  }}
+                />
+                {" grupos · Top "}
+                <input
+                  type="number" min="1" max="10"
+                  defaultValue={tournament.advanceCount ?? 1}
+                  className="w-8 text-center rounded-md px-1 py-0 text-xs font-bold outline-none"
+                  style={{ background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.25)", color: NAVY }}
+                  title="Clasificados por grupo"
+                  onBlur={async e => {
+                    const val = Number(e.target.value)
+                    if (!val || val === tournament.advanceCount) return
+                    const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}`, {
+                      method: "PATCH", headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ advanceCount: val }),
+                    })
+                    if (r.ok) { setTournament(t => t ? { ...t, advanceCount: val } : t); toast.success("Clasificados actualizados") }
+                  }}
+                />
+                {" clasifican"}
+              </span></>
             )}
             <span style={{ color: "rgba(13,27,42,0.2)" }}>·</span>
             <span className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.45)" }}>{TYPE_LABELS[tournament.participantType]}</span>
