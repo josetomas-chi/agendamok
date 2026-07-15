@@ -636,22 +636,28 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                 {(() => {
                   const dayOfWeek = selectedDate.getDay()
                   const courtAvailable = !court.pricingRules?.length || court.pricingRules.some(r => r.days.includes(dayOfWeek))
+                  const activeRules = (court.pricingRules ?? []).filter(r => r.days.includes(dayOfWeek))
+                  const isSlotInRange = (slot: string) => {
+                    if (!court.pricingRules?.length || !activeRules.length) return true
+                    return activeRules.some(r => slot >= r.startTime && slot < r.endTime)
+                  }
                   return (
                 <div className="relative" data-slots-root style={{ background: "#ffffff" }}>
                   {slots.map((slot) => {
                     const isDropOver = dropTarget?.courtId === court.id && dropTarget?.slot === slot
+                    const slotAvailable = courtAvailable && isSlotInRange(slot)
                     return (
                       <div key={slot}
                         data-slot={slot}
-                        onClick={() => courtAvailable && onSlotClick(court.id, slot)}
-                        className={courtAvailable ? "cursor-pointer transition-colors" : "cursor-not-allowed"}
+                        onClick={() => slotAvailable && onSlotClick(court.id, slot)}
+                        className={slotAvailable ? "cursor-pointer transition-colors" : "cursor-not-allowed"}
                         style={{
                           height: SLOT_HEIGHT,
                           borderBottom: slot.endsWith(":30") ? `1px solid rgba(13,27,42,0.05)` : `1px solid rgba(13,27,42,0.1)`,
-                          background: isDropOver ? "rgba(201,168,76,0.12)" : "transparent",
+                          background: isDropOver ? "rgba(201,168,76,0.12)" : !slotAvailable && courtAvailable ? "repeating-linear-gradient(45deg,rgba(13,27,42,0.04) 0px,rgba(13,27,42,0.04) 3px,transparent 3px,transparent 8px)" : "transparent",
                         }}
-                        onMouseEnter={e => { if (courtAvailable && !customDragRef.current) (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.07)" }}
-                        onMouseLeave={e => { if (!customDragRef.current) (e.currentTarget as HTMLElement).style.background = "transparent" }}
+                        onMouseEnter={e => { if (slotAvailable && !customDragRef.current) (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.07)" }}
+                        onMouseLeave={e => { if (!customDragRef.current) (e.currentTarget as HTMLElement).style.background = !slotAvailable && courtAvailable ? "repeating-linear-gradient(45deg,rgba(13,27,42,0.04) 0px,rgba(13,27,42,0.04) 3px,transparent 3px,transparent 8px)" : "transparent" }}
                       />
                     )
                   })}
