@@ -87,7 +87,7 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
 
   // Search state
   const sports = [...new Set(business.courts.map(c => c.sport).filter(Boolean))] as string[]
-  const [selectedSport, setSelectedSport] = useState(sports[0] || "")
+  const [selectedSports, setSelectedSports] = useState<string[]>(sports.length > 0 ? [sports[0]] : [])
   const [selectedDate, setSelectedDate] = useState(format(today, "yyyy-MM-dd"))
   const [duration, setDuration] = useState(60)
   const [weekOffset, setWeekOffset] = useState(0)
@@ -118,7 +118,7 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
     setSearching(true)
     setHasSearched(true)
     const params = new URLSearchParams({ date: selectedDate, duration: String(duration) })
-    if (selectedSport) params.set("sport", selectedSport)
+    if (selectedSports.length > 0) params.set("sport", selectedSports.join(","))
     const r = await fetch(`/api/book/${slug}/courts/availability?${params}`)
     const d = await r.json()
     setResults(d.courts || [])
@@ -129,7 +129,7 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
   useEffect(() => {
     if (hasSearched) search()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate, selectedSport, duration])
+  }, [selectedDate, selectedSports, duration])
 
   async function handleConfirm() {
     if (!selectedCourt || !selectedSlot || !form.name || !form.email) return
@@ -276,15 +276,20 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: SPORTS_ACCENT }}>Deporte</p>
                 <div className="flex gap-2 flex-wrap">
-                  {sports.map(s => (
-                    <button key={s} onClick={() => setSelectedSport(s)}
-                      className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
-                      style={selectedSport === s
-                        ? { background: SPORTS_ACCENT, color: SPORTS_BG }
-                        : { background: "rgba(56,189,248,0.08)", color: "rgba(255,255,255,0.5)", border: `1px solid ${SPORTS_BORDER}` }}>
-                      {s}
-                    </button>
-                  ))}
+                  {sports.map(s => {
+                    const active = selectedSports.includes(s)
+                    return (
+                      <button key={s} onClick={() => setSelectedSports(prev =>
+                        prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]
+                      )}
+                        className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
+                        style={active
+                          ? { background: SPORTS_ACCENT, color: SPORTS_BG }
+                          : { background: "rgba(56,189,248,0.08)", color: "rgba(255,255,255,0.5)", border: `1px solid ${SPORTS_BORDER}` }}>
+                        {s}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             )}

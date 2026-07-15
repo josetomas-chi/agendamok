@@ -7,7 +7,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   const { searchParams } = new URL(req.url)
   const date = searchParams.get("date")
   const duration = Number(searchParams.get("duration") || "60")
-  const sport = searchParams.get("sport") || ""
+  const sportParam = searchParams.get("sport") || ""
+  const sports = sportParam ? sportParam.split(",").map(s => s.trim()).filter(Boolean) : []
 
   if (!date) return NextResponse.json({ error: "Falta date" }, { status: 400 })
 
@@ -21,7 +22,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     where: {
       businessId: business.id,
       isActive: true,
-      ...(sport ? { sport } : {}),
+      ...(sports.length > 0 ? { sport: { in: sports } } : {}),
     },
     select: {
       id: true, name: true, sport: true, color: true,
