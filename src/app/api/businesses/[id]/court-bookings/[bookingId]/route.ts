@@ -86,12 +86,19 @@ export async function PATCH(req: Request, { params }: Params) {
         })
         if (conflict) return NextResponse.json({ error: "La cancha ya tiene una reserva en ese horario" }, { status: 409 })
 
-        // Validate fixed slots
+        // Validate fixed slots + time range
         const resolvedCourt = await prisma.court.findUnique({ where: { id: resolvedCourtId }, include: { pricingRules: true } })
         if (resolvedCourt) {
           const sStr = `${String(resolvedStart.getHours()).padStart(2, "0")}:${String(resolvedStart.getMinutes()).padStart(2, "0")}`
           const eStr = `${String(resolvedEnd.getHours()).padStart(2, "0")}:${String(resolvedEnd.getMinutes()).padStart(2, "0")}`
           const dow = resolvedStart.getDay()
+          if (resolvedCourt.pricingRules.length > 0 && !resolvedCourt.pricingRules.some(r => r.days.includes(dow))) {
+            return NextResponse.json({ error: "Esta cancha no está disponible para reservas ese día." }, { status: 400 })
+          }
+          const dayRules = resolvedCourt.pricingRules.filter(r => r.days.includes(dow))
+          if (dayRules.length > 0 && !dayRules.some(r => sStr >= r.startTime && eStr <= r.endTime)) {
+            return NextResponse.json({ error: "El horario seleccionado está fuera del horario disponible de esta cancha." }, { status: 400 })
+          }
           for (const rule of resolvedCourt.pricingRules) {
             if (!rule.fixedSlots?.length || !rule.days.includes(dow)) continue
             const fs = rule.fixedSlots

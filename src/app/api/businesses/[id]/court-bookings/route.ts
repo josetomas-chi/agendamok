@@ -53,6 +53,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Esta cancha no está disponible para reservas ese día." }, { status: 400 })
   }
 
+  // Validar que el horario esté dentro del rango de alguna regla activa ese día
+  const dayRules = court.pricingRules.filter(r => r.days.includes(dayOfWeek))
+  if (dayRules.length > 0 && !dayRules.some(r => timeStr >= r.startTime && endTimeStr <= r.endTime)) {
+    return NextResponse.json({ error: "El horario seleccionado está fuera del horario disponible de esta cancha." }, { status: 400 })
+  }
+
   // Validar duración mínima
   const settings = await prisma.clubSettings.findUnique({ where: { businessId: id }, select: { slotMinutes: true } })
   const minMinutes = settings?.slotMinutes ?? 60
