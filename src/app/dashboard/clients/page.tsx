@@ -430,8 +430,8 @@ export default function ClientsPage() {
               <button
                 onClick={() => patchClient(selected.id, { allowTransfer: !selected.allowTransfer })}
                 disabled={savingClient}
-                className={`relative w-10 h-5.5 rounded-full transition-colors flex-shrink-0 ${selected.allowTransfer ? "bg-sky-500" : "bg-white/10"}`}
-                style={{ height: 22, width: 40 }}
+                className={`relative rounded-full transition-colors flex-shrink-0 overflow-hidden ${selected.allowTransfer ? "bg-sky-500" : "bg-white/10"}`}
+                style={{ height: 22, width: 40, minWidth: 40 }}
               >
                 <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${selected.allowTransfer ? "translate-x-5" : "translate-x-0.5"}`} />
               </button>
