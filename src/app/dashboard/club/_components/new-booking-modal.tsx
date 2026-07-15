@@ -298,9 +298,7 @@ export default function NewBookingModal({
   function getSlotEnd(startStr: string): string {
     const idx = fixedSlots.indexOf(startStr)
     if (idx >= 0 && idx < fixedSlots.length - 1) return fixedSlots[idx + 1]
-    const [h, m] = startStr.split(":").map(Number)
-    const endMins = h * 60 + m + 90
-    return `${String(Math.floor(endMins / 60)).padStart(2, "0")}:${String(endMins % 60).padStart(2, "0")}`
+    return activeRuleWithSlots?.endTime ?? ""
   }
 
   async function resolveClientId(): Promise<string | null> {
