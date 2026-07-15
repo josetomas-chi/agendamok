@@ -48,6 +48,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   })
   if (!court) return NextResponse.json({ error: "Cancha no encontrada" }, { status: 404 })
 
+  const dayOfWeek = start.getDay()
+  const timeStr = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`
+  const endTimeStr = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`
+
   // Validar que la cancha esté disponible ese día de la semana
   if (court.pricingRules.length > 0 && !court.pricingRules.some(r => r.days.includes(dayOfWeek))) {
     return NextResponse.json({ error: "Esta cancha no está disponible para reservas ese día." }, { status: 400 })
@@ -80,10 +84,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     },
   })
   if (conflict) return NextResponse.json({ error: "La cancha ya tiene una reserva en ese horario" }, { status: 409 })
-
-  const dayOfWeek = start.getDay()
-  const timeStr = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`
-  const endTimeStr = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`
 
   // Validate fixed slots: a booking cannot partially overlap a rigid block
   for (const rule of court.pricingRules) {
