@@ -227,7 +227,10 @@ export default function CourtsPage() {
                   <div className="space-y-1.5">
                     {c.pricingRules.map((r, i) => (
                       <div key={i} className="flex items-center justify-between text-xs">
-                        <span style={{ color: "rgba(255,255,255,0.45)" }}>{r.name} · {r.startTime}–{r.endTime}</span>
+                        <span style={{ color: "rgba(255,255,255,0.45)" }}>
+                          {r.days.map(d => DAYS[d]).join(", ")}
+                          {" · "}{r.startTime}–{r.endTime}
+                        </span>
                         <span className="font-bold" style={{ color: "#C9A84C" }}>${Number(r.price).toLocaleString("es-CL")}/hr</span>
                       </div>
                     ))}
