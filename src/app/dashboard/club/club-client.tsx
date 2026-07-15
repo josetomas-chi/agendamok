@@ -15,6 +15,7 @@ type Booking = {
   id: string; courtId: string; clientId: string | null
   startTime: string; endTime: string; price: number; status: string; notes: string | null
   paidAmount: number; paidOnline: boolean
+  transferVoucher: string | null
   recurringGroupId: string | null
   court: Court; client: Client | null
   coach: { id: string; name: string; color: string } | null
@@ -1196,6 +1197,22 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
             </div>
             {booking.notes && (
               <p className="text-xs px-1 italic" style={{ color: "rgba(13,27,42,0.45)" }}>"{booking.notes}"</p>
+            )}
+
+            {/* Comprobante transferencia */}
+            {booking.transferVoucher && (
+              <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(13,27,42,0.1)" }}>
+                <div className="flex items-center justify-between px-3 py-2" style={{ background: "#f5f4f0", borderBottom: "1px solid rgba(13,27,42,0.06)" }}>
+                  <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "rgba(13,27,42,0.5)" }}>🏦 Comprobante de transferencia</p>
+                  <button onClick={async () => {
+                    await fetch(`/api/businesses/${businessId}/court-bookings/${booking.id}/voucher`, { method: "DELETE" })
+                    onSaved()
+                  }} className="text-[10px] text-red-400 hover:text-red-600 transition-colors">Eliminar</button>
+                </div>
+                <a href={booking.transferVoucher} target="_blank" rel="noopener noreferrer">
+                  <img src={booking.transferVoucher} alt="Comprobante" className="w-full max-h-48 object-cover hover:opacity-90 transition-opacity" />
+                </a>
+              </div>
             )}
 
             {/* Actions */}

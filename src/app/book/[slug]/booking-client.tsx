@@ -107,6 +107,10 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
   const [password, setPassword] = useState("")
   const [emailExists, setEmailExists] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [confirmedBookingId, setConfirmedBookingId] = useState<string | null>(null)
+  const [allowTransfer, setAllowTransfer] = useState(false)
+  const [voucherUploading, setVoucherUploading] = useState(false)
+  const [voucherUploaded, setVoucherUploaded] = useState(false)
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(today, weekOffset * 7 + i))
 
@@ -178,8 +182,8 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
         price: selectedSlot.price,
       }),
     })
+    const d = await r.json()
     if (!r.ok) {
-      const d = await r.json()
       alert(d.error || "Error al confirmar")
       setSubmitting(false)
       return
@@ -192,6 +196,8 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
       })
     }
 
+    setConfirmedBookingId(d.booking?.id || null)
+    setAllowTransfer(d.allowTransfer || false)
     setStep("confirmed")
     setSubmitting(false)
   }
@@ -613,6 +619,39 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
               </div>
             )}
           </div>
+          {/* Pago por transferencia */}
+          {allowTransfer && confirmedBookingId && (
+            <div className="w-full rounded-2xl p-5 space-y-3 text-left" style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}` }}>
+              <p className="text-sm font-bold text-white flex items-center gap-2">🏦 Adjunta tu comprobante de transferencia</p>
+              <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>El club validará el pago una vez recibido el comprobante.</p>
+              {voucherUploaded ? (
+                <div className="flex items-center gap-2 py-2 px-3 rounded-xl" style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)" }}>
+                  <Check className="w-4 h-4" style={{ color: "#22c55e" }} />
+                  <span className="text-sm font-semibold" style={{ color: "#22c55e" }}>Comprobante enviado</span>
+                </div>
+              ) : (
+                <label className="block cursor-pointer">
+                  <input type="file" accept="image/*" className="hidden" disabled={voucherUploading}
+                    onChange={async e => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      setVoucherUploading(true)
+                      const fd = new FormData()
+                      fd.append("file", file)
+                      const r = await fetch(`/api/businesses/${business.id}/court-bookings/${confirmedBookingId}/voucher`, { method: "POST", body: fd })
+                      setVoucherUploading(false)
+                      if (r.ok) setVoucherUploaded(true)
+                      else alert("Error al subir comprobante. Intenta de nuevo.")
+                    }} />
+                  <div className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all"
+                    style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}`, opacity: voucherUploading ? 0.6 : 1 }}>
+                    {voucherUploading ? "Subiendo…" : "📎 Subir comprobante"}
+                  </div>
+                </label>
+              )}
+            </div>
+          )}
+
           <a href={`https://wa.me/?text=${encodeURIComponent(`*${business.name}*\n📅 ${format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })}\n⏰ ${selectedSlot.time} · ${duration} min\n🎾 ${selectedCourt.name}${selectedSlot.price > 0 ? `\n💵 $${selectedSlot.price.toLocaleString("es-CL")}` : ""}\n\n_Reservado con AgendaMok Sports_`)}`}
             target="_blank" rel="noopener noreferrer"
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold transition-all"

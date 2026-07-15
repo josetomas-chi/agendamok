@@ -16,6 +16,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (body.loyaltyPoints !== undefined) allowed.loyaltyPoints = Math.max(0, Number(body.loyaltyPoints))
   if (body.notes !== undefined) allowed.notes = body.notes
   if (body.tags !== undefined) allowed.tags = body.tags
+  if (body.allowTransfer !== undefined) allowed.allowTransfer = Boolean(body.allowTransfer)
 
   // Auto-promote to VIP if points cross threshold
   if (allowed.loyaltyPoints !== undefined && (allowed.loyaltyPoints as number) >= VIP_THRESHOLD && body.segment === undefined) {

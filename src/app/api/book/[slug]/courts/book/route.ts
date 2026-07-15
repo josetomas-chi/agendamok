@@ -74,5 +74,5 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     sponsorUrl: court?.sponsorUrl ?? undefined,
   }).catch(() => {})
 
-  return NextResponse.json({ booking })
+  return NextResponse.json({ booking, allowTransfer: client.allowTransfer })
 }

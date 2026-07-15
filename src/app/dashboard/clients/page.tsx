@@ -29,6 +29,7 @@ function waHref(phone: string) {
 type Client = {
   id: string; name: string; email: string | null; phone: string | null
   notes: string | null; tags: string[]; segment: string; loyaltyPoints: number
+  allowTransfer: boolean
   createdAt: string
   _count: { appointments: number }
   appointments: { payment: { amount: number } | null }[]
@@ -416,6 +417,24 @@ export default function ClientsPage() {
                 </button>
               </div>
               <p className="text-[11px] text-white/25 mt-1.5">Se asigna VIP automáticamente al llegar a 500 pts · +10 pts por turno completado</p>
+            </div>
+
+            {/* Pago por transferencia */}
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-white/70 flex items-center gap-1.5">
+                  <span>🏦</span> Pago por transferencia
+                </p>
+                <p className="text-[11px] text-white/30 mt-0.5">El cliente puede adjuntar comprobante al reservar</p>
+              </div>
+              <button
+                onClick={() => patchClient(selected.id, { allowTransfer: !selected.allowTransfer })}
+                disabled={savingClient}
+                className={`relative w-10 h-5.5 rounded-full transition-colors flex-shrink-0 ${selected.allowTransfer ? "bg-sky-500" : "bg-white/10"}`}
+                style={{ height: 22, width: 40 }}
+              >
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${selected.allowTransfer ? "translate-x-5" : "translate-x-0.5"}`} />
+              </button>
             </div>
 
             <div className="space-y-2 text-sm">

@@ -443,6 +443,7 @@ model Client {
   notes         String?       @db.Text
   tags          String[]      @default([])
   segment       ClientSegment @default(NEW)
+  allowTransfer Boolean       @default(false)
   loyaltyPoints Int           @default(0)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -887,6 +888,7 @@ model CourtBooking {
   paidAmount         Decimal                @default(0) @db.Decimal(10, 2)
   paidOnline         Boolean                @default(false)
   status             CourtBookingStatus     @default(CONFIRMED)
+  transferVoucher    String?
   notes              String?                @db.Text
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
