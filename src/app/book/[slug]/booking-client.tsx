@@ -18,7 +18,7 @@ type Staff = {
   id: string; color: string; specialty: string | null; bio: string | null
   user: { name: string | null; image: string | null }
 }
-type PricingRule = { days: number[]; startTime: string; endTime: string; price: number }
+type PricingRule = { days: number[]; startTime: string; endTime: string; price: number; fixedSlots: string[] }
 type Court = { id: string; name: string; sport: string | null; color: string; description: string | null; sponsorName: string | null; sponsorLogo: string | null; sponsorUrl: string | null; pricingRules: PricingRule[] }
 type Business = {
   id: string; name: string; category: string; description: string | null
@@ -89,8 +89,36 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
   const sports = [...new Set(business.courts.map(c => c.sport).filter(Boolean))] as string[]
   const [selectedSports, setSelectedSports] = useState<string[]>(sports.length > 0 ? [sports[0]] : [])
   const [selectedDate, setSelectedDate] = useState(format(today, "yyyy-MM-dd"))
-  const [duration, setDuration] = useState(60)
   const [weekOffset, setWeekOffset] = useState(0)
+
+  // Derive available durations from fixedSlots of courts matching selected sports
+  const availableDurations = React.useMemo(() => {
+    const activeCourts = selectedSports.length > 0
+      ? business.courts.filter(c => c.sport && selectedSports.includes(c.sport))
+      : business.courts
+    const durations = new Set<number>()
+    for (const court of activeCourts) {
+      for (const rule of court.pricingRules) {
+        if (rule.fixedSlots && rule.fixedSlots.length >= 2) {
+          const [h1, m1] = rule.fixedSlots[0].split(":").map(Number)
+          const [h2, m2] = rule.fixedSlots[1].split(":").map(Number)
+          durations.add((h2 * 60 + m2) - (h1 * 60 + m1))
+        } else {
+          // No fixed slots — offer standard options
+          durations.add(60); durations.add(90); durations.add(120)
+        }
+      }
+    }
+    const sorted = [...durations].sort((a, b) => a - b)
+    return sorted.length > 0 ? sorted : [60, 90, 120]
+  }, [selectedSports, business.courts])
+
+  const [duration, setDuration] = useState(availableDurations[0])
+
+  // Reset duration when available options change and current is no longer valid
+  useEffect(() => {
+    if (!availableDurations.includes(duration)) setDuration(availableDurations[0])
+  }, [availableDurations, duration])
 
   // Results state
   const [results, setResults] = useState<CourtResult[]>([])
@@ -296,7 +324,7 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: SPORTS_ACCENT }}>Duración</p>
               <div className="flex gap-2">
-                {[60, 90, 120].map(d => (
+                {availableDurations.map(d => (
                   <button key={d} onClick={() => setDuration(d)}
                     className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
                     style={duration === d
