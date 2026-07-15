@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { Search, Building2, ExternalLink, Ban, CheckCircle, Plus } from "lucide-react"
+import { Search, Building2, ExternalLink, Ban, CheckCircle, Plus, Gift } from "lucide-react"
 import { Label } from "@/components/ui/label"
 
 type Business = {
@@ -19,7 +19,7 @@ type Business = {
   isActive: boolean
   owner: { name: string; email: string }
   businessType: string
-  subscription: { plan: string; status: string } | null
+  subscription: { plan: string; status: string; isCourtesy: boolean } | null
   _count: { appointments: number; staff: number; clients: number }
 }
 
@@ -47,6 +47,16 @@ export default function AdminBusinessesPage() {
     const d = await r.json()
     setBusinesses(d.businesses || [])
     setLoading(false)
+  }
+
+  async function grantCourtesy(b: Business, plan: string) {
+    await fetch(`/api/admin/businesses/${b.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan, status: "ACTIVE", isCourtesy: true }),
+    })
+    toast.success(`Plan ${plan} activado como cortesía para ${b.name}`)
+    loadBusinesses()
   }
 
   async function toggleActive(b: Business) {
@@ -191,11 +201,20 @@ export default function AdminBusinessesPage() {
                       PAUSED: "bg-orange-500/15 text-orange-400 border-orange-400/30",
                     }
                     const label: Record<string, string> = { TRIALING: "Prueba", ACTIVE: "Activa", PAST_DUE: "Vencida", CANCELED: "Cancelada", PAUSED: "Pausada" }
-                    return s ? (
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${map[s] || "bg-white/10 text-white/40 border-white/10"}`}>
-                        {label[s] || s}
-                      </span>
-                    ) : <span className="text-white/30 text-xs">—</span>
+                    return (
+                      <div className="flex flex-col gap-1">
+                        {s ? (
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium border w-fit ${map[s] || "bg-white/10 text-white/40 border-white/10"}`}>
+                            {label[s] || s}
+                          </span>
+                        ) : <span className="text-white/30 text-xs">—</span>}
+                        {b.subscription?.isCourtesy && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-500/15 text-violet-400 border-violet-400/30 w-fit flex items-center gap-1">
+                            <Gift className="w-2.5 h-2.5" /> Cortesía
+                          </span>
+                        )}
+                      </div>
+                    )
                   })()}
                 </td>
                 <td className="px-4 py-3 text-white/50">{b._count.appointments}</td>
@@ -349,6 +368,36 @@ export default function AdminBusinessesPage() {
                 <p className="text-xs text-muted-foreground">Clientes</p>
               </div>
             </div>
+            {selected?.subscription?.isCourtesy ? (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-violet-500/10 border border-violet-400/20">
+                <Gift className="w-4 h-4 text-violet-400 flex-shrink-0" />
+                <p className="text-xs text-violet-300">Este negocio tiene acceso por cortesía</p>
+                <Button size="sm" variant="ghost" className="ml-auto text-xs text-white/40 hover:text-red-400 h-6 px-2"
+                  onClick={async () => {
+                    await fetch(`/api/admin/businesses/${selected.id}`, {
+                      method: "PATCH", headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ isCourtesy: false, status: "CANCELED" }),
+                    })
+                    toast.success("Cortesía revocada")
+                    setSelected(null); loadBusinesses()
+                  }}>
+                  Revocar
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-white/40 uppercase tracking-wider font-medium">Dar acceso sin pago</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[{ label: "Starter", value: "STARTER" }, { label: "Negocio", value: "PRO" }, { label: "Pro", value: "ENTERPRISE" }].map(p => (
+                    <Button key={p.value} size="sm" variant="outline"
+                      className="gap-1.5 border-violet-400/30 text-violet-300 hover:bg-violet-500/10 hover:text-violet-200"
+                      onClick={() => { grantCourtesy(selected!, p.value); setSelected(null) }}>
+                      <Gift className="w-3 h-3" /> {p.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex gap-2">
               <Button className="flex-1" onClick={updatePlan} disabled={saving}>{saving ? "Guardando..." : "Guardar cambios"}</Button>
               <Button variant="outline" onClick={() => setSelected(null)}>Cancelar</Button>

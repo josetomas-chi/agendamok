@@ -30,9 +30,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       updateData.status = body.status
       if (body.status === "ACTIVE") {
         updateData.currentPeriodStart = new Date()
-        updateData.currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        updateData.currentPeriodEnd = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
       }
     }
+    if (body.isCourtesy !== undefined) updateData.isCourtesy = body.isCourtesy
     if (existing) {
       await prisma.subscription.update({ where: { id: existing.id }, data: updateData })
     } else {

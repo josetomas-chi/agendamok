@@ -16,7 +16,7 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
     include: {
       owner: { select: { name: true, email: true } },
-      subscription: { select: { plan: true, status: true } },
+      subscription: { select: { plan: true, status: true, isCourtesy: true } },
       _count: { select: { appointments: true, staff: true, clients: true } },
     },
   })
