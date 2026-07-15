@@ -359,21 +359,27 @@ function SettingsContent() {
     STARTER: {
       label: "Starter",
       price: "$9.900/mes",
-      features: ["1 profesional", "Turnos ilimitados", "Booking online 24/7", "CRM de clientes", "Pagos online y POS", "Recordatorios por email"],
+      features: isSports
+        ? ["1 cancha", "Reservas online 24/7", "CRM de miembros", "Pagos online y POS", "Recordatorios por email", "Calendario de reservas"]
+        : ["1 profesional", "Turnos ilimitados", "Booking online 24/7", "CRM de clientes", "Pagos online y POS", "Recordatorios por email"],
       color: "bg-white/5 border-white/20 text-white",
       btnColor: "bg-white/10 hover:bg-white/20",
     },
     NEGOCIO: {
       label: "Negocio",
       price: "$24.900/mes",
-      features: ["Hasta 5 profesionales", "Todo lo del plan Starter", "Encuestas de satisfacción", "Comisiones de staff", "2.000 emails marketing/mes", "Soporte por chat"],
+      features: isSports
+        ? ["Canchas ilimitadas", "Todo lo del plan Starter", "Entrenadores y clases", "Membresías y abonos", "Torneos", "Soporte por chat"]
+        : ["Hasta 5 profesionales", "Todo lo del plan Starter", "Encuestas de satisfacción", "Comisiones de staff", "2.000 emails marketing/mes", "Soporte por chat"],
       color: "bg-sky-500/10 border-sky-400/40 text-sky-300",
       btnColor: "bg-sky-500 hover:bg-sky-400",
     },
     PRO: {
       label: "Pro",
       price: "$39.900/mes",
-      features: ["Profesionales ilimitados", "Todo lo del plan Negocio", "Ficha clínica", "Presupuestos y cotizaciones", "Múltiples sedes", "API access"],
+      features: isSports
+        ? ["Todo lo del plan Negocio", "Bloques fijos y horarios por cancha", "Pago por transferencia", "Comprobante de pago", "Múltiples sedes", "API access"]
+        : ["Profesionales ilimitados", "Todo lo del plan Negocio", "Ficha clínica", "Presupuestos y cotizaciones", "Múltiples sedes", "API access"],
       color: "bg-purple-500/10 border-purple-400/40 text-purple-300",
       btnColor: "bg-purple-600 hover:bg-purple-500",
     },
