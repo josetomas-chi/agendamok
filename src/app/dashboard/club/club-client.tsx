@@ -102,6 +102,11 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
   const todayBookings = allBookings.filter(b => isSameDay(new Date(b.startTime), new Date()))
   const weekBookings = allBookings.length
 
+  const normalize = (s: string) => s.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+  const sportsSeen = new Map<string, string>()
+  courts.forEach(c => { if (c.sport) { const key = normalize(c.sport); if (!sportsSeen.has(key)) sportsSeen.set(key, c.sport.trim()) } })
+  const sports = Array.from(sportsSeen.values())
+
   function handleSlotClick(courtId: string, slotTime: string) {
     const [h, m] = slotTime.split(":").map(Number)
     const endH = m === 30 ? h + 1 : h
@@ -116,24 +121,66 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
   }
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="hidden md:flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(201,168,76,0.12)", border: "1px solid rgba(201,168,76,0.3)" }}>
-            <Trophy className="w-5 h-5" style={{ color: "#C9A84C" }} />
-          </div>
-          <div>
-            <h1 className="text-lg font-black uppercase tracking-wide" style={{ color: "#0d1b2a" }}>Club Deportivo</h1>
-            <p className="text-xs font-medium" style={{ color: "rgba(13,27,42,0.45)" }}>Canchas, reservas y membresías</p>
-          </div>
+    <div className="space-y-3">
+      {/* Toolbar compacta */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {/* Tabs */}
+        <div className="flex gap-1 p-1 rounded-xl" style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)" }}>
+          {(["calendario", "resumen", "entrenadores"] as const).map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
+              style={tab === t ? { background: "#ffffff", color: "#C9A84C", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" } : { color: "rgba(13,27,42,0.4)" }}>
+              {t === "calendario" ? "Calendario" : t === "resumen" ? "Resumen" : "Entrenadores"}
+            </button>
+          ))}
         </div>
+
+        {/* Navegación de fecha */}
         {tab === "calendario" && (
-          <div className="hidden md:block">
-            <MiniCalendarClock selectedDate={selectedDate} onDateChange={setSelectedDate} />
+          <>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setSelectedDate(d => subDays(d, 1))}
+                className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-black/5"
+                style={{ border: "1px solid rgba(13,27,42,0.12)" }}>
+                <ChevronLeft className="w-3.5 h-3.5" style={{ color: "rgba(13,27,42,0.5)" }} />
+              </button>
+              <button onClick={() => setSelectedDate(new Date())}
+                className="px-2.5 h-7 rounded-lg text-xs font-bold transition-colors hover:bg-black/5"
+                style={{ border: "1px solid rgba(13,27,42,0.12)", color: "rgba(13,27,42,0.6)" }}>
+                Hoy
+              </button>
+              <button onClick={() => setSelectedDate(d => addDays(d, 1))}
+                className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-black/5"
+                style={{ border: "1px solid rgba(13,27,42,0.12)" }}>
+                <ChevronRight className="w-3.5 h-3.5" style={{ color: "rgba(13,27,42,0.5)" }} />
+              </button>
+            </div>
+            <span className="text-sm font-bold capitalize hidden sm:block" style={{ color: "#0d1b2a" }}>
+              {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
+            </span>
+            <span className="text-sm font-bold capitalize sm:hidden" style={{ color: "#0d1b2a" }}>
+              {format(selectedDate, "d MMM", { locale: es })}
+            </span>
+          </>
+        )}
+
+        {/* Filtro de deporte */}
+        {tab === "calendario" && sports.length > 0 && (
+          <div className="flex gap-1 ml-1">
+            {["Todos", ...sports].map(s => (
+              <button key={s} onClick={() => setSportFilter(s)}
+                className="px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
+                style={sportFilter === s
+                  ? { background: "rgba(201,168,76,0.15)", color: "#C9A84C", border: "1px solid rgba(201,168,76,0.4)" }
+                  : { background: "transparent", color: "rgba(13,27,42,0.4)", border: "1px solid rgba(13,27,42,0.1)" }}>
+                {s}
+              </button>
+            ))}
           </div>
         )}
-        <div className="flex justify-end ml-auto">
+
+        {/* Botón nueva reserva */}
+        <div className="ml-auto">
           {tab !== "entrenadores" && (
             <button onClick={() => { setPreselect(null); setNewBookingOpen(true) }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold uppercase tracking-wide transition-all"
@@ -144,37 +191,6 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
             </button>
           )}
         </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)" }}>
-          {(["calendario", "resumen", "entrenadores"] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
-              style={tab === t ? { background: "#ffffff", color: "#C9A84C", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" } : { color: "rgba(13,27,42,0.4)" }}>
-              {t === "calendario" ? "Calendario" : t === "resumen" ? "Resumen" : "Entrenadores"}
-            </button>
-          ))}
-        </div>
-        {/* Mobile date nav — only visible on mobile when in calendario tab */}
-        {tab === "calendario" && (
-          <div className="flex md:hidden items-center gap-2">
-            <button onClick={() => setSelectedDate(d => subDays(d, 1))}
-              className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ border: "1px solid rgba(201,168,76,0.3)", color: "#C9A84C" }}>
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-            <span className="text-xs font-bold capitalize" style={{ color: "#0d1b2a" }}>
-              {format(selectedDate, "d MMM", { locale: es })}
-            </span>
-            <button onClick={() => setSelectedDate(d => addDays(d, 1))}
-              className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ border: "1px solid rgba(201,168,76,0.3)", color: "#C9A84C" }}>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
       </div>
 
       {tab === "resumen" && (
@@ -230,41 +246,18 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
 
       {tab === "entrenadores" && <CoachesTab businessId={businessId} />}
 
-      {tab === "calendario" && (() => {
-        if (loading) return <CalendarSkeleton />
-        const normalize = (s: string) => s.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
-        const seen = new Map<string, string>()
-        courts.forEach(c => { if (c.sport) { const key = normalize(c.sport); if (!seen.has(key)) seen.set(key, c.sport.trim()) } })
-        const sports = ["Todos", ...Array.from(seen.values())]
-        const filteredCourts = sportFilter === "Todos" ? courts : courts.filter(c => c.sport && normalize(c.sport) === normalize(sportFilter))
-        return (
-          <>
-            {sports.length > 2 && (
-              <div className="flex gap-1 flex-wrap">
-                {sports.map(s => (
-                  <button key={s} onClick={() => setSportFilter(s)}
-                    className="px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
-                    style={sportFilter === s
-                      ? { background: "rgba(201,168,76,0.15)", color: "#a07b20", border: "1px solid rgba(201,168,76,0.4)" }
-                      : { background: "#ffffff", color: "rgba(13,27,42,0.45)", border: "1px solid rgba(13,27,42,0.1)" }}>
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
-            <CourtCalendar
-              courts={filteredCourts}
-              bookings={dayBookings}
-              selectedDate={selectedDate}
-              onDateChange={setSelectedDate}
-              onSlotClick={handleSlotClick}
-              onBookingClick={setDetailBooking}
-              businessId={businessId}
-              onSaved={() => { loadWeek(businessId); loadDay(businessId, selectedDate) }}
-            />
-          </>
-        )
-      })()}
+      {tab === "calendario" && (loading ? <CalendarSkeleton /> : (
+        <CourtCalendar
+          courts={sportFilter === "Todos" ? courts : courts.filter(c => c.sport && normalize(c.sport) === normalize(sportFilter))}
+          bookings={dayBookings}
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          onSlotClick={handleSlotClick}
+          onBookingClick={setDetailBooking}
+          businessId={businessId}
+          onSaved={() => { loadWeek(businessId); loadDay(businessId, selectedDate) }}
+        />
+      ))}
 
       {newBookingOpen && (
         <NewBookingModal
