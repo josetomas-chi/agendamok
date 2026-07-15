@@ -633,24 +633,37 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                 </div>
 
                 {/* Slots */}
+                {(() => {
+                  const dayOfWeek = selectedDate.getDay()
+                  const courtAvailable = !court.pricingRules?.length || court.pricingRules.some(r => r.days.includes(dayOfWeek))
+                  return (
                 <div className="relative" data-slots-root style={{ background: "#ffffff" }}>
                   {slots.map((slot) => {
                     const isDropOver = dropTarget?.courtId === court.id && dropTarget?.slot === slot
                     return (
                       <div key={slot}
                         data-slot={slot}
-                        onClick={() => onSlotClick(court.id, slot)}
-                        className="cursor-pointer transition-colors"
+                        onClick={() => courtAvailable && onSlotClick(court.id, slot)}
+                        className={courtAvailable ? "cursor-pointer transition-colors" : "cursor-not-allowed"}
                         style={{
                           height: SLOT_HEIGHT,
                           borderBottom: slot.endsWith(":30") ? `1px solid rgba(13,27,42,0.05)` : `1px solid rgba(13,27,42,0.1)`,
                           background: isDropOver ? "rgba(201,168,76,0.12)" : "transparent",
                         }}
-                        onMouseEnter={e => { if (!customDragRef.current) (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.07)" }}
+                        onMouseEnter={e => { if (courtAvailable && !customDragRef.current) (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.07)" }}
                         onMouseLeave={e => { if (!customDragRef.current) (e.currentTarget as HTMLElement).style.background = "transparent" }}
                       />
                     )
                   })}
+                  {/* Unavailable day overlay */}
+                  {!courtAvailable && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
+                      style={{ background: "repeating-linear-gradient(45deg,rgba(13,27,42,0.03) 0px,rgba(13,27,42,0.03) 4px,transparent 4px,transparent 10px)" }}>
+                      <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded" style={{ color: "rgba(13,27,42,0.25)", background: "rgba(255,255,255,0.8)" }}>
+                        No disponible
+                      </span>
+                    </div>
+                  )}
 
                   {/* Fixed blocks overlay — hides internal 30-min grid lines */}
                   {getFixedBlocks(court, selectedDate).map((block, bi) => (
@@ -713,6 +726,8 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                     return <div className="absolute left-0 right-0 h-px z-20 pointer-events-none" style={{ top, background: GOLD, boxShadow: `0 0 4px ${GOLD}` }} />
                   })()}
                 </div>
+                  )
+                })()}
               </div>
             ))}
           </div>

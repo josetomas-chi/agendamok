@@ -405,9 +405,10 @@ export default function NewBookingModal({
               <select value={form.courtId} onChange={e => setForm(f => ({ ...f, courtId: e.target.value }))}
                 className={inputCls + " appearance-none pr-9"} style={inputStyle}>
                 <option value="" disabled>Seleccionar cancha</option>
-                {allCourts.filter(c => c.isActive !== false).map(c =>
-                  <option key={c.id} value={c.id}>{c.name}{c.sport ? ` (${c.sport})` : ""}</option>
-                )}
+                {allCourts.filter(c => c.isActive !== false).map(c => {
+                  const unavailable = selectedDayOfWeek >= 0 && (c.pricingRules?.length ?? 0) > 0 && !c.pricingRules?.some(r => r.days.includes(selectedDayOfWeek))
+                  return <option key={c.id} value={c.id} disabled={unavailable}>{unavailable ? "🚫 " : ""}{c.name}{c.sport ? ` (${c.sport})` : ""}{unavailable ? " — sin horario este día" : ""}</option>
+                })}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: GOLD }} />
             </div>
