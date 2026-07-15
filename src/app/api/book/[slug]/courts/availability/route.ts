@@ -77,13 +77,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     const fixedRules = rulesForDay.filter(r => r.fixedSlots && r.fixedSlots.length > 0)
     const flexRules  = rulesForDay.filter(r => !r.fixedSlots || r.fixedSlots.length === 0)
 
-    // 1. Fixed-slot rules — only offer the configured start times if duration matches
+    // 1. Fixed-slot rules — only offer the configured start times if duration matches (or duration=0 = all sports)
     for (const rule of fixedRules) {
-      // Compute this rule's block duration from the first two slots
       const [h1, m1] = rule.fixedSlots[0].split(":").map(Number)
       const [h2, m2] = rule.fixedSlots[1]?.split(":").map(Number) ?? [h1 + 1, m1]
       const ruleDuration = (h2 * 60 + m2) - (h1 * 60 + m1)
-      if (ruleDuration !== duration) continue  // skip if duration doesn't match
+      if (duration !== 0 && ruleDuration !== duration) continue
 
       for (const slotTime of rule.fixedSlots) {
         const [sh, sm] = slotTime.split(":").map(Number)

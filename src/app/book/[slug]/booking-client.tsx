@@ -143,7 +143,8 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
 
   async function search() {
     setSearching(true)
-    const params = new URLSearchParams({ date: selectedDate, duration: String(duration) })
+    const multiSport = selectedSports.length > 1
+    const params = new URLSearchParams({ date: selectedDate, duration: multiSport ? "0" : String(duration) })
     if (selectedSports.length > 0) params.set("sport", selectedSports.join(","))
     const r = await fetch(`/api/book/${slug}/courts/availability?${params}`)
     const d = await r.json()
@@ -320,21 +321,23 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
               </div>
             )}
 
-            {/* Duration */}
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: SPORTS_ACCENT }}>Duración</p>
-              <div className="flex gap-2">
-                {availableDurations.map(d => (
-                  <button key={d} onClick={() => setDuration(d)}
-                    className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
-                    style={duration === d
-                      ? { background: SPORTS_ACCENT, color: SPORTS_BG }
-                      : { background: "rgba(56,189,248,0.07)", color: "rgba(255,255,255,0.45)", border: `1px solid ${SPORTS_BORDER}` }}>
-                    {d} min
-                  </button>
-                ))}
+            {/* Duration — only shown when a single sport is selected */}
+            {selectedSports.length <= 1 && (
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: SPORTS_ACCENT }}>Duración</p>
+                <div className="flex gap-2">
+                  {availableDurations.map(d => (
+                    <button key={d} onClick={() => setDuration(d)}
+                      className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
+                      style={duration === d
+                        ? { background: SPORTS_ACCENT, color: SPORTS_BG }
+                        : { background: "rgba(56,189,248,0.07)", color: "rgba(255,255,255,0.45)", border: `1px solid ${SPORTS_BORDER}` }}>
+                      {d} min
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Date picker */}
             <div>
