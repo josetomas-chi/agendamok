@@ -34,6 +34,7 @@ export default async function DashboardPage() {
   })
 
   if (!business) redirect("/onboarding")
+  if (business.businessType === "SPORTS_CLUB") redirect("/dashboard/club")
 
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
   const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999)
