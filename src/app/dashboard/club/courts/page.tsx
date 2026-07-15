@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useEffect, useCallback, useRef } from "react"
 import { useBusiness } from "@/contexts/business-context"
-import { Plus, Pencil, Trash2, Trophy, X, GripVertical } from "lucide-react"
+import { Plus, Pencil, Trash2, Trophy, X, GripVertical, Copy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { toast } from "sonner"
@@ -354,6 +354,11 @@ export default function CourtsPage() {
                       <input value={rule.name} onChange={e => updateRule(idx, "name", e.target.value)}
                         placeholder="Nombre (ej: Valle, Punta)"
                         className="flex-1 h-8 rounded-lg border border-white/[0.08] bg-white/[0.05] px-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-sky-500/60" />
+                      <button onClick={() => setForm(f => ({ ...f, pricingRules: [...f.pricingRules.slice(0, idx + 1), { ...f.pricingRules[idx], id: undefined }, ...f.pricingRules.slice(idx + 1)] }))}
+                        title="Duplicar tarifa"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-sky-400 transition-colors flex-shrink-0">
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
                       {form.pricingRules.length > 1 && (
                         <button onClick={() => setForm(f => ({ ...f, pricingRules: f.pricingRules.filter((_, i) => i !== idx) }))}
                           className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-red-400 transition-colors flex-shrink-0">
