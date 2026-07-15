@@ -265,6 +265,20 @@ export default function NewBookingModal({
     fetch(`/api/businesses/${businessId}/club-coaches`).then(r => r.json()).then(d => setCoaches((d.coaches || []).filter((c: Coach & { isActive: boolean }) => c.isActive)))
   }, [businessId])
 
+  // Auto-set endTime when fixed slots are active and startTime matches a slot
+  useEffect(() => {
+    const court = allCourts.find(c => c.id === form.courtId)
+    if (!court || !form.date || !form.startTime) return
+    const dow = new Date(form.date + "T00:00:00Z").getUTCDay()
+    const rule = court.pricingRules?.find(r => (r.fixedSlots?.length ?? 0) > 0 && r.days.includes(dow))
+    if (!rule?.fixedSlots?.length) return
+    const idx = rule.fixedSlots.indexOf(form.startTime)
+    if (idx >= 0 && idx < rule.fixedSlots.length - 1) {
+      const correctEnd = rule.fixedSlots[idx + 1]
+      if (form.endTime !== correctEnd) setForm(f => ({ ...f, endTime: correctEnd }))
+    }
+  }, [allCourts, form.courtId, form.date, form.startTime])
+
   const selectedCourt = allCourts.find(c => c.id === form.courtId)
   const selectedCoach = coaches.find(c => c.id === selectedCoachId)
   const price = bookingType === "class"
