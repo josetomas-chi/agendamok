@@ -179,13 +179,14 @@ function calcPrice(court: Court | undefined, startTime: string, endTime: string,
   if (end <= start) return 0
   const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
   const dayOfWeek = start.getDay()
-  let pricePerHour = 0
   for (const rule of court.pricingRules) {
     if (rule.days.includes(dayOfWeek) && startTime >= rule.startTime && startTime < rule.endTime) {
-      pricePerHour = Number(rule.price); break
+      // Fixed slots → price per block (not per hour)
+      if (rule.fixedSlots?.length) return Number(rule.price)
+      return Number(rule.price) * durationHours
     }
   }
-  return pricePerHour * durationHours
+  return 0
 }
 
 function calcClassPrice(coach: Coach | undefined, startTime: string, endTime: string, date: string): number {

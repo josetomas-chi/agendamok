@@ -231,7 +231,7 @@ export default function CourtsPage() {
                           {r.days.map(d => DAYS[d]).join(", ")}
                           {" · "}{r.startTime}–{r.endTime}
                         </span>
-                        <span className="font-bold" style={{ color: "#C9A84C" }}>${Number(r.price).toLocaleString("es-CL")}/hr</span>
+                        <span className="font-bold" style={{ color: "#C9A84C" }}>${Number(r.price).toLocaleString("es-CL")}{r.fixedSlots?.length ? "/bloque" : "/hr"}</span>
                       </div>
                     ))}
                   </div>

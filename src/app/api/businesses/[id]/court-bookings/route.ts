@@ -115,14 +115,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
   } else {
     // Reserva común: precio basado en tarifas de la cancha
-    let pricePerHour = 0
     for (const rule of court.pricingRules) {
       if (rule.days.includes(dayOfWeek) && timeStr >= rule.startTime && timeStr < rule.endTime) {
-        pricePerHour = Number(rule.price)
+        // Fixed slots → precio por bloque; sin bloques → precio por hora
+        price = rule.fixedSlots?.length ? Number(rule.price) : Number(rule.price) * durationHours
         break
       }
     }
-    price = pricePerHour * durationHours
 
     // Aplicar recargo si el día es feriado (solo reservas sin profe)
     const holiday = await prisma.clubHoliday.findFirst({
