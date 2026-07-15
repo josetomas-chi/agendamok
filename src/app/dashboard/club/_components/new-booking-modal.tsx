@@ -281,9 +281,6 @@ export default function NewBookingModal({
 
   const selectedCourt = allCourts.find(c => c.id === form.courtId)
   const selectedCoach = coaches.find(c => c.id === selectedCoachId)
-  const price = bookingType === "class"
-    ? calcClassPrice(selectedCoach, form.startTime, form.endTime, form.date)
-    : calcPrice(selectedCourt, form.startTime, form.endTime, form.date)
   const selectedDayOfWeek = form.date ? new Date(form.date + "T00:00:00Z").getUTCDay() : -1
   const sessionCount = bookingType === "recurring" ? countOccurrences(form.date, rangeEnd, selectedDayOfWeek) : 0
 
@@ -300,6 +297,12 @@ export default function NewBookingModal({
     if (idx >= 0 && idx < fixedSlots.length - 1) return fixedSlots[idx + 1]
     return activeRuleWithSlots?.endTime ?? ""
   }
+
+  // When fixed slots are active, use the slot's real end time for price (avoids stale form.endTime)
+  const effectiveEndTime = fixedSlots.length > 0 && form.startTime ? getSlotEnd(form.startTime) : form.endTime
+  const price = bookingType === "class"
+    ? calcClassPrice(selectedCoach, form.startTime, effectiveEndTime, form.date)
+    : calcPrice(selectedCourt, form.startTime, effectiveEndTime, form.date)
 
   async function resolveClientId(): Promise<string | null> {
     if (!selectedClient) return null
