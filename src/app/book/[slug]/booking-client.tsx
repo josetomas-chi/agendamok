@@ -95,7 +95,6 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
   // Results state
   const [results, setResults] = useState<CourtResult[]>([])
   const [searching, setSearching] = useState(false)
-  const [hasSearched, setHasSearched] = useState(false)
 
   // Booking state
   const [selectedCourt, setSelectedCourt] = useState<CourtResult | null>(null)
@@ -116,7 +115,6 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
 
   async function search() {
     setSearching(true)
-    setHasSearched(true)
     const params = new URLSearchParams({ date: selectedDate, duration: String(duration) })
     if (selectedSports.length > 0) params.set("sport", selectedSports.join(","))
     const r = await fetch(`/api/book/${slug}/courts/availability?${params}`)
@@ -125,9 +123,9 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
     setSearching(false)
   }
 
-  // Auto-search when date/sport/duration changes after first search
+  // Auto-search on mount and when date/sport/duration changes
   useEffect(() => {
-    if (hasSearched) search()
+    search()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, selectedSports, duration])
 
@@ -347,12 +345,6 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
               </div>
             </div>
 
-            <button onClick={search} disabled={searching}
-              className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60"
-              style={{ background: SPORTS_ACCENT, color: SPORTS_BG }}>
-              {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-              {searching ? "Buscando..." : "Buscar canchas disponibles"}
-            </button>
           </div>
 
           {/* Results */}
@@ -364,7 +356,7 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
               </div>
             )}
 
-            {!searching && hasSearched && (
+            {!searching && (
               <>
                 {results.filter(c => c.slots.length > 0).length === 0 ? (
                   <div className="py-10 text-center">
@@ -418,11 +410,6 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
               </>
             )}
 
-            {!hasSearched && (
-              <p className="text-xs text-center py-4" style={{ color: "rgba(255,255,255,0.2)" }}>
-                Selecciona fecha y presiona buscar
-              </p>
-            )}
           </div>
         </div>
       )}
