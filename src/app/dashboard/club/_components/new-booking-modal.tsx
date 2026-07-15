@@ -358,13 +358,14 @@ export default function NewBookingModal({
         }
       } else {
         // simple o class
+        const resolvedEnd = fixedSlots.length > 0 && form.startTime ? getSlotEnd(form.startTime) : form.endTime
         const r = await fetch(`/api/businesses/${businessId}/court-bookings`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             courtId: form.courtId, clientId,
             startTime: `${form.date}T${form.startTime}:00`,
-            endTime: `${form.date}T${form.endTime}:00`,
+            endTime: `${form.date}T${resolvedEnd}:00`,
             notes: form.notes || null,
             coachId: bookingType === "class" ? (selectedCoachId || null) : null,
           }),
