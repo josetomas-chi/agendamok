@@ -51,7 +51,6 @@ function utcDate(iso: string, fmt: string) {
 export default function ClubPageClient({ businessId: initialBusinessId }: { businessId: string }) {
   const businessId = initialBusinessId
   const [allBookings, setAllBookings] = useState<Booking[]>([])
-  const [dayBookings, setDayBookings] = useState<Booking[]>([])
   const [courts, setCourts] = useState<Court[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [membersCount, setMembersCount] = useState(0)
@@ -63,42 +62,55 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
   const [preselect, setPreselect] = useState<{ courtId: string; date: string; startTime: string; endTime: string } | null>(null)
   const [detailBooking, setDetailBooking] = useState<Booking | null>(null)
 
-  const loadWeek = useCallback(async (bid: string) => {
-    const today = new Date()
-    const from = startOfWeek(today, { weekStartsOn: 1 }).toISOString()
-    const to = endOfWeek(today, { weekStartsOn: 1 }).toISOString()
+  // Week cache: key = "YYYY-Www", value = bookings for that week
+  const weekCacheRef = useRef<Map<string, Booking[]>>(new Map())
+  const weekKey = (d: Date) => format(startOfWeek(d, { weekStartsOn: 1 }), "yyyy-MM-dd")
+
+  const loadWeekForDate = useCallback(async (bid: string, date: Date, forceReload = false) => {
+    const key = weekKey(date)
+    if (!forceReload && weekCacheRef.current.has(key)) {
+      setAllBookings(weekCacheRef.current.get(key)!)
+      return
+    }
+    const from = startOfWeek(date, { weekStartsOn: 1 }).toISOString()
+    const to = endOfWeek(date, { weekStartsOn: 1 }).toISOString()
     const safe = async (url: string) => { try { const r = await fetch(url); return r.ok ? r.json() : {} } catch { return {} } }
-    const [bData, cData, clData, mData] = await Promise.all([
-      safe(`/api/businesses/${bid}/court-bookings?from=${from}&to=${to}`),
-      safe(`/api/businesses/${bid}/courts`),
-      safe(`/api/businesses/${bid}/clients`),
-      safe(`/api/businesses/${bid}/client-memberships`),
-    ])
-    setAllBookings(bData.bookings || [])
-    setCourts((cData.courts || []).filter((c: Court) => c.isActive))
-    setClients(clData.clients || [])
-    setMembersCount((mData.memberships || []).filter((m: { status: string }) => m.status === "ACTIVE").length)
-    setLoading(false)
+    const isInitial = weekCacheRef.current.size === 0
+    const fetches: Promise<Record<string, unknown>>[] = [safe(`/api/businesses/${bid}/court-bookings?from=${from}&to=${to}`)]
+    if (isInitial) {
+      fetches.push(
+        safe(`/api/businesses/${bid}/courts`),
+        safe(`/api/businesses/${bid}/clients`),
+        safe(`/api/businesses/${bid}/client-memberships`),
+      )
+    }
+    const [bData, cData, clData, mData] = await Promise.all(fetches)
+    const bookings = (bData as { bookings?: Booking[] }).bookings || []
+    weekCacheRef.current.set(key, bookings)
+    setAllBookings(bookings)
+    if (isInitial) {
+      setCourts(((cData as { courts?: Court[] }).courts || []).filter((c: Court) => c.isActive))
+      setClients((clData as { clients?: Client[] }).clients || [])
+      setMembersCount(((mData as { memberships?: { status: string }[] }).memberships || []).filter((m: { status: string }) => m.status === "ACTIVE").length)
+      setLoading(false)
+    }
   }, [])
 
-  const loadDay = useCallback(async (bid: string, date: Date) => {
-    const from = startOfDay(date).toISOString()
-    const to = endOfDay(date).toISOString()
-    try {
-      const r = await fetch(`/api/businesses/${bid}/court-bookings?from=${from}&to=${to}`)
-      const d = await r.json()
-      setDayBookings(d.bookings || [])
-    } catch { setDayBookings([]) }
-  }, [])
+  const refreshCurrent = useCallback((bid: string, date: Date) => {
+    const key = weekKey(date)
+    weekCacheRef.current.delete(key)
+    loadWeekForDate(bid, date, true)
+  }, [loadWeekForDate])
 
   useEffect(() => {
-    if (businessId) { loadWeek(businessId); loadDay(businessId, new Date()) }
-  }, [businessId, loadWeek, loadDay])
+    if (businessId) loadWeekForDate(businessId, new Date())
+  }, [businessId, loadWeekForDate])
 
   useEffect(() => {
-    if (businessId) loadDay(businessId, selectedDate)
-  }, [selectedDate, businessId, loadDay])
+    if (businessId) loadWeekForDate(businessId, selectedDate)
+  }, [selectedDate, businessId, loadWeekForDate])
 
+  const dayBookings = allBookings.filter(b => isSameDay(new Date(b.startTime), selectedDate))
   const todayBookings = allBookings.filter(b => isSameDay(new Date(b.startTime), new Date()))
   const weekBookings = allBookings.length
 
@@ -255,7 +267,7 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
           onSlotClick={handleSlotClick}
           onBookingClick={setDetailBooking}
           businessId={businessId}
-          onSaved={() => { loadWeek(businessId); loadDay(businessId, selectedDate) }}
+          onSaved={() => { refreshCurrent(businessId, selectedDate) }}
         />
       ))}
 
@@ -268,7 +280,7 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
           onClose={() => { setNewBookingOpen(false); setPreselect(null) }}
           onSaved={() => {
             setNewBookingOpen(false); setPreselect(null)
-            loadWeek(businessId); loadDay(businessId, selectedDate)
+            refreshCurrent(businessId, selectedDate)
           }}
         />
       )}
@@ -281,7 +293,7 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
           onClose={() => setDetailBooking(null)}
           onSaved={() => {
             setDetailBooking(null)
-            loadWeek(businessId); loadDay(businessId, selectedDate)
+            refreshCurrent(businessId, selectedDate)
           }}
         />
       )}
