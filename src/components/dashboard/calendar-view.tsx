@@ -230,7 +230,7 @@ export function CalendarView({ appointments, staffMembers = [], businessId, onNe
         </div>
 
         {/* RIGHT: main calendar grid */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto" style={{ background: "#ffffff" }}>
           {view === "day" ? (
             <DayStaffView
               day={currentDate}
@@ -317,8 +317,8 @@ function DayStaffView({ day, staffCols, apptsByDay, dragOverSlot, onDragStart, o
         {/* Hour labels column */}
         <div className="w-14 flex-shrink-0 relative" style={{ height: SLOTS.length * SLOT_H }}>
           {SLOTS.filter(s => s.m === 0).map(({ h }) => (
-            <div key={h} className="absolute right-3 text-[10px] font-medium text-white/30 tabular-nums"
-              style={{ top: (h - 8) * 2 * SLOT_H }}>
+            <div key={h} className="absolute right-3 text-[10px] font-medium tabular-nums"
+              style={{ top: (h - 8) * 2 * SLOT_H, color: "#9ca3af" }}>
               {h}:00
             </div>
           ))}
@@ -328,10 +328,11 @@ function DayStaffView({ day, staffCols, apptsByDay, dragOverSlot, onDragStart, o
         {cols.map((s, colIdx) => {
           const colAppts = dayAppts.filter(a => !s || a.staff.id === s.id)
           return (
-            <div key={s?.id ?? "all"} className="flex-1 relative border-l border-white/5"
+            <div key={s?.id ?? "all"} className="flex-1 relative"
               style={{
                 height: SLOTS.length * SLOT_H,
-                background: colIdx % 2 === 1 ? "rgba(255,255,255,0.012)" : undefined,
+                borderLeft: "1px solid rgba(0,0,0,0.06)",
+                background: colIdx % 2 === 1 ? "rgba(0,0,0,0.012)" : undefined,
               }}>
               {/* Slot lines + click zones */}
               {SLOTS.map(({ h, m }) => {
@@ -347,7 +348,7 @@ function DayStaffView({ day, staffCols, apptsByDay, dragOverSlot, onDragStart, o
                     style={{
                       top: ((h - 8) * 2 + m / 30) * SLOT_H,
                       height: SLOT_H,
-                      borderBottom: m === 0 ? "1px solid rgba(255,255,255,0.07)" : "1px dashed rgba(255,255,255,0.025)",
+                      borderBottom: m === 0 ? "1px solid rgba(0,0,0,0.07)" : "1px dashed rgba(0,0,0,0.04)",
                     }}>
                     {isDragOver && <div className="absolute inset-0 border-2 border-sky-400/50 rounded pointer-events-none" />}
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
@@ -449,9 +450,9 @@ function WeekView({ displayDays, apptsByDay, dragOverSlot, currentDate, onDragSt
       {/* Slots */}
       {SLOTS.map(({ h, m }) => (
         <div key={`${h}-${m}`} className="flex"
-          style={{ borderBottom: m === 0 ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(255,255,255,0.02)", minHeight: `${SLOT_H}px` }}>
+          style={{ borderBottom: m === 0 ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(0,0,0,0.03)", minHeight: `${SLOT_H}px` }}>
           <div className="w-14 flex-shrink-0 pr-3 flex items-start justify-end pt-1">
-            {m === 0 && <span className="text-[10px] text-white/25 tabular-nums">{h}:00</span>}
+            {m === 0 && <span className="text-[10px] tabular-nums" style={{ color: "#9ca3af" }}>{h}:00</span>}
           </div>
           {displayDays.map(day => {
             const dayKey = format(day, "yyyy-MM-dd")
@@ -469,11 +470,12 @@ function WeekView({ displayDays, apptsByDay, dragOverSlot, currentDate, onDragSt
                 onDragOver={e => onDragOver(e, slotKey)}
                 onDragLeave={onDragLeave}
                 onDrop={e => onDrop(e, day, h, m)}
+                style={{ borderLeft: "1px solid rgba(0,0,0,0.06)" }}
                 className={cn(
-                  "flex-1 px-0.5 py-0.5 border-l border-white/5 transition-colors group relative",
-                  isToday && !isDragOver && "bg-sky-500/[0.03]",
+                  "flex-1 px-0.5 py-0.5 transition-colors group relative",
+                  isToday && !isDragOver && "bg-sky-500/[0.04]",
                   isDragOver && "bg-sky-500/20",
-                  slotAppts.length === 0 && onNewAppointment && !isDragOver && "cursor-pointer hover:bg-white/[0.03]"
+                  slotAppts.length === 0 && onNewAppointment && !isDragOver && "cursor-pointer hover:bg-gray-50"
                 )}
               >
                 {isDragOver && <div className="absolute inset-0 border-2 border-sky-400/50 rounded pointer-events-none" />}
