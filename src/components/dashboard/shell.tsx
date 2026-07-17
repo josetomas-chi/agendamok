@@ -20,7 +20,7 @@ export function DashboardShell({
   const isSports = businessType === "SPORTS_CLUB"
 
   return (
-    <div className={`flex h-screen overflow-hidden${isSports ? " theme-light" : ""}`} style={{ background: isSports ? "#f5f5f7" : "#1c1c1e" }}>
+    <div className={`flex h-screen overflow-hidden${isSports ? " theme-light" : ""}`} style={{ background: isSports ? "#f5f5f7" : "#f5f5f7" }}>
       <CommandPalette />
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-black/60 md:hidden" onClick={() => setSidebarOpen(false)} />
