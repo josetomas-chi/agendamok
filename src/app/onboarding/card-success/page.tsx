@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { CheckCircle } from "lucide-react"
 
-export default function CardSuccessPage() {
+function CardSuccessContent() {
   const router = useRouter()
   const params = useSearchParams()
   const isSports = params.get("type") === "SPORTS_CLUB"
@@ -41,5 +41,13 @@ export default function CardSuccessPage() {
         <p className="text-xs text-white/20">Redirigiendo automáticamente en 5 segundos...</p>
       </div>
     </div>
+  )
+}
+
+export default function CardSuccessPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#1c1c1e]" />}>
+      <CardSuccessContent />
+    </Suspense>
   )
 }

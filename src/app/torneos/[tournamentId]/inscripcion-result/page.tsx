@@ -1,12 +1,12 @@
 "use client"
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, Suspense } from "react"
 import { useSearchParams, useParams } from "next/navigation"
 import { Trophy, CheckCircle, XCircle, Loader2 } from "lucide-react"
 
 const GOLD = "#C9A84C"
 const NAVY = "#0d1b2a"
 
-export default function InscripcionResultPage() {
+function InscripcionResultContent() {
   const { tournamentId } = useParams<{ tournamentId: string }>()
   const searchParams = useSearchParams()
   const orderId = searchParams.get("orderId")
@@ -75,5 +75,13 @@ export default function InscripcionResultPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function InscripcionResultPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" style={{ background: NAVY }} />}>
+      <InscripcionResultContent />
+    </Suspense>
   )
 }

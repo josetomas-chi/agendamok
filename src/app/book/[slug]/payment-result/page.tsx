@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { Check, X, Loader2 } from "lucide-react"
 import Link from "next/link"
 
-export default function PaymentResultPage() {
+function PaymentResultContent() {
   const { slug } = useParams<{ slug: string }>()
   const searchParams = useSearchParams()
   const token = searchParams.get("token")
@@ -61,5 +61,13 @@ export default function PaymentResultPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function PaymentResultPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#1c1c1e]" />}>
+      <PaymentResultContent />
+    </Suspense>
   )
 }

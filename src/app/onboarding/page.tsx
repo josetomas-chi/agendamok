@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { Check, CreditCard, Lock, ArrowRight, Calendar, Trophy } from "lucide-react"
@@ -39,7 +39,7 @@ const PLAN_LABEL: Record<string, string> = {
   SPORTS:  "AgendaMok Sports",
 }
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [step, setStep] = useState<Step>(0)
@@ -321,5 +321,13 @@ export default function OnboardingPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#1c1c1e]" />}>
+      <OnboardingContent />
+    </Suspense>
   )
 }
