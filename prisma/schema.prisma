@@ -19,6 +19,7 @@ enum SubscriptionPlan {
   STARTER
   NEGOCIO
   PRO
+  SPORTS
 }
 
 enum SubscriptionStatus {

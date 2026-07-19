@@ -9,18 +9,18 @@ export async function POST() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    include: { business: { include: { subscription: true } } },
+    include: { businessOwner: { include: { subscription: true } } },
   })
 
-  const sub = user?.business?.subscription
+  const sub = user?.businessOwner?.subscription
   if (!sub?.flowSubscriptionId) {
-    return NextResponse.json({ error: "No hay suscripcion activa" }, { status: 400 })
+    return NextResponse.json({ error: "No hay suscripción activa" }, { status: 400 })
   }
 
   await cancelSubscription(sub.flowSubscriptionId)
   await prisma.subscription.update({
     where: { id: sub.id },
-    data: { status: "CANCELED", plan: "FREE", cancelAtPeriodEnd: true },
+    data: { status: "CANCELED", cancelAtPeriodEnd: true },
   })
 
   return NextResponse.json({ success: true })

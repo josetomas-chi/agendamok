@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { Check, CreditCard, Lock, ArrowRight, Calendar, Trophy } from "lucide-react"
 
@@ -18,14 +18,48 @@ const CATEGORIES_SPORTS = [
 
 type Step = 0 | 1 | 2 | 3
 
+const PLAN_MAP: Record<string, "STARTER" | "NEGOCIO" | "PRO" | "SPORTS"> = {
+  starter: "STARTER",
+  negocio: "NEGOCIO",
+  pro: "PRO",
+  sports: "SPORTS",
+}
+
+const PLAN_PRICE: Record<string, string> = {
+  STARTER: "0,3 UF",
+  NEGOCIO: "0,7 UF",
+  PRO:     "1,1 UF",
+  SPORTS:  "1,1 UF",
+}
+
+const PLAN_LABEL: Record<string, string> = {
+  STARTER: "AgendaMok — Plan Starter",
+  NEGOCIO: "AgendaMok — Plan Negocio",
+  PRO:     "AgendaMok — Plan Pro",
+  SPORTS:  "AgendaMok Sports",
+}
+
 export default function OnboardingPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [step, setStep] = useState<Step>(0)
   const [loading, setLoading] = useState(false)
   const [registeringCard, setRegisteringCard] = useState(false)
 
   const [businessType, setBusinessType] = useState<"GENERAL" | "SPORTS_CLUB" | "">("")
+  const [selectedPlan, setSelectedPlan] = useState<"STARTER" | "NEGOCIO" | "PRO" | "SPORTS">("STARTER")
   const [form, setForm] = useState({ businessName: "", category: "", slug: "" })
+
+  // If a plan was pre-selected from the landing page, skip step 0
+  useEffect(() => {
+    const planParam = searchParams.get("plan")?.toLowerCase()
+    if (planParam && PLAN_MAP[planParam]) {
+      const plan = PLAN_MAP[planParam]
+      setSelectedPlan(plan)
+      setBusinessType(plan === "SPORTS" ? "SPORTS_CLUB" : "GENERAL")
+      setStep(1)
+    }
+  }, [searchParams])
 
   function generateSlug(name: string) {
     return name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
@@ -42,7 +76,7 @@ export default function OnboardingPage() {
       const res = await fetch("/api/businesses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, plan: "STARTER", businessType }),
+        body: JSON.stringify({ ...form, plan: selectedPlan, businessType }),
       })
       const d = await res.json()
       if (res.status === 409 && d.error === "already_exists") {
@@ -103,7 +137,7 @@ export default function OnboardingPage() {
 
             <div className="grid grid-cols-1 gap-3">
               <button
-                onClick={() => setBusinessType("GENERAL")}
+                onClick={() => { setBusinessType("GENERAL"); setSelectedPlan("STARTER") }}
                 className={`flex items-start gap-4 p-5 rounded-2xl border-2 text-left transition-all ${businessType === "GENERAL" ? "border-sky-400 bg-sky-500/10" : "border-white/10 bg-white/[0.03] hover:border-white/25"}`}
               >
                 <div className="w-12 h-12 rounded-xl bg-sky-500/20 flex items-center justify-center flex-shrink-0">
@@ -119,7 +153,7 @@ export default function OnboardingPage() {
               </button>
 
               <button
-                onClick={() => setBusinessType("SPORTS_CLUB")}
+                onClick={() => { setBusinessType("SPORTS_CLUB"); setSelectedPlan("SPORTS") }}
                 className={`flex items-start gap-4 p-5 rounded-2xl border-2 text-left transition-all ${businessType === "SPORTS_CLUB" ? "border-emerald-400 bg-emerald-500/10" : "border-white/10 bg-white/[0.03] hover:border-white/25"}`}
               >
                 <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
@@ -259,10 +293,12 @@ export default function OnboardingPage() {
             </div>
             <div className="bg-sky-500/10 border border-sky-400/20 rounded-xl p-4 space-y-1">
               <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-sky-300">Plan Starter</span>
+                <span className="font-medium text-sky-300">{PLAN_LABEL[selectedPlan]}</span>
                 <span className="text-xs bg-sky-500 text-white px-2 py-0.5 rounded-full font-semibold">30 días gratis</span>
               </div>
-              <p className="text-xs text-white/40">A partir del día 31 se cobra $9.900/mes + IVA automáticamente. Puedes cancelar cuando quieras.</p>
+              <p className="text-xs text-white/40">
+                A partir del día 31 se cobra {PLAN_PRICE[selectedPlan]} + IVA al mes automáticamente. Puedes cancelar cuando quieras.
+              </p>
             </div>
             <div className="flex items-start gap-2.5 text-xs text-white/30 bg-white/[0.03] border border-white/5 rounded-xl p-3">
               <Lock className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />

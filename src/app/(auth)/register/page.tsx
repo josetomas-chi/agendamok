@@ -2,12 +2,13 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { ArrowRight } from "lucide-react"
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -32,7 +33,8 @@ export default function RegisterPage() {
       return
     }
 
-    router.push("/login?registered=1")
+    const plan = searchParams.get("plan")
+    router.push(`/login?registered=1${plan ? `&plan=${plan}` : ""}`)
   }
 
   return (

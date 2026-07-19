@@ -34,11 +34,12 @@ export async function POST() {
           data: { flowCustomerId },
         })
       } else {
+        const defaultPlan = business.businessType === "SPORTS_CLUB" ? "SPORTS" : "STARTER"
         await prisma.subscription.create({
           data: {
             businessId: business.id,
             flowCustomerId,
-            plan: "FREE",
+            plan: defaultPlan,
             status: "TRIALING",
             trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           },
@@ -46,7 +47,7 @@ export async function POST() {
       }
     }
 
-    const returnUrl = `${process.env.NEXTAUTH_URL}/onboarding/card-success`
+    const returnUrl = `${process.env.NEXTAUTH_URL}/onboarding/card-success?type=${business.businessType ?? "GENERAL"}`
     const result = await registerCard(flowCustomerId, returnUrl)
 
     return NextResponse.json({ url: result.url + result.token })

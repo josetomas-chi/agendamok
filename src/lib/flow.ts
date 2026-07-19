@@ -37,11 +37,12 @@ async function flowGet(endpoint: string, params: Record<string, string>) {
   return res.json()
 }
 
-// Plans (prices in CLP)
+// Plans (prices in UF, IVA not included — Flow adds it)
 export const PLANS = {
-  STARTER: { planId: "agendamok_starter_v1", name: "AgendaMok — Plan Starter", amount: 9900,  currency: "CLP", interval: 1 },
-  NEGOCIO: { planId: "agendamok_negocio_v1", name: "AgendaMok — Plan Negocio", amount: 24900, currency: "CLP", interval: 1 },
-  PRO:     { planId: "agendamok_pro_v1",     name: "AgendaMok — Plan Pro",     amount: 39900, currency: "CLP", interval: 1 },
+  STARTER: { planId: "agendamok_starter_v2", name: "AgendaMok — Plan Starter", amount: 0.3, currency: "UF", interval: 1 },
+  NEGOCIO: { planId: "agendamok_negocio_v2", name: "AgendaMok — Plan Negocio", amount: 0.7, currency: "UF", interval: 1 },
+  PRO:     { planId: "agendamok_pro_v2",     name: "AgendaMok — Plan Pro",     amount: 1.1, currency: "UF", interval: 1 },
+  SPORTS:  { planId: "agendamok_sports_v2",  name: "AgendaMok Sports",         amount: 1.1, currency: "UF", interval: 1 },
 }
 
 // Create a Flow customer
@@ -76,11 +77,11 @@ export async function createPlan(planId: string, name: string, amount: number, c
 }
 
 // Subscribe a customer to a plan
-export async function subscribeCustomer(customerId: string, planId: string) {
+export async function subscribeCustomer(customerId: string, planId: string, startDate?: string) {
   return flowRequest("/subscription/create", {
     planId,
     customerId,
-    subscription_start: new Date().toISOString().split("T")[0],
+    subscription_start: startDate ?? new Date().toISOString().split("T")[0],
   })
 }
 

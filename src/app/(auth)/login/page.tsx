@@ -47,7 +47,8 @@ function LoginForm() {
     if (role === "SUPER_ADMIN") {
       router.push("/admin")
     } else {
-      router.push(isNew ? "/onboarding" : isInvited ? "/onboarding/setup" : "/dashboard")
+      const plan = searchParams.get("plan")
+      router.push(isNew ? `/onboarding${plan ? `?plan=${plan}` : ""}` : isInvited ? "/onboarding/setup" : "/dashboard")
     }
   }
 

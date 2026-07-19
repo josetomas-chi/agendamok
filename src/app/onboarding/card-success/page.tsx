@@ -1,38 +1,44 @@
 "use client"
 
 import { useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { CheckCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
 
 export default function CardSuccessPage() {
   const router = useRouter()
+  const params = useSearchParams()
+  const isSports = params.get("type") === "SPORTS_CLUB"
 
   useEffect(() => {
-    const t = setTimeout(() => router.push("/dashboard"), 4000)
+    const t = setTimeout(() => router.push("/dashboard"), 5000)
     return () => clearTimeout(t)
   }, [router])
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="bg-white rounded-2xl border p-10 max-w-md w-full text-center space-y-5 shadow-sm">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-          <CheckCircle className="w-8 h-8 text-green-600" />
+    <div className="min-h-screen bg-[#1c1c1e] flex items-center justify-center px-4">
+      <div className="bg-[#2c2c30] border border-white/10 rounded-2xl p-10 max-w-md w-full text-center space-y-6">
+        <div className="w-16 h-16 bg-sky-500/20 rounded-full flex items-center justify-center mx-auto">
+          <CheckCircle className="w-8 h-8 text-sky-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">¡Tarjeta registrada!</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-2xl font-bold text-white">¡Tarjeta registrada!</h1>
+          <p className="text-white/50 mt-2 text-sm">
             Tu método de pago quedó guardado. No se realizará ningún cobro hasta que termine tu periodo de prueba.
           </p>
         </div>
-        <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-sm text-indigo-700">
-          El cobro se realizará automáticamente al vencer los 3 meses del plan Inicial ($4.990/mes).
-          Puedes cancelar en cualquier momento desde Configuración.
+        <div className="bg-sky-500/10 border border-sky-400/20 rounded-xl p-4 text-sm text-sky-300 text-left space-y-1">
+          <p className="font-semibold">{isSports ? "AgendaMok Sports" : "AgendaMok — Plan Starter"}</p>
+          <p className="text-white/40 text-xs">
+            A partir del día 31 se cobra {isSports ? "1,1 UF" : "0,3 UF"} + IVA al mes. Puedes cancelar cuando quieras desde Configuración.
+          </p>
         </div>
-        <Button className="w-full" onClick={() => router.push("/dashboard")}>
+        <button
+          className="w-full py-3 rounded-xl bg-sky-500 hover:bg-sky-400 transition-colors font-semibold text-white"
+          onClick={() => router.push("/dashboard")}
+        >
           Ir al panel
-        </Button>
-        <p className="text-xs text-muted-foreground">Redirigiendo automáticamente...</p>
+        </button>
+        <p className="text-xs text-white/20">Redirigiendo automáticamente en 5 segundos...</p>
       </div>
     </div>
   )

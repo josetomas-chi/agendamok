@@ -24,7 +24,7 @@ const features = [
 const plans = [
   {
     name: "Starter",
-    price: "9.900",
+    price: "0,3 UF",
     description: "Para independientes y negocios que están comenzando",
     features: [
       "1 profesional",
@@ -42,7 +42,7 @@ const plans = [
   },
   {
     name: "Negocio",
-    price: "24.900",
+    price: "0,7 UF",
     description: "Para negocios en crecimiento con equipo",
     features: [
       "Hasta 5 profesionales",
@@ -61,7 +61,7 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "39.900",
+    price: "1,1 UF",
     description: "Para empresas y clínicas con múltiples profesionales",
     features: [
       "Profesionales ilimitados",
@@ -120,7 +120,7 @@ const helpItems: { category: string; icon: LucideIcon; steps: { title: string; c
     icon: HelpCircle,
     steps: [
       { title: "¿Puedo importar mis clientes desde otro sistema?", content: "Sí. En el módulo Clientes encuentras el botón «Importar». Puedes subir un archivo CSV o Excel con las columnas nombre, email y teléfono. El sistema detecta duplicados automáticamente." },
-      { title: "¿Qué pasa cuando termina el período de prueba?", content: "Al vencer los 30 días gratis, si tienes una tarjeta registrada se cobra automáticamente el plan que seleccionaste ($9.900/mes para Starter). Si no tienes tarjeta, tu cuenta pasa a modo lectura — puedes ver tus datos pero no recibir nuevas reservas hasta que completes el pago." },
+      { title: "¿Qué pasa cuando termina el período de prueba?", content: "Al vencer los 30 días gratis, si tienes una tarjeta registrada se cobra automáticamente el plan que seleccionaste (0,3 UF + IVA/mes para Starter). Si no tienes tarjeta, tu cuenta pasa a modo lectura — puedes ver tus datos pero no recibir nuevas reservas hasta que completes el pago." },
       { title: "¿Puedo cancelar en cualquier momento?", content: "Sí, sin penalidades. En Configuración → Plan y facturación encuentras el botón «Cancelar suscripción». Tu cuenta seguirá activa hasta el final del período pagado." },
     ],
   },
@@ -199,8 +199,8 @@ function PricingToggle() {
               <h3 className="text-2xl font-bold text-white mb-1">Club Pro</h3>
               <p className="text-sm mb-5" style={{ color: "rgba(255,255,255,0.45)" }}>Todo lo que necesita tu club deportivo</p>
               <div className="flex items-end justify-center gap-1">
-                <span className="text-5xl font-bold text-white">$39.900</span>
-                <span className="text-sm mb-1.5" style={{ color: "rgba(255,255,255,0.4)" }}>/mes + IVA</span>
+                <span className="text-5xl font-bold text-white">1,1 UF</span>
+                <span className="text-sm mb-1.5" style={{ color: "rgba(255,255,255,0.4)" }}> + IVA/mes</span>
               </div>
             </div>
             <ul className="space-y-3 text-sm text-left mb-8" style={{ color: "rgba(255,255,255,0.7)" }}>
@@ -836,8 +836,8 @@ export default function LandingPage() {
                     <h3 className="font-semibold text-white text-lg mb-1">{plan.name}</h3>
                     <p className="text-sm text-white/55 mb-4">{plan.description}</p>
                     <div className="flex items-end gap-1">
-                      <span className={`text-4xl font-bold ${plan.highlight ? "text-sky-300" : "text-white"}`}>${plan.price}</span>
-                      <span className="text-white/40 text-sm mb-1">/mes + IVA</span>
+                      <span className={`text-4xl font-bold ${plan.highlight ? "text-sky-300" : "text-white"}`}>{plan.price}</span>
+                      <span className="text-white/40 text-sm mb-1"> + IVA/mes</span>
                     </div>
                   </div>
                   <ul className="space-y-3 flex-1 mb-6">
@@ -879,17 +879,17 @@ export default function LandingPage() {
                   <div className="p-4 text-center border-l border-white/10">
                     <div className="text-xs text-sky-400 font-bold uppercase tracking-wider mb-1">AgendaMok</div>
                     <div className="text-xs text-white/50">Starter</div>
-                    <div className="text-sm font-bold text-white">$9.900</div>
+                    <div className="text-sm font-bold text-white">0,3 UF</div>
                   </div>
                   <div className="p-4 text-center border-l border-sky-400/30 bg-sky-500/5">
                     <div className="text-xs text-sky-400 font-bold uppercase tracking-wider mb-1">AgendaMok</div>
                     <div className="text-xs text-white/50">Negocio</div>
-                    <div className="text-sm font-bold text-white">$24.900</div>
+                    <div className="text-sm font-bold text-white">0,7 UF</div>
                   </div>
                   <div className="p-4 text-center border-l border-white/10">
                     <div className="text-xs text-sky-400 font-bold uppercase tracking-wider mb-1">AgendaMok</div>
                     <div className="text-xs text-white/50">Pro</div>
-                    <div className="text-sm font-bold text-white">$39.900</div>
+                    <div className="text-sm font-bold text-white">1,1 UF</div>
                   </div>
                   {/* Competitor headers */}
                   <div className="p-4 text-center border-l border-white/10 bg-white/[0.04]">
@@ -938,13 +938,13 @@ export default function LandingPage() {
                     <div className="text-[10px] text-sky-400/70 font-normal mt-0.5">Sin costos ocultos</div>
                   </div>
                   <div className="p-4 text-center border-l border-white/10">
-                    <span className="text-sky-400 font-bold">$9.900</span>
+                    <span className="text-sky-400 font-bold">0,3 UF</span>
                   </div>
                   <div className="p-4 text-center border-l border-sky-400/30 bg-sky-500/5">
-                    <span className="text-sky-400 font-bold">$24.900</span>
+                    <span className="text-sky-400 font-bold">0,7 UF</span>
                   </div>
                   <div className="p-4 text-center border-l border-white/10">
-                    <span className="text-sky-400 font-bold">$39.900</span>
+                    <span className="text-sky-400 font-bold">1,1 UF</span>
                   </div>
                   <div className="p-4 text-center border-l border-white/10 bg-white/[0.04]">
                     <span className="text-white/70 font-bold">$15.900</span>

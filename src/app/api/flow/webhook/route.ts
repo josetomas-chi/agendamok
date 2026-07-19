@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { verifyWebhookSignature } from "@/lib/flow"
+import { sendPaymentFailedAlert } from "@/lib/email"
 
 export async function POST(req: Request) {
   const body = await req.text()
@@ -25,10 +26,31 @@ export async function POST(req: Request) {
   }
 
   if (event === "subscription_charge_failed") {
-    await prisma.subscription.updateMany({
+    const sub = await prisma.subscription.findFirst({
       where: { flowCustomerId: customerId },
-      data: { status: "PAST_DUE" },
+      include: { business: { include: { owner: true } } },
     })
+    if (sub) {
+      await prisma.subscription.update({
+        where: { id: sub.id },
+        data: { status: "PAST_DUE" },
+      })
+      const owner = sub.business?.owner
+      if (owner?.email) {
+        const PLAN_LABELS: Record<string, string> = {
+          STARTER: "AgendaMok — Plan Starter",
+          NEGOCIO: "AgendaMok — Plan Negocio",
+          PRO:     "AgendaMok — Plan Pro",
+          SPORTS:  "AgendaMok Sports",
+        }
+        await sendPaymentFailedAlert({
+          ownerName:   owner.name || owner.email,
+          ownerEmail:  owner.email,
+          planLabel:   PLAN_LABELS[sub.plan] ?? sub.plan,
+          settingsUrl: `${process.env.NEXTAUTH_URL}/dashboard/settings?tab=billing`,
+        })
+      }
+    }
   }
 
   if (event === "subscription_canceled" || status === "canceled") {
@@ -53,14 +75,23 @@ export async function POST(req: Request) {
         // Plan may already exist in Flow, continue
       }
 
-      const sub = await subscribeCustomer(customerId, plan.planId)
+      // Schedule subscription to start after trial ends (or immediately if no trial)
+      const trialEnd = subscription.trialEndsAt
+      const startDate = trialEnd && trialEnd > new Date()
+        ? trialEnd.toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0]
+
+      const sub = await subscribeCustomer(customerId, plan.planId, startDate)
       await prisma.subscription.update({
         where: { id: subscription.id },
         data: {
           flowSubscriptionId: sub.subscriptionId,
-          status: "ACTIVE",
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          // Keep TRIALING if trial hasn't ended; Flow will send subscription_charged when it does
+          status: trialEnd && trialEnd > new Date() ? "TRIALING" : "ACTIVE",
+          ...(!(trialEnd && trialEnd > new Date()) && {
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          }),
         },
       })
     }

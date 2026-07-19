@@ -358,30 +358,31 @@ function SettingsContent() {
   const PLAN_INFO: Record<string, { label: string; price: string; features: string[]; color: string; btnColor: string }> = {
     STARTER: {
       label: "Starter",
-      price: "$9.900/mes",
-      features: isSports
-        ? ["1 cancha", "Reservas online 24/7", "CRM de miembros", "Pagos online y POS", "Recordatorios por email", "Calendario de reservas"]
-        : ["1 profesional", "Turnos ilimitados", "Booking online 24/7", "CRM de clientes", "Pagos online y POS", "Recordatorios por email"],
+      price: "0,3 UF/mes",
+      features: ["1 profesional", "Turnos ilimitados", "Booking online 24/7", "CRM de clientes", "Pagos online y POS", "Recordatorios por email"],
       color: "bg-white/5 border-white/20 text-white",
       btnColor: "bg-white/10 hover:bg-white/20",
     },
     NEGOCIO: {
       label: "Negocio",
-      price: "$24.900/mes",
-      features: isSports
-        ? ["Canchas ilimitadas", "Todo lo del plan Starter", "Entrenadores y clases", "Membresías y abonos", "Torneos", "Soporte por chat"]
-        : ["Hasta 5 profesionales", "Todo lo del plan Starter", "Encuestas de satisfacción", "Comisiones de staff", "2.000 emails marketing/mes", "Soporte por chat"],
+      price: "0,7 UF/mes",
+      features: ["Hasta 5 profesionales", "Todo lo del plan Starter", "Encuestas de satisfacción", "Comisiones de staff", "2.000 emails marketing/mes", "Soporte por chat"],
       color: "bg-sky-500/10 border-sky-400/40 text-sky-300",
       btnColor: "bg-sky-500 hover:bg-sky-400",
     },
     PRO: {
       label: "Pro",
-      price: "$39.900/mes",
-      features: isSports
-        ? ["Todo lo del plan Negocio", "Bloques fijos y horarios por cancha", "Pago por transferencia", "Comprobante de pago", "Múltiples sedes", "API access"]
-        : ["Profesionales ilimitados", "Todo lo del plan Negocio", "Ficha clínica", "Presupuestos y cotizaciones", "Múltiples sedes", "API access"],
+      price: "1,1 UF/mes",
+      features: ["Profesionales ilimitados", "Todo lo del plan Negocio", "Ficha clínica", "Presupuestos y cotizaciones", "Múltiples sedes", "API access"],
       color: "bg-purple-500/10 border-purple-400/40 text-purple-300",
       btnColor: "bg-purple-600 hover:bg-purple-500",
+    },
+    SPORTS: {
+      label: "Sports",
+      price: "1,1 UF/mes",
+      features: ["Canchas ilimitadas", "Reservas online 24/7", "Precios por día y horario", "Membresías de socios", "Pago con transferencia", "Torneos"],
+      color: "bg-sky-500/10 border-sky-400/40 text-sky-300",
+      btnColor: "bg-sky-500 hover:bg-sky-400",
     },
   }
 
@@ -890,6 +891,25 @@ function SettingsContent() {
                    subscription?.status === "CANCELED" ? "Cancelado" : "Sin suscripción"}
                 </Badge>
               </div>
+              {/* No card registered yet */}
+              {!subscription?.flowCustomerId && (
+                <Button size="sm" className="bg-sky-500 hover:bg-sky-400 text-white gap-2" onClick={() => handleSubscribe(currentPlan)}>
+                  <CreditCard className="w-4 h-4" /> Registrar tarjeta de pago
+                </Button>
+              )}
+              {/* Payment failed — prompt to update card */}
+              {subscription?.status === "PAST_DUE" && (
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-red-500/10 border border-red-400/30">
+                  <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-red-300 font-medium">Pago rechazado</p>
+                    <p className="text-xs text-white/40 mt-0.5">Actualiza tu tarjeta para mantener el acceso.</p>
+                  </div>
+                  <Button size="sm" className="bg-red-500 hover:bg-red-400 text-white shrink-0" onClick={() => handleSubscribe(currentPlan)}>
+                    Actualizar tarjeta
+                  </Button>
+                </div>
+              )}
               {subscription?.status === "ACTIVE" && !subscription.cancelAtPeriodEnd && (
                 <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300 border-red-400/30" onClick={handleCancel}>
                   Cancelar suscripción
@@ -903,7 +923,10 @@ function SettingsContent() {
 
           {/* Plan cards — show all, highlight current, allow switching */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {(isSports ? [["PRO", PLAN_INFO.PRO]] as [string, typeof PLAN_INFO[string]][] : Object.entries(PLAN_INFO) as [string, typeof PLAN_INFO[string]][]).map(([key, plan]) => {
+            {(isSports
+              ? [["SPORTS", PLAN_INFO.SPORTS]] as [string, typeof PLAN_INFO[string]][]
+              : (Object.entries(PLAN_INFO).filter(([k]) => k !== "SPORTS") as [string, typeof PLAN_INFO[string]][])
+            ).map(([key, plan]) => {
               const isCurrent = key === currentPlan && subscription?.status === "ACTIVE"
               return (
                 <Card key={key} className={`relative border ${isCurrent ? "border-sky-400/50 bg-sky-500/5" : ""}`}>
@@ -917,6 +940,7 @@ function SettingsContent() {
                       <p className="font-bold text-lg">Plan {plan.label}</p>
                       <p className="text-2xl font-bold text-sky-500 mt-1">
                         {plan.price.split("/")[0]} <span className="text-sm font-normal text-muted-foreground">/mes + IVA</span>
+
                       </p>
                     </div>
                     <ul className="text-sm space-y-1.5 text-muted-foreground">

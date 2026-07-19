@@ -724,3 +724,31 @@ export async function sendTournamentMatchAdvance({
     }).catch(() => {})
   }
 }
+
+
+export async function sendPaymentFailedAlert({
+  ownerName, ownerEmail, planLabel, settingsUrl,
+}: {
+  ownerName: string
+  ownerEmail: string
+  planLabel: string
+  settingsUrl: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+  resend.emails.send({
+    from: FROM,
+    to: ownerEmail,
+    subject: "Problema con el cobro de tu suscripción AgendaMok",
+    html: base(`
+      <h1>No pudimos procesar tu pago</h1>
+      <p class="subtitle">Hola ${ownerName}, intentamos cobrar tu suscripción <strong style="color:#fff">${planLabel}</strong> pero la tarjeta fue rechazada.</p>
+      <div class="box">
+        <div class="row"><span class="label">Plan</span><span class="value">${planLabel}</span></div>
+        <div class="row"><span class="label">Estado</span><span class="value" style="color:#f87171">Pago fallido</span></div>
+      </div>
+      <p class="subtitle">Para no perder el acceso a tu panel, actualiza tu método de pago lo antes posible.</p>
+      <a href="${settingsUrl}" class="btn">Actualizar tarjeta</a>
+      <p class="subtitle" style="font-size:13px;margin-top:24px">Si crees que es un error, escríbenos a <a href="mailto:contacto@agendamok.cl" style="color:#38bdf8">contacto@agendamok.cl</a></p>
+    `),
+  }).catch(() => {})
+}
