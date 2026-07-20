@@ -56,7 +56,7 @@ export async function POST(req: Request) {
       })
     }
 
-    const returnUrl = process.env.FLOW_RETURN_URL!
+    const returnUrl = `${process.env.NEXTAUTH_URL}/dashboard/settings?tab=billing`
     const result = await registerCard(flowCustomerId, returnUrl)
 
     if (!result?.url || !result?.token) {
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Flow no devolvió URL de pago. Verifica las credenciales." }, { status: 502 })
     }
 
-    return NextResponse.json({ url: result.url + result.token })
+    return NextResponse.json({ url: result.url + "?token=" + result.token })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error("Flow subscribe error:", msg)
