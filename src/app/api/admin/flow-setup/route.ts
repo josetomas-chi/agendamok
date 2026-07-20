@@ -25,6 +25,13 @@ async function flowPost(endpoint: string, data: Record<string, string>) {
   return res.json()
 }
 
+const PLAN_IDS = [
+  "agendamok_starter_v2",
+  "agendamok_negocio_v2",
+  "agendamok_pro_v2",
+  "agendamok_sports_v2",
+]
+
 export async function POST() {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
@@ -33,7 +40,13 @@ export async function POST() {
   if (user?.role !== "SUPER_ADMIN") return NextResponse.json({ error: "No autorizado" }, { status: 403 })
 
   const webhookUrl = `${process.env.NEXTAUTH_URL}/api/flow/webhook`
-  const result = await flowPost("/merchant/setWebhook", { urlWebhook: webhookUrl })
 
-  return NextResponse.json({ result, webhookUrl })
+  // Update each plan to add the webhook URL
+  const results = await Promise.all(
+    PLAN_IDS.map(planId =>
+      flowPost("/plan/edit", { planId, urlCallback: webhookUrl })
+    )
+  )
+
+  return NextResponse.json({ results, webhookUrl })
 }
