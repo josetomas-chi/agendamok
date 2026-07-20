@@ -109,7 +109,7 @@ export function SetupChecklist({ hasServices, hasStaff, hasSchedule, slug, isSpo
       <div className="space-y-1">
         {steps.map((step, i) => (
           <Link key={i} href={step.href} target={step.external ? "_blank" : undefined}
-            className={`flex items-center gap-3 p-3 rounded-xl transition-colors group ${step.done ? "opacity-40 cursor-default pointer-events-none" : "hover:bg-sky-500/8 cursor-pointer"}`}
+            className={`flex items-center gap-3 p-3 rounded-xl transition-colors group ${step.done ? "opacity-40 cursor-default pointer-events-none" : "hover:bg-sky-500/10 cursor-pointer"}`}
           >
             {step.done
               ? <CheckCircle2 className="w-5 h-5 text-sky-500 flex-shrink-0" />
