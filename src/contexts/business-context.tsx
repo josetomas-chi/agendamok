@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext } from "react"
+import { type Permission, type PermissionMap, resolvePermissions } from "@/lib/permissions"
 
 export type MemberRole = "ADMIN" | "RECEPTIONIST"
 
@@ -11,6 +12,7 @@ type BusinessContextValue = {
   businessType: string
   hasBsale: boolean
   memberRole: MemberRole
+  permissions: Record<Permission, boolean>
 }
 
 const BusinessContext = createContext<BusinessContextValue>({
@@ -20,13 +22,15 @@ const BusinessContext = createContext<BusinessContextValue>({
   businessType: "GENERAL",
   hasBsale: false,
   memberRole: "ADMIN",
+  permissions: resolvePermissions("ADMIN"),
 })
 
 export function BusinessProvider({
-  businessId, businessName, businessLogo, businessType, hasBsale, memberRole, children,
-}: BusinessContextValue & { children: React.ReactNode }) {
+  businessId, businessName, businessLogo, businessType, hasBsale, memberRole, permissionOverrides, children,
+}: Omit<BusinessContextValue, "permissions"> & { permissionOverrides?: PermissionMap; children: React.ReactNode }) {
+  const permissions = resolvePermissions(memberRole, permissionOverrides)
   return (
-    <BusinessContext.Provider value={{ businessId, businessName, businessLogo, businessType, hasBsale, memberRole }}>
+    <BusinessContext.Provider value={{ businessId, businessName, businessLogo, businessType, hasBsale, memberRole, permissions }}>
       {children}
     </BusinessContext.Provider>
   )
@@ -37,6 +41,9 @@ export function useBusiness() {
 }
 
 export function useIsAdmin() {
-  const { memberRole } = useContext(BusinessContext)
-  return memberRole === "ADMIN"
+  return useContext(BusinessContext).memberRole === "ADMIN"
+}
+
+export function useCan(permission: Permission) {
+  return useContext(BusinessContext).permissions[permission] ?? false
 }

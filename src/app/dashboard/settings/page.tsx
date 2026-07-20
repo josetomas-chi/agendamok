@@ -1415,8 +1415,97 @@ function SettingsContent() {
   )
 }
 
+type Member = {
+  id: string
+  role: string
+  permissions: Record<string, boolean>
+  acceptedAt: string | null
+  user: { id: string; name: string | null; email: string }
+}
+
+const PERMISSION_LABELS: { key: string; label: string }[] = [
+  { key: "services",  label: "Servicios" },
+  { key: "staff",     label: "Staff" },
+  { key: "reports",   label: "Reportes" },
+  { key: "marketing", label: "Marketing" },
+  { key: "surveys",   label: "Encuestas" },
+  { key: "settings",  label: "Configuración" },
+]
+
+function MemberRow({ m, onRemove }: { m: Member; onRemove: (id: string) => void }) {
+  const [perms, setPerms] = useState<Record<string, boolean>>(m.permissions ?? {})
+  const [expanded, setExpanded] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  async function savePerms() {
+    setSaving(true)
+    await fetch(`/api/businesses/members/${m.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ permissions: perms }),
+    })
+    setSaving(false)
+    toast.success("Permisos actualizados")
+  }
+
+  return (
+    <div className="rounded-xl border border-white/5 bg-white/[0.03] overflow-hidden">
+      <div className="flex items-center gap-3 p-3">
+        <div className="w-9 h-9 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400 font-bold text-sm flex-shrink-0">
+          {(m.user.name || m.user.email)[0].toUpperCase()}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-white truncate">{m.user.name || m.user.email}</p>
+          <p className="text-xs text-white/40 truncate">{m.user.email}</p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-500/15 text-violet-400 border-violet-400/30">
+            Recepcionista
+          </span>
+          {!m.acceptedAt && (
+            <span className="px-2 py-0.5 rounded-full text-xs border bg-amber-400/10 text-amber-400 border-amber-400/20">Pendiente</span>
+          )}
+          <Button size="sm" variant="ghost" className="h-7 px-2 text-white/40 hover:text-white text-xs"
+            onClick={() => setExpanded(e => !e)}>
+            {expanded ? "Ocultar" : "Permisos"}
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-white/30 hover:text-red-400"
+            onClick={() => onRemove(m.id)}>
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="border-t border-white/5 px-4 py-3 space-y-3">
+          <p className="text-xs text-white/40 uppercase tracking-wider">Acceso adicional</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {PERMISSION_LABELS.map(({ key, label }) => {
+              const checked = perms[key] ?? false
+              return (
+                <label key={key} className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${checked ? "border-sky-400/40 bg-sky-500/10" : "border-white/10 bg-white/[0.02] hover:border-white/20"}`}>
+                  <input type="checkbox" className="sr-only" checked={checked}
+                    onChange={e => setPerms(p => ({ ...p, [key]: e.target.checked }))} />
+                  <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border transition-colors ${checked ? "bg-sky-500 border-sky-500" : "border-white/20"}`}>
+                    {checked && <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
+                  <span className={`text-xs font-medium ${checked ? "text-sky-300" : "text-white/50"}`}>{label}</span>
+                </label>
+              )
+            })}
+          </div>
+          <Button size="sm" className="gap-1.5" onClick={savePerms} disabled={saving}>
+            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+            {saving ? "Guardando..." : "Guardar permisos"}
+          </Button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TeamTab() {
-  const [members, setMembers] = useState<{ id: string; role: string; inviteEmail: string | null; acceptedAt: string | null; user: { id: string; name: string | null; email: string; image: string | null } }[]>([])
+  const [members, setMembers] = useState<Member[]>([])
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
   const [inviting, setInviting] = useState(false)
@@ -1452,17 +1541,19 @@ function TeamTab() {
     toast.success("Miembro eliminado")
   }
 
+  const receptionists = members.filter(m => m.role === "RECEPTIONIST")
+
   return (
     <div className="pt-4 space-y-4">
       <Card className="bg-[#2c2c30] border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><UserPlus className="w-4 h-4 text-sky-400" /> Invitar recepcionista</CardTitle>
-          <CardDescription>Envía una invitación por email. El recepcionista podrá gestionar turnos, clientes y pagos.</CardDescription>
+          <CardDescription>El recepcionista tendrá acceso a turnos, clientes y pagos. Puedes ampliar sus permisos desde aquí.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {inviteUrl ? (
             <div className="space-y-3">
-              <p className="text-sm text-white/60">Email enviado. También puedes compartir este link directamente:</p>
+              <p className="text-sm text-white/60">Invitación creada. Comparte este link o espera que llegue el email:</p>
               <div className="flex gap-2">
                 <Input value={inviteUrl} readOnly className="font-mono text-xs" />
                 <Button variant="outline" size="icon" onClick={() => { navigator.clipboard.writeText(inviteUrl); toast.success("Link copiado") }}>
@@ -1494,33 +1585,12 @@ function TeamTab() {
         </CardContent>
       </Card>
 
-      {members.length > 0 && (
+      {receptionists.length > 0 && (
         <Card className="bg-[#2c2c30] border-white/10">
-          <CardHeader><CardTitle>Miembros del equipo</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Recepcionistas</CardTitle></CardHeader>
           <CardContent className="space-y-2">
-            {members.map(m => (
-              <div key={m.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                <div className="w-9 h-9 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400 font-bold text-sm flex-shrink-0">
-                  {(m.user.name || m.user.email)[0].toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{m.user.name || m.user.email}</p>
-                  <p className="text-xs text-white/40 truncate">{m.user.email}</p>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${m.role === "ADMIN" ? "bg-sky-500/15 text-sky-400 border-sky-400/30" : "bg-violet-500/15 text-violet-400 border-violet-400/30"}`}>
-                    {m.role === "ADMIN" ? "Admin" : "Recepcionista"}
-                  </span>
-                  {!m.acceptedAt && (
-                    <span className="px-2 py-0.5 rounded-full text-xs border bg-amber-400/10 text-amber-400 border-amber-400/20">Pendiente</span>
-                  )}
-                  {m.role !== "ADMIN" && (
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-white/30 hover:text-red-400" onClick={() => handleRemove(m.id)}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  )}
-                </div>
-              </div>
+            {receptionists.map(m => (
+              <MemberRow key={m.id} m={m} onRemove={handleRemove} />
             ))}
           </CardContent>
         </Card>

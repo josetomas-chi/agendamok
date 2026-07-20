@@ -5,9 +5,10 @@ import { Sidebar } from "@/components/dashboard/sidebar"
 import { TopBar } from "@/components/dashboard/topbar"
 import { CommandPalette } from "@/components/dashboard/command-palette"
 import { BottomNav } from "@/components/dashboard/bottom-nav"
+import { type PermissionMap } from "@/lib/permissions"
 
 export function DashboardShell({
-  children, businessId, businessName, businessLogo, businessType, memberRole,
+  children, businessId, businessName, businessLogo, businessType, memberRole, permissionOverrides,
 }: {
   children: React.ReactNode
   businessId: string
@@ -15,9 +16,9 @@ export function DashboardShell({
   businessLogo: string | null
   businessType: string
   memberRole?: "ADMIN" | "RECEPTIONIST"
+  permissionOverrides?: PermissionMap
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-
   const isSports = businessType === "SPORTS_CLUB"
 
   return (
@@ -31,7 +32,12 @@ export function DashboardShell({
         "transition-transform duration-300 ease-in-out",
         sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
       ].join(" ")}>
-        <Sidebar onClose={() => setSidebarOpen(false)} isSports={isSports} memberRole={memberRole ?? "ADMIN"} />
+        <Sidebar
+          onClose={() => setSidebarOpen(false)}
+          isSports={isSports}
+          memberRole={memberRole ?? "ADMIN"}
+          permissionOverrides={permissionOverrides ?? {}}
+        />
       </div>
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <TopBar

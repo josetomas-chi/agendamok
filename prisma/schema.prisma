@@ -276,14 +276,15 @@ model Business {
 }
 
 model BusinessMember {
-  id         String             @id @default(cuid())
-  businessId String
-  userId     String
-  role       BusinessMemberRole @default(RECEPTIONIST)
-  inviteToken String?           @unique
+  id          String             @id @default(cuid())
+  businessId  String
+  userId      String
+  role        BusinessMemberRole @default(RECEPTIONIST)
+  permissions Json               @default("{}")
+  inviteToken String?            @unique
   inviteEmail String?
   acceptedAt  DateTime?
-  createdAt  DateTime           @default(now())
+  createdAt   DateTime           @default(now())
 
   business   Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
   user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)

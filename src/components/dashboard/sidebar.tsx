@@ -9,6 +9,7 @@ import {
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
 import { useEffect, useState } from "react"
+import { resolvePermissions, type PermissionMap } from "@/lib/permissions"
 
 const GENERAL_GROUPS = [
   {
@@ -100,24 +101,32 @@ const S = {
   label: "rgba(201,168,76,0.4)",
 }
 
-// Items accesibles para recepcionistas
-const RECEPTIONIST_ALLOWED = new Set([
-  "/dashboard",
-  "/dashboard/appointments",
-  "/dashboard/clients",
-  "/dashboard/payments",
-  "/dashboard/club",
-  "/dashboard/club/courts",
-])
+// Map href → permission key (undefined = always visible)
+const HREF_PERMISSION: Record<string, string> = {
+  "/dashboard/services":         "services",
+  "/dashboard/staff":            "staff",
+  "/dashboard/reports":          "reports",
+  "/dashboard/marketing":        "marketing",
+  "/dashboard/surveys":          "surveys",
+  "/dashboard/settings":         "settings",
+  "/dashboard/club/settings":    "settings",
+}
 
-export function Sidebar({ onClose, isSports = false, memberRole = "ADMIN" }: { onClose?: () => void; isSports?: boolean; memberRole?: "ADMIN" | "RECEPTIONIST" }) {
+export function Sidebar({ onClose, isSports = false, memberRole = "ADMIN", permissionOverrides = {} }: { onClose?: () => void; isSports?: boolean; memberRole?: "ADMIN" | "RECEPTIONIST"; permissionOverrides?: PermissionMap }) {
   const pathname = usePathname()
-  const isReceptionist = memberRole === "RECEPTIONIST"
+  const perms = resolvePermissions(memberRole, permissionOverrides)
 
   const rawGroups = isSports ? SPORTS_GROUPS : GENERAL_GROUPS
-  const groups = isReceptionist
-    ? rawGroups.map(g => ({ ...g, items: g.items.filter(i => RECEPTIONIST_ALLOWED.has(i.href)) })).filter(g => g.items.length > 0)
-    : rawGroups
+  const groups = rawGroups
+    .map(g => ({
+      ...g,
+      items: g.items.filter(item => {
+        const key = HREF_PERMISSION[item.href]
+        if (!key) return true
+        return perms[key as keyof typeof perms] ?? true
+      }),
+    }))
+    .filter(g => g.items.length > 0)
 
   function isActive(href: string) {
     if (href === "/dashboard" || href === "/dashboard/club") return pathname === href
