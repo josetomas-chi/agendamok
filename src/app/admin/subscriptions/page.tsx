@@ -122,7 +122,7 @@ export default function AdminSubscriptionsPage() {
                         <select value={e.plan} onChange={ev => setEditing(prev => ({ ...prev, [s.id]: { ...prev[s.id], plan: ev.target.value } }))}
                           onClick={ev => ev.stopPropagation()}
                           className="rounded-lg px-2 py-1 text-xs font-semibold bg-white/10 text-white border border-white/20 focus:outline-none focus:border-sky-500">
-                          {PLANS.map(p => <option key={p} value={p}>{p}</option>)}
+                          {PLANS.map(p => <option key={p} value={p} className="bg-[#2c2c30] text-white">{p}</option>)}
                         </select>
                       ) : (
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${planColor[s.plan] ?? planColor.STARTER}`}>{s.plan}</span>
@@ -133,7 +133,7 @@ export default function AdminSubscriptionsPage() {
                         <select value={e.status} onChange={ev => setEditing(prev => ({ ...prev, [s.id]: { ...prev[s.id], status: ev.target.value } }))}
                           onClick={ev => ev.stopPropagation()}
                           className="rounded-lg px-2 py-1 text-xs font-semibold bg-white/10 text-white border border-white/20 focus:outline-none focus:border-sky-500">
-                          {STATUSES.map(st => <option key={st} value={st}>{statusLabel[st]}</option>)}
+                          {STATUSES.map(st => <option key={st} value={st} className="bg-[#2c2c30] text-white">{statusLabel[st]}</option>)}
                         </select>
                       ) : (
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor[s.status] ?? ""}`}>{statusLabel[s.status] ?? s.status}</span>
