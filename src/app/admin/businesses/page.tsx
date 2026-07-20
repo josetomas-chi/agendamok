@@ -301,9 +301,10 @@ export default function AdminBusinessesPage() {
                 <Select value={newForm.plan} onValueChange={v => setNewForm(f => ({ ...f, plan: v ?? "FREE" }))}>
                   <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent align="start" sideOffset={4} className="w-[var(--radix-select-trigger-width)]">
-                    <SelectItem value="FREE">Inicial — gratis 3 meses</SelectItem>
-                    <SelectItem value="PRO">Pro — $9.900/mes</SelectItem>
-                    <SelectItem value="ENTERPRISE">Enterprise — $29.900/mes</SelectItem>
+                    <SelectItem value="STARTER">Starter — 0,3 UF/mes</SelectItem>
+                    <SelectItem value="NEGOCIO">Negocio — 0,7 UF/mes</SelectItem>
+                    <SelectItem value="PRO">Pro — 1,1 UF/mes</SelectItem>
+                    <SelectItem value="SPORTS">Sports — 1,1 UF/mes</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -325,9 +326,10 @@ export default function AdminBusinessesPage() {
               <Select value={planValue} onValueChange={v => setPlanValue(v ?? "")}>
                 <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                 <SelectContent align="start" sideOffset={4} className="w-[var(--radix-select-trigger-width)]">
-                  <SelectItem value="FREE">Inicial — gratis 3 meses</SelectItem>
-                  <SelectItem value="PRO">Pro — $9.900/mes</SelectItem>
-                  <SelectItem value="ENTERPRISE">Enterprise — $29.900/mes</SelectItem>
+                  <SelectItem value="STARTER">Starter — 0,3 UF/mes</SelectItem>
+                  <SelectItem value="NEGOCIO">Negocio — 0,7 UF/mes</SelectItem>
+                  <SelectItem value="PRO">Pro — 1,1 UF/mes</SelectItem>
+                  <SelectItem value="SPORTS">Sports — 1,1 UF/mes</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -388,7 +390,7 @@ export default function AdminBusinessesPage() {
               <div className="space-y-2">
                 <p className="text-xs text-white/40 uppercase tracking-wider font-medium">Dar acceso sin pago</p>
                 <div className="grid grid-cols-3 gap-2">
-                  {[{ label: "Starter", value: "STARTER" }, { label: "Negocio", value: "PRO" }, { label: "Pro", value: "ENTERPRISE" }].map(p => (
+                  {[{ label: "Starter", value: "STARTER" }, { label: "Negocio", value: "NEGOCIO" }, { label: "Pro", value: "PRO" }].map(p => (
                     <Button key={p.value} size="sm" variant="outline"
                       className="gap-1.5 border-violet-400/30 text-violet-300 hover:bg-violet-500/10 hover:text-violet-200"
                       onClick={() => { grantCourtesy(selected!, p.value); setSelected(null) }}>
