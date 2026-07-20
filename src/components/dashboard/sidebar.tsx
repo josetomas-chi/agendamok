@@ -225,14 +225,14 @@ export function Sidebar({ onClose, isSports = false, memberRole = "ADMIN", permi
       <nav className="flex-1 py-3 px-3 space-y-3 overflow-y-auto scrollbar-hide">
         {GENERAL_GROUPS.map((group) => (
           <div key={group.label}>
-            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/25 px-2 mb-1">{group.label}</p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/45 px-2 mb-1">{group.label}</p>
             <div className="space-y-0.5">
               {group.items.map(({ href, label, icon: Icon }) => {
                 const active = isActive(href)
                 return (
                   <Link key={href} href={href} onClick={onClose}
                     className={cn("relative flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150",
-                      active ? "text-white" : "text-white/40 hover:text-white/80 hover:bg-white/[0.05]")}
+                      active ? "text-white" : "text-white/65 hover:text-white hover:bg-white/[0.05]")}
                     style={active ? { background: "linear-gradient(90deg, rgba(14,165,233,0.18) 0%, rgba(14,165,233,0.06) 100%)", boxShadow: "inset 2px 0 0 #38bdf8" } : undefined}
                   >
                     <Icon className={cn("w-4 h-4 flex-shrink-0", active ? "text-sky-400" : "")} />
@@ -252,7 +252,7 @@ export function Sidebar({ onClose, isSports = false, memberRole = "ADMIN", permi
             <HelpCircle className="w-4 h-4 flex-shrink-0" />Ayuda
           </Link>
           <button onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center gap-2.5 px-2.5 py-2 w-full rounded-lg text-[13px] text-white/30 hover:text-white/70 hover:bg-white/[0.05] transition-all">
+            className="flex items-center gap-2.5 px-2.5 py-2 w-full rounded-lg text-[13px] text-white/50 hover:text-white/80 hover:bg-white/[0.05] transition-all">
             <LogOut className="w-4 h-4" />Cerrar sesión
           </button>
         </div>

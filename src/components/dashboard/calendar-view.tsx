@@ -186,7 +186,7 @@ export function CalendarView({ appointments, staffMembers = [], businessId, onNe
           {/* Day-of-week headers */}
           <div className="grid grid-cols-7 gap-0">
             {WEEK_DAYS.map(d => (
-              <div key={d} className="text-center text-[9px] uppercase text-white/25 font-medium pb-1">{d[0]}</div>
+              <div key={d} className="text-center text-[9px] uppercase text-white/50 font-medium pb-1">{d[0]}</div>
             ))}
             {miniGrid.map(day => {
               const key = format(day, "yyyy-MM-dd")
@@ -200,8 +200,8 @@ export function CalendarView({ appointments, staffMembers = [], businessId, onNe
                   onClick={() => { setCurrentDate(day); setMiniMonth(day); setView("day") }}
                   className={cn(
                     "w-full aspect-square flex items-center justify-center text-[11px] rounded-full transition-colors relative",
-                    !inMonth && "text-white/15",
-                    inMonth && !isSelected && !isToday && "text-white/50 hover:bg-white/10",
+                    !inMonth && "text-white/25",
+                    inMonth && !isSelected && !isToday && "text-white/70 hover:bg-white/10",
                     isToday && !isSelected && "text-sky-400 font-bold",
                     isSelected && "bg-sky-500 text-white font-bold",
                   )}
@@ -218,11 +218,11 @@ export function CalendarView({ appointments, staffMembers = [], businessId, onNe
           {/* Staff legend */}
           {staffCols.length > 0 && (
             <div className="border-t border-white/8 pt-3 space-y-2">
-              <p className="text-[10px] uppercase text-white/25 font-medium tracking-wider">Profesionales</p>
+              <p className="text-[10px] uppercase text-white/50 font-medium tracking-wider">Profesionales</p>
               {staffCols.map(s => (
                 <div key={s.id} className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
-                  <span className="text-xs text-white/50 truncate">{s.user.name}</span>
+                  <span className="text-xs text-white/70 truncate">{s.user.name}</span>
                 </div>
               ))}
             </div>
@@ -317,7 +317,7 @@ function DayStaffView({ day, staffCols, apptsByDay, dragOverSlot, onDragStart, o
         {/* Hour labels column */}
         <div className="w-14 flex-shrink-0 relative" style={{ height: SLOTS.length * SLOT_H }}>
           {SLOTS.filter(s => s.m === 0).map(({ h }) => (
-            <div key={h} className="absolute right-3 text-[10px] font-medium text-white/30 tabular-nums"
+            <div key={h} className="absolute right-3 text-[10px] font-medium text-white/55 tabular-nums"
               style={{ top: (h - 8) * 2 * SLOT_H }}>
               {h}:00
             </div>
@@ -431,13 +431,13 @@ function WeekView({ displayDays, apptsByDay, dragOverSlot, currentDate, onDragSt
           return (
             <button key={day.toISOString()} onClick={() => onDayClick(day)}
               className="flex-1 py-3 text-center hover:bg-white/[0.03] transition-colors">
-              <div className="text-[10px] uppercase tracking-widest text-white/30 mb-1">
+              <div className="text-[10px] uppercase tracking-widest text-white/55 mb-1">
                 {format(day, "EEE", { locale: es })}
               </div>
               <div className={cn(
                 "text-sm font-semibold mx-auto w-7 h-7 flex items-center justify-center rounded-full transition-colors",
                 isToday && !isSelected ? "text-sky-400" : "",
-                isSelected ? "bg-sky-500 text-white" : "text-white/70"
+                isSelected ? "bg-sky-500 text-white" : "text-white/85"
               )}>
                 {format(day, "d")}
               </div>
@@ -451,7 +451,7 @@ function WeekView({ displayDays, apptsByDay, dragOverSlot, currentDate, onDragSt
         <div key={`${h}-${m}`} className="flex"
           style={{ borderBottom: m === 0 ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(255,255,255,0.02)", minHeight: `${SLOT_H}px` }}>
           <div className="w-14 flex-shrink-0 pr-3 flex items-start justify-end pt-1">
-            {m === 0 && <span className="text-[10px] text-white/25 tabular-nums">{h}:00</span>}
+            {m === 0 && <span className="text-[10px] text-white/55 tabular-nums">{h}:00</span>}
           </div>
           {displayDays.map(day => {
             const dayKey = format(day, "yyyy-MM-dd")

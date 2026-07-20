@@ -124,7 +124,7 @@ export function TopBar({
           <p className="text-sm font-semibold text-white leading-none tracking-tight">
             {businessName}
           </p>
-          <p className="text-[11px] text-white/35 leading-none mt-1">
+          <p className="text-[11px] text-white/55 leading-none mt-1">
             {uploading ? "Subiendo logo..." : "Tu negocio"}
           </p>
         </div>
