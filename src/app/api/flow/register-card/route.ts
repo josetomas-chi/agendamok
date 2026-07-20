@@ -50,8 +50,8 @@ export async function POST() {
     const returnUrl = `${process.env.NEXTAUTH_URL}/onboarding/card-success?type=${business.businessType ?? "GENERAL"}`
     const result = await registerCard(flowCustomerId, returnUrl)
 
-    const separator = result.url.includes("?") ? "&" : "?"
-    return NextResponse.json({ url: result.url + separator + "token=" + result.token })
+    console.log("[register-card] Flow result:", JSON.stringify(result))
+    return NextResponse.json({ url: result.url, token: result.token })
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Error desconocido"
     console.error("[POST /api/flow/register-card]", message)

@@ -96,7 +96,9 @@ function OnboardingContent() {
     try {
       const r = await fetch("/api/flow/register-card", { method: "POST" })
       const d = await r.json()
-      if (d.url) {
+      if (d.url && d.token) {
+        window.location.href = d.url + "?token=" + d.token
+      } else if (d.url) {
         window.location.href = d.url
       } else {
         toast.error(d.error || "Error al conectar con el procesador de pagos")
