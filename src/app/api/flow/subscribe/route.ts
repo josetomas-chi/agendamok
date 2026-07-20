@@ -40,16 +40,19 @@ export async function POST(req: Request) {
           data: { flowCustomerId, plan },
         })
       } else {
+        // New customer — grant 30-day trial
         await prisma.subscription.create({
           data: {
             businessId: business.id,
             flowCustomerId,
             plan,
-            status: "ACTIVE",
+            status: "TRIALING",
+            trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           },
         })
       }
     } else {
+      // Existing customer changing plan — only update plan, keep trial/status untouched
       await prisma.subscription.update({
         where: { businessId: business.id },
         data: { plan },
