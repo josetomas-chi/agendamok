@@ -7,13 +7,14 @@ import { CommandPalette } from "@/components/dashboard/command-palette"
 import { BottomNav } from "@/components/dashboard/bottom-nav"
 
 export function DashboardShell({
-  children, businessId, businessName, businessLogo, businessType,
+  children, businessId, businessName, businessLogo, businessType, memberRole,
 }: {
   children: React.ReactNode
   businessId: string
   businessName: string
   businessLogo: string | null
   businessType: string
+  memberRole?: "ADMIN" | "RECEPTIONIST"
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -30,7 +31,7 @@ export function DashboardShell({
         "transition-transform duration-300 ease-in-out",
         sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
       ].join(" ")}>
-        <Sidebar onClose={() => setSidebarOpen(false)} isSports={isSports} />
+        <Sidebar onClose={() => setSidebarOpen(false)} isSports={isSports} memberRole={memberRole ?? "ADMIN"} />
       </div>
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <TopBar

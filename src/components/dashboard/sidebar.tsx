@@ -100,10 +100,24 @@ const S = {
   label: "rgba(201,168,76,0.4)",
 }
 
-export function Sidebar({ onClose, isSports = false }: { onClose?: () => void; isSports?: boolean }) {
-  const pathname = usePathname()
+// Items accesibles para recepcionistas
+const RECEPTIONIST_ALLOWED = new Set([
+  "/dashboard",
+  "/dashboard/appointments",
+  "/dashboard/clients",
+  "/dashboard/payments",
+  "/dashboard/club",
+  "/dashboard/club/courts",
+])
 
-  const groups = isSports ? SPORTS_GROUPS : GENERAL_GROUPS
+export function Sidebar({ onClose, isSports = false, memberRole = "ADMIN" }: { onClose?: () => void; isSports?: boolean; memberRole?: "ADMIN" | "RECEPTIONIST" }) {
+  const pathname = usePathname()
+  const isReceptionist = memberRole === "RECEPTIONIST"
+
+  const rawGroups = isSports ? SPORTS_GROUPS : GENERAL_GROUPS
+  const groups = isReceptionist
+    ? rawGroups.map(g => ({ ...g, items: g.items.filter(i => RECEPTIONIST_ALLOWED.has(i.href)) })).filter(g => g.items.length > 0)
+    : rawGroups
 
   function isActive(href: string) {
     if (href === "/dashboard" || href === "/dashboard/club") return pathname === href

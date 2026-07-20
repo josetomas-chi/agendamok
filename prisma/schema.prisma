@@ -11,8 +11,14 @@ datasource db {
 enum UserRole {
   SUPER_ADMIN
   BUSINESS_OWNER
+  RECEPTIONIST
   STAFF
   CLIENT
+}
+
+enum BusinessMemberRole {
+  ADMIN
+  RECEPTIONIST
 }
 
 enum SubscriptionPlan {
@@ -121,11 +127,12 @@ model User {
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
 
-  accounts      Account[]
-  sessions      Session[]
-  businessOwner Business?    @relation("BusinessOwner")
-  staffProfile  StaffMember?
-  clientProfile Client?
+  accounts        Account[]
+  sessions        Session[]
+  businessOwner   Business?      @relation("BusinessOwner")
+  staffProfile    StaffMember?
+  clientProfile   Client?
+  businessMembers BusinessMember[]
 
   @@index([email])
   @@map("users")
@@ -262,9 +269,27 @@ model Business {
   apiKeys                   ApiKey[]
   invoices                  Invoice[]
   tournaments               Tournament[]
+  members                   BusinessMember[]
 
   @@index([slug])
   @@map("businesses")
+}
+
+model BusinessMember {
+  id         String             @id @default(cuid())
+  businessId String
+  userId     String
+  role       BusinessMemberRole @default(RECEPTIONIST)
+  inviteToken String?           @unique
+  inviteEmail String?
+  acceptedAt  DateTime?
+  createdAt  DateTime           @default(now())
+
+  business   Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId])
+  @@map("business_members")
 }
 
 model Subscription {

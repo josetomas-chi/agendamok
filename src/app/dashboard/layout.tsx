@@ -8,10 +8,26 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const session = await auth()
   if (!session) redirect("/login")
 
-  const business = await prisma.business.findUnique({
+  // Try owner first
+  let business = await prisma.business.findUnique({
     where: { ownerId: session.user.id },
     select: { id: true, name: true, logo: true, businessType: true, bsaleApiKey: true },
   })
+  let memberRole: "ADMIN" | "RECEPTIONIST" = "ADMIN"
+
+  // If not owner, check BusinessMember
+  if (!business) {
+    const member = await prisma.businessMember.findFirst({
+      where: { userId: session.user.id, acceptedAt: { not: null } },
+      include: {
+        business: { select: { id: true, name: true, logo: true, businessType: true, bsaleApiKey: true } },
+      },
+    })
+    if (member) {
+      business = member.business
+      memberRole = member.role as "ADMIN" | "RECEPTIONIST"
+    }
+  }
 
   const hasBsale = !!business?.bsaleApiKey
 
@@ -22,12 +38,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
       businessLogo={business?.logo ?? null}
       businessType={business?.businessType ?? "GENERAL"}
       hasBsale={hasBsale}
+      memberRole={memberRole}
     >
       <DashboardShell
         businessId={business?.id ?? ""}
         businessName={business?.name ?? ""}
         businessLogo={business?.logo ?? null}
         businessType={business?.businessType ?? "GENERAL"}
+        memberRole={memberRole}
       >
         {children}
       </DashboardShell>

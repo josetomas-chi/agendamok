@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle2, AlertCircle, Loader2, Gift, CalendarX2, ImagePlus, X } from "lucide-react"
+import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle2, AlertCircle, Loader2, Gift, CalendarX2, ImagePlus, X, Users, UserPlus, Mail } from "lucide-react"
 
 type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean }
 type PaymentSettings = { onlinePaymentsEnabled: boolean; hasCredentials: boolean }
@@ -410,6 +410,7 @@ function SettingsContent() {
             { value: "billing",       icon: CreditCard, label: "Plan" },
             { value: "invoicing",     icon: FileText,   label: "Facturación" },
             { value: "loyalty",       icon: Gift,       label: "Fidelización" },
+            { value: "team",          icon: Users,      label: "Equipo" },
             { value: "api",           icon: Key,        label: "API" },
             { value: "holidays",      icon: CalendarX2, label: "Feriados" },
           ] as { value: string; icon: React.ElementType; label: string }[]).map(({ value, icon: Icon, label }) => (
@@ -1407,7 +1408,123 @@ function SettingsContent() {
             </Card>
           )}
         </div>}
+
+        {activeTab === "team" && <TeamTab />}
       </div>
+    </div>
+  )
+}
+
+function TeamTab() {
+  const [members, setMembers] = useState<{ id: string; role: string; inviteEmail: string | null; acceptedAt: string | null; user: { id: string; name: string | null; email: string; image: string | null } }[]>([])
+  const [email, setEmail] = useState("")
+  const [name, setName] = useState("")
+  const [inviting, setInviting] = useState(false)
+  const [inviteUrl, setInviteUrl] = useState("")
+
+  useEffect(() => {
+    fetch("/api/businesses/members").then(r => r.json()).then(d => setMembers(d.members || []))
+  }, [])
+
+  async function handleInvite() {
+    if (!email) return
+    setInviting(true)
+    const res = await fetch("/api/businesses/members", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, name }),
+    })
+    const d = await res.json()
+    if (res.ok) {
+      setInviteUrl(d.inviteUrl)
+      setEmail(""); setName("")
+      fetch("/api/businesses/members").then(r => r.json()).then(d => setMembers(d.members || []))
+    } else {
+      toast.error(d.error || "Error al invitar")
+    }
+    setInviting(false)
+  }
+
+  async function handleRemove(id: string) {
+    if (!confirm("¿Eliminar este miembro?")) return
+    await fetch(`/api/businesses/members/${id}`, { method: "DELETE" })
+    setMembers(m => m.filter(x => x.id !== id))
+    toast.success("Miembro eliminado")
+  }
+
+  return (
+    <div className="pt-4 space-y-4">
+      <Card className="bg-[#2c2c30] border-white/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><UserPlus className="w-4 h-4 text-sky-400" /> Invitar recepcionista</CardTitle>
+          <CardDescription>Envía una invitación por email. El recepcionista podrá gestionar turnos, clientes y pagos.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {inviteUrl ? (
+            <div className="space-y-3">
+              <p className="text-sm text-white/60">Email enviado. También puedes compartir este link directamente:</p>
+              <div className="flex gap-2">
+                <Input value={inviteUrl} readOnly className="font-mono text-xs" />
+                <Button variant="outline" size="icon" onClick={() => { navigator.clipboard.writeText(inviteUrl); toast.success("Link copiado") }}>
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+              <Button variant="ghost" size="sm" className="text-white/40" onClick={() => setInviteUrl("")}>
+                Invitar otro
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label>Nombre</Label>
+                <Input placeholder="Nombre recepcionista" value={name} onChange={e => setName(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Email *</Label>
+                <Input type="email" placeholder="correo@ejemplo.com" value={email} onChange={e => setEmail(e.target.value)} />
+              </div>
+              <div className="flex items-end">
+                <Button className="w-full gap-2" onClick={handleInvite} disabled={inviting || !email}>
+                  <Mail className="w-4 h-4" />
+                  {inviting ? "Enviando..." : "Enviar invitación"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {members.length > 0 && (
+        <Card className="bg-[#2c2c30] border-white/10">
+          <CardHeader><CardTitle>Miembros del equipo</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            {members.map(m => (
+              <div key={m.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                <div className="w-9 h-9 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400 font-bold text-sm flex-shrink-0">
+                  {(m.user.name || m.user.email)[0].toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white truncate">{m.user.name || m.user.email}</p>
+                  <p className="text-xs text-white/40 truncate">{m.user.email}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${m.role === "ADMIN" ? "bg-sky-500/15 text-sky-400 border-sky-400/30" : "bg-violet-500/15 text-violet-400 border-violet-400/30"}`}>
+                    {m.role === "ADMIN" ? "Admin" : "Recepcionista"}
+                  </span>
+                  {!m.acceptedAt && (
+                    <span className="px-2 py-0.5 rounded-full text-xs border bg-amber-400/10 text-amber-400 border-amber-400/20">Pendiente</span>
+                  )}
+                  {m.role !== "ADMIN" && (
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-white/30 hover:text-red-400" onClick={() => handleRemove(m.id)}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

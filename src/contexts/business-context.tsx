@@ -2,12 +2,15 @@
 
 import { createContext, useContext } from "react"
 
+export type MemberRole = "ADMIN" | "RECEPTIONIST"
+
 type BusinessContextValue = {
   businessId: string
   businessName: string
   businessLogo: string | null
   businessType: string
   hasBsale: boolean
+  memberRole: MemberRole
 }
 
 const BusinessContext = createContext<BusinessContextValue>({
@@ -16,13 +19,14 @@ const BusinessContext = createContext<BusinessContextValue>({
   businessLogo: null,
   businessType: "GENERAL",
   hasBsale: false,
+  memberRole: "ADMIN",
 })
 
 export function BusinessProvider({
-  businessId, businessName, businessLogo, businessType, hasBsale, children,
+  businessId, businessName, businessLogo, businessType, hasBsale, memberRole, children,
 }: BusinessContextValue & { children: React.ReactNode }) {
   return (
-    <BusinessContext.Provider value={{ businessId, businessName, businessLogo, businessType, hasBsale }}>
+    <BusinessContext.Provider value={{ businessId, businessName, businessLogo, businessType, hasBsale, memberRole }}>
       {children}
     </BusinessContext.Provider>
   )
@@ -30,4 +34,9 @@ export function BusinessProvider({
 
 export function useBusiness() {
   return useContext(BusinessContext)
+}
+
+export function useIsAdmin() {
+  const { memberRole } = useContext(BusinessContext)
+  return memberRole === "ADMIN"
 }
