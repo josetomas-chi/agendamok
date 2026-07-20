@@ -166,11 +166,39 @@
     color: oklch(0.65 0.01 260) !important;
     letter-spacing: 0.02em !important;
   }
+  /* ── Sports (theme-light) overrides ── */
   .theme-light .page-title {
     color: #0d1b2a !important;
   }
   .theme-light .page-subtitle {
     color: rgba(13,27,42,0.5) !important;
+  }
+  /* text-white → dark in light theme */
+  .theme-light .text-white { color: #0d1b2a !important; }
+  .theme-light .text-white\/90 { color: rgba(13,27,42,0.9) !important; }
+  .theme-light .text-white\/80 { color: rgba(13,27,42,0.8) !important; }
+  .theme-light .text-white\/60 { color: rgba(13,27,42,0.6) !important; }
+  .theme-light .text-white\/50 { color: rgba(13,27,42,0.5) !important; }
+  .theme-light .text-white\/40 { color: rgba(13,27,42,0.4) !important; }
+  .theme-light .text-white\/30 { color: rgba(13,27,42,0.3) !important; }
+  /* card/panel backgrounds */
+  .theme-light .bg-white\/\[0\.03\] { background: rgba(0,0,0,0.03) !important; }
+  .theme-light .bg-white\/\[0\.04\] { background: rgba(0,0,0,0.04) !important; }
+  .theme-light .bg-white\/5 { background: rgba(0,0,0,0.04) !important; }
+  .theme-light .bg-white\/10 { background: rgba(0,0,0,0.07) !important; }
+  /* borders */
+  .theme-light .border-white\/\[0\.07\] { border-color: rgba(0,0,0,0.08) !important; }
+  .theme-light .border-white\/\[0\.05\] { border-color: rgba(0,0,0,0.06) !important; }
+  .theme-light .border-white\/10 { border-color: rgba(0,0,0,0.1) !important; }
+  /* skeleton in light mode */
+  .theme-light .skeleton {
+    background: linear-gradient(90deg, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.08) 50%, rgba(0,0,0,0.04) 75%);
+    background-size: 800px 100%;
+  }
+  /* panel in light mode */
+  .theme-light .panel {
+    background: rgba(255,255,255,0.7);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.06);
   }
   .skeleton {
     background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
