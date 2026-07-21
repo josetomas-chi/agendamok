@@ -938,13 +938,13 @@ function SettingsContent() {
             ).map(([key, plan]) => {
               const isCurrent = (key === currentPlan && subscription?.status === "ACTIVE") || subscription?.isCourtesy
               return (
-                <Card key={key} className={`relative border ${isCurrent ? "border-sky-400/50 bg-sky-500/5" : ""}`}>
+                <Card key={key} className={`relative border overflow-visible ${isCurrent ? "border-sky-400/50 bg-sky-500/5" : ""}`}>
                   {isCurrent && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-sky-500 rounded-full text-xs font-semibold text-white">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-0.5 bg-sky-500 rounded-full text-xs font-semibold text-white">
                       {subscription?.isCourtesy ? "Plan Pro (Cortesía)" : "Plan actual"}
                     </div>
                   )}
-                  <CardContent className="p-5 space-y-3 pt-6">
+                  <CardContent className="p-5 space-y-3 pt-7">
                     <div>
                       <p className="font-bold text-lg">Plan {plan.label}</p>
                       <p className="text-2xl font-bold text-sky-500 mt-1">
