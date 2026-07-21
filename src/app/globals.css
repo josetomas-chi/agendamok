@@ -168,11 +168,21 @@
   }
   /* ── Sports (theme-light) overrides ── */
   .theme-light {
-    --card-foreground: #0d1b2a;
-    --popover-foreground: #0d1b2a;
+    --background: #f2f2f5;
     --foreground: #0d1b2a;
-    --muted-foreground: rgba(13,27,42,0.55);
+    --card: #e8e8ec;
+    --card-foreground: #0d1b2a;
+    --popover: #e8e8ec;
+    --popover-foreground: #0d1b2a;
+    --muted: #dddde2;
+    --muted-foreground: rgba(13,27,42,0.5);
+    --accent: #dddde2;
+    --accent-foreground: #0d1b2a;
+    --secondary: #dddde2;
+    --secondary-foreground: #0d1b2a;
     --border: rgba(0,0,0,0.1);
+    --input: rgba(0,0,0,0.06);
+    --ring: oklch(0.68 0.18 210);
   }
   .theme-light [data-slot="card"] {
     box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.06);
