@@ -15,7 +15,7 @@ import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Ke
 
 type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean }
 type PaymentSettings = { onlinePaymentsEnabled: boolean; hasCredentials: boolean }
-type Subscription = { plan: string; status: string; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean; flowCustomerId: string | null; trialEndsAt: string | null }
+type Subscription = { plan: string; status: string; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean; flowCustomerId: string | null; trialEndsAt: string | null; isCourtesy: boolean }
 
 function SettingsContent() {
   const [business, setBusiness] = useState<Business | null>(null)
@@ -367,21 +367,21 @@ function SettingsContent() {
       label: "Negocio",
       price: "0,7 UF/mes",
       features: ["Hasta 5 profesionales", "Todo lo del plan Starter", "Encuestas de satisfacción", "Comisiones de staff", "2.000 emails marketing/mes", "Soporte por chat"],
-      color: "bg-sky-500/10 border-sky-400/40 text-sky-300",
+      color: "bg-sky-500/10 border-sky-400/40 text-sky-500",
       btnColor: "bg-sky-500 hover:bg-sky-400",
     },
     PRO: {
       label: "Pro",
       price: "1,1 UF/mes",
       features: ["Profesionales ilimitados", "Todo lo del plan Negocio", "Ficha clínica", "Presupuestos y cotizaciones", "Múltiples sedes", "API access"],
-      color: "bg-purple-500/10 border-purple-400/40 text-purple-300",
+      color: "bg-purple-500/10 border-purple-400/40 text-purple-600",
       btnColor: "bg-purple-600 hover:bg-purple-500",
     },
     SPORTS: {
       label: "Sports",
       price: "1,1 UF/mes",
       features: ["Canchas ilimitadas", "Reservas online 24/7", "Precios por día y horario", "Membresías de socios", "Pago con transferencia", "Torneos"],
-      color: "bg-sky-500/10 border-sky-400/40 text-sky-300",
+      color: "bg-sky-500/10 border-sky-400/40 text-sky-500",
       btnColor: "bg-sky-500 hover:bg-sky-400",
     },
   }
@@ -866,19 +866,27 @@ function SettingsContent() {
             <CardContent className="space-y-4">
               <div className={`flex items-center justify-between p-4 border rounded-xl ${info.color}`}>
                 <div>
-                  <p className="font-bold text-lg">Plan {info.label}</p>
-                  <p className="text-sm opacity-70">{info.price} + IVA</p>
-                  {trialDaysLeft !== null && trialDaysLeft > 0 && (
-                    <p className="text-xs font-medium mt-1 text-sky-300">
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-lg">Plan {info.label}</p>
+                    {subscription?.isCourtesy && (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-600 border border-amber-400/40">Cortesía</span>
+                    )}
+                  </div>
+                  {subscription?.isCourtesy
+                    ? <p className="text-sm opacity-70">Sin costo — plan autorizado por AgendaMok</p>
+                    : <p className="text-sm opacity-70">{info.price} + IVA</p>
+                  }
+                  {!subscription?.isCourtesy && trialDaysLeft !== null && trialDaysLeft > 0 && (
+                    <p className="text-xs font-medium mt-1 text-sky-500">
                       Prueba gratuita: {trialDaysLeft} días restantes
                     </p>
                   )}
-                  {trialExpired && subscription?.status !== "ACTIVE" && (
-                    <p className="text-xs font-semibold text-red-400 mt-1">
+                  {!subscription?.isCourtesy && trialExpired && subscription?.status !== "ACTIVE" && (
+                    <p className="text-xs font-semibold text-red-500 mt-1">
                       Periodo de prueba vencido — activa tu plan para continuar
                     </p>
                   )}
-                  {subscription?.currentPeriodEnd && subscription.status === "ACTIVE" && (
+                  {!subscription?.isCourtesy && subscription?.currentPeriodEnd && subscription.status === "ACTIVE" && (
                     <p className="text-xs opacity-60 mt-1">
                       {subscription.cancelAtPeriodEnd ? "Cancela el" : "Renueva el"}{" "}
                       {new Date(subscription.currentPeriodEnd).toLocaleDateString("es-CL")}
@@ -886,24 +894,24 @@ function SettingsContent() {
                   )}
                 </div>
                 <Badge variant="secondary">
-                  {trialDaysLeft !== null && trialDaysLeft > 0 ? "Prueba gratuita" :
+                  {subscription?.isCourtesy ? "Cortesía activa" :
+                   trialDaysLeft !== null && trialDaysLeft > 0 ? "Prueba gratuita" :
                    subscription?.status === "ACTIVE" ? "Activo" :
                    subscription?.status === "PAST_DUE" ? "Pago pendiente" :
                    subscription?.status === "CANCELED" ? "Cancelado" : "Sin suscripción"}
                 </Badge>
               </div>
-              {/* No card registered yet */}
-              {!subscription?.flowCustomerId && (
+              {/* No mostrar opciones de pago si es cortesía */}
+              {!subscription?.isCourtesy && !subscription?.flowCustomerId && (
                 <Button size="sm" className="bg-sky-500 hover:bg-sky-400 text-white gap-2" onClick={() => handleSubscribe(currentPlan)}>
                   <CreditCard className="w-4 h-4" /> Registrar tarjeta de pago
                 </Button>
               )}
-              {/* Payment failed — prompt to update card */}
-              {subscription?.status === "PAST_DUE" && (
+              {!subscription?.isCourtesy && subscription?.status === "PAST_DUE" && (
                 <div className="flex items-start gap-3 p-3 rounded-xl bg-red-500/10 border border-red-400/30">
                   <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-red-300 font-medium">Pago rechazado</p>
+                    <p className="text-sm text-red-500 font-medium">Pago rechazado</p>
                     <p className="text-xs text-muted-foreground mt-0.5">Actualiza tu tarjeta para mantener el acceso.</p>
                   </div>
                   <Button size="sm" className="bg-red-500 hover:bg-red-400 text-white shrink-0" onClick={() => handleSubscribe(currentPlan)}>
@@ -911,13 +919,13 @@ function SettingsContent() {
                   </Button>
                 </div>
               )}
-              {subscription?.status === "ACTIVE" && !subscription.cancelAtPeriodEnd && (
+              {!subscription?.isCourtesy && subscription?.status === "ACTIVE" && !subscription.cancelAtPeriodEnd && (
                 <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300 border-red-400/30" onClick={handleCancel}>
                   Cancelar suscripción
                 </Button>
               )}
-              {subscription?.cancelAtPeriodEnd && (
-                <p className="text-xs text-amber-400">Tu plan se cancela al fin del periodo. Hasta entonces puedes seguir usándolo.</p>
+              {!subscription?.isCourtesy && subscription?.cancelAtPeriodEnd && (
+                <p className="text-xs text-amber-500">Tu plan se cancela al fin del periodo. Hasta entonces puedes seguir usándolo.</p>
               )}
             </CardContent>
           </Card>
