@@ -167,6 +167,16 @@
     letter-spacing: 0.02em !important;
   }
   /* ── Sports (theme-light) overrides ── */
+  .theme-light {
+    --card-foreground: #0d1b2a;
+    --popover-foreground: #0d1b2a;
+    --foreground: #0d1b2a;
+    --muted-foreground: rgba(13,27,42,0.55);
+    --border: rgba(0,0,0,0.1);
+  }
+  .theme-light [data-slot="card"] {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.06);
+  }
   .theme-light .page-title {
     color: #0d1b2a !important;
   }
