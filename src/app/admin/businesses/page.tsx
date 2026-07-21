@@ -410,8 +410,8 @@ export default function AdminBusinessesPage() {
               <button
                 type="button"
                 onClick={() => setChatBotValue(v => !v)}
-                className={`relative w-10 h-5 rounded-full transition-colors ${chatBotValue ? "bg-sky-500" : "bg-white/15"}`}>
-                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${chatBotValue ? "translate-x-5" : "translate-x-0.5"}`} />
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${chatBotValue ? "bg-sky-500" : "bg-white/15"}`}>
+                <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${chatBotValue ? "translate-x-6" : "translate-x-1"}`} />
               </button>
             </div>
             <div className="flex gap-2">
