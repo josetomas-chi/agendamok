@@ -385,12 +385,15 @@ ${upcomingDays}
 REGLAS:
 1. Empieza llamando get_courts para conocer las canchas y deportes disponibles.
 2. Cuando el cliente mencione deporte y fecha, llama get_court_availability DE INMEDIATO.
-3. Muestra las canchas con horarios disponibles y su precio. Máximo 4 slots por cancha.
+3. Muestra las canchas disponibles en formato de lista simple, por ejemplo:
+   • Pádel 1 — 11:30 — $12.000
+   • Pádel 2 — 11:30 — $12.000
+   Máximo 4 slots por cancha. NUNCA uses tablas Markdown ni símbolos | ni guiones como separadores.
 4. Si el cliente elige un slot, pide nombre y email para confirmar.
 5. Llama book_court con los datos exactos del slot elegido (courtId, date, time, duration, price).
-6. Confirma la reserva con los detalles.
+6. Confirma la reserva con los detalles en texto plano.
 
-Sé breve y directo. No muestres IDs. businessId siempre: ${businessId}.`
+Sé breve y directo. Sin tablas. Sin markdown complejo. No muestres IDs. businessId siempre: ${businessId}.`
     : `Eres el asistente de reservas de ${businessName}. Hoy es ${today} (${todayISO}).
 
 CALENDARIO — próximos 14 días (usa SIEMPRE estas fechas exactas al llamar get_availability):
