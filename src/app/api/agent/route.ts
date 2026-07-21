@@ -279,7 +279,8 @@ async function runCourtTool(name: string, input: Record<string, string | number>
             const [sh, sm] = slotTime.split(":").map(Number)
             const start = new Date(dayStart); start.setHours(sh, sm, 0, 0)
             const end = addMinutes(start, ruleDuration)
-            if (start > now && !isBooked(start, end)) slots.push({ time: slotTime, price: Number(rule.price) })
+            const startUTC = chileLocalToUTC(start)
+            if (startUTC > now && !isBooked(start, end)) slots.push({ time: slotTime, price: Number(rule.price) })
           }
         }
 
@@ -293,7 +294,7 @@ async function runCourtTool(name: string, input: Record<string, string | number>
           while (cursor < cutoff) {
             const slotEnd = addMinutes(cursor, duration)
             if (slotEnd > cutoff) break
-            if (cursor > now && !isBooked(cursor, slotEnd)) {
+            if (chileLocalToUTC(cursor) > now && !isBooked(cursor, slotEnd)) {
               const cm = cursor.getHours() * 60 + cursor.getMinutes()
               const rule = flexRules.find(r => cm >= timeToMinutes(r.startTime) && cm < timeToMinutes(r.endTime))
               slots.push({ time: format(cursor, "HH:mm"), price: rule ? Number(rule.price) : 0 })
