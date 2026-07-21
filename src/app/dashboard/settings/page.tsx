@@ -360,8 +360,8 @@ function SettingsContent() {
       label: "Starter",
       price: "0,3 UF/mes",
       features: ["1 profesional", "Turnos ilimitados", "Booking online 24/7", "CRM de clientes", "Pagos online y POS", "Recordatorios por email"],
-      color: "bg-white/5 border-white/20 text-white",
-      btnColor: "bg-white/10 hover:bg-white/20",
+      color: "bg-muted/30 border-border text-foreground",
+      btnColor: "bg-muted hover:bg-muted/80",
     },
     NEGOCIO: {
       label: "Negocio",
@@ -442,10 +442,10 @@ function SettingsContent() {
                 <div className="space-y-1.5"><Label>Moneda</Label><Input value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} placeholder="CLP" /></div>
               </div>
               {/* Clinical record toggle */}
-              <div className="flex items-center justify-between rounded-xl border border-white/10 p-4">
+              <div className="flex items-center justify-between rounded-xl border border-border p-4">
                 <div>
-                  <p className="text-sm font-medium text-white">Ficha clínica de pacientes</p>
-                  <p className="text-xs text-white/40 mt-0.5">Actívala si tu negocio pertenece al área de la salud</p>
+                  <p className="text-sm font-medium text-foreground">Ficha clínica de pacientes</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Actívala si tu negocio pertenece al área de la salud</p>
                 </div>
                 <button
                   onClick={async () => {
@@ -458,7 +458,7 @@ function SettingsContent() {
                     })
                     toast.success(next ? "Ficha clínica activada" : "Ficha clínica desactivada")
                   }}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${clinicalEnabled ? "bg-sky-500" : "bg-white/10"}`}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${clinicalEnabled ? "bg-sky-500" : "bg-muted"}`}
                 >
                   <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${clinicalEnabled ? "translate-x-5" : "translate-x-0.5"}`} />
                 </button>
@@ -467,7 +467,7 @@ function SettingsContent() {
               <Button onClick={handleSave} disabled={saving}>{saving ? "Guardando..." : "Guardar cambios"}</Button>
 
               {/* Location section */}
-              <div className="border-t border-white/10 pt-4 space-y-3">
+              <div className="border-t border-border pt-4 space-y-3">
                 <div>
                   <p className="text-sm font-medium flex items-center gap-2"><MapPin className="w-4 h-4 text-primary" />Ubicación del negocio</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Necesaria para aparecer en búsquedas por cercanía en <strong>agendamok.com/buscar</strong></p>
@@ -542,14 +542,14 @@ function SettingsContent() {
                     }}
                     className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-colors"
                   >
-                    <X className="w-4 h-4 text-white" />
+                    <X className="w-4 h-4 text-white" /* overlay button — keep white */ />
                   </button>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/15 cursor-pointer hover:border-sky-400/50 hover:bg-white/[0.02] transition-all" style={{ height: 160 }}>
+                <label className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border cursor-pointer hover:border-sky-400/50 hover:bg-muted/20 transition-all" style={{ height: 160 }}>
                   {uploadingCover
                     ? <><Loader2 className="w-6 h-6 animate-spin text-sky-400" /><span className="text-sm text-muted-foreground">Subiendo...</span></>
-                    : <><ImagePlus className="w-8 h-8 text-white/30" /><span className="text-sm text-muted-foreground">Haz clic para subir una foto</span><span className="text-xs text-white/25">JPG, PNG o WebP · máx. 5 MB</span></>
+                    : <><ImagePlus className="w-8 h-8 text-muted-foreground" /><span className="text-sm text-muted-foreground">Haz clic para subir una foto</span><span className="text-xs text-muted-foreground/60">JPG, PNG o WebP · máx. 5 MB</span></>
                   }
                   <input type="file" accept="image/*" className="hidden" disabled={uploadingCover}
                     onChange={async e => {
@@ -587,7 +587,7 @@ function SettingsContent() {
                   type="color"
                   value={brandColor}
                   onChange={e => setBrandColor(e.target.value)}
-                  className="w-12 h-12 rounded-xl border border-white/10 cursor-pointer bg-transparent p-0.5"
+                  className="w-12 h-12 rounded-xl border border-border cursor-pointer bg-transparent p-0.5"
                 />
                 <div className="flex-1">
                   <p className="text-sm font-medium">{brandColor.toUpperCase()}</p>
@@ -703,21 +703,21 @@ function SettingsContent() {
               ) : (
                 <div className="space-y-2">
                   {apiKeys.map(k => (
-                    <div key={k.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                    <div key={k.id} className="rounded-xl border border-border bg-muted/30 p-4">
                       <div className="flex items-center justify-between gap-3 mb-2">
                         <span className="font-medium text-sm">{k.name}</span>
                         <div className="flex items-center gap-2">
-                          {k.lastUsedAt && <span className="text-xs text-white/30">Usado hace poco</span>}
-                          <button onClick={() => toggleKeyVisibility(k.id)} className="text-white/30 hover:text-white transition-colors">
+                          {k.lastUsedAt && <span className="text-xs text-muted-foreground">Usado hace poco</span>}
+                          <button onClick={() => toggleKeyVisibility(k.id)} className="text-muted-foreground hover:text-foreground transition-colors">
                             {visibleKeys.has(k.id) ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
-                          <button onClick={() => deleteApiKey(k.id)} className="text-white/30 hover:text-red-400 transition-colors">
+                          <button onClick={() => deleteApiKey(k.id)} className="text-muted-foreground hover:text-red-400 transition-colors">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
                       <div className="flex gap-2 items-center">
-                        <code className="flex-1 text-xs bg-black/30 rounded-lg px-3 py-2 text-green-400 font-mono truncate">
+                        <code className="flex-1 text-xs bg-muted rounded-lg px-3 py-2 text-green-400 font-mono truncate">
                           {visibleKeys.has(k.id) ? k.key : k.key.slice(0, 8) + "••••••••••••••••••••••••••••••••"}
                         </code>
                         <Button size="sm" variant="outline" className="h-8 px-2.5 flex-shrink-0"
@@ -752,8 +752,8 @@ function SettingsContent() {
                       method === "GET" ? "bg-sky-500/20 text-sky-300" : "bg-green-500/20 text-green-300"
                     }`}>{method}</span>
                     <div>
-                      <code className="text-xs text-white/70 font-mono">{path}</code>
-                      <p className="text-xs text-white/40 mt-0.5">{desc}</p>
+                      <code className="text-xs text-foreground/70 font-mono">{path}</code>
+                      <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
                     </div>
                   </div>
                 ))}
@@ -797,7 +797,7 @@ function SettingsContent() {
                 </div>
                 <button
                   onClick={() => setDailySummary(v => !v)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${dailySummary ? "bg-sky-500" : "bg-slate-600"}`}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${dailySummary ? "bg-sky-500" : "bg-muted"}`}
                 >
                   <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${dailySummary ? "translate-x-6" : "translate-x-1"}`} />
                 </button>
@@ -904,7 +904,7 @@ function SettingsContent() {
                   <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-red-300 font-medium">Pago rechazado</p>
-                    <p className="text-xs text-white/40 mt-0.5">Actualiza tu tarjeta para mantener el acceso.</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Actualiza tu tarjeta para mantener el acceso.</p>
                   </div>
                   <Button size="sm" className="bg-red-500 hover:bg-red-400 text-white shrink-0" onClick={() => handleSubscribe(currentPlan)}>
                     Actualizar tarjeta
@@ -970,17 +970,17 @@ function SettingsContent() {
             })}
           </div>
 
-          <p className="text-xs text-white/30">
+          <p className="text-xs text-muted-foreground">
             Pagos procesados de forma segura a través de Flow. Tu tarjeta se registra una vez y los cobros son automáticos cada mes. Puedes cancelar en cualquier momento desde esta pantalla.
           </p>
         </div>}
 
         {/* Cobros online tab */}
         {activeTab === "payments" && <div className="pt-4 space-y-5">
-          <Card className="bg-[#2c2c30] border-white/10">
+          <Card>
             <CardHeader>
               <CardTitle className="text-base">Cobros online a tus clientes</CardTitle>
-              <CardDescription className="text-white/40">
+              <CardDescription>
                 Permite que tus clientes paguen su turno al reservar online. Necesitás una cuenta en{" "}
                 <a href="https://www.flow.cl" target="_blank" rel="noopener noreferrer" className="text-sky-400 underline">Flow.cl</a>{" "}
                 con las credenciales de producción de tu comercio.
@@ -989,16 +989,16 @@ function SettingsContent() {
             <CardContent className="space-y-5">
 
               {/* Status */}
-              <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.03] border border-white/10">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border">
                 <div>
-                  <p className="text-sm font-medium text-white">Cobros online</p>
-                  <p className="text-xs text-white/40 mt-0.5">
+                  <p className="text-sm font-medium text-foreground">Cobros online</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {paySettings.hasCredentials ? "Credenciales configuradas" : "Sin credenciales — configura abajo"}
                   </p>
                 </div>
                 <button
                   onClick={() => setPaySettings(s => ({ ...s, onlinePaymentsEnabled: !s.onlinePaymentsEnabled }))}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${paySettings.onlinePaymentsEnabled && paySettings.hasCredentials ? "bg-sky-500" : "bg-white/10"}`}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${paySettings.onlinePaymentsEnabled && paySettings.hasCredentials ? "bg-sky-500" : "bg-muted"}`}
                   disabled={!paySettings.hasCredentials}
                 >
                   <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${paySettings.onlinePaymentsEnabled && paySettings.hasCredentials ? "translate-x-5" : "translate-x-0"}`} />
@@ -1007,28 +1007,27 @@ function SettingsContent() {
 
               {/* Credentials form */}
               <div className="space-y-3">
-                <p className="text-sm font-medium text-white/80">Credenciales Flow de tu comercio</p>
+                <p className="text-sm font-medium text-foreground/80">Credenciales Flow de tu comercio</p>
                 <div>
-                  <Label className="text-white/50 text-xs mb-1.5 block">API Key</Label>
+                  <Label className="text-muted-foreground text-xs mb-1.5 block">API Key</Label>
                   <Input
                     value={payForm.flowApiKey}
                     onChange={e => setPayForm(f => ({ ...f, flowApiKey: e.target.value }))}
                     placeholder={paySettings.hasCredentials ? "••••••••••••••••••••• (ya configurada)" : "Tu API Key de Flow"}
-                    className="bg-[#3a3a3c] border-white/10 text-white placeholder:text-white/25"
                   />
                 </div>
                 <div>
-                  <Label className="text-white/50 text-xs mb-1.5 block">Secret Key</Label>
+                  <Label className="text-muted-foreground text-xs mb-1.5 block">Secret Key</Label>
                   <div className="relative">
                     <Input
                       type={showPaySecret ? "text" : "password"}
                       value={payForm.flowSecretKey}
                       onChange={e => setPayForm(f => ({ ...f, flowSecretKey: e.target.value }))}
                       placeholder={paySettings.hasCredentials ? "••••••••••••••••••••• (ya configurada)" : "Tu Secret Key de Flow"}
-                      className="bg-[#3a3a3c] border-white/10 text-white placeholder:text-white/25 pr-10"
+                      className="pr-10"
                     />
                     <button type="button" onClick={() => setShowPaySecret(s => !s)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white transition-colors">
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                       {showPaySecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
@@ -1046,27 +1045,27 @@ function SettingsContent() {
                 )}
               </div>
 
-              <div className="bg-sky-500/5 border border-sky-400/20 rounded-xl p-4 text-xs text-white/50 space-y-2">
-                <p className="font-medium text-sky-300 text-sm">¿Cómo activar los cobros online?</p>
+              <div className="bg-sky-500/5 border border-sky-400/20 rounded-xl p-4 text-xs text-muted-foreground space-y-2">
+                <p className="font-medium text-sky-400 text-sm">¿Cómo activar los cobros online?</p>
                 <div className="space-y-1.5">
-                  <p className="font-medium text-white/70">Paso 1 — Crear cuenta en Flow</p>
+                  <p className="font-medium text-foreground/70">Paso 1 — Crear cuenta en Flow</p>
                   <p>Ingresa a <a href="https://www.flow.cl/app/web/register.php" target="_blank" rel="noopener noreferrer" className="text-sky-400 underline">flow.cl</a> y crea una cuenta de comercio. Completa el proceso de verificación de identidad y datos bancarios para recibir pagos.</p>
                 </div>
                 <div className="space-y-1.5">
-                  <p className="font-medium text-white/70">Paso 2 — Obtener credenciales de producción</p>
-                  <p>En tu panel de Flow: <strong className="text-white/60">Configuración → Integración → Credenciales de producción</strong>. Copia el <strong className="text-white/60">API Key</strong> y el <strong className="text-white/60">Secret Key</strong> y pégalos en los campos de arriba.</p>
+                  <p className="font-medium text-foreground/70">Paso 2 — Obtener credenciales de producción</p>
+                  <p>En tu panel de Flow: <strong className="text-foreground/60">Configuración → Integración → Credenciales de producción</strong>. Copia el <strong className="text-foreground/60">API Key</strong> y el <strong className="text-foreground/60">Secret Key</strong> y pégalos en los campos de arriba.</p>
                 </div>
                 <div className="space-y-1.5">
-                  <p className="font-medium text-white/70">Paso 3 — Configurar el webhook en Flow</p>
-                  <p>En Flow: <strong className="text-white/60">Configuración → Integración → URL de confirmación</strong>. Ingresa esta URL para que los pagos se confirmen automáticamente:</p>
-                  <code className="block mt-1 bg-black/30 rounded px-2 py-1.5 text-sky-300 break-all select-all">
+                  <p className="font-medium text-foreground/70">Paso 3 — Configurar el webhook en Flow</p>
+                  <p>En Flow: <strong className="text-foreground/60">Configuración → Integración → URL de confirmación</strong>. Ingresa esta URL para que los pagos se confirmen automáticamente:</p>
+                  <code className="block mt-1 bg-muted rounded px-2 py-1.5 text-sky-400 break-all select-all">
                     {typeof window !== "undefined" ? `${window.location.origin}/api/book/TU-SLUG/payment-webhook` : "https://agendamok.vercel.app/api/book/TU-SLUG/payment-webhook"}
                   </code>
-                  <p className="text-white/30">Reemplaza <strong className="text-white/50">TU-SLUG</strong> con tu identificador de negocio (el que aparece en tu link de reservas).</p>
+                  <p className="text-muted-foreground/70">Reemplaza <strong className="text-foreground/50">TU-SLUG</strong> con tu identificador de negocio (el que aparece en tu link de reservas).</p>
                 </div>
                 <div className="space-y-1.5">
-                  <p className="font-medium text-white/70">Paso 4 — Activar cobros</p>
-                  <p>Guarda las credenciales y activa el interruptor <strong className="text-white/60">Cobros online</strong> al inicio de esta sección. Tus clientes verán la opción de pagar al reservar y el dinero llegará directo a tu cuenta Flow.</p>
+                  <p className="font-medium text-foreground/70">Paso 4 — Activar cobros</p>
+                  <p>Guarda las credenciales y activa el interruptor <strong className="text-foreground/60">Cobros online</strong> al inicio de esta sección. Tus clientes verán la opción de pagar al reservar y el dinero llegará directo a tu cuenta Flow.</p>
                 </div>
               </div>
             </CardContent>
@@ -1075,7 +1074,7 @@ function SettingsContent() {
 
         {/* Integrations */}
         {activeTab === "integrations" && <div className="pt-4 space-y-4">
-          <Card className="bg-[#2c2c30] border-white/10">
+          <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <span className="w-7 h-7 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
@@ -1083,26 +1082,26 @@ function SettingsContent() {
                 </span>
                 Google Calendar
               </CardTitle>
-              <CardDescription className="text-white/40">
+              <CardDescription>
                 Sincroniza tus turnos automáticamente con Google Calendar. Cada reserva nueva crea un evento y cada cancelación lo elimina.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.03] border border-white/10">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border">
                 <div>
-                  <p className="text-sm font-medium text-white">Estado de la conexión</p>
-                  <p className="text-xs text-white/40 mt-0.5">
+                  <p className="text-sm font-medium text-foreground">Estado de la conexión</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {gcal.connected
                       ? `Conectado${gcal.connectedAt ? ` desde ${new Date(gcal.connectedAt).toLocaleDateString("es-CL")}` : ""}`
                       : "No conectado"}
                   </p>
                 </div>
-                <div className={`w-2.5 h-2.5 rounded-full ${gcal.connected ? "bg-emerald-400" : "bg-slate-600"}`} />
+                <div className={`w-2.5 h-2.5 rounded-full ${gcal.connected ? "bg-emerald-400" : "bg-muted-foreground/40"}`} />
               </div>
 
               {gcal.connected ? (
                 <div className="space-y-3">
-                  <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4 text-xs text-white/50 space-y-1">
+                  <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4 text-xs text-muted-foreground space-y-1">
                     <p className="font-medium text-emerald-400">✓ Sincronización activa</p>
                     <p>Los nuevos turnos se agregan automáticamente a tu Google Calendar principal.</p>
                     <p>Las cancelaciones eliminan el evento correspondiente.</p>
@@ -1124,8 +1123,8 @@ function SettingsContent() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="bg-sky-500/5 border border-sky-400/20 rounded-xl p-4 text-xs text-white/50 space-y-1">
-                    <p className="font-medium text-sky-300">¿Cómo funciona?</p>
+                  <div className="bg-sky-500/5 border border-sky-400/20 rounded-xl p-4 text-xs text-muted-foreground space-y-1">
+                    <p className="font-medium text-sky-400">¿Cómo funciona?</p>
                     <p>1. Haz clic en &quot;Conectar&quot; y autoriza el acceso a tu Google Calendar</p>
                     <p>2. Los turnos se sincronizarán automáticamente desde ese momento</p>
                     <p>3. Puedes desconectar en cualquier momento sin perder datos</p>
@@ -1146,28 +1145,28 @@ function SettingsContent() {
 
         {/* ── Facturación ── */}
         {activeTab === "invoicing" && <div className="pt-4 space-y-5">
-          <Card className="bg-[#2c2c30] border-white/10">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-sky-400" />
                 Integración con Bsale
               </CardTitle>
-              <CardDescription className="text-white/50">
+              <CardDescription>
                 Conecta la cuenta Bsale de tu negocio para emitir boletas y facturas electrónicas ante el SII directamente desde AgendaMok.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
 
               {/* Estado de conexión */}
-              <div className={`flex items-center gap-3 p-3 rounded-xl border ${bsaleConnected ? "border-emerald-500/20 bg-emerald-500/5" : "border-white/10 bg-white/[0.02]"}`}>
+              <div className={`flex items-center gap-3 p-3 rounded-xl border ${bsaleConnected ? "border-emerald-500/20 bg-emerald-500/5" : "border-border bg-muted/20"}`}>
                 {bsaleConnected
                   ? <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  : <AlertCircle className="w-4 h-4 text-white/30 flex-shrink-0" />}
+                  : <AlertCircle className="w-4 h-4 text-muted-foreground flex-shrink-0" />}
                 <div>
-                  <p className={`text-sm font-medium ${bsaleConnected ? "text-emerald-400" : "text-white/50"}`}>
+                  <p className={`text-sm font-medium ${bsaleConnected ? "text-emerald-400" : "text-muted-foreground"}`}>
                     {bsaleConnected ? "Bsale conectado" : "Bsale no configurado"}
                   </p>
-                  <p className="text-xs text-white/30">
+                  <p className="text-xs text-muted-foreground">
                     {bsaleConnected ? "Tu negocio puede emitir documentos tributarios electrónicos." : "Ingresa tu API Key de Bsale para activar la emisión de boletas."}
                   </p>
                 </div>
@@ -1186,7 +1185,7 @@ function SettingsContent() {
 
               {/* API Key */}
               <div className="space-y-1.5">
-                <Label className="text-white/60 text-xs">
+                <Label className="text-muted-foreground text-xs">
                   {bsaleConnected ? "Nueva API Key (deja vacío para mantener la actual)" : "API Key de Bsale *"}
                 </Label>
                 <div className="relative">
@@ -1195,26 +1194,26 @@ function SettingsContent() {
                     value={bsaleKey}
                     onChange={e => setBsaleKey(e.target.value)}
                     placeholder={bsaleConnected ? "••••••••••••••••" : "Ingresa tu API Key de Bsale"}
-                    className="bg-[#3a3a3c] border-white/10 text-white placeholder-white/20 pr-10"
+                    className="pr-10"
                   />
                   <button type="button" onClick={() => setShowBsaleKey(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                     {showBsaleKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <p className="text-xs text-white/30">La API Key la encuentras en tu cuenta Bsale → Configuración → API.</p>
+                <p className="text-xs text-muted-foreground">La API Key la encuentras en tu cuenta Bsale → Configuración → API.</p>
               </div>
 
               {/* Tipo de documento */}
               <div className="space-y-1.5">
-                <Label className="text-white/60 text-xs">Tipo de documento por defecto</Label>
+                <Label className="text-muted-foreground text-xs">Tipo de documento por defecto</Label>
                 <div className="flex gap-3">
                   {(["BOLETA", "FACTURA"] as const).map(type => (
                     <button key={type} onClick={() => setBsaleDocType(type)}
                       className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-colors ${
                         bsaleDocType === type
                           ? "border-sky-400/50 bg-sky-400/10 text-sky-400"
-                          : "border-white/10 text-white/40 hover:text-white/60"
+                          : "border-border text-muted-foreground hover:text-foreground"
                       }`}>
                       {type === "BOLETA" ? "Boleta electrónica" : "Factura electrónica"}
                     </button>
@@ -1223,14 +1222,14 @@ function SettingsContent() {
               </div>
 
               {/* Emisión automática */}
-              <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.03] border border-white/10">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border">
                 <div>
-                  <p className="text-sm font-medium text-white">Emitir automáticamente al pagar con Flow</p>
-                  <p className="text-xs text-white/40 mt-0.5">Cuando un cliente pague online, la boleta se genera y envía sola por email.</p>
+                  <p className="text-sm font-medium text-foreground">Emitir automáticamente al pagar con Flow</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Cuando un cliente pague online, la boleta se genera y envía sola por email.</p>
                 </div>
                 <button
                   onClick={() => setBsaleAuto(v => !v)}
-                  className={`relative w-10 h-6 rounded-full transition-colors ${bsaleAuto ? "bg-sky-500" : "bg-white/10"}`}>
+                  className={`relative w-10 h-6 rounded-full transition-colors ${bsaleAuto ? "bg-sky-500" : "bg-muted"}`}>
                   <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${bsaleAuto ? "left-5" : "left-1"}`} />
                 </button>
               </div>
@@ -1244,10 +1243,10 @@ function SettingsContent() {
           </Card>
 
           {/* Info DTE */}
-          <Card className="bg-[#2c2c30] border-white/10">
+          <Card>
             <CardContent className="pt-5 space-y-3">
-              <p className="text-sm font-medium text-white">¿Cómo funciona?</p>
-              <ol className="space-y-2 text-sm text-white/50">
+              <p className="text-sm font-medium text-foreground">¿Cómo funciona?</p>
+              <ol className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex gap-2"><span className="text-sky-400 font-bold">1.</span>Crea o ingresa a tu cuenta en <span className="text-sky-400">bsale.cl</span> con el RUT de tu negocio.</li>
                 <li className="flex gap-2"><span className="text-sky-400 font-bold">2.</span>Ve a Configuración → API y copia tu API Key.</li>
                 <li className="flex gap-2"><span className="text-sky-400 font-bold">3.</span>Pégala aquí y guarda. AgendaMok emitirá en nombre de tu negocio.</li>
@@ -1260,7 +1259,7 @@ function SettingsContent() {
         {/* Fidelización */}
         {activeTab === "loyalty" && <div className="pt-4 space-y-4">
           {/* Puntos de fidelización */}
-          <Card className="bg-[#2c2c30] border-white/10">
+          <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2"><Gift className="w-4 h-4 text-yellow-400" />Puntos de fidelización</CardTitle>
               <CardDescription>Los clientes acumulan puntos cada vez que se completa un turno.</CardDescription>
@@ -1277,7 +1276,7 @@ function SettingsContent() {
                     className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     placeholder="10"
                   />
-                  <p className="text-xs text-white/35">Ej: 10 puntos por cada sesión</p>
+                  <p className="text-xs text-muted-foreground">Ej: 10 puntos por cada sesión</p>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm">Puntos para alcanzar VIP automático</Label>
@@ -1289,26 +1288,26 @@ function SettingsContent() {
                     className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     placeholder="500"
                   />
-                  <p className="text-xs text-white/35">Al alcanzar este número se asigna VIP</p>
+                  <p className="text-xs text-muted-foreground">Al alcanzar este número se asigna VIP</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Descuentos por segmento */}
-          <Card className="bg-[#2c2c30] border-white/10">
+          <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Descuentos por segmento</CardTitle>
               <CardDescription>Define el % de descuento automático para cada tipo de cliente. Deja en blanco para no aplicar descuento. Pon 100 para que sea gratis.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {[
-                { key: "VIP", label: "VIP", color: "text-purple-300" },
-                { key: "INFLUENCER", label: "Influencer", color: "text-pink-300" },
-                { key: "FREQUENT", label: "Frecuente", color: "text-green-300" },
-                { key: "REGULAR", label: "Regular", color: "text-white/60" },
-                { key: "NEW", label: "Nuevo", color: "text-sky-300" },
-                { key: "AT_RISK", label: "En riesgo", color: "text-orange-300" },
+                { key: "VIP", label: "VIP", color: "text-purple-400" },
+                { key: "INFLUENCER", label: "Influencer", color: "text-pink-400" },
+                { key: "FREQUENT", label: "Frecuente", color: "text-green-500" },
+                { key: "REGULAR", label: "Regular", color: "text-foreground/60" },
+                { key: "NEW", label: "Nuevo", color: "text-sky-400" },
+                { key: "AT_RISK", label: "En riesgo", color: "text-orange-400" },
               ].map(({ key, label, color }) => (
                 <div key={key} className="flex items-center gap-4">
                   <span className={`w-28 text-sm font-medium ${color}`}>{label}</span>
@@ -1322,7 +1321,7 @@ function SettingsContent() {
                       min={0} max={100}
                       className="max-w-[140px] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     />
-                    <span className="text-sm text-white/40">%</span>
+                    <span className="text-sm text-muted-foreground">%</span>
                     {segmentDiscounts[key] === "100" && <span className="text-xs text-green-400 font-medium">Gratis</span>}
                   </div>
                 </div>
@@ -1449,14 +1448,14 @@ function MemberRow({ m, onRemove }: { m: Member; onRemove: (id: string) => void 
   }
 
   return (
-    <div className="rounded-xl border border-white/5 bg-white/[0.03] overflow-hidden">
+    <div className="rounded-xl border border-border bg-muted/20 overflow-hidden">
       <div className="flex items-center gap-3 p-3">
         <div className="w-9 h-9 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400 font-bold text-sm flex-shrink-0">
           {(m.user.name || m.user.email)[0].toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-white truncate">{m.user.name || m.user.email}</p>
-          <p className="text-xs text-white/40 truncate">{m.user.email}</p>
+          <p className="text-sm font-medium text-foreground truncate">{m.user.name || m.user.email}</p>
+          <p className="text-xs text-muted-foreground truncate">{m.user.email}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-500/15 text-violet-400 border-violet-400/30">
@@ -1465,11 +1464,11 @@ function MemberRow({ m, onRemove }: { m: Member; onRemove: (id: string) => void 
           {!m.acceptedAt && (
             <span className="px-2 py-0.5 rounded-full text-xs border bg-amber-400/10 text-amber-400 border-amber-400/20">Pendiente</span>
           )}
-          <Button size="sm" variant="ghost" className="h-7 px-2 text-white/40 hover:text-white text-xs"
+          <Button size="sm" variant="ghost" className="h-7 px-2 text-muted-foreground hover:text-foreground text-xs"
             onClick={() => setExpanded(e => !e)}>
             {expanded ? "Ocultar" : "Permisos"}
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-white/30 hover:text-red-400"
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
             onClick={() => onRemove(m.id)}>
             <Trash2 className="w-3.5 h-3.5" />
           </Button>
@@ -1477,19 +1476,19 @@ function MemberRow({ m, onRemove }: { m: Member; onRemove: (id: string) => void 
       </div>
 
       {expanded && (
-        <div className="border-t border-white/5 px-4 py-3 space-y-3">
-          <p className="text-xs text-white/40 uppercase tracking-wider">Acceso adicional</p>
+        <div className="border-t border-border px-4 py-3 space-y-3">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Acceso adicional</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {PERMISSION_LABELS.map(({ key, label }) => {
               const checked = perms[key] ?? false
               return (
-                <label key={key} className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${checked ? "border-sky-400/40 bg-sky-500/10" : "border-white/10 bg-white/[0.02] hover:border-white/20"}`}>
+                <label key={key} className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${checked ? "border-sky-400/40 bg-sky-500/10" : "border-border bg-muted/20 hover:border-border/80"}`}>
                   <input type="checkbox" className="sr-only" checked={checked}
                     onChange={e => setPerms(p => ({ ...p, [key]: e.target.checked }))} />
-                  <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border transition-colors ${checked ? "bg-sky-500 border-sky-500" : "border-white/20"}`}>
+                  <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border transition-colors ${checked ? "bg-sky-500 border-sky-500" : "border-border"}`}>
                     {checked && <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </div>
-                  <span className={`text-xs font-medium ${checked ? "text-sky-300" : "text-white/50"}`}>{label}</span>
+                  <span className={`text-xs font-medium ${checked ? "text-sky-400" : "text-muted-foreground"}`}>{label}</span>
                 </label>
               )
             })}
@@ -1545,7 +1544,7 @@ function TeamTab() {
 
   return (
     <div className="pt-4 space-y-4">
-      <Card className="bg-[#2c2c30] border-white/10">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><UserPlus className="w-4 h-4 text-sky-400" /> Invitar recepcionista</CardTitle>
           <CardDescription>El recepcionista tendrá acceso a turnos, clientes y pagos. Puedes ampliar sus permisos desde aquí.</CardDescription>
@@ -1553,14 +1552,14 @@ function TeamTab() {
         <CardContent className="space-y-3">
           {inviteUrl ? (
             <div className="space-y-3">
-              <p className="text-sm text-white/60">Invitación creada. Comparte este link o espera que llegue el email:</p>
+              <p className="text-sm text-muted-foreground">Invitación creada. Comparte este link o espera que llegue el email:</p>
               <div className="flex gap-2">
                 <Input value={inviteUrl} readOnly className="font-mono text-xs" />
                 <Button variant="outline" size="icon" onClick={() => { navigator.clipboard.writeText(inviteUrl); toast.success("Link copiado") }}>
                   <Copy className="w-4 h-4" />
                 </Button>
               </div>
-              <Button variant="ghost" size="sm" className="text-white/40" onClick={() => setInviteUrl("")}>
+              <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setInviteUrl("")}>
                 Invitar otro
               </Button>
             </div>
@@ -1586,7 +1585,7 @@ function TeamTab() {
       </Card>
 
       {receptionists.length > 0 && (
-        <Card className="bg-[#2c2c30] border-white/10">
+        <Card>
           <CardHeader><CardTitle>Recepcionistas</CardTitle></CardHeader>
           <CardContent className="space-y-2">
             {receptionists.map(m => (
