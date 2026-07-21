@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="iconGrad" x1="20" y1="20" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#93c5fd"/>
+      <stop offset="100%" stop-color="#bfdbfe"/>
+    </linearGradient>
+    <linearGradient id="circleGrad" x1="20" y1="20" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#93c5fd"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer circle -->
+  <circle cx="50" cy="50" r="46" stroke="url(#circleGrad)" stroke-width="1.5" fill="none"/>
+
+  <!-- Calendar body -->
+  <rect x="24" y="30" width="52" height="46" rx="7" fill="url(#iconGrad)" fill-opacity="0.25" stroke="url(#iconGrad)" stroke-width="2"/>
+
+  <!-- Calendar pins -->
+  <rect x="35" y="24" width="5" height="12" rx="2.5" fill="url(#iconGrad)"/>
+  <rect x="60" y="24" width="5" height="12" rx="2.5" fill="url(#iconGrad)"/>
+
+  <!-- Top bar of calendar -->
+  <rect x="24" y="38" width="52" height="3" fill="url(#iconGrad)" fill-opacity="0.4"/>
+
+  <!-- Double-chevron M shape -->
+  <polyline points="30,50 50,63 70,50" stroke="url(#iconGrad)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <polyline points="30,59 50,72 70,59" stroke="url(#iconGrad)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>
