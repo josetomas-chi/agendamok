@@ -247,7 +247,7 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
       {/* ── HEADER AgendaMok Sports ────────────────────── */}
       <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: `1px solid ${SPORTS_BORDER}`, background: "rgba(13,27,42,0.95)", backdropFilter: "blur(12px)" }}>
         <div className="flex items-center gap-2">
-          <img src="/agendamok-icon.svg" alt="AgendaMok" className="w-8 h-8 flex-shrink-0" />
+          <img src="/agendamok-icon.png" alt="AgendaMok" className="w-8 h-8 flex-shrink-0" />
           <div className="flex items-baseline gap-0.5">
             <span className="text-sm font-black text-white">Agenda</span>
             <span className="text-sm font-black" style={{ color: SPORTS_ACCENT }}>Mok</span>
