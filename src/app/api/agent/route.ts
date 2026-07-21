@@ -221,14 +221,32 @@ async function runCourtTool(name: string, input: Record<string, string | number>
     if (name === "get_courts") {
       const courts = await prisma.court.findMany({
         where: { businessId: String(input.businessId), isActive: true },
-        select: { id: true, name: true, sport: true, description: true, pricingRules: { select: { days: true, startTime: true, endTime: true, price: true } } },
+        select: { id: true, name: true, sport: true, description: true, pricingRules: { select: { days: true, startTime: true, endTime: true, price: true, fixedSlots: true } } },
         orderBy: { sortOrder: "asc" },
       })
-      return JSON.stringify(courts.map(c => ({
-        id: c.id, name: c.name, sport: c.sport,
-        description: c.description,
-        pricing: c.pricingRules.map(r => ({ days: r.days, from: r.startTime, to: r.endTime, price: r.price })),
-      })))
+      // Detect if any court has fixed slots (predefined time blocks)
+      const hasFixedSlots = courts.some(c => c.pricingRules.some(r => r.fixedSlots && r.fixedSlots.length > 0))
+      // Collect available durations from fixed slots across all courts
+      const fixedDurations: number[] = []
+      if (hasFixedSlots) {
+        courts.forEach(c => c.pricingRules.forEach(r => {
+          if (r.fixedSlots && r.fixedSlots.length >= 2) {
+            const [h1, m1] = r.fixedSlots[0].split(":").map(Number)
+            const [h2, m2] = r.fixedSlots[1].split(":").map(Number)
+            const dur = (h2 * 60 + m2) - (h1 * 60 + m1)
+            if (dur > 0 && !fixedDurations.includes(dur)) fixedDurations.push(dur)
+          }
+        }))
+      }
+      return JSON.stringify({
+        courts: courts.map(c => ({
+          id: c.id, name: c.name, sport: c.sport,
+          description: c.description,
+          pricing: c.pricingRules.map(r => ({ days: r.days, from: r.startTime, to: r.endTime, price: r.price })),
+        })),
+        hasFixedSlots,
+        fixedDurations,
+      })
     }
 
     if (name === "get_court_availability") {
@@ -383,15 +401,18 @@ CALENDARIO — próximos 14 días (usa SIEMPRE estas fechas al llamar get_court_
 ${upcomingDays}
 
 REGLAS:
-1. Empieza llamando get_courts para conocer las canchas y deportes disponibles.
-2. Cuando el cliente mencione deporte y fecha, llama get_court_availability DE INMEDIATO.
-3. Muestra las canchas disponibles en formato de lista simple, por ejemplo:
+1. Empieza llamando get_courts para conocer canchas, deportes y si el club tiene bloques fijos (hasFixedSlots) o duración libre.
+2. DURACIÓN:
+   - Si hasFixedSlots=true: el club tiene bloques fijos de tiempo. NO preguntes la duración — úsala directamente según los fixedDurations disponibles.
+   - Si hasFixedSlots=false: pregunta al cliente cuánto tiempo necesita (ej: 60, 90 o 120 min) ANTES de consultar disponibilidad.
+3. Cuando tengas deporte, fecha y duración, llama get_court_availability DE INMEDIATO.
+4. Muestra las canchas disponibles en formato de lista simple, por ejemplo:
    • Pádel 1 — 11:30 — $12.000
-   • Pádel 2 — 11:30 — $12.000
+   • Pádel 2 — 14:00 — $12.000
    Máximo 4 slots por cancha. NUNCA uses tablas Markdown ni símbolos | ni guiones como separadores.
-4. Si el cliente elige un slot, pide nombre y email para confirmar.
-5. Llama book_court con los datos exactos del slot elegido (courtId, date, time, duration, price).
-6. Confirma la reserva con los detalles en texto plano.
+5. Si el cliente elige un slot, pide nombre y email para confirmar.
+6. Llama book_court con los datos exactos del slot elegido (courtId, date, time, duration, price).
+7. Confirma la reserva con los detalles en texto plano.
 
 Sé breve y directo. Sin tablas. Sin markdown complejo. No muestres IDs. businessId siempre: ${businessId}.`
     : `Eres el asistente de reservas de ${businessName}. Hoy es ${today} (${todayISO}).
@@ -400,9 +421,9 @@ CALENDARIO — próximos 14 días (usa SIEMPRE estas fechas exactas al llamar ge
 ${upcomingDays}
 
 REGLAS:
-1. Saluda → llama get_services → muestra opciones.
-2. Cliente elige servicio → pregunta fecha.
-3. Cliente menciona fecha → llama get_availability DE INMEDIATO.
+1. Saluda → llama get_services → muestra las opciones con su duración y precio.
+2. Cliente elige servicio → pregunta fecha. NO preguntes la duración — cada servicio ya tiene la suya definida.
+3. Cliente menciona fecha → llama get_availability DE INMEDIATO con el serviceId elegido.
 4. Muestra los slots disponibles (máx 6). Si slots=[], di que está completo y pregunta otra fecha.
 5. Cliente elige horario → pide nombre + email.
 6. Llama book_appointment → confirma la reserva.
