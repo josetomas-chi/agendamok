@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle2, AlertCircle, Loader2, Gift, CalendarX2, ImagePlus, X, Users, UserPlus, Mail } from "lucide-react"
 
-type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean }
+type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean; notifConfirmation: boolean; notifReminder24h: boolean; notifReminder1h: boolean; notifNewBooking: boolean; notifCancellation: boolean }
 type PaymentSettings = { onlinePaymentsEnabled: boolean; hasCredentials: boolean }
 type Subscription = { plan: string; status: string; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean; flowCustomerId: string | null; trialEndsAt: string | null; isCourtesy: boolean }
 
@@ -24,6 +24,7 @@ function SettingsContent() {
   const [clinicalEnabled, setClinicalEnabled] = useState(false)
   const [cancellationHours, setCancellationHours] = useState<string>("")
   const [dailySummary, setDailySummary] = useState(false)
+  const [notifToggles, setNotifToggles] = useState({ notifConfirmation: true, notifReminder24h: true, notifReminder1h: true, notifNewBooking: true, notifCancellation: true })
   const [savingNotif, setSavingNotif] = useState(false)
 
   // Brand color
@@ -97,6 +98,13 @@ function SettingsContent() {
       setClinicalEnabled(biz.business.clinicalRecordEnabled ?? false)
       setCancellationHours(biz.business.cancellationHoursNotice?.toString() ?? "")
       setDailySummary(biz.business.dailySummaryEnabled ?? false)
+      setNotifToggles({
+        notifConfirmation: biz.business.notifConfirmation ?? true,
+        notifReminder24h:  biz.business.notifReminder24h  ?? true,
+        notifReminder1h:   biz.business.notifReminder1h   ?? true,
+        notifNewBooking:   biz.business.notifNewBooking   ?? true,
+        notifCancellation: biz.business.notifCancellation ?? true,
+      })
       setBrandColor(biz.business.primaryColor || "#38bdf8")
       setCoverImage(biz.business.coverImage || null)
       // Load Google Calendar status
@@ -766,21 +774,26 @@ function SettingsContent() {
         {activeTab === "notifications" && <div className="pt-4 space-y-4">
           {/* Status */}
           <Card>
-            <CardHeader><CardTitle>Notificaciones automáticas</CardTitle><CardDescription>Mensajes que se envían sin intervención manual</CardDescription></CardHeader>
+            <CardHeader><CardTitle>Notificaciones automáticas</CardTitle><CardDescription>Activa o desactiva cada tipo de mensaje</CardDescription></CardHeader>
             <CardContent className="space-y-3">
-              {[
-                { label: "Confirmación de turno", desc: "Email al cliente cuando se confirma la reserva", active: true },
-                { label: "Recordatorio 24h antes", desc: "WhatsApp + email el día anterior al turno", active: true },
-                { label: "Recordatorio 1h antes", desc: "WhatsApp + email una hora antes del turno", active: true },
-                { label: "Alerta de nueva reserva al negocio", desc: "Email al dueño cuando un cliente reserva", active: true },
-                { label: "Alerta de cancelación al negocio", desc: "Email al dueño cuando un cliente cancela", active: true },
-              ].map(n => (
-                <div key={n.label} className="flex items-center justify-between p-3 border rounded-lg">
+              {([
+                { key: "notifConfirmation" as const, label: "Confirmación de turno",           desc: "Email al cliente cuando se confirma la reserva" },
+                { key: "notifReminder24h"  as const, label: "Recordatorio 24h antes",          desc: "WhatsApp + email el día anterior al turno" },
+                { key: "notifReminder1h"   as const, label: "Recordatorio 1h antes",           desc: "WhatsApp + email una hora antes del turno" },
+                { key: "notifNewBooking"   as const, label: "Alerta de nueva reserva al negocio", desc: "Email al dueño cuando un cliente reserva" },
+                { key: "notifCancellation" as const, label: "Alerta de cancelación al negocio",   desc: "Email al dueño cuando un cliente cancela" },
+              ]).map(n => (
+                <div key={n.key} className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <p className="font-medium text-sm">{n.label}</p>
                     <p className="text-xs text-muted-foreground">{n.desc}</p>
                   </div>
-                  <Badge variant="default" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Activo</Badge>
+                  <button
+                    onClick={() => setNotifToggles(prev => ({ ...prev, [n.key]: !prev[n.key] }))}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notifToggles[n.key] ? "bg-sky-500" : "bg-muted"}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${notifToggles[n.key] ? "translate-x-6" : "translate-x-1"}`} />
+                  </button>
                 </div>
               ))}
             </CardContent>
@@ -843,6 +856,7 @@ function SettingsContent() {
                   body: JSON.stringify({
                     dailySummaryEnabled: dailySummary,
                     cancellationHoursNotice: cancellationHours ? parseInt(cancellationHours) : null,
+                    ...notifToggles,
                   }),
                 })
                 toast.success("Configuración guardada")

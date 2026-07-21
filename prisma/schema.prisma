@@ -236,6 +236,11 @@ model Business {
   coverImage                  String?
   primaryColor                String?
   dailySummaryEnabled         Boolean   @default(false)
+  notifConfirmation           Boolean   @default(true)
+  notifReminder24h            Boolean   @default(true)
+  notifReminder1h             Boolean   @default(true)
+  notifNewBooking             Boolean   @default(true)
+  notifCancellation           Boolean   @default(true)
   chatBotEnabled              Boolean   @default(false)
   createdAt                   DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
