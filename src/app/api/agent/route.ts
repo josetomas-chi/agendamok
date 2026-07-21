@@ -292,7 +292,7 @@ async function runCourtTool(name: string, input: Record<string, string | number>
           const [h1, m1] = rule.fixedSlots[0].split(":").map(Number)
           const [h2, m2] = rule.fixedSlots[1]?.split(":").map(Number) ?? [h1 + 1, m1]
           const ruleDuration = (h2 * 60 + m2) - (h1 * 60 + m1)
-          if (duration !== 0 && ruleDuration !== duration) continue
+          // Fixed blocks are shown as-is regardless of requested duration
           for (const slotTime of rule.fixedSlots) {
             const [sh, sm] = slotTime.split(":").map(Number)
             const start = new Date(dayStart); start.setHours(sh, sm, 0, 0)
