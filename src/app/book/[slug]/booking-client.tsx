@@ -26,6 +26,7 @@ type Business = {
   address: string | null; city: string | null
   onlinePaymentsEnabled: boolean; primaryColor: string | null
   businessType: string
+  chatBotEnabled: boolean
   clubSettings: { bookingWindowDays: number } | null
   courts: Court[]
   services: Service[]; staff: Staff[]
@@ -241,7 +242,7 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
 
   return (
     <div style={{ background: SPORTS_BG, minHeight: "100vh", color: "#f0f6ff", fontFamily: "sans-serif" }}>
-      <ChatWidget businessId={business.id} businessName={business.name} />
+      {business.chatBotEnabled && <ChatWidget businessId={business.id} businessName={business.name} />}
 
       {/* ── HEADER AgendaMok Sports ────────────────────── */}
       <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: `1px solid ${SPORTS_BORDER}`, background: "rgba(13,27,42,0.95)", backdropFilter: "blur(12px)" }}>
@@ -842,7 +843,7 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
 
   return (
     <div style={{ background: "#0f0f11", minHeight: "100vh", color: "#f4f4f5" }}>
-      <ChatWidget businessId={business.id} businessName={business.name} />
+      {business.chatBotEnabled && <ChatWidget businessId={business.id} businessName={business.name} />}
 
       {step === "home" && (
         <>

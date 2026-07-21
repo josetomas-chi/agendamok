@@ -17,6 +17,7 @@ type Business = {
   category: string
   createdAt: string
   isActive: boolean
+  chatBotEnabled: boolean
   owner: { name: string; email: string }
   businessType: string
   subscription: { plan: string; status: string; isCourtesy: boolean } | null
@@ -31,6 +32,7 @@ export default function AdminBusinessesPage() {
   const [planValue, setPlanValue] = useState("")
   const [statusValue, setStatusValue] = useState("")
   const [typeValue, setTypeValue] = useState("REGULAR")
+  const [chatBotValue, setChatBotValue] = useState(false)
   const [saving, setSaving] = useState(false)
   const [newOpen, setNewOpen] = useState(false)
   const [newForm, setNewForm] = useState({ ownerName: "", ownerEmail: "", businessName: "", slug: "", category: "", plan: "FREE" })
@@ -75,7 +77,7 @@ export default function AdminBusinessesPage() {
     await fetch(`/api/admin/businesses/${selected.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: planValue, status: statusValue, type: typeValue }),
+      body: JSON.stringify({ plan: planValue, status: statusValue, type: typeValue, chatBotEnabled: chatBotValue }),
     })
     toast.success("Plan actualizado")
     setSelected(null)
@@ -221,7 +223,7 @@ export default function AdminBusinessesPage() {
                 <td className="px-4 py-3 text-white/40">{new Date(b.createdAt).toLocaleDateString("es-CL")}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setSelected(b); setPlanValue(b.subscription?.plan || "FREE"); setStatusValue(b.subscription?.status || "ACTIVE"); setTypeValue(b.businessType === "SPORTS_CLUB" ? "SPORTS_CLUB" : "REGULAR") }}>
+                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setSelected(b); setPlanValue(b.subscription?.plan || "FREE"); setStatusValue(b.subscription?.status || "ACTIVE"); setTypeValue(b.businessType === "SPORTS_CLUB" ? "SPORTS_CLUB" : "REGULAR"); setChatBotValue(b.chatBotEnabled) }}>
                       Editar
                     </Button>
                     <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => window.open(`/book/${b.slug}`, "_blank")}>
@@ -400,6 +402,18 @@ export default function AdminBusinessesPage() {
                 </div>
               </div>
             )}
+            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-white/8">
+              <div>
+                <p className="text-sm font-medium">Asistente virtual (BOT)</p>
+                <p className="text-xs text-white/40">Activo en Negocio y Pro por defecto</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setChatBotValue(v => !v)}
+                className={`relative w-10 h-5 rounded-full transition-colors ${chatBotValue ? "bg-sky-500" : "bg-white/15"}`}>
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${chatBotValue ? "translate-x-5" : "translate-x-0.5"}`} />
+              </button>
+            </div>
             <div className="flex gap-2">
               <Button className="flex-1" onClick={updatePlan} disabled={saving}>{saving ? "Guardando..." : "Guardar cambios"}</Button>
               <Button variant="outline" onClick={() => setSelected(null)}>Cancelar</Button>

@@ -41,6 +41,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         data: { businessId: id, plan: body.plan || "FREE", status: body.status || "ACTIVE" },
       })
     }
+
+    // Auto-toggle chatbot based on plan (STARTER = off, NEGOCIO/PRO = on)
+    if (body.plan) {
+      const chatBotEnabled = ["NEGOCIO", "PRO", "SPORTS_NEGOCIO", "SPORTS_PRO"].includes(body.plan)
+      await prisma.business.update({ where: { id }, data: { chatBotEnabled } })
+    }
+  }
+
+  // Manual chatbot toggle from admin
+  if (typeof body.chatBotEnabled === "boolean") {
+    await prisma.business.update({ where: { id }, data: { chatBotEnabled: body.chatBotEnabled } })
   }
 
   return NextResponse.json({ success: true })

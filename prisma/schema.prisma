@@ -236,6 +236,7 @@ model Business {
   coverImage                  String?
   primaryColor                String?
   dailySummaryEnabled         Boolean   @default(false)
+  chatBotEnabled              Boolean   @default(false)
   createdAt                   DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   deletedAt             DateTime?
