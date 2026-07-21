@@ -936,12 +936,12 @@ function SettingsContent() {
               ? [["SPORTS", PLAN_INFO.SPORTS]] as [string, typeof PLAN_INFO[string]][]
               : (Object.entries(PLAN_INFO).filter(([k]) => k !== "SPORTS") as [string, typeof PLAN_INFO[string]][])
             ).map(([key, plan]) => {
-              const isCurrent = key === currentPlan && subscription?.status === "ACTIVE"
+              const isCurrent = (key === currentPlan && subscription?.status === "ACTIVE") || subscription?.isCourtesy
               return (
                 <Card key={key} className={`relative border ${isCurrent ? "border-sky-400/50 bg-sky-500/5" : ""}`}>
                   {isCurrent && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-sky-500 rounded-full text-xs font-semibold text-white">
-                      Plan actual
+                      {subscription?.isCourtesy ? "Plan Pro (Cortesía)" : "Plan actual"}
                     </div>
                   )}
                   <CardContent className="p-5 space-y-3 pt-6">
@@ -949,7 +949,6 @@ function SettingsContent() {
                       <p className="font-bold text-lg">Plan {plan.label}</p>
                       <p className="text-2xl font-bold text-sky-500 mt-1">
                         {plan.price.split("/")[0]} <span className="text-sm font-normal text-muted-foreground">/mes + IVA</span>
-
                       </p>
                     </div>
                     <ul className="text-sm space-y-1.5 text-muted-foreground">
@@ -959,6 +958,9 @@ function SettingsContent() {
                         </li>
                       ))}
                     </ul>
+                    {isCurrent && (
+                      <div className="text-center text-sm text-sky-400 py-2">✓ {subscription?.isCourtesy ? "Activo — sin costo" : "Plan activo"}</div>
+                    )}
                     {!isCurrent && (
                       <Button
                         className={`w-full gap-2 text-white ${plan.btnColor}`}
@@ -968,9 +970,6 @@ function SettingsContent() {
                         <CreditCard className="w-4 h-4" />
                         {subscribing ? "Procesando..." : `Activar Plan ${plan.label}`}
                       </Button>
-                    )}
-                    {isCurrent && (
-                      <div className="text-center text-sm text-sky-400 py-2">✓ Plan activo</div>
                     )}
                   </CardContent>
                 </Card>
