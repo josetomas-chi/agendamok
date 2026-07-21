@@ -1014,6 +1014,7 @@ function SettingsContent() {
                     value={payForm.flowApiKey}
                     onChange={e => setPayForm(f => ({ ...f, flowApiKey: e.target.value }))}
                     placeholder={paySettings.hasCredentials ? "••••••••••••••••••••• (ya configurada)" : "Tu API Key de Flow"}
+                    autoComplete="off"
                   />
                 </div>
                 <div>
@@ -1024,6 +1025,7 @@ function SettingsContent() {
                       value={payForm.flowSecretKey}
                       onChange={e => setPayForm(f => ({ ...f, flowSecretKey: e.target.value }))}
                       placeholder={paySettings.hasCredentials ? "••••••••••••••••••••• (ya configurada)" : "Tu Secret Key de Flow"}
+                      autoComplete="new-password"
                       className="pr-10"
                     />
                     <button type="button" onClick={() => setShowPaySecret(s => !s)}
@@ -1194,6 +1196,7 @@ function SettingsContent() {
                     value={bsaleKey}
                     onChange={e => setBsaleKey(e.target.value)}
                     placeholder={bsaleConnected ? "••••••••••••••••" : "Ingresa tu API Key de Bsale"}
+                    autoComplete="new-password"
                     className="pr-10"
                   />
                   <button type="button" onClick={() => setShowBsaleKey(v => !v)}
