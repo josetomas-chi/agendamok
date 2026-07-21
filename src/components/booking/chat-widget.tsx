@@ -45,12 +45,25 @@ export function ChatWidget({ businessId, businessName }: { businessId: string; b
     }
   }
 
-  function renderText(text: string) {
+  function renderInline(text: string) {
     return text.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
       part.startsWith("**") && part.endsWith("**")
         ? <strong key={i}>{part.slice(2, -2)}</strong>
         : part
     )
+  }
+
+  function renderText(text: string) {
+    return text.split("\n").map((line, i) => {
+      const trimmed = line.trim()
+      if (!trimmed) return <div key={i} className="h-1" />
+      const isBullet = trimmed.startsWith("•") || trimmed.startsWith("-")
+      return (
+        <div key={i} className={isBullet ? "pl-1" : ""}>
+          {renderInline(trimmed)}
+        </div>
+      )
+    })
   }
 
   return (
