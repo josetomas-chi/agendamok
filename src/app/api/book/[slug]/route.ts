@@ -11,6 +11,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
       id: true, name: true, category: true, description: true, logo: true, phone: true,
       address: true, city: true, onlinePaymentsEnabled: true, primaryColor: true,
       coverImage: true, businessType: true,
+      clubSettings: { select: { bookingWindowDays: true } },
       courts: {
         where: { isActive: true },
         select: { id: true, name: true, sport: true, color: true, description: true, sponsorName: true, sponsorLogo: true, sponsorUrl: true, pricingRules: { select: { days: true, startTime: true, endTime: true, price: true, fixedSlots: true } } },

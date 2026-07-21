@@ -985,8 +985,9 @@ model ClubSettings {
   openDays    Int[]    @default([1,2,3,4,5,6])
   openTime    String   @default("08:00")
   closeTime   String   @default("22:00")
-  slotMinutes Int      @default(60)
-  createdAt   DateTime @default(now())
+  slotMinutes        Int      @default(60)
+  bookingWindowDays  Int      @default(30)
+  createdAt          DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)

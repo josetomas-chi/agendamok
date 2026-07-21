@@ -27,6 +27,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       openTime: body.openTime || "08:00",
       closeTime: body.closeTime || "22:00",
       slotMinutes: Number(body.slotMinutes) || 60,
+      bookingWindowDays: Number(body.bookingWindowDays) || 30,
     },
     create: {
       businessId: id,
@@ -39,6 +40,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       openTime: body.openTime || "08:00",
       closeTime: body.closeTime || "22:00",
       slotMinutes: Number(body.slotMinutes) || 60,
+      bookingWindowDays: Number(body.bookingWindowDays) || 30,
     },
   })
   return NextResponse.json({ settings })

@@ -23,10 +23,19 @@ for (let h = 0; h <= 23; h++) {
   TIME_SLOTS.push(`${String(h).padStart(2, "0")}:30`)
 }
 
-type ClubForm = { clubName: string; description: string; address: string; phone: string; website: string; openDays: number[]; openTime: string; closeTime: string; slotMinutes: number }
+type ClubForm = { clubName: string; description: string; address: string; phone: string; website: string; openDays: number[]; openTime: string; closeTime: string; slotMinutes: number; bookingWindowDays: number }
 type Holiday = { id: string; date: string; name: string; type: string; surchargeType: string | null; surchargeValue: number | null }
 const EMPTY_HOLIDAY = { date: "", name: "", type: "CLOSED", surchargeType: "PERCENT", surchargeValue: "" }
-const DEFAULTS: ClubForm = { clubName: "", description: "", address: "", phone: "", website: "", openDays: [1,2,3,4,5,6], openTime: "08:00", closeTime: "22:00", slotMinutes: 60 }
+const DEFAULTS: ClubForm = { clubName: "", description: "", address: "", phone: "", website: "", openDays: [1,2,3,4,5,6], openTime: "08:00", closeTime: "22:00", slotMinutes: 60, bookingWindowDays: 30 }
+
+const WINDOW_OPTIONS = [
+  { value: 7, label: "1 semana" },
+  { value: 14, label: "2 semanas" },
+  { value: 21, label: "3 semanas" },
+  { value: 30, label: "1 mes (30 días)" },
+  { value: 60, label: "2 meses (60 días)" },
+  { value: 90, label: "3 meses (90 días)" },
+]
 
 function Input({ value, onChange, placeholder, className = "" }: { value: string; onChange: (v: string) => void; placeholder?: string; className?: string }) {
   return (
@@ -50,7 +59,7 @@ export default function ClubSettingsPage() {
     try {
       const r = await fetch(`/api/businesses/${bid}/club-settings`)
       const d = await r.json()
-      if (d.settings) setForm({ clubName: d.settings.clubName || "", description: d.settings.description || "", address: d.settings.address || "", phone: d.settings.phone || "", website: d.settings.website || "", openDays: d.settings.openDays ?? [1,2,3,4,5,6], openTime: d.settings.openTime || "08:00", closeTime: d.settings.closeTime || "22:00", slotMinutes: d.settings.slotMinutes || 60 })
+      if (d.settings) setForm({ clubName: d.settings.clubName || "", description: d.settings.description || "", address: d.settings.address || "", phone: d.settings.phone || "", website: d.settings.website || "", openDays: d.settings.openDays ?? [1,2,3,4,5,6], openTime: d.settings.openTime || "08:00", closeTime: d.settings.closeTime || "22:00", slotMinutes: d.settings.slotMinutes || 60, bookingWindowDays: d.settings.bookingWindowDays ?? 30 })
     } finally { setLoading(false) }
   }, [])
 
@@ -166,6 +175,19 @@ export default function ClubSettingsPage() {
                 <button key={o.value} type="button" onClick={() => setForm(f => ({ ...f, slotMinutes: o.value }))}
                   className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-colors border`}
                   style={{ background: form.slotMinutes === o.value ? "rgba(201,168,76,0.15)" : "rgba(13,27,42,0.04)", color: form.slotMinutes === o.value ? GOLD : "rgba(13,27,42,0.4)", borderColor: form.slotMinutes === o.value ? GOLD : "rgba(201,168,76,0.2)" }}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <span style={label}>Ventana de reserva pública</span>
+            <p className="text-xs mb-2" style={{ color: "rgba(13,27,42,0.4)" }}>Hasta cuántos días hacia adelante pueden ver y reservar tus canchas los clientes</p>
+            <div className="grid grid-cols-3 gap-2">
+              {WINDOW_OPTIONS.map(o => (
+                <button key={o.value} type="button" onClick={() => setForm(f => ({ ...f, bookingWindowDays: o.value }))}
+                  className="h-9 rounded-lg text-xs font-semibold transition-colors border"
+                  style={{ background: form.bookingWindowDays === o.value ? "rgba(201,168,76,0.15)" : "rgba(13,27,42,0.04)", color: form.bookingWindowDays === o.value ? GOLD : "rgba(13,27,42,0.4)", borderColor: form.bookingWindowDays === o.value ? GOLD : "rgba(201,168,76,0.2)" }}>
                   {o.label}
                 </button>
               ))}

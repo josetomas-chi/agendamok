@@ -26,6 +26,7 @@ type Business = {
   address: string | null; city: string | null
   onlinePaymentsEnabled: boolean; primaryColor: string | null
   businessType: string
+  clubSettings: { bookingWindowDays: number } | null
   courts: Court[]
   services: Service[]; staff: Staff[]
 }
@@ -139,7 +140,10 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
   const [voucherUploading, setVoucherUploading] = useState(false)
   const [voucherUploaded, setVoucherUploaded] = useState(false)
 
+  const bookingWindowDays = business.clubSettings?.bookingWindowDays ?? 30
+  const maxDate = addDays(today, bookingWindowDays - 1)
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(today, weekOffset * 7 + i))
+  const maxWeekOffset = Math.floor(bookingWindowDays / 7)
 
   async function search() {
     setSearching(true)
@@ -351,8 +355,8 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
                 <p className="flex-1 text-center text-xs font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>
                   {format(weekDays[0], "d MMM", { locale: es })} — {format(weekDays[6], "d MMM", { locale: es })}
                 </p>
-                <button onClick={() => setWeekOffset(w => w + 1)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
+                <button onClick={() => setWeekOffset(w => w + 1)} disabled={weekOffset >= maxWeekOffset}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center disabled:opacity-30 transition-all"
                   style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT }}>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
@@ -361,9 +365,10 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
                 {weekDays.map(day => {
                   const key = format(day, "yyyy-MM-dd")
                   const isPast = day < today
+                  const isOutOfWindow = day > maxDate
                   const isSelected = key === selectedDate
                   return (
-                    <button key={key} disabled={isPast} onClick={() => setSelectedDate(key)}
+                    <button key={key} disabled={isPast || isOutOfWindow} onClick={() => setSelectedDate(key)}
                       className="flex flex-col items-center py-2.5 rounded-xl transition-all disabled:opacity-25"
                       style={isSelected
                         ? { background: SPORTS_ACCENT, color: SPORTS_BG }
