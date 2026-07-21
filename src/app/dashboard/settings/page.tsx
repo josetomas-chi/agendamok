@@ -441,8 +441,8 @@ function SettingsContent() {
                 <div className="space-y-1.5"><Label>Teléfono</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+56 9 1234 5678" /></div>
                 <div className="space-y-1.5"><Label>Moneda</Label><Input value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} placeholder="CLP" /></div>
               </div>
-              {/* Clinical record toggle */}
-              <div className="flex items-center justify-between rounded-xl border border-border p-4">
+              {/* Clinical record toggle — solo para negocios de salud, no Sports */}
+              {!isSports && <div className="flex items-center justify-between rounded-xl border border-border p-4">
                 <div>
                   <p className="text-sm font-medium text-foreground">Ficha clínica de pacientes</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Actívala si tu negocio pertenece al área de la salud</p>
