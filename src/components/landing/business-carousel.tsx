@@ -32,37 +32,28 @@ const row2 = businesses.slice(10)
 function CarouselCard({ name, photo }: { name: string; photo: string }) {
   return (
     <div
-      className="flex-shrink-0 relative overflow-hidden"
+      className="flex-shrink-0 relative overflow-hidden group"
       style={{
-        width: 180,
-        height: 240,
-        borderRadius: 16,
-        border: "1px solid rgba(255,255,255,0.07)",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
+        width: 156,
+        height: 208,
+        borderRadius: 14,
+        border: "1px solid rgba(255,255,255,0.06)",
       }}
     >
-      {/* Photo */}
       <img
-        src={`https://images.unsplash.com/${photo}?w=360&h=480&fit=crop&crop=faces,center&auto=format&q=75`}
+        src={`https://images.unsplash.com/${photo}?w=312&h=416&fit=crop&crop=faces,center&auto=format&q=75`}
         alt={name}
         loading="lazy"
-        className="absolute inset-0 w-full h-full object-cover"
+        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
       />
-      {/* Dark gradient overlay */}
       <div
         className="absolute inset-0"
-        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.75) 100%)" }}
+        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,0.85) 100%)" }}
       />
-      {/* Bottom accent line */}
-      <div
-        className="absolute bottom-0 inset-x-0"
-        style={{ height: 3, background: "linear-gradient(90deg, #0ea5e9, #62CBF2)" }}
-      />
-      {/* Label */}
-      <div className="absolute bottom-0 inset-x-0 px-3 pb-4 pt-6">
+      <div className="absolute bottom-0 inset-x-0 px-3 pb-3">
         <p
-          className="text-white text-center font-bold leading-tight"
-          style={{ fontSize: 13, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
+          className="text-white text-center font-semibold leading-tight"
+          style={{ fontSize: 12.5, letterSpacing: "0.01em", textShadow: "0 1px 6px rgba(0,0,0,0.9)" }}
         >
           {name}
         </p>
@@ -121,14 +112,14 @@ export function BusinessCarousel() {
       </div>
 
       {/* Rows */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <CarouselRow items={row1} direction="left" />
         <CarouselRow items={row2} direction="right" />
       </div>
 
       {/* Edge fade masks */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-32 bg-gradient-to-r from-background to-transparent" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-32 bg-gradient-to-l from-background to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-32 sm:w-56 bg-gradient-to-r from-background to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-32 sm:w-56 bg-gradient-to-l from-background to-transparent" />
     </section>
   )
 }
