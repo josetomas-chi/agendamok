@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect, useCallback } from "react"
-import { ArrowLeft, UserPlus, Play, Trophy, X, Check, ChevronRight, Swords, Tag, Plus, Pencil, Link2, ImagePlus, Loader2, GripVertical, RefreshCw, CalendarDays, List } from "lucide-react"
+import { ArrowLeft, UserPlus, Play, Trophy, X, Check, ChevronRight, Swords, Tag, Plus, Pencil, Lock, Unlock, Link2, ImagePlus, Loader2, GripVertical, RefreshCw, CalendarDays, List } from "lucide-react"
 import { LadderView } from "./ladder-view"
 import { StatsView } from "./stats-view"
 import { toast } from "sonner"
@@ -81,6 +81,7 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
 
   // Edit tournament modal
   const [editOpen, setEditOpen] = useState(false)
+  const [editUnlocked, setEditUnlocked] = useState(false)
   const [editForm, setEditForm] = useState({ name: "", sport: "", startDate: "", endDate: "", registrationDeadline: "", maxParticipants: "", entryFee: "", description: "" })
   const [editSaving, setEditSaving] = useState(false)
 
@@ -115,7 +116,7 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
         description: editForm.description || null,
       }),
     })
-    if (r.ok) { toast.success("Torneo actualizado"); setEditOpen(false); load() }
+    if (r.ok) { toast.success("Torneo actualizado"); setEditOpen(false); setEditUnlocked(false); load() }
     else toast.error("Error al guardar")
     setEditSaving(false)
   }
@@ -541,12 +542,21 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
-          {/* Edit tournament */}
-          <button onClick={openEdit}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all"
-            style={{ background: "rgba(13,27,42,0.06)", border: "1px solid rgba(13,27,42,0.15)", color: "rgba(13,27,42,0.5)" }}>
-            <Pencil className="w-3.5 h-3.5" /> Editar
-          </button>
+          {/* Edit tournament — lock/unlock pattern */}
+          {!editUnlocked ? (
+            <button onClick={() => setEditUnlocked(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all"
+              style={{ background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.1)", color: "rgba(13,27,42,0.3)" }}
+              title="Haz clic para habilitar edición">
+              <Lock className="w-3.5 h-3.5" /> Editar
+            </button>
+          ) : (
+            <button onClick={openEdit}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all"
+              style={{ background: "rgba(13,27,42,0.08)", border: "1px solid rgba(13,27,42,0.2)", color: NAVY }}>
+              <Pencil className="w-3.5 h-3.5" /> Editar
+            </button>
+          )}
           {/* Flyer upload */}
           <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all cursor-pointer"
             style={{ background: tournament.flyer ? "rgba(201,168,76,0.15)" : "rgba(13,27,42,0.06)", border: `1px solid ${tournament.flyer ? "rgba(201,168,76,0.4)" : "rgba(13,27,42,0.15)"}`, color: tournament.flyer ? GOLD : "rgba(13,27,42,0.45)" }}
@@ -1569,7 +1579,7 @@ function MatchRow({ match: m, canEdit, onEdit }: { match: Match; canEdit: boolea
           <div className="w-full max-w-lg rounded-2xl p-6 space-y-4" style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.1)" }}>
             <div className="flex items-center justify-between">
               <h2 className="font-black text-base uppercase tracking-wide" style={{ color: NAVY }}>Editar torneo</h2>
-              <button onClick={() => setEditOpen(false)} style={{ color: "rgba(13,27,42,0.35)" }}><X className="w-5 h-5" /></button>
+              <button onClick={() => { setEditOpen(false); setEditUnlocked(false) }} style={{ color: "rgba(13,27,42,0.35)" }}><X className="w-5 h-5" /></button>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
@@ -1620,7 +1630,7 @@ function MatchRow({ match: m, canEdit, onEdit }: { match: Match; canEdit: boolea
                 style={{ background: NAVY, color: GOLD }}>
                 {editSaving ? "Guardando…" : "Guardar cambios"}
               </button>
-              <button onClick={() => setEditOpen(false)}
+              <button onClick={() => { setEditOpen(false); setEditUnlocked(false) }}
                 className="px-5 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wide"
                 style={{ background: "rgba(13,27,42,0.06)", color: "rgba(13,27,42,0.5)" }}>
                 Cancelar
