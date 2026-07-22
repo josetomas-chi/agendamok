@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { sendWhatsAppReminder } from "@/lib/whatsapp"
+import { sendWhatsAppReminder24h } from "@/lib/whatsapp"
 import { utcToChileLocal } from "@/lib/timezone"
 import { format, startOfDay, endOfDay, addDays } from "date-fns"
 import { es } from "date-fns/locale"
@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     include: {
       client: { select: { name: true, phone: true } },
       service: { select: { name: true } },
-      business: { select: { name: true } },
+      business: { select: { name: true, metaPhoneNumberId: true } },
     },
   })
 
@@ -34,11 +34,12 @@ export async function GET(req: Request) {
   let skipped = 0
 
   for (const appt of appointments) {
-    if (!appt.client.phone) { skipped++; continue }
+    if (!appt.client.phone || !appt.business.metaPhoneNumberId) { skipped++; continue }
 
     const local = utcToChileLocal(appt.startTime)
     try {
-      await sendWhatsAppReminder({
+      await sendWhatsAppReminder24h({
+        phoneNumberId: appt.business.metaPhoneNumberId,
         to: appt.client.phone,
         clientName: appt.client.name,
         businessName: appt.business.name,

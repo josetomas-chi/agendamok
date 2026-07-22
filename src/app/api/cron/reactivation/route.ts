@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { sendWhatsAppReminder } from "@/lib/whatsapp"
+import { sendWhatsAppReactivation } from "@/lib/whatsapp"
 import { subDays } from "date-fns"
 
 export async function GET(req: Request) {
@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   // Get businesses and their inactive client threshold (default 60 days)
   const businesses = await prisma.business.findMany({
     where: { isActive: true, deletedAt: null },
-    select: { id: true, name: true, slug: true },
+    select: { id: true, name: true, slug: true, metaPhoneNumberId: true },
   })
 
   let sent = 0
@@ -40,16 +40,13 @@ export async function GET(req: Request) {
     })
 
     for (const client of inactiveClients) {
-      if (!client.phone) { skipped++; continue }
+      if (!client.phone || !biz.metaPhoneNumberId) { skipped++; continue }
       try {
-        await sendWhatsAppReminder({
+        await sendWhatsAppReactivation({
+          phoneNumberId: biz.metaPhoneNumberId,
           to: client.phone,
           clientName: client.name,
           businessName: biz.name,
-          serviceName: "",
-          date: "",
-          time: "",
-          customBody: `Hola ${client.name} 👋\n\nHace un tiempo que no te vemos por *${biz.name}*.\n\n¿Qué tal si agendas tu próxima visita? 😊\n\n👉 ${baseUrl}/book/${biz.slug}\n\n_AgendaMok — Reserva en segundos_`,
         })
         // Mark as AT_RISK so we don't resend immediately
         await prisma.client.update({ where: { id: client.id }, data: { segment: "AT_RISK" } })

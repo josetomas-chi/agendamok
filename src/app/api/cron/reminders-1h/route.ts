@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { sendWhatsAppReminder } from "@/lib/whatsapp"
+import { sendWhatsAppReminder1h } from "@/lib/whatsapp"
 import { sendBookingReminder } from "@/lib/email"
 import { utcToChileLocal } from "@/lib/timezone"
 import { format, addHours } from "date-fns"
@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     include: {
       client: { select: { name: true, phone: true, email: true } },
       service: { select: { name: true } },
-      business: { select: { name: true } },
+      business: { select: { name: true, metaPhoneNumberId: true } },
     },
   })
 
@@ -39,13 +39,13 @@ export async function GET(req: Request) {
     const time = format(local, "HH:mm")
 
     try {
-      if (appt.client.phone) {
-        await sendWhatsAppReminder({
+      if (appt.client.phone && appt.business.metaPhoneNumberId) {
+        await sendWhatsAppReminder1h({
+          phoneNumberId: appt.business.metaPhoneNumberId,
           to: appt.client.phone,
           clientName: appt.client.name,
           businessName: appt.business.name,
           serviceName: appt.service.name,
-          date,
           time,
         })
       }

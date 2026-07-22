@@ -19,7 +19,7 @@ type Business = {
   isActive: boolean
   chatBotEnabled: boolean
   whatsappBotEnabled: boolean
-  twilioWhatsappNumber: string | null
+  metaPhoneNumberId: string | null
   owner: { name: string; email: string }
   businessType: string
   subscription: { plan: string; status: string; isCourtesy: boolean } | null
@@ -81,7 +81,7 @@ export default function AdminBusinessesPage() {
     await fetch(`/api/admin/businesses/${selected.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: planValue, status: statusValue, type: typeValue, chatBotEnabled: chatBotValue, whatsappBotEnabled: whatsappBotValue, twilioWhatsappNumber: twilioNumber.trim() || null }),
+      body: JSON.stringify({ plan: planValue, status: statusValue, type: typeValue, chatBotEnabled: chatBotValue, whatsappBotEnabled: whatsappBotValue, metaPhoneNumberId: twilioNumber.trim() || null }),
     })
     toast.success("Plan actualizado")
     setSelected(null)
@@ -227,7 +227,7 @@ export default function AdminBusinessesPage() {
                 <td className="px-4 py-3 text-white/40">{new Date(b.createdAt).toLocaleDateString("es-CL")}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setSelected(b); setPlanValue(b.subscription?.plan || "FREE"); setStatusValue(b.subscription?.status || "ACTIVE"); setTypeValue(b.businessType === "SPORTS_CLUB" ? "SPORTS_CLUB" : "REGULAR"); setChatBotValue(b.chatBotEnabled); setWhatsappBotValue(b.whatsappBotEnabled); setTwilioNumber(b.twilioWhatsappNumber || "") }}>
+                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setSelected(b); setPlanValue(b.subscription?.plan || "FREE"); setStatusValue(b.subscription?.status || "ACTIVE"); setTypeValue(b.businessType === "SPORTS_CLUB" ? "SPORTS_CLUB" : "REGULAR"); setChatBotValue(b.chatBotEnabled); setWhatsappBotValue(b.whatsappBotEnabled); setTwilioNumber(b.metaPhoneNumberId || "") }}>
                       Editar
                     </Button>
                     <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => window.open(`/book/${b.slug}`, "_blank")}>
@@ -437,10 +437,10 @@ export default function AdminBusinessesPage() {
                   <Input
                     value={twilioNumber}
                     onChange={e => setTwilioNumber(e.target.value)}
-                    placeholder="+17373094339"
+                    placeholder="123456789012345"
                     className="text-xs h-8 bg-white/5 border-white/10"
                   />
-                  <p className="text-[10px] text-white/30 mt-1">Formato E.164 sin prefijo whatsapp:</p>
+                  <p className="text-[10px] text-white/30 mt-1">Phone Number ID de Meta for Developers</p>
                 </div>
               )}
             </div>

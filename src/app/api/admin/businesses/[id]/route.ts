@@ -55,12 +55,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   // WhatsApp bot toggle + número Twilio asignado
-  if (typeof body.whatsappBotEnabled === "boolean" || "twilioWhatsappNumber" in body) {
+  if (typeof body.whatsappBotEnabled === "boolean" || "metaPhoneNumberId" in body) {
     await prisma.business.update({
       where: { id },
       data: {
         ...(typeof body.whatsappBotEnabled === "boolean" && { whatsappBotEnabled: body.whatsappBotEnabled }),
-        ...("twilioWhatsappNumber" in body && { twilioWhatsappNumber: body.twilioWhatsappNumber ?? null }),
+        ...("metaPhoneNumberId" in body && { metaPhoneNumberId: body.metaPhoneNumberId ?? null }),
       },
     })
   }
