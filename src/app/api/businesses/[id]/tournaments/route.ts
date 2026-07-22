@@ -28,10 +28,19 @@ export async function POST(req: Request, { params }: Params) {
 
   if (!name || !startDate || !endDate) return NextResponse.json({ error: "Faltan campos" }, { status: 400 })
 
+  // Generate unique slug from name
+  const baseSlug = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+  let slug = baseSlug
+  let suffix = 2
+  while (await prisma.tournament.findUnique({ where: { slug } })) {
+    slug = `${baseSlug}-${suffix++}`
+  }
+
   const tournament = await prisma.tournament.create({
     data: {
       businessId: id,
       name,
+      slug,
       sport: sport || null,
       format: format || "ELIMINATION",
       participantType: participantType || "INDIVIDUAL",
