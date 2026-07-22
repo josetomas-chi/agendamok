@@ -80,12 +80,12 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
   const [uploadingFlyer, setUploadingFlyer] = useState(false)
 
   // Edit tournament modal
-  const [editOpen, setEditOpen] = useState(false)
+  const [editMode, setEditMode] = useState(false)
   const [editUnlocked, setEditUnlocked] = useState(false)
   const [editForm, setEditForm] = useState({ name: "", sport: "", startDate: "", endDate: "", registrationDeadline: "", maxParticipants: "", entryFee: "", description: "" })
   const [editSaving, setEditSaving] = useState(false)
 
-  function openEdit() {
+  function startEdit() {
     if (!tournament) return
     setEditForm({
       name: tournament.name,
@@ -94,10 +94,15 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
       endDate: tournament.endDate.slice(0, 10),
       registrationDeadline: tournament.registrationDeadline?.slice(0, 10) ?? "",
       maxParticipants: tournament.maxParticipants?.toString() ?? "",
-      entryFee: tournament.entryFee ?? "",
+      entryFee: tournament.entryFee != null ? String(tournament.entryFee) : "",
       description: tournament.description ?? "",
     })
-    setEditOpen(true)
+    setEditMode(true)
+  }
+
+  function cancelEdit() {
+    setEditMode(false)
+    setEditUnlocked(false)
   }
 
   async function saveEdit() {
@@ -116,7 +121,7 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
         description: editForm.description || null,
       }),
     })
-    if (r.ok) { toast.success("Torneo actualizado"); setEditOpen(false); setEditUnlocked(false); load() }
+    if (r.ok) { toast.success("Torneo actualizado"); setEditMode(false); setEditUnlocked(false); load() }
     else toast.error("Error al guardar")
     setEditSaving(false)
   }
@@ -463,8 +468,22 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-lg font-black uppercase tracking-wide" style={{ color: NAVY }}>{tournament.name}</h1>
-            {tournament.sport && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(201,168,76,0.12)", color: GOLD }}>{tournament.sport}</span>}
+            {editMode ? (
+              <>
+                <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                  className="text-lg font-black uppercase tracking-wide rounded-xl px-2 py-0.5 outline-none"
+                  style={{ color: NAVY, background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.15)" }} autoFocus />
+                <input value={editForm.sport} onChange={e => setEditForm(f => ({ ...f, sport: e.target.value }))}
+                  placeholder="Deporte"
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full outline-none w-24"
+                  style={{ background: "rgba(201,168,76,0.12)", color: GOLD, border: "1px solid rgba(201,168,76,0.3)" }} />
+              </>
+            ) : (
+              <>
+                <h1 className="text-lg font-black uppercase tracking-wide" style={{ color: NAVY }}>{tournament.name}</h1>
+                {tournament.sport && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(201,168,76,0.12)", color: GOLD }}>{tournament.sport}</span>}
+              </>
+            )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="text-[10px]" style={{ color: "rgba(13,27,42,0.3)" }}>agendamok.cl/torneos/</span>
@@ -542,20 +561,33 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
-          {/* Edit tournament — lock/unlock pattern */}
-          {!editUnlocked ? (
+          {/* Edit tournament — lock/unlock/save inline pattern */}
+          {!editUnlocked && !editMode ? (
             <button onClick={() => setEditUnlocked(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all"
               style={{ background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.1)", color: "rgba(13,27,42,0.3)" }}
               title="Haz clic para habilitar edición">
               <Lock className="w-3.5 h-3.5" /> Editar
             </button>
-          ) : (
-            <button onClick={openEdit}
+          ) : !editMode ? (
+            <button onClick={startEdit}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all"
               style={{ background: "rgba(13,27,42,0.08)", border: "1px solid rgba(13,27,42,0.2)", color: NAVY }}>
               <Pencil className="w-3.5 h-3.5" /> Editar
             </button>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <button onClick={saveEdit} disabled={editSaving || !editForm.name.trim()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all disabled:opacity-40"
+                style={{ background: NAVY, color: GOLD }}>
+                <Check className="w-3.5 h-3.5" /> {editSaving ? "Guardando…" : "Guardar"}
+              </button>
+              <button onClick={cancelEdit}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all"
+                style={{ background: "rgba(13,27,42,0.06)", border: "1px solid rgba(13,27,42,0.12)", color: "rgba(13,27,42,0.4)" }}>
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           )}
           {/* Flyer upload */}
           <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all cursor-pointer"
@@ -1573,69 +1605,38 @@ function MatchRow({ match: m, canEdit, onEdit }: { match: Match; canEdit: boolea
         )}
       </div>
 
-      {/* ── Edit tournament modal ── */}
-      {editOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.4)" }}>
-          <div className="w-full max-w-lg rounded-2xl p-6 space-y-4" style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.1)" }}>
-            <div className="flex items-center justify-between">
-              <h2 className="font-black text-base uppercase tracking-wide" style={{ color: NAVY }}>Editar torneo</h2>
-              <button onClick={() => { setEditOpen(false); setEditUnlocked(false) }} style={{ color: "rgba(13,27,42,0.35)" }}><X className="w-5 h-5" /></button>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Nombre</label>
-                <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
-                  className={`w-full ${inputCls}`} style={inputStyle} />
-              </div>
-              <div>
-                <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Deporte</label>
-                <input value={editForm.sport} onChange={e => setEditForm(f => ({ ...f, sport: e.target.value }))}
-                  placeholder="Tenis, Pádel…" className={`w-full ${inputCls}`} style={inputStyle} />
-              </div>
-              <div>
-                <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Arancel (CLP)</label>
-                <input type="number" value={editForm.entryFee} onChange={e => setEditForm(f => ({ ...f, entryFee: e.target.value }))}
-                  placeholder="0" className={`w-full ${inputCls}`} style={inputStyle} />
-              </div>
-              <div>
-                <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Fecha inicio</label>
-                <input type="date" value={editForm.startDate} onChange={e => setEditForm(f => ({ ...f, startDate: e.target.value }))}
-                  className={`w-full ${inputCls}`} style={inputStyle} />
-              </div>
-              <div>
-                <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Fecha término</label>
-                <input type="date" value={editForm.endDate} onChange={e => setEditForm(f => ({ ...f, endDate: e.target.value }))}
-                  className={`w-full ${inputCls}`} style={inputStyle} />
-              </div>
-              <div>
-                <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Cierre inscripciones</label>
-                <input type="date" value={editForm.registrationDeadline} onChange={e => setEditForm(f => ({ ...f, registrationDeadline: e.target.value }))}
-                  className={`w-full ${inputCls}`} style={inputStyle} />
-              </div>
-              <div>
-                <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Máx. participantes</label>
-                <input type="number" value={editForm.maxParticipants} onChange={e => setEditForm(f => ({ ...f, maxParticipants: e.target.value }))}
-                  placeholder="Sin límite" className={`w-full ${inputCls}`} style={inputStyle} />
-              </div>
-              <div className="col-span-2">
-                <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Descripción</label>
-                <textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
-                  rows={3} placeholder="Descripción opcional…"
-                  className={`w-full ${inputCls} resize-none`} style={inputStyle} />
-              </div>
-            </div>
-            <div className="flex gap-2 pt-1">
-              <button onClick={saveEdit} disabled={editSaving || !editForm.name.trim()}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wide transition-all disabled:opacity-40"
-                style={{ background: NAVY, color: GOLD }}>
-                {editSaving ? "Guardando…" : "Guardar cambios"}
-              </button>
-              <button onClick={() => { setEditOpen(false); setEditUnlocked(false) }}
-                className="px-5 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wide"
-                style={{ background: "rgba(13,27,42,0.06)", color: "rgba(13,27,42,0.5)" }}>
-                Cancelar
-              </button>
-            </div>
+      {/* ── Inline edit fields (dates, arancel, etc.) ── */}
+      {editMode && (
+        <div className="mx-4 mb-4 p-4 rounded-2xl grid grid-cols-2 gap-3" style={{ background: "rgba(13,27,42,0.03)", border: "1px solid rgba(13,27,42,0.08)" }}>
+          <div>
+            <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Fecha inicio</label>
+            <input type="date" value={editForm.startDate} onChange={e => setEditForm(f => ({ ...f, startDate: e.target.value }))}
+              className={`w-full ${inputCls}`} style={inputStyle} />
+          </div>
+          <div>
+            <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Fecha término</label>
+            <input type="date" value={editForm.endDate} onChange={e => setEditForm(f => ({ ...f, endDate: e.target.value }))}
+              className={`w-full ${inputCls}`} style={inputStyle} />
+          </div>
+          <div>
+            <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Cierre inscripciones</label>
+            <input type="date" value={editForm.registrationDeadline} onChange={e => setEditForm(f => ({ ...f, registrationDeadline: e.target.value }))}
+              className={`w-full ${inputCls}`} style={inputStyle} />
+          </div>
+          <div>
+            <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Arancel (CLP)</label>
+            <input type="number" value={editForm.entryFee} onChange={e => setEditForm(f => ({ ...f, entryFee: e.target.value }))}
+              placeholder="0" className={`w-full ${inputCls}`} style={inputStyle} />
+          </div>
+          <div>
+            <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Máx. participantes</label>
+            <input type="number" value={editForm.maxParticipants} onChange={e => setEditForm(f => ({ ...f, maxParticipants: e.target.value }))}
+              placeholder="Sin límite" className={`w-full ${inputCls}`} style={inputStyle} />
+          </div>
+          <div>
+            <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Descripción</label>
+            <input value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+              placeholder="Descripción opcional…" className={`w-full ${inputCls}`} style={inputStyle} />
           </div>
         </div>
       )}
