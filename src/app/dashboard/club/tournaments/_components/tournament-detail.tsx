@@ -79,6 +79,47 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
   // Flyer upload
   const [uploadingFlyer, setUploadingFlyer] = useState(false)
 
+  // Edit tournament modal
+  const [editOpen, setEditOpen] = useState(false)
+  const [editForm, setEditForm] = useState({ name: "", sport: "", startDate: "", endDate: "", registrationDeadline: "", maxParticipants: "", entryFee: "", description: "" })
+  const [editSaving, setEditSaving] = useState(false)
+
+  function openEdit() {
+    if (!tournament) return
+    setEditForm({
+      name: tournament.name,
+      sport: tournament.sport ?? "",
+      startDate: tournament.startDate.slice(0, 10),
+      endDate: tournament.endDate.slice(0, 10),
+      registrationDeadline: tournament.registrationDeadline?.slice(0, 10) ?? "",
+      maxParticipants: tournament.maxParticipants?.toString() ?? "",
+      entryFee: tournament.entryFee ?? "",
+      description: tournament.description ?? "",
+    })
+    setEditOpen(true)
+  }
+
+  async function saveEdit() {
+    if (!tournament) return
+    setEditSaving(true)
+    const r = await fetch(`/api/businesses/${businessId}/tournaments/${tournamentId}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: editForm.name,
+        sport: editForm.sport || null,
+        startDate: editForm.startDate,
+        endDate: editForm.endDate,
+        registrationDeadline: editForm.registrationDeadline || null,
+        maxParticipants: editForm.maxParticipants ? Number(editForm.maxParticipants) : null,
+        entryFee: editForm.entryFee ? Number(editForm.entryFee) : null,
+        description: editForm.description || null,
+      }),
+    })
+    if (r.ok) { toast.success("Torneo actualizado"); setEditOpen(false); load() }
+    else toast.error("Error al guardar")
+    setEditSaving(false)
+  }
+
   // Fixture
   const [generating, setGenerating] = useState(false)
   const [advancing, setAdvancing] = useState(false)
@@ -500,6 +541,12 @@ export default function TournamentDetail({ businessId, tournamentId, onBack }: {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+          {/* Edit tournament */}
+          <button onClick={openEdit}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all"
+            style={{ background: "rgba(13,27,42,0.06)", border: "1px solid rgba(13,27,42,0.15)", color: "rgba(13,27,42,0.5)" }}>
+            <Pencil className="w-3.5 h-3.5" /> Editar
+          </button>
           {/* Flyer upload */}
           <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all cursor-pointer"
             style={{ background: tournament.flyer ? "rgba(201,168,76,0.15)" : "rgba(13,27,42,0.06)", border: `1px solid ${tournament.flyer ? "rgba(201,168,76,0.4)" : "rgba(13,27,42,0.15)"}`, color: tournament.flyer ? GOLD : "rgba(13,27,42,0.45)" }}
@@ -1515,6 +1562,73 @@ function MatchRow({ match: m, canEdit, onEdit }: { match: Match; canEdit: boolea
           </button>
         )}
       </div>
+
+      {/* ── Edit tournament modal ── */}
+      {editOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.4)" }}>
+          <div className="w-full max-w-lg rounded-2xl p-6 space-y-4" style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.1)" }}>
+            <div className="flex items-center justify-between">
+              <h2 className="font-black text-base uppercase tracking-wide" style={{ color: NAVY }}>Editar torneo</h2>
+              <button onClick={() => setEditOpen(false)} style={{ color: "rgba(13,27,42,0.35)" }}><X className="w-5 h-5" /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Nombre</label>
+                <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                  className={`w-full ${inputCls}`} style={inputStyle} />
+              </div>
+              <div>
+                <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Deporte</label>
+                <input value={editForm.sport} onChange={e => setEditForm(f => ({ ...f, sport: e.target.value }))}
+                  placeholder="Tenis, Pádel…" className={`w-full ${inputCls}`} style={inputStyle} />
+              </div>
+              <div>
+                <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Arancel (CLP)</label>
+                <input type="number" value={editForm.entryFee} onChange={e => setEditForm(f => ({ ...f, entryFee: e.target.value }))}
+                  placeholder="0" className={`w-full ${inputCls}`} style={inputStyle} />
+              </div>
+              <div>
+                <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Fecha inicio</label>
+                <input type="date" value={editForm.startDate} onChange={e => setEditForm(f => ({ ...f, startDate: e.target.value }))}
+                  className={`w-full ${inputCls}`} style={inputStyle} />
+              </div>
+              <div>
+                <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Fecha término</label>
+                <input type="date" value={editForm.endDate} onChange={e => setEditForm(f => ({ ...f, endDate: e.target.value }))}
+                  className={`w-full ${inputCls}`} style={inputStyle} />
+              </div>
+              <div>
+                <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Cierre inscripciones</label>
+                <input type="date" value={editForm.registrationDeadline} onChange={e => setEditForm(f => ({ ...f, registrationDeadline: e.target.value }))}
+                  className={`w-full ${inputCls}`} style={inputStyle} />
+              </div>
+              <div>
+                <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Máx. participantes</label>
+                <input type="number" value={editForm.maxParticipants} onChange={e => setEditForm(f => ({ ...f, maxParticipants: e.target.value }))}
+                  placeholder="Sin límite" className={`w-full ${inputCls}`} style={inputStyle} />
+              </div>
+              <div className="col-span-2">
+                <label className={labelCls} style={{ color: "rgba(13,27,42,0.45)" }}>Descripción</label>
+                <textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                  rows={3} placeholder="Descripción opcional…"
+                  className={`w-full ${inputCls} resize-none`} style={inputStyle} />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button onClick={saveEdit} disabled={editSaving || !editForm.name.trim()}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wide transition-all disabled:opacity-40"
+                style={{ background: NAVY, color: GOLD }}>
+                {editSaving ? "Guardando…" : "Guardar cambios"}
+              </button>
+              <button onClick={() => setEditOpen(false)}
+                className="px-5 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wide"
+                style={{ background: "rgba(13,27,42,0.06)", color: "rgba(13,27,42,0.5)" }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
