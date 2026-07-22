@@ -54,5 +54,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     await prisma.business.update({ where: { id }, data: { chatBotEnabled: body.chatBotEnabled } })
   }
 
+  // WhatsApp bot toggle (add-on)
+  if (typeof body.whatsappBotEnabled === "boolean") {
+    await prisma.business.update({ where: { id }, data: { whatsappBotEnabled: body.whatsappBotEnabled } })
+  }
+
   return NextResponse.json({ success: true })
 }

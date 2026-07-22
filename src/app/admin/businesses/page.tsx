@@ -18,6 +18,7 @@ type Business = {
   createdAt: string
   isActive: boolean
   chatBotEnabled: boolean
+  whatsappBotEnabled: boolean
   owner: { name: string; email: string }
   businessType: string
   subscription: { plan: string; status: string; isCourtesy: boolean } | null
@@ -33,6 +34,7 @@ export default function AdminBusinessesPage() {
   const [statusValue, setStatusValue] = useState("")
   const [typeValue, setTypeValue] = useState("REGULAR")
   const [chatBotValue, setChatBotValue] = useState(false)
+  const [whatsappBotValue, setWhatsappBotValue] = useState(false)
   const [saving, setSaving] = useState(false)
   const [newOpen, setNewOpen] = useState(false)
   const [newForm, setNewForm] = useState({ ownerName: "", ownerEmail: "", businessName: "", slug: "", category: "", plan: "FREE" })
@@ -77,7 +79,7 @@ export default function AdminBusinessesPage() {
     await fetch(`/api/admin/businesses/${selected.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: planValue, status: statusValue, type: typeValue, chatBotEnabled: chatBotValue }),
+      body: JSON.stringify({ plan: planValue, status: statusValue, type: typeValue, chatBotEnabled: chatBotValue, whatsappBotEnabled: whatsappBotValue }),
     })
     toast.success("Plan actualizado")
     setSelected(null)
@@ -223,7 +225,7 @@ export default function AdminBusinessesPage() {
                 <td className="px-4 py-3 text-white/40">{new Date(b.createdAt).toLocaleDateString("es-CL")}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setSelected(b); setPlanValue(b.subscription?.plan || "FREE"); setStatusValue(b.subscription?.status || "ACTIVE"); setTypeValue(b.businessType === "SPORTS_CLUB" ? "SPORTS_CLUB" : "REGULAR"); setChatBotValue(b.chatBotEnabled) }}>
+                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setSelected(b); setPlanValue(b.subscription?.plan || "FREE"); setStatusValue(b.subscription?.status || "ACTIVE"); setTypeValue(b.businessType === "SPORTS_CLUB" ? "SPORTS_CLUB" : "REGULAR"); setChatBotValue(b.chatBotEnabled); setWhatsappBotValue(b.whatsappBotEnabled) }}>
                       Editar
                     </Button>
                     <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => window.open(`/book/${b.slug}`, "_blank")}>
@@ -404,7 +406,7 @@ export default function AdminBusinessesPage() {
             )}
             <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-white/8">
               <div>
-                <p className="text-sm font-medium">Asistente virtual (BOT)</p>
+                <p className="text-sm font-medium">Asistente virtual (BOT web)</p>
                 <p className="text-xs text-white/40">Activo en Negocio y Pro por defecto</p>
               </div>
               <button
@@ -412,6 +414,18 @@ export default function AdminBusinessesPage() {
                 onClick={() => setChatBotValue(v => !v)}
                 className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${chatBotValue ? "bg-sky-500" : "bg-white/15"}`}>
                 <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${chatBotValue ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-white/8">
+              <div>
+                <p className="text-sm font-medium">BOT WhatsApp <span className="text-xs text-sky-400 ml-1">Add-on</span></p>
+                <p className="text-xs text-white/40">Recibe y responde reservas por WhatsApp</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWhatsappBotValue(v => !v)}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${whatsappBotValue ? "bg-green-500" : "bg-white/15"}`}>
+                <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${whatsappBotValue ? "translate-x-6" : "translate-x-1"}`} />
               </button>
             </div>
             <div className="flex gap-2">

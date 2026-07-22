@@ -242,6 +242,7 @@ model Business {
   notifNewBooking             Boolean   @default(true)
   notifCancellation           Boolean   @default(true)
   chatBotEnabled              Boolean   @default(false)
+  whatsappBotEnabled          Boolean   @default(false)
   createdAt                   DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   deletedAt             DateTime?
@@ -276,9 +277,24 @@ model Business {
   invoices                  Invoice[]
   tournaments               Tournament[]
   members                   BusinessMember[]
+  whatsappSessions          WhatsAppSession[]
 
   @@index([slug])
   @@map("businesses")
+}
+
+model WhatsAppSession {
+  id           String   @id @default(cuid())
+  businessId   String
+  phone        String
+  messages     Json     @default("[]")
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, phone])
+  @@map("whatsapp_sessions")
 }
 
 model BusinessMember {
