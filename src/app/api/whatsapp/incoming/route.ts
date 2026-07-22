@@ -405,34 +405,31 @@ export async function POST(req: Request) {
     // Route by looking up any active WhatsApp session for this phone first, then fall back to
     // finding whatsappBotEnabled businesses. If multiple, require client to specify (future).
 
-    // Look for existing session
-    const existingSession = await prisma.whatsAppSession.findFirst({
-      where: { phone },
-      include: { business: { select: { id: true, name: true, businessType: true, whatsappBotEnabled: true } } },
-      orderBy: { updatedAt: "desc" },
+    // Normalize the Twilio "To" number to match stored format (e.g. "+17373094339")
+    const toNormalized = toNumber.replace("whatsapp:", "")
+
+    // Find the business that owns this Twilio number
+    const ownerBusiness = await prisma.business.findFirst({
+      where: { twilioWhatsappNumber: toNormalized, whatsappBotEnabled: true, isActive: true, deletedAt: null },
+      select: { id: true, name: true, businessType: true },
     })
 
-    let business: { id: string; name: string; businessType: string } | null = null
-    let sessionMessages: ConversationMessage[] = []
+    if (!ownerBusiness) return new Response("", { status: 200 })
 
-    if (existingSession && existingSession.business.whatsappBotEnabled) {
-      // Check session not expired
+    let sessionMessages: ConversationMessage[] = []
+    const business = ownerBusiness
+
+    // Look for existing session for this phone + business
+    const existingSession = await prisma.whatsAppSession.findUnique({
+      where: { businessId_phone: { businessId: business.id, phone } },
+    })
+
+    if (existingSession) {
       const age = Date.now() - new Date(existingSession.updatedAt).getTime()
       if (age < SESSION_TTL_MS) {
-        business = existingSession.business
         sessionMessages = (existingSession.messages as ConversationMessage[]) || []
       }
-    }
-
-    if (!business) {
-      // No active session — find a whatsappBot-enabled business
-      const enabledBusiness = await prisma.business.findFirst({
-        where: { whatsappBotEnabled: true, isActive: true, deletedAt: null },
-        select: { id: true, name: true, businessType: true },
-      })
-      if (!enabledBusiness) return new Response("", { status: 200 })
-      business = enabledBusiness
-      sessionMessages = []
+      // If expired, start fresh (sessionMessages stays [])
     }
 
     // Append user message

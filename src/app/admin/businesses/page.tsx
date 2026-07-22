@@ -19,6 +19,7 @@ type Business = {
   isActive: boolean
   chatBotEnabled: boolean
   whatsappBotEnabled: boolean
+  twilioWhatsappNumber: string | null
   owner: { name: string; email: string }
   businessType: string
   subscription: { plan: string; status: string; isCourtesy: boolean } | null
@@ -35,6 +36,7 @@ export default function AdminBusinessesPage() {
   const [typeValue, setTypeValue] = useState("REGULAR")
   const [chatBotValue, setChatBotValue] = useState(false)
   const [whatsappBotValue, setWhatsappBotValue] = useState(false)
+  const [twilioNumber, setTwilioNumber] = useState("")
   const [saving, setSaving] = useState(false)
   const [newOpen, setNewOpen] = useState(false)
   const [newForm, setNewForm] = useState({ ownerName: "", ownerEmail: "", businessName: "", slug: "", category: "", plan: "FREE" })
@@ -79,7 +81,7 @@ export default function AdminBusinessesPage() {
     await fetch(`/api/admin/businesses/${selected.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: planValue, status: statusValue, type: typeValue, chatBotEnabled: chatBotValue, whatsappBotEnabled: whatsappBotValue }),
+      body: JSON.stringify({ plan: planValue, status: statusValue, type: typeValue, chatBotEnabled: chatBotValue, whatsappBotEnabled: whatsappBotValue, twilioWhatsappNumber: twilioNumber.trim() || null }),
     })
     toast.success("Plan actualizado")
     setSelected(null)
@@ -225,7 +227,7 @@ export default function AdminBusinessesPage() {
                 <td className="px-4 py-3 text-white/40">{new Date(b.createdAt).toLocaleDateString("es-CL")}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setSelected(b); setPlanValue(b.subscription?.plan || "FREE"); setStatusValue(b.subscription?.status || "ACTIVE"); setTypeValue(b.businessType === "SPORTS_CLUB" ? "SPORTS_CLUB" : "REGULAR"); setChatBotValue(b.chatBotEnabled); setWhatsappBotValue(b.whatsappBotEnabled) }}>
+                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setSelected(b); setPlanValue(b.subscription?.plan || "FREE"); setStatusValue(b.subscription?.status || "ACTIVE"); setTypeValue(b.businessType === "SPORTS_CLUB" ? "SPORTS_CLUB" : "REGULAR"); setChatBotValue(b.chatBotEnabled); setWhatsappBotValue(b.whatsappBotEnabled); setTwilioNumber(b.twilioWhatsappNumber || "") }}>
                       Editar
                     </Button>
                     <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => window.open(`/book/${b.slug}`, "_blank")}>
@@ -416,17 +418,31 @@ export default function AdminBusinessesPage() {
                 <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${chatBotValue ? "translate-x-6" : "translate-x-1"}`} />
               </button>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-white/8">
-              <div>
-                <p className="text-sm font-medium">BOT WhatsApp <span className="text-xs text-sky-400 ml-1">Add-on</span></p>
-                <p className="text-xs text-white/40">Recibe y responde reservas por WhatsApp</p>
+            <div className="space-y-2 p-3 rounded-xl bg-muted/20 border border-white/8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">BOT WhatsApp <span className="text-xs text-sky-400 ml-1">Add-on</span></p>
+                  <p className="text-xs text-white/40">Recibe y responde reservas por WhatsApp</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setWhatsappBotValue(v => !v)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${whatsappBotValue ? "bg-green-500" : "bg-white/15"}`}>
+                  <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${whatsappBotValue ? "translate-x-6" : "translate-x-1"}`} />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setWhatsappBotValue(v => !v)}
-                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${whatsappBotValue ? "bg-green-500" : "bg-white/15"}`}>
-                <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${whatsappBotValue ? "translate-x-6" : "translate-x-1"}`} />
-              </button>
+              {whatsappBotValue && (
+                <div>
+                  <p className="text-[10px] text-white/40 mb-1 uppercase tracking-wide">Número Twilio asignado</p>
+                  <Input
+                    value={twilioNumber}
+                    onChange={e => setTwilioNumber(e.target.value)}
+                    placeholder="+17373094339"
+                    className="text-xs h-8 bg-white/5 border-white/10"
+                  />
+                  <p className="text-[10px] text-white/30 mt-1">Formato E.164 sin prefijo whatsapp:</p>
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <Button className="flex-1" onClick={updatePlan} disabled={saving}>{saving ? "Guardando..." : "Guardar cambios"}</Button>

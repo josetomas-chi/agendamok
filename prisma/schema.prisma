@@ -243,6 +243,7 @@ model Business {
   notifCancellation           Boolean   @default(true)
   chatBotEnabled              Boolean   @default(false)
   whatsappBotEnabled          Boolean   @default(false)
+  twilioWhatsappNumber        String?
   createdAt                   DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   deletedAt             DateTime?

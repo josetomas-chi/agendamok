@@ -54,9 +54,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     await prisma.business.update({ where: { id }, data: { chatBotEnabled: body.chatBotEnabled } })
   }
 
-  // WhatsApp bot toggle (add-on)
-  if (typeof body.whatsappBotEnabled === "boolean") {
-    await prisma.business.update({ where: { id }, data: { whatsappBotEnabled: body.whatsappBotEnabled } })
+  // WhatsApp bot toggle + número Twilio asignado
+  if (typeof body.whatsappBotEnabled === "boolean" || "twilioWhatsappNumber" in body) {
+    await prisma.business.update({
+      where: { id },
+      data: {
+        ...(typeof body.whatsappBotEnabled === "boolean" && { whatsappBotEnabled: body.whatsappBotEnabled }),
+        ...("twilioWhatsappNumber" in body && { twilioWhatsappNumber: body.twilioWhatsappNumber ?? null }),
+      },
+    })
   }
 
   return NextResponse.json({ success: true })
