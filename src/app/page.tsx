@@ -609,21 +609,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Dashboard preview */}
-        <section className="relative overflow-hidden bg-gray-50 py-16">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="mockup-reveal reveal relative">
-              <div className="absolute -inset-2 rounded-3xl bg-sky-200/30 blur-2xl" />
-              <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-gray-50 to-transparent z-10 pointer-events-none" />
-              <img
-                src="/dashboard-preview.png"
-                alt="AgendaMok dashboard"
-                className="relative w-full max-w-5xl mx-auto block drop-shadow-xl rounded-2xl border border-gray-100"
-              />
-            </div>
-          </div>
-        </section>
-
         {/* Stats */}
         <section className="py-24 bg-white border-t border-gray-100">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
