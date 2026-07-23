@@ -244,6 +244,8 @@ model Business {
   notifCancellation           Boolean   @default(true)
   chatBotEnabled              Boolean   @default(false)
   whatsappBotEnabled          Boolean   @default(false)
+  waAddonStatus               String    @default("INACTIVE") // INACTIVE | ACTIVE | PAST_DUE | CANCELLED
+  waFlowSubscriptionId        String?
   metaPhoneNumberId           String?
   createdAt                   DateTime  @default(now())
   updatedAt             DateTime  @updatedAt

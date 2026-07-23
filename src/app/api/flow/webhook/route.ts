@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { verifyWebhookSignature } from "@/lib/flow"
+import { verifyWebhookSignature, WA_BOT_PLAN } from "@/lib/flow"
 import { sendPaymentFailedAlert } from "@/lib/email"
 
 export async function POST(req: Request) {
@@ -11,8 +11,49 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Firma inválida" }, { status: 400 })
   }
 
-  const { event, customerId, subscriptionId, status } = params
+  const { event, customerId, subscriptionId, planId, status } = params
 
+  // ── WhatsApp add-on events ─────────────────────────────────────────────────
+  const isWaEvent = planId === WA_BOT_PLAN.planId
+
+  if (isWaEvent) {
+    if (event === "subscription_charged") {
+      await prisma.business.updateMany({
+        where: { waFlowSubscriptionId: subscriptionId },
+        data: { waAddonStatus: "ACTIVE", whatsappBotEnabled: true },
+      })
+    }
+    if (event === "subscription_charge_failed") {
+      const biz = await prisma.business.findFirst({
+        where: { waFlowSubscriptionId: subscriptionId },
+        include: { user: { select: { name: true, email: true } } },
+      })
+      if (biz) {
+        await prisma.business.update({
+          where: { id: biz.id },
+          data: { waAddonStatus: "PAST_DUE", whatsappBotEnabled: false },
+        })
+        if (biz.user?.email) {
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"
+          await sendPaymentFailedAlert({
+            ownerName: biz.user.name || biz.user.email,
+            ownerEmail: biz.user.email,
+            planLabel: "Bot IA WhatsApp",
+            settingsUrl: `${baseUrl}/dashboard/settings?tab=integrations`,
+          })
+        }
+      }
+    }
+    if (event === "subscription_canceled" || status === "canceled") {
+      await prisma.business.updateMany({
+        where: { waFlowSubscriptionId: subscriptionId },
+        data: { waAddonStatus: "CANCELLED", whatsappBotEnabled: false },
+      })
+    }
+    return NextResponse.json({ ok: true })
+  }
+
+  // ── Main plan events ───────────────────────────────────────────────────────
   if (event === "subscription_charged") {
     await prisma.subscription.updateMany({
       where: { flowCustomerId: customerId },

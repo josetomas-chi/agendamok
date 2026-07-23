@@ -45,6 +45,8 @@ export const PLANS = {
   SPORTS:  { planId: "agendamok_sports_v2",  name: "AgendaMok Sports",         amount: 1.1, currency: "UF", interval: 1 },
 }
 
+export const WA_BOT_PLAN = { planId: "agendamok_wa_bot_v1", name: "AgendaMok — Bot IA WhatsApp", amount: 0.2, currency: "UF", interval: 1 }
+
 // Create a Flow customer
 export async function createCustomer(name: string, email: string, externalId: string) {
   return flowRequest("/customer/create", { name, email, externalId })
