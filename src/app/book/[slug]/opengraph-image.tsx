@@ -14,7 +14,6 @@ export default async function OGImage({ params }: { params: Promise<{ slug: stri
   })
 
   const name = business?.name ?? "Reserva online"
-  const city = business?.city ?? ""
   const logo = business?.logo ?? null
 
   return new ImageResponse(
@@ -24,99 +23,53 @@ export default async function OGImage({ params }: { params: Promise<{ slug: stri
           width: "1200px",
           height: "630px",
           display: "flex",
-          flexDirection: "row",
-          background: "linear-gradient(135deg, #0d1b2a 0%, #1a2e42 100%)",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#0f172a",
           fontFamily: "sans-serif",
         }}
       >
-        {/* Left — logo panel */}
+        {logo ? (
+          /* Logo fills the frame, cropped to fill */
+          <img
+            src={logo}
+            width={1200}
+            height={630}
+            style={{ objectFit: "cover", position: "absolute", top: 0, left: 0, opacity: 0.15 }}
+          />
+        ) : null}
+
+        {/* Center content */}
         <div style={{
-          width: "420px",
-          height: "630px",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "rgba(255,255,255,0.04)",
-          borderRight: "1px solid rgba(56,189,248,0.12)",
-          flexShrink: 0,
+          gap: "40px",
+          position: "relative",
         }}>
           {logo ? (
             <img
               src={logo}
-              width={300}
-              height={300}
-              style={{ borderRadius: "32px", objectFit: "contain" }}
+              width={340}
+              height={340}
+              style={{ borderRadius: "40px", objectFit: "contain" }}
             />
           ) : (
             <div style={{
-              width: "240px", height: "240px", borderRadius: "40px",
+              width: "280px", height: "280px", borderRadius: "40px",
               background: "#0ea5e9", display: "flex", alignItems: "center",
-              justifyContent: "center", fontSize: "120px", color: "white",
+              justifyContent: "center", fontSize: "140px", color: "white",
             }}>
               {name.charAt(0).toUpperCase()}
             </div>
           )}
-        </div>
 
-        {/* Right — text panel */}
-        <div style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          padding: "60px 72px",
-          gap: "24px",
-        }}>
-          {/* AgendaMok badge */}
           <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-          }}>
-            <div style={{
-              width: "10px", height: "10px", borderRadius: "50%",
-              background: "#38bdf8", display: "flex",
-            }} />
-            <div style={{ fontSize: "22px", color: "#38bdf8", letterSpacing: "0.08em", display: "flex" }}>
-              AGENDAMOK
-            </div>
-          </div>
-
-          {/* Business name */}
-          <div style={{
-            fontSize: name.length > 22 ? "48px" : "62px",
-            fontWeight: 800,
-            color: "white",
-            lineHeight: 1.05,
-            display: "flex",
+            fontSize: "36px", fontWeight: 700, color: "white",
+            textAlign: "center", display: "flex",
           }}>
             {name}
-          </div>
-
-          {city && (
-            <div style={{ fontSize: "26px", color: "rgba(255,255,255,0.45)", display: "flex" }}>
-              {city}
-            </div>
-          )}
-
-          {/* CTA pill */}
-          <div style={{
-            marginTop: "16px",
-            padding: "18px 44px",
-            borderRadius: "999px",
-            background: "#38bdf8",
-            color: "#0d1b2a",
-            fontSize: "28px",
-            fontWeight: 700,
-            display: "flex",
-            width: "fit-content",
-          }}>
-            Reservar online →
-          </div>
-
-          {/* Domain */}
-          <div style={{ fontSize: "20px", color: "rgba(255,255,255,0.2)", display: "flex", marginTop: "8px" }}>
-            agendamok.cl
           </div>
         </div>
       </div>
