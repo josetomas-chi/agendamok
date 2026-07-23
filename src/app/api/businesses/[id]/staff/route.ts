@@ -43,17 +43,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const { name, email, phone, bio, specialty, color, commissionType, commissionValue } = schema.parse(body)
 
     const existing = await prisma.user.findUnique({ where: { email } })
-    if (existing) return NextResponse.json({ error: "Este email ya está registrado" }, { status: 400 })
 
-    const tempPassword = await bcrypt.hash(Math.random().toString(36).slice(2) + "Ap!", 10)
-
-    const user = await prisma.user.create({
-      data: { name, email, phone, password: tempPassword, role: "STAFF" },
-    })
+    let userId: string
+    if (existing) {
+      const alreadyStaff = await prisma.staffMember.findFirst({
+        where: { userId: existing.id, businessId: id, deletedAt: null },
+      })
+      if (alreadyStaff) {
+        return NextResponse.json({ error: "Este usuario ya es parte del equipo" }, { status: 400 })
+      }
+      userId = existing.id
+    } else {
+      const tempPassword = await bcrypt.hash(Math.random().toString(36).slice(2) + "Ap!", 10)
+      const newUser = await prisma.user.create({
+        data: { name, email, phone, password: tempPassword, role: "STAFF" },
+      })
+      userId = newUser.id
+    }
 
     const staffMember = await prisma.staffMember.create({
       data: {
-        userId: user.id,
+        userId,
         businessId: id,
         bio,
         specialty,
