@@ -59,7 +59,7 @@ export async function POST(req: Request) {
       })
     }
 
-    const returnUrl = `${process.env.NEXTAUTH_URL}/dashboard/settings?tab=billing`
+    const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"}/suscripcion/gracias`
     const result = await registerCard(flowCustomerId, returnUrl)
 
     if (!result?.url || !result?.token) {

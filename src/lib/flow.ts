@@ -29,7 +29,7 @@ async function flowRequest(endpoint: string, data: Record<string, string>) {
   return res.json()
 }
 
-async function flowGet(endpoint: string, params: Record<string, string>) {
+export async function flowGet(endpoint: string, params: Record<string, string>) {
   const all: Record<string, string> = { ...params, apiKey: API_KEY }
   all.s = sign(all)
   const qs = new URLSearchParams(all).toString()
