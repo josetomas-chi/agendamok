@@ -263,7 +263,7 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
 
       {/* ── HERO (cover image del club) ────────────────── */}
       {step !== "confirmed" && (
-        <div className="relative" style={{ height: 220 }}>
+        <div className="relative w-full" style={{ aspectRatio: "3/1" }}>
           {business.coverImage ? (
             <img src={business.coverImage} alt={business.name} className="w-full h-full object-cover" style={{ objectPosition: `center ${business.coverImagePositionY ?? 50}%` }} />
           ) : (
@@ -854,7 +854,7 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
       {step === "home" && (
         <>
           {/* Hero */}
-          <div className="relative" style={{ height: 220 }}>
+          <div className="relative w-full" style={{ aspectRatio: "3/1" }}>
             {business.coverImage ? (
               <img src={business.coverImage} alt="" className="w-full h-full object-cover" style={{ objectPosition: `center ${business.coverImagePositionY ?? 50}%` }} />
             ) : (
