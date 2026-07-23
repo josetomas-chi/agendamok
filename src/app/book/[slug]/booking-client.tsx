@@ -839,67 +839,78 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
     if (svcs.length > 0) grouped.push({ cat, services: svcs })
   }
 
+  // Light theme palette
+  const BG = "#f8fafc"
+  const CARD = "#ffffff"
+  const BORDER = "#e2e8f0"
+  const TEXT = "#0f172a"
+  const MUTED = "#64748b"
+  const SUBTLE = "#f1f5f9"
+
   return (
-    <div style={{ background: "#0f0f11", minHeight: "100vh", color: "#f4f4f5" }}>
+    <div style={{ background: BG, minHeight: "100vh", color: TEXT, fontFamily: "sans-serif" }}>
       {business.chatBotEnabled && <ChatWidget businessId={business.id} businessName={business.name} />}
 
       {step === "home" && (
         <>
-          <div className="relative" style={{ height: 260 }}>
+          {/* Hero */}
+          <div className="relative" style={{ height: 220 }}>
             {business.coverImage ? (
               <img src={business.coverImage} alt="" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${brand}22, ${brand}08)` }} />
+              <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${brand}18 0%, #e0f2fe 100%)` }} />
             )}
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(15,15,17,0.1) 0%, rgba(15,15,17,0.7) 70%, #0f0f11 100%)" }} />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,0.45) 100%)" }} />
             <div className="absolute bottom-0 left-0 right-0 px-5 pb-5 flex items-end gap-4">
               {business.logo ? (
-                <img src={business.logo} alt={business.name} className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 shadow-xl" style={{ border: "2px solid rgba(255,255,255,0.15)" }} />
+                <img src={business.logo} alt={business.name} className="w-14 h-14 rounded-2xl object-cover flex-shrink-0 shadow-lg" style={{ border: "2px solid rgba(255,255,255,0.9)" }} />
               ) : (
-                <div className="w-16 h-16 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-xl" style={{ background: brand, border: "2px solid rgba(255,255,255,0.15)" }}>
-                  <span className="text-2xl font-black text-white">{business.name[0]}</span>
+                <div className="w-14 h-14 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-lg" style={{ background: brand, border: "2px solid rgba(255,255,255,0.9)" }}>
+                  <span className="text-xl font-black text-white">{business.name[0]}</span>
                 </div>
               )}
-              <div className="pb-1">
-                <h1 className="text-2xl font-black leading-tight">{business.name}</h1>
-                <p className="text-sm mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>{business.category}</p>
+              <div className="pb-0.5">
+                <h1 className="text-xl font-black leading-tight text-white drop-shadow-sm">{business.name}</h1>
+                <p className="text-xs mt-0.5 text-white/70">{business.category}</p>
               </div>
             </div>
           </div>
 
-          <div className="px-5 pt-4 pb-2 flex flex-wrap gap-x-4 gap-y-1.5">
+          {/* Info strip */}
+          <div className="px-5 py-3 flex flex-wrap gap-x-4 gap-y-1" style={{ borderBottom: `1px solid ${BORDER}` }}>
             {(business.address || business.city) && (
-              <span className="flex items-center gap-1.5 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+              <span className="flex items-center gap-1.5 text-xs" style={{ color: MUTED }}>
                 <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                 {[business.address, business.city].filter(Boolean).join(", ")}
               </span>
             )}
             {business.phone && (
-              <a href={`tel:${business.phone}`} className="flex items-center gap-1.5 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+              <a href={`tel:${business.phone}`} className="flex items-center gap-1.5 text-xs" style={{ color: MUTED }}>
                 <Phone className="w-3.5 h-3.5 flex-shrink-0" /> {business.phone}
               </a>
             )}
             {business.description && (
-              <p className="w-full text-sm mt-1" style={{ color: "rgba(255,255,255,0.45)" }}>{business.description}</p>
+              <p className="w-full text-sm mt-1" style={{ color: MUTED }}>{business.description}</p>
             )}
           </div>
 
+          {/* Team */}
           {business.staff.length > 0 && (
-            <div className="mt-6">
-              <h2 className="px-5 text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "rgba(255,255,255,0.35)" }}>Nuestro equipo</h2>
-              <div className="flex gap-3 px-5 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+            <div className="mt-5 px-5">
+              <h2 className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: MUTED }}>Nuestro equipo</h2>
+              <div className="flex gap-4 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
                 {business.staff.map(s => (
-                  <div key={s.id} className="flex flex-col items-center gap-2 flex-shrink-0" style={{ width: 72 }}>
+                  <div key={s.id} className="flex flex-col items-center gap-1.5 flex-shrink-0" style={{ width: 68 }}>
                     {s.user.image ? (
-                      <img src={s.user.image} alt={s.user.name || ""} className="w-14 h-14 rounded-full object-cover" style={{ border: `2.5px solid ${s.color}` }} />
+                      <img src={s.user.image} alt={s.user.name || ""} className="w-12 h-12 rounded-full object-cover shadow-sm" style={{ border: `2.5px solid ${s.color}` }} />
                     ) : (
-                      <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white" style={{ background: s.color + "33", border: `2.5px solid ${s.color}` }}>
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-white shadow-sm" style={{ background: s.color }}>
                         {s.user.name?.[0] ?? "?"}
                       </div>
                     )}
                     <div className="text-center">
-                      <p className="text-xs font-semibold leading-tight" style={{ color: "#f4f4f5" }}>{s.user.name?.split(" ")[0]}</p>
-                      {s.specialty && <p className="text-[10px] leading-tight mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{s.specialty}</p>}
+                      <p className="text-xs font-semibold leading-tight" style={{ color: TEXT }}>{s.user.name?.split(" ")[0]}</p>
+                      {s.specialty && <p className="text-[10px] leading-tight mt-0.5" style={{ color: MUTED }}>{s.specialty}</p>}
                     </div>
                   </div>
                 ))}
@@ -907,39 +918,42 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
             </div>
           )}
 
-          <div className="mt-8">
-            <h2 className="px-5 text-xs font-bold uppercase tracking-widest mb-4" style={{ color: "rgba(255,255,255,0.35)" }}>Servicios</h2>
-            <div className="px-5 mb-4">
-              <div className="flex items-center gap-2 px-3.5 rounded-2xl" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                <Search className="w-4 h-4 flex-shrink-0" style={{ color: "rgba(255,255,255,0.3)" }} />
+          {/* Services */}
+          <div className="mt-5">
+            <div className="px-5 mb-3">
+              <h2 className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: MUTED }}>Servicios</h2>
+              <div className="flex items-center gap-2 px-3.5 rounded-xl" style={{ background: SUBTLE, border: `1px solid ${BORDER}` }}>
+                <Search className="w-4 h-4 flex-shrink-0" style={{ color: MUTED }} />
                 <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Buscar servicio..."
-                  className="flex-1 py-2.5 text-sm bg-transparent outline-none placeholder:text-white/30" style={{ color: "#f4f4f5" }} />
-                {searchQ && <button onClick={() => setSearchQ("")}><X className="w-4 h-4" style={{ color: "rgba(255,255,255,0.3)" }} /></button>}
+                  className="flex-1 py-2.5 text-sm bg-transparent outline-none"
+                  style={{ color: TEXT }}
+                  placeholder-style={{ color: MUTED }} />
+                {searchQ && <button onClick={() => setSearchQ("")}><X className="w-4 h-4" style={{ color: MUTED }} /></button>}
               </div>
             </div>
             {categories.length > 0 && (
-              <div ref={catBarRef} className="flex gap-2 px-5 overflow-x-auto pb-1 mb-4" style={{ scrollbarWidth: "none" }}>
+              <div ref={catBarRef} className="flex gap-2 px-5 overflow-x-auto pb-1 mb-3" style={{ scrollbarWidth: "none" }}>
                 {[{ id: "all", name: "Todos" }, ...categories].map(cat => (
                   <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
                     className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
                     style={activeCategory === cat.id
                       ? { background: brand, color: "#fff" }
-                      : { background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                      : { background: SUBTLE, color: MUTED, border: `1px solid ${BORDER}` }}>
                     {cat.name}
                   </button>
                 ))}
               </div>
             )}
-            <div className="px-5 space-y-6 pb-24">
+            <div className="px-5 space-y-5 pb-24">
               {grouped.length === 0 && (
-                <p className="text-sm py-8 text-center" style={{ color: "rgba(255,255,255,0.3)" }}>Sin servicios que coincidan</p>
+                <p className="text-sm py-8 text-center" style={{ color: MUTED }}>Sin servicios que coincidan</p>
               )}
               {grouped.map(({ cat, services }) => (
                 <div key={cat?.id ?? "uncategorized"}>
-                  {cat && <h3 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: brand }}>{cat.name}</h3>}
+                  {cat && <h3 className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: brand }}>{cat.name}</h3>}
                   <div className="space-y-2">
                     {services.map(s => (
-                      <ServiceCard key={s.id} service={s} brand={brand} onSelect={() => pickService(s)} />
+                      <ServiceCard key={s.id} service={s} brand={brand} onSelect={() => pickService(s)} card={CARD} border={BORDER} muted={MUTED} text={TEXT} subtle={SUBTLE} />
                     ))}
                   </div>
                 </div>
@@ -947,46 +961,46 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
             </div>
           </div>
 
-          <div className="fixed bottom-0 left-0 right-0 py-3 flex items-center justify-center gap-1.5" style={{ background: "linear-gradient(to top, #0f0f11, transparent)", pointerEvents: "none" }}>
-            <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.2)" }}>Reservas por</span>
-            <span className="text-[10px] font-black" style={{ color: "rgba(255,255,255,0.35)" }}>AgendaMok</span>
+          <div className="fixed bottom-0 left-0 right-0 py-3 flex items-center justify-center gap-1.5 pointer-events-none" style={{ background: `linear-gradient(to top, ${BG} 60%, transparent)` }}>
+            <span className="text-[10px] font-medium" style={{ color: "#94a3b8" }}>Reservas por</span>
+            <span className="text-[10px] font-black" style={{ color: brand }}>AgendaMok</span>
           </div>
         </>
       )}
 
       {step === "staff" && selectedService && (
         <div className="max-w-lg mx-auto">
-          <StepHeader brand={brand} onBack={() => setStep("home")} label={selectedService.name} sub={`${selectedService.duration} min · $${Number(selectedService.price).toLocaleString("es-CL")}`} color={selectedService.color} />
-          <div className="px-5 pb-10 space-y-3">
-            <h2 className="text-base font-bold mb-4">¿Con quién quieres atenderte?</h2>
+          <StepHeader brand={brand} onBack={() => setStep("home")} label={selectedService.name} sub={`${selectedService.duration} min · $${Number(selectedService.price).toLocaleString("es-CL")}`} color={selectedService.color} bg={BG} border={BORDER} muted={MUTED} text={TEXT} subtle={SUBTLE} />
+          <div className="px-5 pb-10 space-y-2.5 pt-2">
+            <p className="text-sm font-bold mb-3" style={{ color: TEXT }}>¿Con quién quieres atenderte?</p>
             <button onClick={() => { setSelectedStaff(null); setStep("datetime") }}
               className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(255,255,255,0.08)" }}>
+              style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+              <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: brand + "15" }}>
                 <Star className="w-5 h-5" style={{ color: brand }} />
               </div>
               <div>
-                <p className="font-semibold text-sm">Sin preferencia</p>
-                <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>El primer disponible</p>
+                <p className="font-semibold text-sm" style={{ color: TEXT }}>Sin preferencia</p>
+                <p className="text-xs mt-0.5" style={{ color: MUTED }}>El primer disponible</p>
               </div>
             </button>
             {business.staff.map(s => (
               <button key={s.id} onClick={() => { setSelectedStaff(s); setStep("datetime") }}
                 className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left"
-                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                style={{ background: CARD, border: `1px solid ${BORDER}` }}>
                 {s.user.image ? (
-                  <img src={s.user.image} alt={s.user.name || ""} className="w-12 h-12 rounded-full object-cover flex-shrink-0" style={{ border: `2px solid ${s.color}` }} />
+                  <img src={s.user.image} alt={s.user.name || ""} className="w-11 h-11 rounded-full object-cover flex-shrink-0" style={{ border: `2px solid ${s.color}` }} />
                 ) : (
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0" style={{ background: s.color + "33", border: `2px solid ${s.color}` }}>
+                  <div className="w-11 h-11 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0" style={{ background: s.color }}>
                     {s.user.name?.[0] ?? "?"}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm">{s.user.name}</p>
-                  {s.specialty && <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>{s.specialty}</p>}
-                  {s.bio && <p className="text-xs mt-1 line-clamp-2" style={{ color: "rgba(255,255,255,0.3)" }}>{s.bio}</p>}
+                  <p className="font-semibold text-sm" style={{ color: TEXT }}>{s.user.name}</p>
+                  {s.specialty && <p className="text-xs mt-0.5" style={{ color: MUTED }}>{s.specialty}</p>}
+                  {s.bio && <p className="text-xs mt-1 line-clamp-2" style={{ color: MUTED }}>{s.bio}</p>}
                 </div>
-                <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "rgba(255,255,255,0.2)" }} />
+                <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: BORDER }} />
               </button>
             ))}
           </div>
@@ -995,21 +1009,21 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
 
       {step === "datetime" && selectedService && (
         <div className="max-w-lg mx-auto">
-          <StepHeader brand={brand} onBack={() => setStep("staff")} label={selectedService.name} sub={selectedStaff ? `con ${selectedStaff.user.name}` : "cualquier profesional"} color={selectedService.color} />
-          <div className="px-5 pb-10">
-            <h2 className="text-base font-bold mb-5">Elige fecha y hora</h2>
+          <StepHeader brand={brand} onBack={() => setStep("staff")} label={selectedService.name} sub={selectedStaff ? `con ${selectedStaff.user.name}` : "cualquier profesional"} color={selectedService.color} bg={BG} border={BORDER} muted={MUTED} text={TEXT} subtle={SUBTLE} />
+          <div className="px-5 pb-10 pt-2">
+            <p className="text-sm font-bold mb-4" style={{ color: TEXT }}>Elige fecha y hora</p>
             <div className="flex items-center gap-2 mb-3">
               <button onClick={() => setWeekOffset(w => Math.max(0, w - 1))} disabled={weekOffset === 0}
                 className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-30"
-                style={{ background: "rgba(255,255,255,0.07)" }}>
+                style={{ background: SUBTLE, border: `1px solid ${BORDER}`, color: MUTED }}>
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <p className="flex-1 text-center text-xs font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>
+              <p className="flex-1 text-center text-xs font-medium" style={{ color: MUTED }}>
                 {format(weekDays[0], "d MMM", { locale: es })} — {format(weekDays[6], "d MMM yyyy", { locale: es })}
               </p>
               <button onClick={() => setWeekOffset(w => w + 1)}
                 className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
-                style={{ background: "rgba(255,255,255,0.07)" }}>
+                style={{ background: SUBTLE, border: `1px solid ${BORDER}`, color: MUTED }}>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -1020,9 +1034,11 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
                 const isSelected = key === selectedDate
                 return (
                   <button key={key} disabled={isPast} onClick={() => setSelectedDate(key)}
-                    className="flex flex-col items-center py-3 rounded-2xl transition-all disabled:opacity-25"
-                    style={isSelected ? { background: brand, color: "#fff" } : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)" }}>
-                    <span className="text-[9px] font-bold uppercase tracking-wide leading-none mb-1.5">{format(day, "EEE", { locale: es })}</span>
+                    className="flex flex-col items-center py-2.5 rounded-xl transition-all disabled:opacity-30"
+                    style={isSelected
+                      ? { background: brand, color: "#fff" }
+                      : { background: SUBTLE, color: MUTED, border: `1px solid ${BORDER}` }}>
+                    <span className="text-[9px] font-bold uppercase tracking-wide leading-none mb-1">{format(day, "EEE", { locale: es })}</span>
                     <span className="text-sm font-bold">{format(day, "d")}</span>
                   </button>
                 )
@@ -1030,17 +1046,17 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
             </div>
             {selectedDate && (
               <>
-                <p className="text-xs font-semibold mb-3 capitalize" style={{ color: "rgba(255,255,255,0.4)" }}>
+                <p className="text-xs font-semibold mb-3 capitalize" style={{ color: MUTED }}>
                   {format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })}
                 </p>
                 {loadingSlots ? (
-                  <div className="flex items-center justify-center gap-2 py-10" style={{ color: "rgba(255,255,255,0.3)" }}>
-                    <Loader2 className="w-5 h-5 animate-spin" /><span className="text-sm">Buscando horarios...</span>
+                  <div className="flex items-center justify-center gap-2 py-10" style={{ color: MUTED }}>
+                    <Loader2 className="w-5 h-5 animate-spin" style={{ color: brand }} /><span className="text-sm">Buscando horarios...</span>
                   </div>
                 ) : slots.length === 0 ? (
                   <div className="py-10 text-center">
-                    <p className="text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>Sin horarios disponibles</p>
-                    <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.2)" }}>Prueba otro día</p>
+                    <p className="text-sm" style={{ color: MUTED }}>Sin horarios disponibles</p>
+                    <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>Prueba otro día</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-4 gap-2">
@@ -1049,7 +1065,7 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
                         className="py-3 rounded-xl text-sm font-semibold transition-all"
                         style={selectedTime === slot
                           ? { background: brand, color: "#fff" }
-                          : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.75)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                          : { background: CARD, color: TEXT, border: `1px solid ${BORDER}` }}>
                         {slot}
                       </button>
                     ))}
@@ -1063,64 +1079,70 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
 
       {step === "form" && selectedService && (
         <div className="max-w-lg mx-auto">
-          <StepHeader brand={brand} onBack={() => setStep("datetime")} label={selectedService.name} sub={`${selectedDate ? format(parseISO(selectedDate), "d MMM", { locale: es }) : ""} · ${selectedTime}`} color={selectedService.color} />
-          <div className="px-5 pb-10 space-y-6">
-            <div className="rounded-2xl p-4 space-y-2.5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+          <StepHeader brand={brand} onBack={() => setStep("datetime")} label={selectedService.name} sub={`${selectedDate ? format(parseISO(selectedDate), "d MMM", { locale: es }) : ""} · ${selectedTime}`} color={selectedService.color} bg={BG} border={BORDER} muted={MUTED} text={TEXT} subtle={SUBTLE} />
+          <div className="px-5 pb-10 pt-3 space-y-5">
+            {/* Summary */}
+            <div className="rounded-2xl p-4 space-y-2" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
               <div className="flex items-center gap-2.5">
                 <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: selectedService.color }} />
-                <span className="font-bold text-sm">{selectedService.name}</span>
+                <span className="font-bold text-sm" style={{ color: TEXT }}>{selectedService.name}</span>
                 <span className="ml-auto font-bold text-sm" style={{ color: brand }}>${Number(selectedService.price).toLocaleString("es-CL")}</span>
               </div>
-              <div className="flex items-center gap-2 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+              <div className="flex items-center gap-2 text-xs" style={{ color: MUTED }}>
                 <Clock className="w-3.5 h-3.5" /> {selectedService.duration} min
-                {selectedStaff && <><span style={{ color: "rgba(255,255,255,0.2)" }}>·</span><User className="w-3.5 h-3.5" /> {selectedStaff.user.name}</>}
+                {selectedStaff && <><span>·</span><User className="w-3.5 h-3.5" /> {selectedStaff.user.name}</>}
               </div>
-              <div className="flex items-center gap-2 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+              <div className="flex items-center gap-2 text-xs" style={{ color: MUTED }}>
                 <Calendar className="w-3.5 h-3.5" />
                 {selectedDate && format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })} a las {selectedTime}
               </div>
             </div>
+
+            {/* Payment */}
             {business.onlinePaymentsEnabled && Number(selectedService.price) > 0 && (
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.3)" }}>Forma de pago</label>
+                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: MUTED }}>Forma de pago</label>
                 <div className="grid grid-cols-2 gap-2">
                   {([
                     { value: "local" as PayMethod, label: "En el local", sub: "Efectivo o tarjeta" },
                     { value: "online" as PayMethod, label: "Pagar ahora", sub: `$${Number(selectedService.price).toLocaleString("es-CL")}` },
                   ]).map(opt => (
                     <button key={opt.value} onClick={() => setPayMethod(opt.value)}
-                      className="p-3.5 rounded-2xl text-left transition-all"
+                      className="p-3.5 rounded-xl text-left transition-all"
                       style={payMethod === opt.value
-                        ? { background: brand + "20", border: `1.5px solid ${brand}` }
-                        : { background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(255,255,255,0.07)" }}>
-                      <p className="text-sm font-semibold" style={{ color: payMethod === opt.value ? brand : "rgba(255,255,255,0.8)" }}>{opt.label}</p>
-                      <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{opt.sub}</p>
+                        ? { background: brand + "12", border: `1.5px solid ${brand}` }
+                        : { background: SUBTLE, border: `1.5px solid ${BORDER}` }}>
+                      <p className="text-sm font-semibold" style={{ color: payMethod === opt.value ? brand : TEXT }}>{opt.label}</p>
+                      <p className="text-xs mt-0.5" style={{ color: MUTED }}>{opt.sub}</p>
                     </button>
                   ))}
                 </div>
               </div>
             )}
-            <div className="space-y-4">
-              <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.3)" }}>Tus datos</label>
+
+            {/* Fields */}
+            <div className="space-y-3">
+              <label className="text-xs font-bold uppercase tracking-wider" style={{ color: MUTED }}>Tus datos</label>
               {[
                 { key: "name", label: "Nombre completo", type: "text", placeholder: "María González" },
                 { key: "email", label: "Email", type: "email", placeholder: "tu@email.com" },
                 { key: "phone", label: "Teléfono (opcional)", type: "tel", placeholder: "+56 9 1234 5678" },
               ].map(({ key, label, type, placeholder }) => (
-                <div key={key} className="space-y-1.5">
-                  <label className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</label>
+                <div key={key} className="space-y-1">
+                  <label className="text-xs font-medium" style={{ color: MUTED }}>{label}</label>
                   <input type={type} value={(form as Record<string, string>)[key]}
                     onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
                     placeholder={placeholder}
-                    className="w-full rounded-2xl px-4 py-3 text-sm outline-none transition-all placeholder:text-white/25"
-                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "#f4f4f5" }} />
+                    className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all"
+                    style={{ background: CARD, border: `1px solid ${BORDER}`, color: TEXT }} />
                 </div>
               ))}
               <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                 rows={3} placeholder="Comentario para el profesional (opcional)"
-                className="w-full rounded-2xl px-4 py-3.5 text-sm outline-none resize-none placeholder:text-white/20"
-                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "#f4f4f5" }} />
+                className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none"
+                style={{ background: CARD, border: `1px solid ${BORDER}`, color: TEXT }} />
             </div>
+
             <button onClick={handleConfirm} disabled={submitting || !form.name || !form.email}
               className="w-full py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-40"
               style={{ background: brand, color: "#fff" }}>
@@ -1136,29 +1158,29 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
 
       {step === "confirmed" && (
         <div className="max-w-lg mx-auto px-5 py-16 flex flex-col items-center text-center space-y-6">
-          <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ background: "rgba(34,197,94,0.15)" }}>
-            <Check className="w-12 h-12" style={{ color: "#22c55e" }} />
+          <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-sm" style={{ background: "#dcfce7", border: "1px solid #bbf7d0" }}>
+            <Check className="w-10 h-10" style={{ color: "#16a34a" }} />
           </div>
           <div>
-            <h2 className="text-2xl font-black">¡Reserva confirmada!</h2>
-            <p className="text-sm mt-2" style={{ color: "rgba(255,255,255,0.4)" }}>Enviamos la confirmación a {form.email}</p>
+            <h2 className="text-2xl font-black" style={{ color: TEXT }}>¡Reserva confirmada!</h2>
+            <p className="text-sm mt-2" style={{ color: MUTED }}>Enviamos la confirmación a {form.email}</p>
           </div>
-          <div className="w-full rounded-2xl p-5 space-y-3 text-left" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="w-full rounded-2xl p-5 space-y-3 text-left" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
             <div className="flex items-center gap-2.5">
               <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: selectedService?.color }} />
-              <span className="font-bold text-sm">{selectedService?.name}</span>
+              <span className="font-bold text-sm" style={{ color: TEXT }}>{selectedService?.name}</span>
             </div>
             {selectedStaff && (
-              <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+              <div className="flex items-center gap-2 text-sm" style={{ color: MUTED }}>
                 <User className="w-4 h-4" /> {selectedStaff.user.name}
               </div>
             )}
-            <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+            <div className="flex items-center gap-2 text-sm" style={{ color: MUTED }}>
               <Calendar className="w-4 h-4" />
               {selectedDate && format(parseISO(selectedDate), "EEEE d 'de' MMMM yyyy", { locale: es })} · {selectedTime}
             </div>
             {(business.address || business.city) && (
-              <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+              <div className="flex items-center gap-2 text-sm" style={{ color: MUTED }}>
                 <MapPin className="w-4 h-4" />
                 {[business.address, business.city].filter(Boolean).join(", ")}
               </div>
@@ -1166,14 +1188,14 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
           </div>
           <div className="flex gap-3 w-full">
             <button onClick={downloadIcs}
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold transition-all"
-              style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold transition-all"
+              style={{ background: SUBTLE, color: MUTED, border: `1px solid ${BORDER}` }}>
               <Download className="w-4 h-4" /> Calendario
             </button>
             <a href={`https://wa.me/?text=${encodeURIComponent(`Reservé ${selectedService?.name} en ${business.name} — ${selectedDate ? format(parseISO(selectedDate), "d MMM", { locale: es }) : ""} ${selectedTime} 🗓️`)}`}
               target="_blank" rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold transition-all"
-              style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold transition-all"
+              style={{ background: SUBTLE, color: MUTED, border: `1px solid ${BORDER}` }}>
               <Share2 className="w-4 h-4" /> Compartir
             </a>
           </div>
@@ -1188,29 +1210,32 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
 
 // ── Sub-components ──────────────────────────────────────────────
 
-function ServiceCard({ service, brand, onSelect }: { service: Service; brand: string; onSelect: () => void }) {
+function ServiceCard({ service, brand, onSelect, card, border, muted, text, subtle }: {
+  service: Service; brand: string; onSelect: () => void
+  card: string; border: string; muted: string; text: string; subtle: string
+}) {
   const [expanded, setExpanded] = useState(false)
   const hasDesc = !!service.description
   return (
-    <div className="rounded-2xl overflow-hidden transition-all" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+    <div className="rounded-2xl overflow-hidden transition-all" style={{ background: card, border: `1px solid ${border}` }}>
       <button className="w-full flex items-center gap-4 p-4 text-left" onClick={() => hasDesc ? setExpanded(e => !e) : onSelect()}>
         <div className="w-1 self-stretch rounded-full flex-shrink-0" style={{ backgroundColor: service.color }} />
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm leading-tight">{service.name}</p>
+          <p className="font-semibold text-sm leading-tight" style={{ color: text }}>{service.name}</p>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}><Clock className="w-3 h-3 inline mr-1" />{service.duration} min</span>
+            <span className="text-xs" style={{ color: muted }}><Clock className="w-3 h-3 inline mr-1" />{service.duration} min</span>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="font-bold text-sm" style={{ color: brand }}>${Number(service.price).toLocaleString("es-CL")}</span>
           {hasDesc && (
-            <ChevronDown className="w-4 h-4 transition-transform" style={{ color: "rgba(255,255,255,0.25)", transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }} />
+            <ChevronDown className="w-4 h-4 transition-transform" style={{ color: muted, transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }} />
           )}
         </div>
       </button>
       {expanded && hasDesc && (
-        <div className="px-4 pb-4 space-y-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-          <p className="text-xs pt-3" style={{ color: "rgba(255,255,255,0.45)" }}>{service.description}</p>
+        <div className="px-4 pb-4 space-y-3" style={{ borderTop: `1px solid ${border}` }}>
+          <p className="text-xs pt-3" style={{ color: muted }}>{service.description}</p>
           <button onClick={onSelect}
             className="w-full py-2.5 rounded-xl text-sm font-bold transition-all"
             style={{ background: brand, color: "#fff" }}>
@@ -1222,17 +1247,20 @@ function ServiceCard({ service, brand, onSelect }: { service: Service; brand: st
   )
 }
 
-function StepHeader({ brand, onBack, label, sub, color }: { brand: string; onBack: () => void; label: string; sub: string; color: string }) {
+function StepHeader({ brand, onBack, label, sub, color, bg, border, muted, text, subtle }: {
+  brand: string; onBack: () => void; label: string; sub: string; color: string
+  bg: string; border: string; muted: string; text: string; subtle: string
+}) {
   return (
-    <div className="sticky top-0 z-20 px-5 py-4 flex items-center gap-3" style={{ background: "rgba(15,15,17,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-      <button onClick={onBack} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all" style={{ background: "rgba(255,255,255,0.07)" }}>
+    <div className="sticky top-0 z-20 px-5 py-3.5 flex items-center gap-3" style={{ background: bg + "f0", backdropFilter: "blur(12px)", borderBottom: `1px solid ${border}` }}>
+      <button onClick={onBack} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all" style={{ background: subtle, border: `1px solid ${border}`, color: muted }}>
         <ChevronLeft className="w-5 h-5" />
       </button>
       <div className="flex items-center gap-2.5 flex-1 min-w-0">
         <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
         <div className="min-w-0">
-          <p className="text-sm font-bold truncate">{label}</p>
-          <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.4)" }}>{sub}</p>
+          <p className="text-sm font-bold truncate" style={{ color: text }}>{label}</p>
+          <p className="text-xs truncate" style={{ color: muted }}>{sub}</p>
         </div>
       </div>
     </div>
