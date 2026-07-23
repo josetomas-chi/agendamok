@@ -5,7 +5,7 @@ import { sendWhatsAppMessage } from "@/lib/whatsapp"
 import { parseISO, addMinutes, setHours, setMinutes, format, startOfDay, endOfDay } from "date-fns"
 import { es } from "date-fns/locale"
 import { chileLocalToUTC, utcToChileLocal } from "@/lib/timezone"
-import { sendBookingConfirmation, sendCourtBookingConfirmation } from "@/lib/email"
+import { sendBookingConfirmation, sendCourtBookingConfirmation, sendWhatsAppUsageWarning } from "@/lib/email"
 import crypto from "crypto"
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -417,9 +417,31 @@ export async function POST(req: Request) {
             const usage = await prisma.whatsAppMonthlyUsage.upsert({
               where: { businessId_month: { businessId: business.id, month } },
               update: { count: { increment: 1 } },
-              create: { businessId: business.id, month, count: 1 },
+              create: { businessId: business.id, month, count: 1, extraLimit: 0 },
             })
-            if (usage.count > MONTHLY_CONV_LIMIT) {
+            const effectiveLimit = MONTHLY_CONV_LIMIT + (usage.extraLimit ?? 0)
+
+            // Send warning emails at 80% and at limit
+            const WARN_THRESHOLD = Math.floor(effectiveLimit * 0.8)
+            if (usage.count === WARN_THRESHOLD || usage.count >= effectiveLimit) {
+              const owner = await prisma.business.findUnique({
+                where: { id: business.id },
+                select: { name: true, user: { select: { name: true, email: true } } },
+              })
+              if (owner?.user?.email) {
+                const settingsUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"}/dashboard/settings?tab=integrations`
+                sendWhatsAppUsageWarning({
+                  ownerName: owner.user.name || "Hola",
+                  ownerEmail: owner.user.email,
+                  businessName: owner.name,
+                  count: usage.count,
+                  limit: effectiveLimit,
+                  settingsUrl,
+                }).catch(() => {})
+              }
+            }
+
+            if (usage.count > effectiveLimit) {
               await sendWhatsAppMessage(
                 phoneNumberId, from,
                 "Hola 👋 Nuestro asistente virtual alcanzó el límite mensual de conversaciones. Por favor contáctanos directamente o intenta el próximo mes."

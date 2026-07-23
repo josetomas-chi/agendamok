@@ -41,7 +41,8 @@ function SettingsContent() {
   const [gcalLoading, setGcalLoading] = useState(false)
 
   // WhatsApp usage
-  const [waUsage, setWaUsage] = useState<{ count: number; limit: number; month: string } | null>(null)
+  const [waUsage, setWaUsage] = useState<{ count: number; limit: number; extra: number; month: string } | null>(null)
+  const [buyingWa, setBuyingWa] = useState(false)
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -1256,7 +1257,7 @@ function SettingsContent() {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {waUsage.count >= waUsage.limit
-                        ? "Límite alcanzado — el bot responderá de nuevo el próximo mes."
+                        ? "Límite alcanzado — compra un bloque adicional para reactivar el bot."
                         : `${waUsage.limit - waUsage.count} conversaciones disponibles en ${waUsage.month}`}
                     </p>
                   </div>
@@ -1264,6 +1265,21 @@ function SettingsContent() {
                     <p className="font-medium text-foreground/70">¿Qué cuenta como conversación?</p>
                     <p>Cada vez que un número de WhatsApp nuevo inicia una sesión con el bot (o retoma después de 30 min de inactividad) se cuenta como una conversación.</p>
                   </div>
+                  <Button
+                    className="w-full gap-2 font-semibold text-white"
+                    style={{ background: "#25D366" }}
+                    disabled={buyingWa}
+                    onClick={async () => {
+                      setBuyingWa(true)
+                      const r = await fetch("/api/flow/whatsapp-topup", { method: "POST" })
+                      const d = await r.json()
+                      if (d.url) window.location.href = d.url
+                      else { toast.error(d.error || "Error al crear pago"); setBuyingWa(false) }
+                    }}
+                  >
+                    {buyingWa && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Comprar 50 conversaciones — 0,1 UF + IVA
+                  </Button>
                 </>
               ) : (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">

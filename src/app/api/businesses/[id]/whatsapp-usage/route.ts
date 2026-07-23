@@ -13,9 +13,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     where: { businessId_month: { businessId: id, month } },
   })
 
+  const base = 100
+  const extra = usage?.extraLimit ?? 0
   return NextResponse.json({
     count: usage?.count ?? 0,
-    limit: 100,
+    limit: base + extra,
+    extra,
     month,
   })
 }

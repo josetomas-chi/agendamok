@@ -752,3 +752,31 @@ export async function sendPaymentFailedAlert({
     `),
   }).catch(() => {})
 }
+
+export async function sendWhatsAppUsageWarning({
+  ownerName, ownerEmail, businessName, count, limit, settingsUrl,
+}: {
+  ownerName: string; ownerEmail: string; businessName: string
+  count: number; limit: number; settingsUrl: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+  const pct = Math.round((count / limit) * 100)
+  const isLimit = count >= limit
+  resend.emails.send({
+    from: FROM,
+    to: ownerEmail,
+    subject: isLimit
+      ? `⚠️ Bot WhatsApp pausado — ${businessName}`
+      : `Aviso: tu bot WhatsApp lleva ${pct}% de conversaciones — ${businessName}`,
+    html: base(`
+      <h1>${isLimit ? "Bot WhatsApp pausado" : `Llevas el ${pct}% de tus conversaciones`}</h1>
+      <p class="subtitle">Hola ${ownerName}, el bot IA de <strong style="color:#fff">${businessName}</strong> ${isLimit ? "alcanzó el límite mensual y está pausado." : "está llegando al límite mensual de conversaciones."}</p>
+      <div class="box">
+        <div class="row"><span class="label">Usadas</span><span class="value">${count} / ${limit}</span></div>
+        <div class="row"><span class="label">Estado</span><span class="value" style="color:${isLimit ? "#f87171" : "#fbbf24"}">${isLimit ? "Pausado" : "Activo — quedan " + (limit - count)}</span></div>
+      </div>
+      <p class="subtitle">${isLimit ? "Compra un bloque de 50 conversaciones adicionales (0,1 UF + IVA) para reactivarlo de inmediato." : "Puedes comprar conversaciones adicionales ahora para no quedarte sin servicio."}</p>
+      <a href="${settingsUrl}" class="btn" style="background:linear-gradient(135deg,#25D366,#128C7E)">Comprar 50 conversaciones — 0,1 UF</a>
+    `),
+  }).catch(() => {})
+}
