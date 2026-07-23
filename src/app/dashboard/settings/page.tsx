@@ -34,6 +34,7 @@ function SettingsContent() {
   // Cover image
   const [coverImage, setCoverImage] = useState<string | null>(null)
   const [uploadingCover, setUploadingCover] = useState(false)
+  const [coverPositionY, setCoverPositionY] = useState(50)
 
   // Google Calendar
   const [gcal, setGcal] = useState<{ connected: boolean; connectedAt: string | null }>({ connected: false, connectedAt: null })
@@ -107,6 +108,7 @@ function SettingsContent() {
       })
       setBrandColor(biz.business.primaryColor || "#38bdf8")
       setCoverImage(biz.business.coverImage || null)
+      setCoverPositionY(biz.business.coverImagePositionY ?? 50)
       // Load Google Calendar status
       const gcalR = await fetch("/api/integrations/google-calendar/status")
       if (gcalR.ok) setGcal(await gcalR.json())
@@ -550,22 +552,57 @@ function SettingsContent() {
             </CardHeader>
             <CardContent className="space-y-4">
               {coverImage ? (
-                <div className="relative rounded-xl overflow-hidden" style={{ height: 160 }}>
-                  <img src={coverImage} alt="Portada" className="w-full h-full object-cover" />
-                  <button
-                    onClick={async () => {
-                      if (!business) return
-                      setCoverImage(null)
-                      await fetch(`/api/businesses/${business.id}`, {
-                        method: "PATCH", headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ coverImage: null }),
-                      })
-                      toast.success("Foto de portada eliminada")
-                    }}
-                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-colors"
-                  >
-                    <X className="w-4 h-4 text-white" /* overlay button — keep white */ />
-                  </button>
+                <div className="space-y-3">
+                  <div className="relative rounded-xl overflow-hidden" style={{ height: 160 }}>
+                    <img
+                      src={coverImage}
+                      alt="Portada"
+                      className="w-full h-full object-cover"
+                      style={{ objectPosition: `center ${coverPositionY}%` }}
+                    />
+                    <button
+                      onClick={async () => {
+                        if (!business) return
+                        setCoverImage(null)
+                        await fetch(`/api/businesses/${business.id}`, {
+                          method: "PATCH", headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ coverImage: null }),
+                        })
+                        toast.success("Foto de portada eliminada")
+                      }}
+                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-colors"
+                    >
+                      <X className="w-4 h-4 text-white" />
+                    </button>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Posición vertical de la imagen</Label>
+                      <span className="text-xs text-muted-foreground">{coverPositionY}%</span>
+                    </div>
+                    <input
+                      type="range" min={0} max={100} value={coverPositionY}
+                      onChange={e => setCoverPositionY(Number(e.target.value))}
+                      onMouseUp={async () => {
+                        if (!business) return
+                        await fetch(`/api/businesses/${business.id}`, {
+                          method: "PATCH", headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ coverImagePositionY: coverPositionY }),
+                        })
+                      }}
+                      onTouchEnd={async () => {
+                        if (!business) return
+                        await fetch(`/api/businesses/${business.id}`, {
+                          method: "PATCH", headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ coverImagePositionY: coverPositionY }),
+                        })
+                      }}
+                      className="w-full accent-sky-400"
+                    />
+                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <span>Arriba</span><span>Centro</span><span>Abajo</span>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <label className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border cursor-pointer hover:border-sky-400/50 hover:bg-muted/20 transition-all" style={{ height: 160 }}>

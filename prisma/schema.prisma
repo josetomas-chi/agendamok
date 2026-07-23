@@ -234,6 +234,7 @@ model Business {
   loyaltyVipThreshold         Int       @default(500)
   segmentDiscounts            Json      @default("{}")
   coverImage                  String?
+  coverImagePositionY         Int       @default(50)
   primaryColor                String?
   dailySummaryEnabled         Boolean   @default(false)
   notifConfirmation           Boolean   @default(true)

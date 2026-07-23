@@ -22,7 +22,7 @@ type PricingRule = { days: number[]; startTime: string; endTime: string; price: 
 type Court = { id: string; name: string; sport: string | null; color: string; description: string | null; sponsorName: string | null; sponsorLogo: string | null; sponsorUrl: string | null; pricingRules: PricingRule[] }
 type Business = {
   id: string; name: string; category: string; description: string | null
-  logo: string | null; coverImage: string | null; phone: string | null
+  logo: string | null; coverImage: string | null; coverImagePositionY: number | null; phone: string | null
   address: string | null; city: string | null
   onlinePaymentsEnabled: boolean; primaryColor: string | null
   businessType: string
@@ -265,7 +265,7 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
       {step !== "confirmed" && (
         <div className="relative" style={{ height: 220 }}>
           {business.coverImage ? (
-            <img src={business.coverImage} alt={business.name} className="w-full h-full object-cover" />
+            <img src={business.coverImage} alt={business.name} className="w-full h-full object-cover" style={{ objectPosition: `center ${business.coverImagePositionY ?? 50}%` }} />
           ) : (
             <div className="w-full h-full" style={{ background: `linear-gradient(135deg, rgba(56,189,248,0.2) 0%, rgba(13,27,42,0.8) 100%)` }} />
           )}
@@ -856,7 +856,7 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
           {/* Hero */}
           <div className="relative" style={{ height: 220 }}>
             {business.coverImage ? (
-              <img src={business.coverImage} alt="" className="w-full h-full object-cover" />
+              <img src={business.coverImage} alt="" className="w-full h-full object-cover" style={{ objectPosition: `center ${business.coverImagePositionY ?? 50}%` }} />
             ) : (
               <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${brand}18 0%, #e0f2fe 100%)` }} />
             )}
