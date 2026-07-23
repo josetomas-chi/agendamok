@@ -91,6 +91,8 @@ export default function StaffPage() {
   const [form, setForm] = useState(DEFAULT_FORM)
   const [saving, setSaving] = useState(false)
   const [uploadingId, setUploadingId] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (!businessId) return
@@ -146,6 +148,21 @@ export default function StaffPage() {
       toast.error("Error al subir la foto")
     }
     setUploadingId(null)
+  }
+
+  async function handleDelete() {
+    if (!selected) return
+    setDeleting(true)
+    const r = await fetch(`/api/businesses/${businessId}/staff/${selected.id}`, { method: "DELETE" })
+    if (r.ok) {
+      toast.success("Profesional eliminado")
+      setSelected(null)
+      setConfirmDelete(false)
+      loadStaff(businessId)
+    } else {
+      toast.error("Error al eliminar")
+    }
+    setDeleting(false)
   }
 
   async function updateSchedule(staffId: string, schedules: Schedule[]) {
@@ -256,7 +273,7 @@ export default function StaffPage() {
 
       {/* Staff detail sheet */}
       {selected && (
-        <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
+        <Dialog open={!!selected} onOpenChange={() => { setSelected(null); setConfirmDelete(false) }}>
           <DialogContent className="max-w-md p-0">
             <DialogHeader className="px-5 pt-4 pb-3 border-b border-white/10">
               <div className="flex items-center gap-2.5">
@@ -276,10 +293,37 @@ export default function StaffPage() {
                       : <Camera className="w-3 h-3 text-white" />}
                   </div>
                 </label>
-                <div>
+                <div className="flex-1 min-w-0">
                   <DialogTitle className="text-sm">{selected.user.name}</DialogTitle>
                   <p className="text-xs text-muted-foreground">{selected.specialty || "Sin especialidad"}</p>
                 </div>
+                {/* Delete button */}
+                {!confirmDelete ? (
+                  <button
+                    onClick={() => setConfirmDelete(true)}
+                    className="ml-auto flex-shrink-0 p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+                    title="Eliminar profesional"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <div className="ml-auto flex-shrink-0 flex items-center gap-2">
+                    <span className="text-xs text-red-400">¿Eliminar?</span>
+                    <button
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      className="px-2.5 py-1 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-semibold transition-colors disabled:opacity-50"
+                    >
+                      {deleting ? "..." : "Sí"}
+                    </button>
+                    <button
+                      onClick={() => setConfirmDelete(false)}
+                      className="px-2.5 py-1 rounded-lg border border-white/20 text-white/60 hover:text-white text-xs transition-colors"
+                    >
+                      No
+                    </button>
+                  </div>
+                )}
               </div>
             </DialogHeader>
             <Tabs defaultValue="schedule">

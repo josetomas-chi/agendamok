@@ -38,3 +38,22 @@ export async function PATCH(req: Request, { params }: Params) {
 
   return NextResponse.json({ ok: true })
 }
+
+export async function DELETE(_req: Request, { params }: Params) {
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+
+  const { id, staffId } = await params
+
+  const member = await prisma.staffMember.findFirst({
+    where: { id: staffId, businessId: id, deletedAt: null },
+  })
+  if (!member) return NextResponse.json({ error: "No encontrado" }, { status: 404 })
+
+  await prisma.staffMember.update({
+    where: { id: staffId },
+    data: { deletedAt: new Date() },
+  })
+
+  return NextResponse.json({ ok: true })
+}
