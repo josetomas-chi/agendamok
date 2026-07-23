@@ -461,7 +461,7 @@ export default function LandingPage() {
               Ingresar
             </Link>
             <Link
-              href="/register"
+              href="https://www.agendamok.cl/book/demo"
               className="hidden md:block text-sm font-semibold text-white px-5 py-2.5 rounded-full transition-all hover:opacity-90"
               style={{ background: NAVY }}
             >
@@ -495,7 +495,7 @@ export default function LandingPage() {
                 className="px-3 py-3 text-sm text-gray-500 hover:text-gray-900 rounded-xl transition-colors text-center">
                 Ingresar
               </Link>
-              <Link href="/register" onClick={() => setMobileOpen(false)}
+              <Link href="https://www.agendamok.cl/book/demo" onClick={() => setMobileOpen(false)}
                 className="py-3 text-sm font-semibold text-white transition-all rounded-full text-center hover:opacity-90"
                 style={{ background: NAVY }}>
                 Agendar demo
