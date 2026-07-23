@@ -16,10 +16,15 @@ export async function PATCH(req: Request, { params }: Params) {
   })
   if (!member) return NextResponse.json({ error: "No encontrado" }, { status: 404 })
 
-  const { image, color, specialty, bio, commissionType, commissionValue, serviceIds } = body
+  const { image, name, email, phone, color, specialty, bio, commissionType, commissionValue, serviceIds } = body
 
-  if (image !== undefined) {
-    await prisma.user.update({ where: { id: member.userId }, data: { image } })
+  const userUpdate: Record<string, unknown> = {}
+  if (image !== undefined) userUpdate.image = image
+  if (name !== undefined) userUpdate.name = name
+  if (email !== undefined) userUpdate.email = email
+  if (phone !== undefined) userUpdate.phone = phone
+  if (Object.keys(userUpdate).length > 0) {
+    await prisma.user.update({ where: { id: member.userId }, data: userUpdate })
   }
 
   const staffUpdate: Record<string, unknown> = {}

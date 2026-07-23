@@ -528,6 +528,9 @@ function ExceptionsEditor({ businessId, staffId }: { businessId: string; staffId
 
 function InfoEditor({ member, businessId, onSaved }: { member: StaffMember; businessId: string; onSaved: () => void }) {
   const [form, setForm] = useState({
+    name: member.user.name || "",
+    email: member.user.email || "",
+    phone: member.user.phone || "",
     specialty: member.specialty || "",
     bio: member.bio || "",
     color: member.color || "#8b5cf6",
@@ -553,9 +556,22 @@ function InfoEditor({ member, businessId, onSaved }: { member: StaffMember; busi
 
   return (
     <div className="space-y-3 text-xs">
-      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-        <div><p className="text-muted-foreground mb-0.5">Email</p><p>{member.user.email}</p></div>
-        <div><p className="text-muted-foreground mb-0.5">Teléfono</p><p>{member.user.phone || "—"}</p></div>
+      <div>
+        <label className="text-[10px] text-muted-foreground">Nombre</label>
+        <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+          className={inputCls} style={inputStyle} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-[10px] text-muted-foreground">Email</label>
+          <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+            className={inputCls} style={inputStyle} />
+        </div>
+        <div>
+          <label className="text-[10px] text-muted-foreground">Teléfono</label>
+          <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+            className={inputCls} style={inputStyle} placeholder="+56 9..." />
+        </div>
       </div>
 
       <div>
