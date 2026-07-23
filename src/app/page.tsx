@@ -376,12 +376,12 @@ function useScrollReveal() {
   }, [])
 }
 
-function LiveStatCard({ target, suffix, label, sub, decimals = 0 }: { target: number; suffix: string; label: string; sub: string; decimals?: number }) {
+function LiveStatCard({ target, suffix, label, sub }: { target: number; suffix: string; label: string; sub: string }) {
   const { value, ref } = useCountUp(target, 1800)
   return (
-    <div className="text-center reveal">
+    <div className="text-center" style={{ animation: "fadeUp 0.6s ease both" }}>
       <div className="text-4xl sm:text-5xl font-black tracking-tight mb-1 whitespace-nowrap" style={{ color: "#38bdf8" }}>
-        <span ref={ref}>{decimals > 0 ? value.toLocaleString("es-CL") : value.toLocaleString("es-CL")}</span>
+        <span ref={ref}>{value.toLocaleString("es-CL")}</span>
         <span>{suffix}</span>
       </div>
       <div className="font-semibold text-gray-900 mb-0.5">{label}</div>
@@ -415,6 +415,7 @@ export default function LandingPage() {
         .reveal-delay-3 { transition-delay: 0.24s; }
         .reveal-delay-4 { transition-delay: 0.32s; }
         .reveal-delay-5 { transition-delay: 0.40s; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
         .reveal-delay-6 { transition-delay: 0.48s; }
         @keyframes heroWord {
           from { opacity: 0; transform: translateY(40px); }
@@ -644,7 +645,7 @@ export default function LandingPage() {
         {liveStats && (
           <section className="py-20 border-t border-gray-100" style={{ background: "#f8fafc" }}>
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-12 reveal">
+              <div className="text-center mb-12" style={{ animation: "fadeUp 0.5s ease both" }}>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ background: "#e0f2fe", color: "#0284c7" }}>
                   <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
                   En vivo — actualizado cada hora
