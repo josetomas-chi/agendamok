@@ -438,8 +438,8 @@ export default function LandingPage() {
       </div>
 
       {/* Nav */}
-      <header className="fixed top-8 left-0 right-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <header className="fixed top-10 left-0 right-0 z-50 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto bg-white/90 backdrop-blur-xl rounded-2xl shadow-lg shadow-black/5 border border-gray-100 h-14 px-4 sm:px-6 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0">
               <img src="/mok-icon.png" alt="AgendaMok" width={28} height={28} className="w-full h-full object-cover" />
@@ -478,7 +478,7 @@ export default function LandingPage() {
         </div>
 
         {mobileOpen && (
-          <div className="md:hidden border-t border-gray-100 px-4 py-4 flex flex-col gap-1 bg-white">
+          <div className="md:hidden mt-2 max-w-6xl mx-auto bg-white/95 backdrop-blur-xl rounded-2xl shadow-lg shadow-black/5 border border-gray-100 px-4 py-4 flex flex-col gap-1">
             {[
               { label: "Funciones", href: "#features" },
               { label: "Precios", href: "#pricing" },
@@ -490,7 +490,7 @@ export default function LandingPage() {
                 {label}
               </Link>
             ))}
-            <div className="mt-3 pt-3 border-t border-gray-100 flex flex-col gap-2">
+            <div className="mt-2 pt-3 border-t border-gray-100 flex flex-col gap-2">
               <Link href="/login" onClick={() => setMobileOpen(false)}
                 className="px-3 py-3 text-sm text-gray-500 hover:text-gray-900 rounded-xl transition-colors text-center">
                 Ingresar
