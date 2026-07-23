@@ -793,6 +793,58 @@ export default function LandingPage() {
               ))}
             </div>
 
+            {/* WhatsApp Bot Add-on */}
+            <div className="mb-16 reveal">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-px flex-1 bg-gray-100" />
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Add-on opcional</span>
+                <div className="h-px flex-1 bg-gray-100" />
+              </div>
+              <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+                <div className="flex flex-col md:flex-row items-stretch">
+                  {/* Left — identity */}
+                  <div className="flex items-start gap-4 p-6 md:w-64 flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-100">
+                    <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#25D366" }}>
+                      <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.557 4.118 1.528 5.845L.057 23.514a.5.5 0 0 0 .614.614l5.718-1.47A11.95 11.95 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.853 0-3.587-.5-5.08-1.37l-.364-.214-3.754.965.99-3.668-.233-.375A9.953 9.953 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Add-on</div>
+                      <div className="font-bold text-gray-900 text-base leading-tight">Bot IA<br />WhatsApp</div>
+                    </div>
+                  </div>
+                  {/* Center — features */}
+                  <div className="flex-1 p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
+                    {[
+                      "Atiende consultas 24/7 sin intervención",
+                      "Toma reservas directo desde WhatsApp",
+                      "Responde con IA entrenada en tu negocio",
+                      "Hasta 100 conversaciones por mes incluidas",
+                      "Compatible con todos los planes",
+                      "Se activa en minutos, sin código",
+                    ].map(f => (
+                      <div key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="w-4 h-4 rounded-full flex-shrink-0 flex items-center justify-center" style={{ background: "#dcfce7" }}>
+                          <Check className="w-2.5 h-2.5 text-emerald-500" />
+                        </div>
+                        {f}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Right — price + CTA */}
+                  <div className="flex flex-col items-center justify-center gap-4 p-6 md:w-52 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-100 bg-gray-50/60">
+                    <div className="text-center">
+                      <div className="text-3xl font-black text-gray-900">0,2 <span className="text-lg font-semibold text-gray-400">UF</span></div>
+                      <div className="text-xs text-gray-400 mt-0.5">+ IVA / mes</div>
+                    </div>
+                    <Link href="https://www.agendamok.cl/book/demo" className="w-full text-center py-2.5 px-4 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90" style={{ background: "#25D366" }}>
+                      Activar bot
+                    </Link>
+                    <p className="text-[11px] text-gray-400 text-center">Disponible para cualquier plan activo</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Comparison table */}
             <div className="hidden md:block">
               <div className="text-center mb-10">
@@ -871,64 +923,6 @@ export default function LandingPage() {
                 Precios de la competencia obtenidos de su sitio web oficial. Sujetos a cambio sin previo aviso.
               </p>
             </div>
-            {/* WhatsApp Bot Add-on */}
-            <div className="mt-12 reveal">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-px flex-1 bg-gray-100" />
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Add-on opcional</span>
-                <div className="h-px flex-1 bg-gray-100" />
-              </div>
-              <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
-                <div className="flex flex-col md:flex-row items-stretch">
-                  {/* Left — identity */}
-                  <div className="flex items-start gap-4 p-6 md:w-64 flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-100">
-                    <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#25D366" }}>
-                      <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.557 4.118 1.528 5.845L.057 23.514a.5.5 0 0 0 .614.614l5.718-1.47A11.95 11.95 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.853 0-3.587-.5-5.08-1.37l-.364-.214-3.754.965.99-3.668-.233-.375A9.953 9.953 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Add-on</div>
-                      <div className="font-bold text-gray-900 text-base leading-tight">Bot IA<br />WhatsApp</div>
-                    </div>
-                  </div>
-
-                  {/* Center — features */}
-                  <div className="flex-1 p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
-                    {[
-                      "Atiende consultas 24/7 sin intervención",
-                      "Toma reservas directo desde WhatsApp",
-                      "Responde con IA entrenada en tu negocio",
-                      "Hasta 100 conversaciones por mes incluidas",
-                      "Compatible con todos los planes",
-                      "Se activa en minutos, sin código",
-                    ].map(f => (
-                      <div key={f} className="flex items-center gap-2 text-sm text-gray-600">
-                        <div className="w-4 h-4 rounded-full flex-shrink-0 flex items-center justify-center" style={{ background: "#dcfce7" }}>
-                          <Check className="w-2.5 h-2.5 text-emerald-500" />
-                        </div>
-                        {f}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Right — price + CTA */}
-                  <div className="flex flex-col items-center justify-center gap-4 p-6 md:w-52 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-100 bg-gray-50/60">
-                    <div className="text-center">
-                      <div className="text-3xl font-black text-gray-900">0,2 <span className="text-lg font-semibold text-gray-400">UF</span></div>
-                      <div className="text-xs text-gray-400 mt-0.5">+ IVA / mes</div>
-                    </div>
-                    <Link
-                      href="https://www.agendamok.cl/book/demo"
-                      className="w-full text-center py-2.5 px-4 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                      style={{ background: "#25D366" }}
-                    >
-                      Activar bot
-                    </Link>
-                    <p className="text-[11px] text-gray-400 text-center">Disponible para cualquier plan activo</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
           </div>
         </section>
 
