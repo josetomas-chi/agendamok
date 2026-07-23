@@ -278,7 +278,7 @@ export async function sendNewBookingAlert({
         <div class="row"><span class="label">Fecha</span><span class="value">${date}</span></div>
         <div class="row"><span class="label">Hora</span><span class="value">${time} hrs</span></div>
       </div>
-      <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.vercel.app"}/dashboard/appointments" class="btn">Ver en el dashboard →</a>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"}/dashboard/appointments" class="btn">Ver en el dashboard →</a>
     `),
   })
 }
@@ -306,7 +306,7 @@ export async function sendCancellationAlert({
         <div class="row"><span class="label">Hora</span><span class="value">${time} hrs</span></div>
       </div>
       <p style="color:rgba(255,255,255,0.4);font-size:13px;margin-top:12px">El horario quedó disponible para nuevas reservas.</p>
-      <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.vercel.app"}/dashboard/appointments" class="btn" style="margin-top:8px">Ver agenda →</a>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"}/dashboard/appointments" class="btn" style="margin-top:8px">Ver agenda →</a>
     `),
   })
 }
@@ -333,7 +333,7 @@ export async function sendDailySummary({
       <div class="box">
         ${appointments.length ? rows : '<p style="color:rgba(255,255,255,0.3);text-align:center;font-size:14px;padding:8px 0">Sin turnos agendados para hoy</p>'}
       </div>
-      <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.vercel.app"}/dashboard" class="btn">Abrir dashboard →</a>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"}/dashboard" class="btn">Abrir dashboard →</a>
     `),
   })
 }

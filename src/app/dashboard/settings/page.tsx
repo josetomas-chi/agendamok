@@ -1133,7 +1133,7 @@ function SettingsContent() {
                   <p className="font-medium text-foreground/70">Paso 3 — Configurar el webhook en Flow</p>
                   <p>En Flow: <strong className="text-foreground/60">Configuración → Integración → URL de confirmación</strong>. Ingresa esta URL para que los pagos se confirmen automáticamente:</p>
                   <code className="block mt-1 bg-muted rounded px-2 py-1.5 text-sky-400 break-all select-all">
-                    {typeof window !== "undefined" ? `${window.location.origin}/api/book/TU-SLUG/payment-webhook` : "https://agendamok.vercel.app/api/book/TU-SLUG/payment-webhook"}
+                    {typeof window !== "undefined" ? `${window.location.origin}/api/book/TU-SLUG/payment-webhook` : "https://agendamok.cl/api/book/TU-SLUG/payment-webhook"}
                   </code>
                   <p className="text-muted-foreground/70">Reemplaza <strong className="text-foreground/50">TU-SLUG</strong> con tu identificador de negocio (el que aparece en tu link de reservas).</p>
                 </div>

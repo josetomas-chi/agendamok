@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID!
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
-const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.vercel.app"}/api/integrations/google-calendar/callback`
+const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"}/api/integrations/google-calendar/callback`
 
 export function getOAuthUrl(businessId: string) {
   const params = new URLSearchParams({

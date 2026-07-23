@@ -17,7 +17,7 @@ export async function GET(req: Request) {
 
   let sent = 0
   let skipped = 0
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.vercel.app"
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"
 
   for (const biz of businesses) {
     const cutoff = subDays(new Date(), 60)
