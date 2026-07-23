@@ -818,7 +818,7 @@ export default function LandingPage() {
                       "Atiende consultas 24/7 sin intervención",
                       "Toma reservas directo desde WhatsApp",
                       "Responde con IA entrenada en tu negocio",
-                      "Hasta 100 conversaciones por mes incluidas",
+                      "Hasta 100 conversaciones/mes, ampliable",
                       "Compatible con todos los planes",
                       "Se activa en minutos, sin código",
                     ].map(f => (
