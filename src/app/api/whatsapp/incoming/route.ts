@@ -11,6 +11,12 @@ import crypto from "crypto"
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 const SESSION_TTL_MS = 30 * 60 * 1000
+const MONTHLY_CONV_LIMIT = 100
+
+function currentMonth(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+}
 
 type ConversationMessage = { role: "user" | "assistant"; content: string }
 
@@ -400,10 +406,25 @@ export async function POST(req: Request) {
           const existingSession = await prisma.whatsAppSession.findUnique({
             where: { businessId_phone: { businessId: business.id, phone: from } },
           })
-          if (existingSession) {
-            const age = Date.now() - new Date(existingSession.updatedAt).getTime()
-            if (age < SESSION_TTL_MS) {
-              sessionMessages = (existingSession.messages as ConversationMessage[]) || []
+          const isNewConversation = !existingSession || Date.now() - new Date(existingSession.updatedAt).getTime() >= SESSION_TTL_MS
+          if (existingSession && !isNewConversation) {
+            sessionMessages = (existingSession.messages as ConversationMessage[]) || []
+          }
+
+          // Check and increment monthly conversation limit
+          if (isNewConversation) {
+            const month = currentMonth()
+            const usage = await prisma.whatsAppMonthlyUsage.upsert({
+              where: { businessId_month: { businessId: business.id, month } },
+              update: { count: { increment: 1 } },
+              create: { businessId: business.id, month, count: 1 },
+            })
+            if (usage.count > MONTHLY_CONV_LIMIT) {
+              await sendWhatsAppMessage(
+                phoneNumberId, from,
+                "Hola 👋 Nuestro asistente virtual alcanzó el límite mensual de conversaciones. Por favor contáctanos directamente o intenta el próximo mes."
+              )
+              continue
             }
           }
 

@@ -280,6 +280,7 @@ model Business {
   tournaments               Tournament[]
   members                   BusinessMember[]
   whatsappSessions          WhatsAppSession[]
+  whatsappUsage             WhatsAppMonthlyUsage[]
 
   @@index([slug])
   @@map("businesses")
@@ -297,6 +298,20 @@ model WhatsAppSession {
 
   @@unique([businessId, phone])
   @@map("whatsapp_sessions")
+}
+
+model WhatsAppMonthlyUsage {
+  id         String   @id @default(cuid())
+  businessId String
+  month      String   // "2026-07"
+  count      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, month])
+  @@map("whatsapp_monthly_usage")
 }
 
 model BusinessMember {
