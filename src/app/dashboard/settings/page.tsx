@@ -20,7 +20,7 @@ type Subscription = { plan: string; status: string; currentPeriodEnd: string | n
 function SettingsContent() {
   const [business, setBusiness] = useState<Business | null>(null)
   const [subscription, setSubscription] = useState<Subscription | null>(null)
-  const [form, setForm] = useState({ name: "", slug: "", description: "", website: "", phone: "", address: "", city: "", timezone: "", currency: "" })
+  const [form, setForm] = useState({ name: "", slug: "", category: "", description: "", website: "", phone: "", address: "", city: "", timezone: "", currency: "" })
   const [clinicalEnabled, setClinicalEnabled] = useState(false)
   const [cancellationHours, setCancellationHours] = useState<string>("")
   const [dailySummary, setDailySummary] = useState(false)
@@ -94,7 +94,7 @@ function SettingsContent() {
       const biz = await r.json()
       setBusiness(biz.business)
       setSubscription(biz.subscription || null)
-      setForm({ name: biz.business.name, slug: biz.business.slug || "", description: biz.business.description || "", website: biz.business.website || "", phone: biz.business.phone || "", address: biz.business.address || "", city: biz.business.city || "", timezone: biz.business.timezone, currency: biz.business.currency })
+      setForm({ name: biz.business.name, slug: biz.business.slug || "", category: biz.business.category || "", description: biz.business.description || "", website: biz.business.website || "", phone: biz.business.phone || "", address: biz.business.address || "", city: biz.business.city || "", timezone: biz.business.timezone, currency: biz.business.currency })
       setClinicalEnabled(biz.business.clinicalRecordEnabled ?? false)
       setCancellationHours(biz.business.cancellationHoursNotice?.toString() ?? "")
       setDailySummary(biz.business.dailySummaryEnabled ?? false)
@@ -444,6 +444,7 @@ function SettingsContent() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 space-y-1.5"><Label>Nombre del negocio</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
+                <div className="col-span-2 space-y-1.5"><Label>Rubro / categoría</Label><Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="Ej: Salud y medicina, Peluquería, etc." /></div>
                 <div className="col-span-2 space-y-1.5">
                   <Label>URL de reservas</Label>
                   <div className="flex items-center rounded-md border border-input overflow-hidden">
