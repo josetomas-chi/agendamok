@@ -916,7 +916,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-gray-100 py-10 bg-white">
+      <footer className="border-t border-gray-100 py-8 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-400">
           <p>© 2026 AgendaMok. Todos los derechos reservados.</p>
           <div className="flex gap-6">
