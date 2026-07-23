@@ -523,20 +523,14 @@ export default function LandingPage() {
               AgendaMok opera todo tu negocio: reservas, pagos, recordatorios y reportes. Tu equipo solo llega y atiende.
             </p>
 
-            <div className="hero-ctas flex flex-col sm:flex-row gap-4">
+            <div className="hero-ctas">
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full text-base font-semibold text-white transition-all hover:opacity-90 group"
+                className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-full text-base font-semibold text-white transition-all hover:opacity-90 group"
                 style={{ background: NAVY }}
               >
                 Empezar gratis — 30 días
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                href="/buscar"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all rounded-full text-base text-gray-600"
-              >
-                Buscar un negocio
               </Link>
             </div>
 
