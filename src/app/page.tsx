@@ -376,11 +376,30 @@ function useScrollReveal() {
   }, [])
 }
 
+function LiveStatCard({ target, suffix, label, sub, decimals = 0 }: { target: number; suffix: string; label: string; sub: string; decimals?: number }) {
+  const { value, ref } = useCountUp(target, 1800)
+  return (
+    <div className="text-center reveal">
+      <div className="text-4xl sm:text-5xl font-black tracking-tight mb-1 whitespace-nowrap" style={{ color: "#38bdf8" }}>
+        <span ref={ref}>{decimals > 0 ? value.toLocaleString("es-CL") : value.toLocaleString("es-CL")}</span>
+        <span>{suffix}</span>
+      </div>
+      <div className="font-semibold text-gray-900 mb-0.5">{label}</div>
+      <div className="text-xs text-gray-400">{sub}</div>
+    </div>
+  )
+}
+
 export default function LandingPage() {
   useScrollReveal()
   const [mobileOpen, setMobileOpen] = useState(false)
   const NAVY = "#0d1b2a"
   const GOLD = "#C9A84C"
+
+  const [liveStats, setLiveStats] = useState<{ businesses: number; appointmentsThisMonth: number; waConversations: number } | null>(null)
+  useEffect(() => {
+    fetch("/api/stats").then(r => r.json()).then(setLiveStats).catch(() => {})
+  }, [])
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-gray-900">
@@ -620,6 +639,45 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* Live social proof */}
+        {liveStats && (liveStats.businesses > 0 || liveStats.appointmentsThisMonth > 0) && (
+          <section className="py-20 border-t border-gray-100" style={{ background: "#f8fafc" }}>
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-12 reveal">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ background: "#e0f2fe", color: "#0284c7" }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+                  En vivo — actualizado cada hora
+                </span>
+                <h2 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">
+                  Negocios reales,<br className="sm:hidden" /> <span className="text-sky-400">resultados reales</span>
+                </h2>
+              </div>
+              <div className={`grid gap-10 ${liveStats.waConversations > 0 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 max-w-xl mx-auto"}`}>
+                <LiveStatCard
+                  target={liveStats.businesses}
+                  suffix="+"
+                  label="Negocios activos"
+                  sub="Usando AgendaMok hoy"
+                />
+                <LiveStatCard
+                  target={liveStats.appointmentsThisMonth}
+                  suffix="+"
+                  label="Turnos este mes"
+                  sub="Agendados a través de la plataforma"
+                />
+                {liveStats.waConversations > 0 && (
+                  <LiveStatCard
+                    target={liveStats.waConversations}
+                    suffix=""
+                    label="Consultas por WhatsApp"
+                    sub="Atendidas por el bot IA este mes"
+                  />
+                )}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Features */}
         <section id="features" className="py-32 bg-gray-50">
