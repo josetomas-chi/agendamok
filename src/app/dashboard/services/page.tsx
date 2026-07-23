@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import { Plus, Pencil, Trash2, Clock, DollarSign, Circle, Power } from "lucide-react"
+import { Plus, Pencil, Trash2, Clock, DollarSign, Circle, Power, Check, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type Category = { id: string; name: string; order: number }
@@ -36,6 +36,7 @@ export default function ServicesPage() {
   const [form, setForm] = useState<typeof DEFAULT_FORM & { categoryId: string | null }>(DEFAULT_FORM)
   const [saving, setSaving] = useState(false)
   const [catInput, setCatInput] = useState("")
+  const [editingCat, setEditingCat] = useState<{ id: string; name: string } | null>(null)
 
   useEffect(() => {
     if (!businessId) { setLoading(false); return }
@@ -118,6 +119,22 @@ export default function ServicesPage() {
     loadServices(businessId)
   }
 
+  async function renameCategory(id: string, name: string) {
+    if (!name.trim()) return
+    await fetch(`/api/businesses/${businessId}/categories/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    })
+    setEditingCat(null)
+    loadServices(businessId)
+  }
+
+  async function deleteCategory(id: string) {
+    if (!confirm("¿Eliminar esta categoría? Los servicios quedarán sin categoría.")) return
+    await fetch(`/api/businesses/${businessId}/categories/${id}`, { method: "DELETE" })
+    loadServices(businessId)
+  }
+
   const grouped = categories.reduce((acc, cat) => {
     acc[cat.id] = { cat, items: services.filter(s => s.category?.id === cat.id) }
     return acc
@@ -153,14 +170,40 @@ export default function ServicesPage() {
         <ServiceGrid items={services} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleActive} />
       )}
 
-      {/* Categories quick-add */}
+      {/* Categories manager */}
       <div className="border-t pt-4">
-        <p className="text-sm font-medium mb-2">Categorías</p>
-        <div className="flex gap-2 flex-wrap mb-2">
-          {categories.map(c => <Badge key={c.id} variant="secondary">{c.name}</Badge>)}
+        <p className="text-sm font-medium mb-3">Categorías</p>
+        <div className="space-y-1.5 mb-3">
+          {categories.map(c => (
+            <div key={c.id} className="flex items-center gap-2 group">
+              {editingCat?.id === c.id ? (
+                <>
+                  <Input
+                    autoFocus
+                    className="h-7 text-sm max-w-xs"
+                    value={editingCat.name}
+                    onChange={e => setEditingCat({ id: c.id, name: e.target.value })}
+                    onKeyDown={e => {
+                      if (e.key === "Enter") renameCategory(c.id, editingCat.name)
+                      if (e.key === "Escape") setEditingCat(null)
+                    }}
+                  />
+                  <button onClick={() => renameCategory(c.id, editingCat.name)} className="text-green-500 hover:text-green-400"><Check className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => setEditingCat(null)} className="text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
+                </>
+              ) : (
+                <>
+                  <Badge variant="secondary" className="cursor-default">{c.name}</Badge>
+                  <button onClick={() => setEditingCat({ id: c.id, name: c.name })} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"><Pencil className="w-3 h-3" /></button>
+                  <button onClick={() => deleteCategory(c.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80"><Trash2 className="w-3 h-3" /></button>
+                </>
+              )}
+            </div>
+          ))}
+          {categories.length === 0 && <p className="text-xs text-muted-foreground">No hay categorías aún</p>}
         </div>
         <div className="flex gap-2">
-          <Input placeholder="Nueva categoría" value={catInput} onChange={e => setCatInput(e.target.value)} className="max-w-xs" onKeyDown={e => e.key === "Enter" && addCategory()} />
+          <Input placeholder="Nueva categoría" value={catInput} onChange={e => setCatInput(e.target.value)} className="h-8 text-sm max-w-xs" onKeyDown={e => e.key === "Enter" && addCategory()} />
           <Button variant="outline" size="sm" onClick={addCategory}>Agregar</Button>
         </div>
       </div>
