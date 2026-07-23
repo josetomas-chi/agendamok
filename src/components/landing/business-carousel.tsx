@@ -91,7 +91,7 @@ function CarouselRow({ items, direction }: { items: typeof businesses; direction
 
 export function BusinessCarousel() {
   return (
-    <section className="relative py-20 overflow-hidden bg-background">
+    <section className="relative py-20 overflow-hidden" style={{ background: "#1c1c1e" }}>
       <style>{`
         @keyframes scroll-left {
           0%   { transform: translateX(0); }
@@ -118,8 +118,8 @@ export function BusinessCarousel() {
       </div>
 
       {/* Edge fade masks */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-32 sm:w-56 bg-gradient-to-r from-background to-transparent" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-32 sm:w-56 bg-gradient-to-l from-background to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-32 sm:w-56" style={{ background: "linear-gradient(to right, #1c1c1e, transparent)" }} />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-32 sm:w-56" style={{ background: "linear-gradient(to left, #1c1c1e, transparent)" }} />
     </section>
   )
 }
