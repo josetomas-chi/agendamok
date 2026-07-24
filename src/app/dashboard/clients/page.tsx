@@ -28,7 +28,7 @@ function waHref(phone: string) {
 
 type Client = {
   id: string; name: string; email: string | null; phone: string | null
-  notes: string | null; tags: string[]; segment: string; loyaltyPoints: number
+  notes: string | null; tags: string[]; segment: string; loyaltyPoints: number; creditBalance: number
   allowTransfer: boolean
   createdAt: string
   _count: { appointments: number }
@@ -388,6 +388,20 @@ export default function ClientsPage() {
                 <p className="text-2xl font-bold text-yellow-300">{selected.loyaltyPoints}</p>
                 <p className="text-xs text-yellow-400/60 mt-1">Puntos</p>
               </div>
+              {selected.creditBalance > 0 && (
+                <div className="col-span-3 bg-emerald-500/5 border border-emerald-500/25 rounded-lg p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-emerald-500/15 flex items-center justify-center">
+                      <span className="text-emerald-400 text-sm font-bold">$</span>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-emerald-300">Crédito a favor</p>
+                      <p className="text-[10px] text-emerald-400/60">Disponible para próximas reservas</p>
+                    </div>
+                  </div>
+                  <p className="text-xl font-black text-emerald-300">${selected.creditBalance.toLocaleString("es-CL")}</p>
+                </div>
+              )}
             </div>
 
             {/* Points adjustment */}

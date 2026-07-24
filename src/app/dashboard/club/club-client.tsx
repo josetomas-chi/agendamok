@@ -995,17 +995,23 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
   async function handleAnnul() {
     if (!annulType) return
     setAnnulling(true)
+    const amount = Number(booking.price)
     const note = annulType === "credit"
-      ? `Reserva anulada — crédito a favor $${Number(booking.price).toLocaleString("es-CL")}. ${annulNote}`
-      : `Reserva anulada — devolución de $${Number(booking.price).toLocaleString("es-CL")}. ${annulNote}`
+      ? `Reserva anulada — crédito a favor $${amount.toLocaleString("es-CL")}${annulNote ? `. ${annulNote}` : ""}`
+      : `Reserva anulada — devolución de $${amount.toLocaleString("es-CL")}${annulNote ? `. ${annulNote}` : ""}`
     const r = await patch({ status: "CANCELLED", notes: note })
-    if (r.ok) {
-      toast.success(annulType === "credit" ? "Reserva anulada — crédito registrado" : "Reserva anulada — devolución registrada")
-      setAnnulModal(false)
-      onSaved()
-    } else {
-      toast.error("Error al anular")
+    if (!r.ok) { toast.error("Error al anular"); setAnnulling(false); return }
+    // Si es crédito, sumar al saldo del cliente
+    if (annulType === "credit" && booking.clientId) {
+      await fetch(`/api/businesses/${businessId}/clients/${booking.clientId}/credit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount }),
+      })
     }
+    toast.success(annulType === "credit" ? `Reserva anulada — $${amount.toLocaleString("es-CL")} de crédito agregado al cliente` : "Reserva anulada — devolución registrada")
+    setAnnulModal(false)
+    onSaved()
     setAnnulling(false)
   }
 

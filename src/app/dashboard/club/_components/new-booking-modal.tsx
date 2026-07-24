@@ -55,14 +55,14 @@ function TimeSelect({ value, onChange, label, minTime }: { value: string; onChan
 }
 
 type NewClientForm = { name: string; email: string; phone: string }
-type Client = { id: string; name: string; email: string | null; phone: string | null }
+type Client = { id: string; name: string; email: string | null; phone: string | null; creditBalance?: number }
 type CoachFeeRule = { days: number[]; startTime: string; endTime: string; classPrice: number }
 type Coach = { id: string; name: string; color: string; paymentType: string; feeRules: CoachFeeRule[] }
 
 function ClientCombobox({ clients, value, onSelect }: {
   clients: Client[]
-  value: { id: string; name: string; email?: string; phone?: string } | null
-  onSelect: (v: { id: string; name: string; email?: string; phone?: string } | null) => void
+  value: { id: string; name: string; email?: string; phone?: string; creditBalance?: number } | null
+  onSelect: (v: { id: string; name: string; email?: string; phone?: string; creditBalance?: number } | null) => void
 }) {
   const [query, setQuery] = useState(value?.name || "")
   const [open, setOpen] = useState(false)
@@ -133,7 +133,7 @@ function ClientCombobox({ clients, value, onSelect }: {
                 <div className="max-h-36 overflow-y-auto">
                   {filtered.map(c => (
                     <button key={c.id} type="button"
-                      onClick={() => { onSelect({ id: c.id, name: c.name }); setQuery(c.name); setOpen(false) }}
+                      onClick={() => { onSelect({ id: c.id, name: c.name, email: c.email ?? undefined, phone: c.phone ?? undefined, creditBalance: c.creditBalance }); setQuery(c.name); setOpen(false) }}
                       className="w-full px-4 py-2.5 text-sm text-left transition-colors flex items-center gap-2"
                       style={{ color: NAVY }}>
                       <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
@@ -254,7 +254,8 @@ export default function NewBookingModal({
     endTime: preselect?.endTime || "10:00",
     notes: "",
   })
-  const [selectedClient, setSelectedClient] = useState<{ id: string; name: string; email?: string; phone?: string } | null>(null)
+  const [selectedClient, setSelectedClient] = useState<{ id: string; name: string; email?: string; phone?: string; creditBalance?: number } | null>(null)
+  const [useCredit, setUseCredit] = useState(false)
   const [selectedCoachId, setSelectedCoachId] = useState<string>("")
   const [coaches, setCoaches] = useState<Coach[]>([])
   const [saving, setSaving] = useState(false)
@@ -370,8 +371,21 @@ export default function NewBookingModal({
             coachId: bookingType === "class" ? (selectedCoachId || null) : null,
           }),
         })
-        if (r.ok) { toast.success(bookingType === "class" ? "Clase particular creada" : "Reserva creada"); onSaved() }
-        else { const d = await r.json(); toast.error(d.error || "Error al crear") }
+        if (r.ok) {
+          // Descontar crédito si se eligió usar
+          if (useCredit && clientId && selectedClient?.creditBalance && selectedClient.creditBalance > 0) {
+            const deduct = Math.min(selectedClient.creditBalance, price)
+            await fetch(`/api/businesses/${businessId}/clients/${clientId}/credit`, {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ amount: deduct }),
+            })
+            toast.success(`Reserva creada — $${deduct.toLocaleString("es-CL")} descontados del crédito`)
+          } else {
+            toast.success(bookingType === "class" ? "Clase particular creada" : "Reserva creada")
+          }
+          onSaved()
+        } else { const d = await r.json(); toast.error(d.error || "Error al crear") }
       }
     } finally {
       setSaving(false)
@@ -560,12 +574,39 @@ export default function NewBookingModal({
             </div>
           )}
 
-          {/* Precio estimado */}
+          {/* Precio estimado + crédito a favor */}
           {bookingType !== "recurring" && price > 0 && (
-            <div className="rounded-xl px-4 py-2.5 flex items-center justify-between"
-              style={{ background: "rgba(201,168,76,0.08)", border: `1px solid rgba(201,168,76,0.25)` }}>
-              <p className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.5)" }}>Precio estimado</p>
-              <p className="text-sm font-black" style={{ color: GOLD }}>${price.toLocaleString("es-CL")}</p>
+            <div className="space-y-2">
+              <div className="rounded-xl px-4 py-2.5 flex items-center justify-between"
+                style={{ background: "rgba(201,168,76,0.08)", border: `1px solid rgba(201,168,76,0.25)` }}>
+                <p className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.5)" }}>Precio estimado</p>
+                <p className="text-sm font-black" style={{ color: GOLD }}>${price.toLocaleString("es-CL")}</p>
+              </div>
+              {selectedClient?.creditBalance && selectedClient.creditBalance > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setUseCredit(v => !v)}
+                  className="w-full rounded-xl px-4 py-2.5 flex items-center justify-between transition-all"
+                  style={{
+                    background: useCredit ? "rgba(34,197,94,0.08)" : "rgba(34,197,94,0.04)",
+                    border: `1px solid ${useCredit ? "rgba(34,197,94,0.4)" : "rgba(34,197,94,0.2)"}`,
+                  }}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
+                      style={{ background: useCredit ? "#22c55e" : "transparent", border: useCredit ? "none" : "1.5px solid rgba(34,197,94,0.5)" }}>
+                      {useCredit && <span className="text-white text-[9px] font-black">✓</span>}
+                    </div>
+                    <p className="text-xs font-semibold" style={{ color: "#16a34a" }}>
+                      Usar crédito a favor — ${selectedClient.creditBalance.toLocaleString("es-CL")} disponibles
+                    </p>
+                  </div>
+                  {useCredit && (
+                    <p className="text-xs font-black" style={{ color: "#16a34a" }}>
+                      −${Math.min(selectedClient.creditBalance, price).toLocaleString("es-CL")}
+                    </p>
+                  )}
+                </button>
+              ) : null}
             </div>
           )}
 
