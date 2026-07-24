@@ -1115,8 +1115,9 @@ model SchoolGroup {
   endTime      String
   coachId      String?
   maxCapacity  Int      @default(10)
-  monthlyPrice Decimal   @db.Decimal(10, 2) @default(0)
-  color        String    @default("#38bdf8")
+  monthlyPrice  Decimal   @db.Decimal(10, 2) @default(0)
+  billingCycle  String    @default("MONTHLY") // MONTHLY | QUARTERLY | SEMESTER | ANNUAL
+  color         String    @default("#38bdf8")
   isActive     Boolean   @default(true)
   startDate    DateTime? @db.Date
   endDate      DateTime? @db.Date

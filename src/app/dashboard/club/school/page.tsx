@@ -23,7 +23,7 @@ type Group = {
   days: number[]; startTime: string; endTime: string
   coachId: string | null; coach: Coach | null
   maxCapacity: number; monthlyPrice: number; color: string
-  isActive: boolean; startDate: string | null; endDate: string | null; notes: string | null
+  isActive: boolean; startDate: string | null; endDate: string | null; billingCycle: string; notes: string | null
   enrollments: Enrollment[]
   _count: { enrollments: number }
 }
@@ -52,6 +52,7 @@ function GroupForm({ initial, coaches, onSave, onCancel }: {
   const [maxCapacity, setMaxCapacity] = useState(String(initial?.maxCapacity ?? 10))
   const [monthlyPrice, setMonthlyPrice] = useState(String(initial?.monthlyPrice ?? 0))
   const [color, setColor] = useState(initial?.color ?? "#38bdf8")
+  const [billingCycle, setBillingCycle] = useState(initial?.billingCycle ?? "MONTHLY")
   const [startDate, setStartDate] = useState(initial?.startDate ? initial.startDate.slice(0, 10) : "")
   const [endDate, setEndDate] = useState(initial?.endDate ? initial.endDate.slice(0, 10) : "")
   const [notes, setNotes] = useState(initial?.notes ?? "")
@@ -77,7 +78,7 @@ function GroupForm({ initial, coaches, onSave, onCancel }: {
   async function handleSubmit() {
     if (!name.trim() || !startTime || !endTime) return toast.error("Nombre y horario son obligatorios")
     setSaving(true)
-    await onSave({ name, sport: sport || null, level: level || null, days, startTime, endTime, coachId: coachId || null, maxCapacity: parseInt(maxCapacity), monthlyPrice: parseFloat(monthlyPrice) || 0, color, startDate: startDate || null, endDate: endDate || null, notes: notes || null })
+    await onSave({ name, sport: sport || null, level: level || null, days, startTime, endTime, coachId: coachId || null, maxCapacity: parseInt(maxCapacity), monthlyPrice: parseFloat(monthlyPrice) || 0, billingCycle, color, startDate: startDate || null, endDate: endDate || null, notes: notes || null })
     setSaving(false)
   }
 
@@ -137,7 +138,16 @@ function GroupForm({ initial, coaches, onSave, onCancel }: {
           <input type="number" className={inputClass} style={inputStyle} value={maxCapacity} onChange={e => setMaxCapacity(e.target.value)} min={1} />
         </div>
         <div>
-          <label style={labelStyle}>Precio mensual (CLP)</label>
+          <label style={labelStyle}>Cobro</label>
+          <select className={inputClass} style={inputStyle} value={billingCycle} onChange={e => setBillingCycle(e.target.value)}>
+            <option value="MONTHLY">Mensual</option>
+            <option value="QUARTERLY">Trimestral</option>
+            <option value="SEMESTER">Semestral</option>
+            <option value="ANNUAL">Anual</option>
+          </select>
+        </div>
+        <div>
+          <label style={labelStyle}>Precio ({billingCycle === "MONTHLY" ? "mensual" : billingCycle === "QUARTERLY" ? "trimestral" : billingCycle === "SEMESTER" ? "semestral" : "anual"}) CLP</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold" style={{ color: "rgba(13,27,42,0.4)" }}>$</span>
             <input type="number" className={inputClass} style={{ ...inputStyle, paddingLeft: "1.5rem" }} value={monthlyPrice} onChange={e => setMonthlyPrice(e.target.value)} min={0} step={1000} />
@@ -386,7 +396,7 @@ function BillingTab({ groups }: { groups: Group[] }) {
           <div className="rounded-2xl overflow-hidden" style={{ border: BORDER }}>
             <div className="px-4 py-3" style={{ background: "rgba(13,27,42,0.03)", borderBottom: BORDER }}>
               <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "rgba(13,27,42,0.5)" }}>
-                {fmt(selectedGroup.monthlyPrice)}/mes por alumno
+                {fmt(selectedGroup.monthlyPrice)}/{selectedGroup.billingCycle === "MONTHLY" ? "mes" : selectedGroup.billingCycle === "QUARTERLY" ? "trimestre" : selectedGroup.billingCycle === "SEMESTER" ? "semestre" : "año"} por alumno
               </p>
             </div>
             {activeEnrollments.length === 0 && (
