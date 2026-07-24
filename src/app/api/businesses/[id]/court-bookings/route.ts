@@ -20,7 +20,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     },
     include: {
       court: { select: { id: true, name: true, sport: true, color: true } },
-      client: { select: { id: true, name: true, email: true, phone: true } },
+      client: { select: { id: true, name: true, email: true, phone: true, rut: true } },
       coach: { select: { id: true, name: true, color: true } },
       payment: { select: { amount: true, method: true, paidAt: true } },
     },
@@ -137,7 +137,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     data: { businessId: id, courtId, clientId: clientId || null, coachId: coachId || null, startTime: start, endTime: end, price, notes, status: "CONFIRMED" },
     include: {
       court: { select: { id: true, name: true, sport: true, color: true, sponsorName: true, sponsorLogo: true, sponsorUrl: true } },
-      client: { select: { id: true, name: true, email: true, phone: true } },
+      client: { select: { id: true, name: true, email: true, phone: true, rut: true } },
       coach: { select: { id: true, name: true, color: true } },
     },
   })

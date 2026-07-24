@@ -10,7 +10,7 @@ import CoachesTab from "./_components/coaches-tab"
 
 type PricingRule = { days: number[]; startTime: string; endTime: string; fixedSlots: string[] }
 type Court = { id: string; name: string; sport: string | null; color: string; isActive: boolean; pricingRules?: PricingRule[] }
-type Client = { id: string; name: string; email: string | null; phone: string | null }
+type Client = { id: string; name: string; email: string | null; phone: string | null; rut: string | null }
 type Booking = {
   id: string; courtId: string; clientId: string | null
   startTime: string; endTime: string; price: number; status: string; notes: string | null
@@ -982,6 +982,11 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
   }
 
   async function handleStatus(status: string) {
+    if (status === "COMPLETED" && booking.client && !booking.client.rut && !rutModal) {
+      setRutInput("")
+      setRutModal({ pendingAction: "complete" })
+      return
+    }
     const r = await patch({ status })
     if (r.ok) { toast.success(status === "COMPLETED" ? "Reserva completada" : "Estado actualizado"); onSaved() }
     else toast.error("Error al actualizar")
@@ -991,6 +996,25 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
   const [annulType, setAnnulType] = useState<"credit" | "refund" | null>(null)
   const [annulNote, setAnnulNote] = useState("")
   const [annulling, setAnnulling] = useState(false)
+
+  const [rutModal, setRutModal] = useState<{ pendingAction: "complete" | "bulk" } | null>(null)
+  const [rutInput, setRutInput] = useState("")
+  const [savingRut, setSavingRut] = useState(false)
+
+  async function saveRutAndContinue() {
+    if (!rutModal || !booking.client || !rutInput.trim()) return
+    setSavingRut(true)
+    await fetch(`/api/businesses/${businessId}/clients/${booking.client.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rut: rutInput.trim() }),
+    })
+    setSavingRut(false)
+    const action = rutModal.pendingAction
+    setRutModal(null)
+    setRutInput("")
+    if (action === "complete") await handleStatus("COMPLETED")
+    else await handleBulkPay()
+  }
 
   async function handleAnnul() {
     if (!annulType) return
@@ -1063,6 +1087,12 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
 
   async function handleBulkPay() {
     if (selectedIds.length === 0) return
+    if (booking.client && !booking.client.rut && !rutModal) {
+      setRutInput("")
+      setRutModal({ pendingAction: "bulk" })
+      setPayModal(false)
+      return
+    }
     setPaying(true)
     const r = await fetch(`/api/businesses/${businessId}/court-bookings/bulk-complete`, {
       method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookingIds: selectedIds }),
@@ -1473,6 +1503,43 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                       </div>
                     </>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Modal RUT requerido */}
+            {rutModal && (
+              <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
+                <div className="w-full max-w-xs rounded-2xl overflow-hidden" style={{ background: "#ffffff", border: "1px solid rgba(251,191,36,0.35)", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
+                  onClick={e => e.stopPropagation()}>
+                  <div className="px-4 pt-4 pb-3" style={{ borderBottom: "1px solid rgba(13,27,42,0.06)" }}>
+                    <p className="text-sm font-black uppercase tracking-wide" style={{ color: NAVY }}>RUT requerido</p>
+                    <p className="text-[11px] mt-1 leading-relaxed" style={{ color: "rgba(13,27,42,0.55)" }}>
+                      El cliente <strong>{booking.client?.name}</strong> no tiene RUT registrado.<br />
+                      Agrégalo para continuar con el cobro.
+                    </p>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <input
+                      type="text"
+                      placeholder="Ej: 12.345.678-9"
+                      value={rutInput}
+                      onChange={e => setRutInput(e.target.value)}
+                      className="w-full h-10 px-3 rounded-xl text-sm outline-none"
+                      style={{ background: "#f5f4f0", border: "1px solid rgba(13,27,42,0.12)", color: NAVY }}
+                      autoFocus
+                    />
+                    <button onClick={saveRutAndContinue} disabled={savingRut || !rutInput.trim()}
+                      className="w-full h-10 rounded-xl text-sm font-bold uppercase tracking-wide disabled:opacity-40"
+                      style={{ background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.5)", color: "#8a6520" }}>
+                      {savingRut ? "Guardando…" : "Guardar RUT y cobrar"}
+                    </button>
+                    <button onClick={() => { setRutModal(null); setRutInput("") }}
+                      className="w-full h-8 rounded-xl text-xs font-medium"
+                      style={{ color: "rgba(13,27,42,0.4)", background: "#f5f4f0" }}>
+                      Cancelar
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

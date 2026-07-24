@@ -118,7 +118,7 @@ export async function PATCH(req: Request, { params }: Params) {
       data,
       include: {
         court: { select: { id: true, name: true, sport: true, color: true } },
-        client: { select: { id: true, name: true, email: true, phone: true } },
+        client: { select: { id: true, name: true, email: true, phone: true, rut: true } },
       },
     })
 
