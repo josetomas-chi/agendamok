@@ -101,7 +101,10 @@ export default function ClientsPage() {
       setOpen(false)
       setForm({ name: "", lastName: "", rut: "", email: "", phone: "", gender: "", notes: "" })
       loadClients(businessId, search, segment)
-    } else toast.error("Error al guardar")
+    } else {
+      const err = await r.json().catch(() => ({}))
+      toast.error(err?.error || "Error al guardar")
+    }
     setSaving(false)
   }
 
