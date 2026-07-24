@@ -464,13 +464,22 @@ function ReportModal({ businessId, coach, onClose }: { businessId: string; coach
                               <p className="text-xs font-bold" style={{ color: "#0ea5e9" }}>club +{fmt(s.clubEarns)}</p>
                             </div>
                             {isPaying && (
-                              <button onClick={() => togglePaid(s.id)}
-                                className="flex-shrink-0 h-7 px-2.5 rounded-lg text-[11px] font-bold transition-all"
-                                style={paid
-                                  ? { background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.4)", color: "#15803d" }
-                                  : { background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.15)", color: "rgba(13,27,42,0.45)" }}>
-                                {paid ? "✓ Pagada" : "Pendiente"}
-                              </button>
+                              <div className="flex flex-col gap-1">
+                                <button onClick={() => !paid && togglePaid(s.id)}
+                                  className="flex-shrink-0 h-6 px-2.5 rounded-md text-[11px] font-bold transition-all"
+                                  style={paid
+                                    ? { background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.4)", color: "#15803d" }
+                                    : { background: "transparent", border: "1px solid rgba(13,27,42,0.1)", color: "rgba(13,27,42,0.3)", cursor: "default" }}>
+                                  ✓ Pagada
+                                </button>
+                                <button onClick={() => paid && togglePaid(s.id)}
+                                  className="flex-shrink-0 h-6 px-2.5 rounded-md text-[11px] font-bold transition-all"
+                                  style={!paid
+                                    ? { background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.4)", color: "#92400e" }
+                                    : { background: "transparent", border: "1px solid rgba(13,27,42,0.1)", color: "rgba(13,27,42,0.3)", cursor: "default" }}>
+                                  Pendiente
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>
