@@ -58,6 +58,8 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<"resumen" | "calendario" | "entrenadores">("calendario")
   const [selectedDate, setSelectedDate] = useState(new Date())
+  const [datepickerOpen, setDatepickerOpen] = useState(false)
+  const [datepickerMonth, setDatepickerMonth] = useState(new Date())
   const [sportFilter, setSportFilter] = useState<string>("Todos")
   const [newBookingOpen, setNewBookingOpen] = useState(false)
   const [preselect, setPreselect] = useState<{ courtId: string; date: string; startTime: string; endTime: string } | null>(null)
@@ -168,23 +170,76 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
                 <ChevronRight className="w-3.5 h-3.5" style={{ color: "rgba(13,27,42,0.5)" }} />
               </button>
             </div>
-            <label className="relative cursor-pointer group">
-              <span className="text-sm font-bold capitalize hidden sm:block transition-colors group-hover:text-sky-500"
-                style={{ color: "#0d1b2a" }}>
-                {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
-              </span>
-              <span className="text-sm font-bold capitalize sm:hidden transition-colors group-hover:text-sky-500"
-                style={{ color: "#0d1b2a" }}>
-                {format(selectedDate, "d MMM", { locale: es })}
-              </span>
-              <input
-                type="date"
-                value={format(selectedDate, "yyyy-MM-dd")}
-                onChange={e => { if (e.target.value) setSelectedDate(new Date(e.target.value + "T12:00:00")) }}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full"
-                style={{ fontSize: 0 }}
-              />
-            </label>
+            <div className="relative">
+              <button
+                onClick={() => { setDatepickerMonth(selectedDate); setDatepickerOpen(o => !o) }}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors hover:bg-black/5"
+              >
+                <span className="text-sm font-bold capitalize hidden sm:block" style={{ color: "#0d1b2a" }}>
+                  {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
+                </span>
+                <span className="text-sm font-bold capitalize sm:hidden" style={{ color: "#0d1b2a" }}>
+                  {format(selectedDate, "d MMM", { locale: es })}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "rgba(13,27,42,0.4)" }} />
+              </button>
+
+              {datepickerOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setDatepickerOpen(false)} />
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50 rounded-2xl overflow-hidden shadow-2xl"
+                    style={{ background: "#fff", border: "1px solid rgba(13,27,42,0.1)", width: 280 }}>
+                    {/* Month nav */}
+                    <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid rgba(13,27,42,0.07)" }}>
+                      <button onClick={() => setDatepickerMonth(d => subDays(startOfMonth(d), 1))}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-black/5">
+                        <ChevronLeft className="w-3.5 h-3.5" style={{ color: "rgba(13,27,42,0.5)" }} />
+                      </button>
+                      <span className="text-sm font-bold capitalize" style={{ color: "#0d1b2a" }}>
+                        {format(datepickerMonth, "MMMM yyyy", { locale: es })}
+                      </span>
+                      <button onClick={() => setDatepickerMonth(d => addDays(endOfMonth(d), 1))}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-black/5">
+                        <ChevronRight className="w-3.5 h-3.5" style={{ color: "rgba(13,27,42,0.5)" }} />
+                      </button>
+                    </div>
+                    {/* Day labels */}
+                    <div className="grid grid-cols-7 px-3 pt-2">
+                      {["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map(d => (
+                        <div key={d} className="text-center text-[10px] font-bold pb-1" style={{ color: "rgba(13,27,42,0.35)" }}>{d}</div>
+                      ))}
+                    </div>
+                    {/* Day cells */}
+                    <div className="grid grid-cols-7 gap-y-0.5 px-3 pb-3">
+                      {(() => {
+                        const first = startOfMonth(datepickerMonth)
+                        const last = endOfMonth(datepickerMonth)
+                        const days = eachDayOfInterval({ start: first, end: last })
+                        // offset: Monday=0
+                        const offset = (getDay(first) + 6) % 7
+                        return [
+                          ...Array(offset).fill(null).map((_, i) => <div key={`e${i}`} />),
+                          ...days.map(day => {
+                            const isSelected = isSameDay(day, selectedDate)
+                            const isToday = isSameDay(day, new Date())
+                            return (
+                              <button key={day.toISOString()} onClick={() => { setSelectedDate(day); setDatepickerOpen(false) }}
+                                className="h-8 w-full rounded-lg text-xs font-semibold transition-colors"
+                                style={{
+                                  background: isSelected ? "#0d1b2a" : isToday ? "rgba(56,189,248,0.12)" : "transparent",
+                                  color: isSelected ? "#fff" : isToday ? "#0ea5e9" : "rgba(13,27,42,0.75)",
+                                }}>
+                                {format(day, "d")}
+                              </button>
+                            )
+                          })
+                        ]
+                      })()}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </>
         )}
 
@@ -610,26 +665,6 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
 
   return (
     <div className="rounded-2xl overflow-hidden" style={{ border: BORDER, background: "#ffffff", boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}>
-      {/* Date nav */}
-      <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: BORDER, background: "#ffffff" }}>
-        <button onClick={() => onDateChange(subDays(selectedDate, 1))}
-          className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-          style={{ border: BORDER, color: GOLD }}>
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-        <div className="text-center">
-          <p className="text-sm font-black uppercase tracking-wide capitalize" style={{ color: NAVY }}>{format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}</p>
-          {!isSameDay(selectedDate, new Date()) && (
-            <button onClick={() => onDateChange(new Date())} className="text-[10px] font-semibold transition-colors" style={{ color: GOLD }}>Hoy</button>
-          )}
-        </div>
-        <button onClick={() => onDateChange(addDays(selectedDate, 1))}
-          className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-          style={{ border: BORDER, color: GOLD }}>
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-
       {courts.length === 0 ? (
         <div className="p-12 text-center text-sm" style={{ color: "rgba(13,27,42,0.35)" }}>No hay canchas activas. Crea una en la sección Canchas.</div>
       ) : (
