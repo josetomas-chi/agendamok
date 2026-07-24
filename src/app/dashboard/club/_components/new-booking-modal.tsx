@@ -498,9 +498,36 @@ export default function NewBookingModal({
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
-              <TimeSelect label="Inicio" value={form.startTime} onChange={v => setForm(f => ({ ...f, startTime: v }))} />
-              <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} minTime={form.startTime} />
+            <div className="space-y-2">
+              {/* Duración rápida */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "rgba(13,27,42,0.4)" }}>Duración</span>
+                {[60, 90, 120].map(mins => {
+                  const [sh, sm] = form.startTime.split(":").map(Number)
+                  const totalMins = sh * 60 + sm + mins
+                  const calcEnd = `${String(Math.floor(totalMins / 60)).padStart(2, "0")}:${String(totalMins % 60).padStart(2, "0")}`
+                  const isActive = form.endTime === calcEnd
+                  return (
+                    <button
+                      key={mins}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, endTime: calcEnd }))}
+                      className="px-3 py-1 rounded-lg text-xs font-bold transition-all"
+                      style={{
+                        background: isActive ? "#C9A84C" : "rgba(201,168,76,0.1)",
+                        color: isActive ? "#fff" : "#C9A84C",
+                        border: `1px solid ${isActive ? "#C9A84C" : "rgba(201,168,76,0.3)"}`,
+                      }}
+                    >
+                      {mins} min
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <TimeSelect label="Inicio" value={form.startTime} onChange={v => setForm(f => ({ ...f, startTime: v }))} />
+                <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} minTime={form.startTime} />
+              </div>
             </div>
           )}
 
