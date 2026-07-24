@@ -987,6 +987,28 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
     else toast.error("Error al actualizar")
   }
 
+  const [annulModal, setAnnulModal] = useState(false)
+  const [annulType, setAnnulType] = useState<"credit" | "refund" | null>(null)
+  const [annulNote, setAnnulNote] = useState("")
+  const [annulling, setAnnulling] = useState(false)
+
+  async function handleAnnul() {
+    if (!annulType) return
+    setAnnulling(true)
+    const note = annulType === "credit"
+      ? `Reserva anulada — crédito a favor $${Number(booking.price).toLocaleString("es-CL")}. ${annulNote}`
+      : `Reserva anulada — devolución de $${Number(booking.price).toLocaleString("es-CL")}. ${annulNote}`
+    const r = await patch({ status: "CANCELLED", notes: note })
+    if (r.ok) {
+      toast.success(annulType === "credit" ? "Reserva anulada — crédito registrado" : "Reserva anulada — devolución registrada")
+      setAnnulModal(false)
+      onSaved()
+    } else {
+      toast.error("Error al anular")
+    }
+    setAnnulling(false)
+  }
+
   const [cancelGroupModal, setCancelGroupModal] = useState(false)
   const [cancelSessions, setCancelSessions] = useState<{ id: string; startTime: string; endTime: string; price: number; status: string }[]>([])
   const [cancelSelectedIds, setCancelSelectedIds] = useState<string[]>([])
@@ -1247,6 +1269,13 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                         Cancelar
                       </button>
                     )}
+                    {isCompleted && (
+                      <button onClick={() => { setAnnulType(null); setAnnulNote(""); setAnnulModal(true) }}
+                        className="flex-1 h-10 rounded-xl text-sm font-medium transition-colors"
+                        style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)", color: "rgba(220,38,38,0.7)" }}>
+                        Anular
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1274,6 +1303,56 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
             )}
 
             {/* Modal cobrar sesiones */}
+            {annulModal && (
+              <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}
+                onClick={() => setAnnulModal(false)}>
+                <div className="w-full max-w-xs rounded-2xl overflow-hidden" style={{ background: "#ffffff", border: "1px solid rgba(239,68,68,0.2)", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
+                  onClick={e => e.stopPropagation()}>
+                  <div className="px-4 pt-4 pb-3" style={{ borderBottom: "1px solid rgba(13,27,42,0.06)" }}>
+                    <p className="text-sm font-black uppercase tracking-wide" style={{ color: NAVY }}>Anular reserva</p>
+                    <p className="text-[11px] mt-0.5" style={{ color: "rgba(13,27,42,0.45)" }}>
+                      ${Number(booking.price).toLocaleString("es-CL")} · {booking.client?.name || "Sin cliente"}
+                    </p>
+                  </div>
+                  <div className="px-4 py-3 space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "rgba(13,27,42,0.4)" }}>¿Qué hacer con el pago?</p>
+                    {[
+                      { key: "credit" as const, label: "Crédito a favor", desc: "Se registra como saldo pendiente para una reserva futura", icon: "💳" },
+                      { key: "refund" as const, label: "Devolución de dinero", desc: "Se registra que se devolvió el pago al cliente", icon: "↩️" },
+                    ].map(opt => (
+                      <button key={opt.key} onClick={() => setAnnulType(opt.key)}
+                        className="w-full text-left px-3 py-2.5 rounded-xl transition-all"
+                        style={{
+                          border: annulType === opt.key ? "1.5px solid rgba(239,68,68,0.5)" : "1.5px solid rgba(13,27,42,0.1)",
+                          background: annulType === opt.key ? "rgba(239,68,68,0.05)" : "#f5f4f0",
+                        }}>
+                        <p className="text-sm font-bold" style={{ color: NAVY }}>{opt.icon} {opt.label}</p>
+                        <p className="text-[10px] mt-0.5" style={{ color: "rgba(13,27,42,0.45)" }}>{opt.desc}</p>
+                      </button>
+                    ))}
+                    <textarea
+                      value={annulNote}
+                      onChange={e => setAnnulNote(e.target.value)}
+                      placeholder="Motivo (opcional) — ej: lluvia, lesión…"
+                      rows={2}
+                      className="w-full rounded-xl px-3 py-2 text-xs resize-none outline-none mt-1"
+                      style={{ background: "#f5f4f0", border: "1px solid rgba(13,27,42,0.12)", color: NAVY }}
+                    />
+                    <button onClick={handleAnnul} disabled={!annulType || annulling}
+                      className="w-full h-10 rounded-xl text-sm font-bold uppercase tracking-wide disabled:opacity-40"
+                      style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#dc2626" }}>
+                      {annulling ? "Anulando…" : "Confirmar anulación"}
+                    </button>
+                    <button onClick={() => setAnnulModal(false)}
+                      className="w-full h-8 rounded-xl text-xs font-medium"
+                      style={{ color: "rgba(13,27,42,0.4)", background: "#f5f4f0" }}>
+                      Volver
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {payModal && (
               <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}
                 onClick={() => setPayModal(false)}>
