@@ -9,7 +9,7 @@ export async function PATCH(req: Request, { params }: Params) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id, bookingId } = await params
-  const { clientId, courtId, startTime, endTime, notes, status, price } = await req.json()
+  const { clientId, courtId, startTime, endTime, notes, status, price, coachPaid } = await req.json()
 
   try {
     const data: Record<string, unknown> = {}
@@ -20,6 +20,7 @@ export async function PATCH(req: Request, { params }: Params) {
     if (notes !== undefined) data.notes = notes || null
     if (status !== undefined) data.status = status
     if (price !== undefined) data.price = price
+    if (coachPaid !== undefined) data.coachPaid = coachPaid
 
     // Validar duración mínima si cambia horario
     if (startTime !== undefined || endTime !== undefined) {

@@ -964,6 +964,7 @@ model CourtBooking {
   paidOnline         Boolean                @default(false)
   status             CourtBookingStatus     @default(CONFIRMED)
   transferVoucher    String?
+  coachPaid          Boolean                @default(false)
   notes              String?                @db.Text
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt

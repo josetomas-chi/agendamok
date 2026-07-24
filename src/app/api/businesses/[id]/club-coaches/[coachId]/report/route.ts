@@ -73,12 +73,13 @@ export async function GET(req: Request, { params }: Params) {
       endTime: b.endTime,
       durationMinutes,
       courtName: b.court?.name ?? "",
-      clientName: b.client ? `${b.client.firstName} ${b.client.lastName}` : null,
+      clientName: b.client?.name ?? null,
       price,
       status: b.status,
       coachEarns,
       coachPays,
       clubEarns,
+      coachPaid: b.coachPaid,
     }
   })
 

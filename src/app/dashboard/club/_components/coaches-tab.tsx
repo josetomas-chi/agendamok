@@ -46,6 +46,7 @@ type ReportSession = {
   coachEarns: number
   coachPays: number
   clubEarns: number
+  coachPaid: boolean
 }
 
 type Report = {
@@ -338,6 +339,7 @@ function ReportModal({ businessId, coach, onClose }: { businessId: string; coach
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [report, setReport] = useState<Report | null>(null)
   const [loading, setLoading] = useState(false)
+  const [paidMap, setPaidMap] = useState<Record<string, boolean>>({})
 
   const load = useCallback(async (y: number, m: number) => {
     setLoading(true)
@@ -345,8 +347,20 @@ function ReportModal({ businessId, coach, onClose }: { businessId: string; coach
       const r = await fetch(`/api/businesses/${businessId}/club-coaches/${coach.id}/report?year=${y}&month=${m}`)
       const data = await r.json()
       setReport(data)
+      const map: Record<string, boolean> = {}
+      for (const s of data.sessions ?? []) map[s.id] = s.coachPaid
+      setPaidMap(map)
     } finally { setLoading(false) }
   }, [businessId, coach.id])
+
+  async function togglePaid(sessionId: string) {
+    const next = !paidMap[sessionId]
+    setPaidMap(prev => ({ ...prev, [sessionId]: next }))
+    await fetch(`/api/businesses/${businessId}/court-bookings/${sessionId}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ coachPaid: next }),
+    })
+  }
 
   useEffect(() => { load(year, month) }, [load, year, month])
 
@@ -428,26 +442,40 @@ function ReportModal({ businessId, coach, onClose }: { businessId: string; coach
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "rgba(13,27,42,0.45)" }}>Detalle de sesiones</p>
                   <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(13,27,42,0.08)" }}>
-                    {report.sessions.map((s, i) => (
-                      <div key={s.id} className="flex items-center gap-3 px-4 py-3"
-                        style={{ borderTop: i > 0 ? "1px solid rgba(13,27,42,0.06)" : undefined, background: i % 2 === 0 ? "#fff" : "rgba(13,27,42,0.02)" }}>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold" style={{ color: "#0d1b2a" }}>
-                            {utcDateShort(s.startTime)} · {utcTime(s.startTime)}–{utcTime(s.endTime)}
-                          </p>
-                          <p className="text-xs" style={{ color: "rgba(13,27,42,0.45)" }}>
-                            {s.courtName}{s.clientName ? ` · ${s.clientName}` : ""}
-                          </p>
+                    {report.sessions.map((s, i) => {
+                      const paid = paidMap[s.id] ?? s.coachPaid
+                      return (
+                        <div key={s.id} className="flex items-center gap-3 px-4 py-3"
+                          style={{ borderTop: i > 0 ? "1px solid rgba(13,27,42,0.06)" : undefined, background: i % 2 === 0 ? "#fff" : "rgba(13,27,42,0.02)" }}>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold" style={{ color: "#0d1b2a" }}>
+                              {utcDateShort(s.startTime)} · {utcTime(s.startTime)}–{utcTime(s.endTime)}
+                            </p>
+                            <p className="text-xs" style={{ color: "rgba(13,27,42,0.45)" }}>
+                              {s.courtName}{s.clientName ? ` · ${s.clientName}` : ""}
+                            </p>
+                          </div>
+                          <div className="text-right flex items-center gap-3">
+                            <div>
+                              <p className="text-sm font-bold" style={{ color: "#0d1b2a" }}>{fmt(s.price)}</p>
+                              <p className="text-xs font-bold" style={{ color: "#C9A84C" }}>
+                                coach {isPaying ? `−${fmt(s.coachPays)}` : `+${fmt(s.coachEarns)}`}
+                              </p>
+                              <p className="text-xs font-bold" style={{ color: "#0ea5e9" }}>club +{fmt(s.clubEarns)}</p>
+                            </div>
+                            {isPaying && (
+                              <button onClick={() => togglePaid(s.id)}
+                                className="flex-shrink-0 h-7 px-2.5 rounded-lg text-[11px] font-bold transition-all"
+                                style={paid
+                                  ? { background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.4)", color: "#15803d" }
+                                  : { background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.15)", color: "rgba(13,27,42,0.45)" }}>
+                                {paid ? "✓ Pagada" : "Pendiente"}
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold" style={{ color: "#0d1b2a" }}>{fmt(s.price)}</p>
-                          <p className="text-xs font-bold" style={{ color: "#C9A84C" }}>
-                            coach {isPaying ? `−${fmt(s.coachPays)}` : `+${fmt(s.coachEarns)}`}
-                          </p>
-                          <p className="text-xs font-bold" style={{ color: "#0ea5e9" }}>club +{fmt(s.clubEarns)}</p>
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               )}
