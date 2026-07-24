@@ -508,8 +508,11 @@ model Client {
   userId        String?       @unique
   businessId    String
   name          String
+  lastName      String?
+  rut           String?
   email         String?
   phone         String?
+  gender        String?
   notes         String?       @db.Text
   tags          String[]      @default([])
   segment       ClientSegment @default(NEW)

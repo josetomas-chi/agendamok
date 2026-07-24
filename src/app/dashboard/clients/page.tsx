@@ -57,7 +57,7 @@ export default function ClientsPage() {
   const [segment, setSegment] = useState("")
   const [selected, setSelected] = useState<Client | null>(null)
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "" })
+  const [form, setForm] = useState({ name: "", lastName: "", rut: "", email: "", phone: "", gender: "", notes: "" })
   const [saving, setSaving] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [importState, setImportState] = useState<ImportState>("idle")
@@ -99,7 +99,7 @@ export default function ClientsPage() {
     if (r.ok) {
       toast.success("Cliente agregado")
       setOpen(false)
-      setForm({ name: "", email: "", phone: "", notes: "" })
+      setForm({ name: "", lastName: "", rut: "", email: "", phone: "", gender: "", notes: "" })
       loadClients(businessId, search, segment)
     } else toast.error("Error al guardar")
     setSaving(false)
@@ -332,10 +332,23 @@ export default function ClientsPage() {
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Nuevo cliente</DialogTitle></DialogHeader>
           <div className="space-y-3 pt-2">
-            <div className="space-y-1.5"><Label>Nombre *</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
-            <div className="space-y-1.5"><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label>Nombre *</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>Apellido</Label><Input value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} /></div>
+            </div>
+            <div className="space-y-1.5"><Label>RUT</Label><Input value={form.rut} placeholder="12.345.678-9" onChange={e => setForm(f => ({ ...f, rut: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>Correo electrónico</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
             <div className="space-y-1.5"><Label>Teléfono</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
-            <div className="space-y-1.5"><Label>Notas</Label><Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+            <div className="space-y-1.5">
+              <Label>Género</Label>
+              <select value={form.gender} onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm">
+                <option value="">Sin especificar</option>
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
+                <option value="O">Otro</option>
+              </select>
+            </div>
             <div className="flex gap-2 pt-1">
               <Button className="flex-1" onClick={handleCreate} disabled={saving || !form.name}>{saving ? "Guardando..." : "Guardar"}</Button>
               <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
@@ -653,10 +666,23 @@ export default function ClientsPage() {
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Nuevo cliente</DialogTitle></DialogHeader>
           <div className="space-y-3 pt-2">
-            <div className="space-y-1.5"><Label>Nombre *</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
-            <div className="space-y-1.5"><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label>Nombre *</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>Apellido</Label><Input value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} /></div>
+            </div>
+            <div className="space-y-1.5"><Label>RUT</Label><Input value={form.rut} placeholder="12.345.678-9" onChange={e => setForm(f => ({ ...f, rut: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>Correo electrónico</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
             <div className="space-y-1.5"><Label>Teléfono</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
-            <div className="space-y-1.5"><Label>Notas</Label><Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+            <div className="space-y-1.5">
+              <Label>Género</Label>
+              <select value={form.gender} onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm">
+                <option value="">Sin especificar</option>
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
+                <option value="O">Otro</option>
+              </select>
+            </div>
             <div className="flex gap-2 pt-1">
               <Button className="flex-1" onClick={handleCreate} disabled={saving || !form.name}>{saving ? "Guardando..." : "Guardar"}</Button>
               <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>

@@ -4,9 +4,12 @@ import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 
 const schema = z.object({
-  name: z.string().min(2),
+  name: z.string().min(1),
+  lastName: z.string().optional().nullable(),
+  rut: z.string().optional().nullable(),
   email: z.string().email().optional().nullable(),
   phone: z.string().optional().nullable(),
+  gender: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   tags: z.array(z.string()).default([]),
 })
