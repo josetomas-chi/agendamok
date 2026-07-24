@@ -125,10 +125,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
     // Auto-marcar coachPaid al completar si el coach trabaja a COURT_FEE
     if (status === "COMPLETED" && booking.coachId) {
-      const coach = await prisma.clubCoach.findUnique({ where: { id: booking.coachId }, select: { paymentType: true } })
-      if (coach?.paymentType === "COURT_FEE") {
-        await prisma.courtBooking.update({ where: { id: bookingId }, data: { coachPaid: true } })
-      }
+      await prisma.courtBooking.update({ where: { id: bookingId }, data: { coachPaid: true } })
     }
 
     // Crear o actualizar Payment al completar

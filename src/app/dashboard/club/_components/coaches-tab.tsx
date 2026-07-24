@@ -463,7 +463,7 @@ function ReportModal({ businessId, coach, onClose }: { businessId: string; coach
                               </p>
                               <p className="text-xs font-bold" style={{ color: "#0ea5e9" }}>club +{fmt(s.clubEarns)}</p>
                             </div>
-                            {isPaying && (
+                            {report.coach.id && (
                               <div className="flex flex-col gap-1">
                                 <button onClick={() => !paid && togglePaid(s.id)}
                                   className="flex-shrink-0 h-6 px-2.5 rounded-md text-[11px] font-bold transition-all"
