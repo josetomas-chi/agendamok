@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   Calendar, Users, Scissors, UserCheck, BarChart3,
-  Settings, CreditCard, Megaphone, MapPin, LogOut, LayoutDashboard, Star, Percent, FileText, HelpCircle, X, Trophy,
+  Settings, CreditCard, Megaphone, MapPin, LogOut, LayoutDashboard, Star, Percent, FileText, HelpCircle, X, Trophy, GraduationCap,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -65,6 +65,7 @@ const SPORTS_GROUPS = [
       { href: "/dashboard/club/courts", label: "Canchas", icon: MapPin },
       { href: "/dashboard/clients", label: "Clientes", icon: Users },
       { href: "/dashboard/club/memberships", label: "Membresías", icon: Trophy },
+      { href: "/dashboard/club/school", label: "Escuela", icon: GraduationCap },
       { href: "/dashboard/club/tournaments", label: "Torneos", icon: Calendar },
     ],
   },

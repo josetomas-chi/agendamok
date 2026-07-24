@@ -283,6 +283,9 @@ model Business {
   members                   BusinessMember[]
   whatsappSessions          WhatsAppSession[]
   whatsappUsage             WhatsAppMonthlyUsage[]
+  schoolGroups              SchoolGroup[]
+  schoolEnrollments         SchoolEnrollment[]
+  schoolClasses             SchoolClass[]
 
   @@index([slug])
   @@map("businesses")
@@ -531,6 +534,8 @@ model Client {
   courtBookings          CourtBooking[]
   recurringBookingGroups RecurringBookingGroup[]
   memberships            ClientMembership[]
+  schoolEnrollments      SchoolEnrollment[]
+  schoolAttendance       SchoolAttendance[]
 
   @@unique([businessId, rut])
   @@index([businessId, email])
@@ -1074,6 +1079,8 @@ model ClubCoach {
   business  Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
   feeRules  ClubCoachFeeRule[]
   bookings  CourtBooking[]
+  schoolGroups  SchoolGroup[]
+  schoolClasses SchoolClass[]
 
   @@index([businessId])
   @@map("club_coaches")
@@ -1093,6 +1100,88 @@ model ClubCoachFeeRule {
 
   @@index([coachId])
   @@map("club_coach_fee_rules")
+}
+
+// ─── ESCUELA DEPORTIVA ────────────────────────────────────────────────────────
+
+model SchoolGroup {
+  id           String   @id @default(cuid())
+  businessId   String
+  name         String
+  sport        String?
+  level        String?
+  days         Int[]
+  startTime    String
+  endTime      String
+  coachId      String?
+  maxCapacity  Int      @default(10)
+  monthlyPrice Decimal  @db.Decimal(10, 2) @default(0)
+  color        String   @default("#38bdf8")
+  isActive     Boolean  @default(true)
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  business    Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  coach       ClubCoach?         @relation(fields: [coachId], references: [id])
+  enrollments SchoolEnrollment[]
+  classes     SchoolClass[]
+
+  @@index([businessId])
+  @@map("school_groups")
+}
+
+model SchoolEnrollment {
+  id         String   @id @default(cuid())
+  businessId String
+  groupId    String
+  clientId   String
+  startDate  DateTime @db.Date
+  status     String   @default("ACTIVE")
+  notes      String?  @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  group    SchoolGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  client   Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, clientId])
+  @@index([businessId])
+  @@map("school_enrollments")
+}
+
+model SchoolClass {
+  id         String   @id @default(cuid())
+  businessId String
+  groupId    String
+  date       DateTime @db.Date
+  coachId    String?
+  notes      String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  business   Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  group      SchoolGroup        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  coach      ClubCoach?         @relation(fields: [coachId], references: [id])
+  attendance SchoolAttendance[]
+
+  @@unique([groupId, date])
+  @@index([businessId])
+  @@map("school_classes")
+}
+
+model SchoolAttendance {
+  id        String   @id @default(cuid())
+  classId   String
+  clientId  String
+  present   Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  class  SchoolClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  client Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, clientId])
+  @@map("school_attendance")
 }
 
 // ─── TOURNAMENTS ──────────────────────────────────────────────────────────────
