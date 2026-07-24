@@ -754,32 +754,35 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = "brightness(0.92)" }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = "none" }}
                       >
-                        {/* Hora — absoluta esquina superior izquierda */}
-                        <p className="absolute top-1 left-1.5 text-[9px] font-semibold leading-none" style={{ color: "rgba(13,27,42,0.6)" }}>
-                          {utcTime(b.startTime)}–{utcTime(b.endTime)}
-                        </p>
-                        {/* Badges top-right: R (recurrente) + ✓✓ (completada) */}
-                        <div className="absolute top-0.5 right-1 flex items-center gap-0.5">
-                          {b.recurringGroupId && (
-                            <span className="text-[8px] font-black px-1 rounded leading-none py-0.5"
-                              style={{ background: "rgba(13,27,42,0.18)", color: "#0d1b2a" }}>R</span>
-                          )}
-                          {b.status === "COMPLETED" && (
-                            <span className="text-[10px] font-black leading-none" style={{ color: "#16a34a" }}>✓✓</span>
-                          )}
-                        </div>
-                        {/* Nombre + precio — centrados */}
-                        <div className="text-center px-1 w-full">
-                          <p className="text-[11px] font-black leading-tight truncate" style={{ color: "#0d1b2a" }}>
+                        <div className="w-full h-full flex flex-col justify-start px-1.5 pt-1 pb-1 overflow-hidden">
+                          {/* Fila 1: hora + badges */}
+                          <div className="flex items-center justify-between gap-1 flex-shrink-0">
+                            <p className="text-[9px] font-semibold leading-none truncate" style={{ color: "rgba(13,27,42,0.65)" }}>
+                              {utcTime(b.startTime)}–{utcTime(b.endTime)}
+                            </p>
+                            <div className="flex items-center gap-0.5 flex-shrink-0">
+                              {b.recurringGroupId && (
+                                <span className="text-[8px] font-black px-1 rounded leading-none py-0.5"
+                                  style={{ background: "rgba(13,27,42,0.18)", color: "#0d1b2a" }}>R</span>
+                              )}
+                              {b.status === "COMPLETED" && (
+                                <span className="text-[9px] font-black leading-none" style={{ color: "#15803d" }}>✓</span>
+                              )}
+                            </div>
+                          </div>
+                          {/* Fila 2: nombre cliente */}
+                          <p className="text-[11px] font-black leading-tight truncate mt-0.5" style={{ color: "#0d1b2a" }}>
                             {b.client?.name || "Sin cliente"}
                           </p>
+                          {/* Fila 3: coach (si hay) */}
                           {b.coach && (
-                            <p className="text-[9px] font-semibold leading-tight truncate mt-0.5" style={{ color: "rgba(13,27,42,0.55)" }}>
+                            <p className="text-[9px] font-semibold leading-tight truncate" style={{ color: "rgba(13,27,42,0.55)" }}>
                               {b.coach.name}
                             </p>
                           )}
-                          {heightPx >= 52 && (
-                            <p className="text-[9px] font-bold mt-0.5 text-center" style={{ color: "rgba(13,27,42,0.65)" }}>
+                          {/* Fila 4: precio (solo si hay espacio) */}
+                          {heightPx >= 56 && (
+                            <p className="text-[9px] font-bold mt-auto" style={{ color: "rgba(13,27,42,0.65)" }}>
                               ${Number(b.price).toLocaleString("es-CL")}
                             </p>
                           )}
