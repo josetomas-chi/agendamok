@@ -243,7 +243,9 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
                     <div className="w-1.5 h-10 rounded-full flex-shrink-0" style={{ background: b.court.color }} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold" style={{ color: "#0d1b2a" }}>{b.court.name}{b.court.sport ? ` · ${b.court.sport}` : ""}</p>
-                      <p className="text-xs mt-0.5" style={{ color: "rgba(13,27,42,0.4)" }}>{b.client?.name || "Sin cliente"}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "rgba(13,27,42,0.4)" }}>
+                        {b.client?.name || "Sin cliente"}{b.coach ? ` · ${b.coach.name}` : ""}
+                      </p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-semibold" style={{ color: "#0d1b2a" }}>{utcTime(b.startTime)} – {utcTime(b.endTime)}</p>
@@ -725,6 +727,11 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                           <p className="text-[11px] font-black leading-tight truncate" style={{ color: "#0d1b2a" }}>
                             {b.client?.name || "Sin cliente"}
                           </p>
+                          {b.coach && (
+                            <p className="text-[9px] font-semibold leading-tight truncate mt-0.5" style={{ color: "rgba(13,27,42,0.55)" }}>
+                              {b.coach.name}
+                            </p>
+                          )}
                           {heightPx >= 52 && (
                             <p className="text-[9px] font-bold mt-0.5 text-center" style={{ color: "rgba(13,27,42,0.65)" }}>
                               ${Number(b.price).toLocaleString("es-CL")}
