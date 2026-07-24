@@ -120,8 +120,11 @@ function GroupForm({ initial, coaches, onSave, onCancel }: {
           <input type="number" className={inputClass} style={inputStyle} value={maxCapacity} onChange={e => setMaxCapacity(e.target.value)} min={1} />
         </div>
         <div>
-          <label style={labelStyle}>Precio mensual</label>
-          <input type="number" className={inputClass} style={inputStyle} value={monthlyPrice} onChange={e => setMonthlyPrice(e.target.value)} min={0} />
+          <label style={labelStyle}>Precio mensual (CLP)</label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold" style={{ color: "rgba(13,27,42,0.4)" }}>$</span>
+            <input type="number" className={inputClass} style={{ ...inputStyle, paddingLeft: "1.5rem" }} value={monthlyPrice} onChange={e => setMonthlyPrice(e.target.value)} min={0} step={1000} />
+          </div>
         </div>
         <div>
           <label style={labelStyle}>Color</label>
