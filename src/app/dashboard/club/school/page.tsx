@@ -23,7 +23,7 @@ type Group = {
   days: number[]; startTime: string; endTime: string
   coachId: string | null; coach: Coach | null
   maxCapacity: number; monthlyPrice: number; color: string
-  isActive: boolean; notes: string | null
+  isActive: boolean; startDate: string | null; endDate: string | null; notes: string | null
   enrollments: Enrollment[]
   _count: { enrollments: number }
 }
@@ -52,15 +52,32 @@ function GroupForm({ initial, coaches, onSave, onCancel }: {
   const [maxCapacity, setMaxCapacity] = useState(String(initial?.maxCapacity ?? 10))
   const [monthlyPrice, setMonthlyPrice] = useState(String(initial?.monthlyPrice ?? 0))
   const [color, setColor] = useState(initial?.color ?? "#38bdf8")
+  const [startDate, setStartDate] = useState(initial?.startDate ? initial.startDate.slice(0, 10) : "")
+  const [endDate, setEndDate] = useState(initial?.endDate ? initial.endDate.slice(0, 10) : "")
   const [notes, setNotes] = useState(initial?.notes ?? "")
   const [saving, setSaving] = useState(false)
 
   const toggleDay = (d: number) => setDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d].sort())
 
+  // Calcular cantidad de sesiones en el período
+  const sessionCount = React.useMemo(() => {
+    if (!startDate || !endDate || days.length === 0) return null
+    const start = new Date(startDate + "T00:00:00")
+    const end = new Date(endDate + "T00:00:00")
+    if (end < start) return null
+    let count = 0
+    const cur = new Date(start)
+    while (cur <= end) {
+      if (days.includes(cur.getDay())) count++
+      cur.setDate(cur.getDate() + 1)
+    }
+    return count
+  }, [startDate, endDate, days])
+
   async function handleSubmit() {
     if (!name.trim() || !startTime || !endTime) return toast.error("Nombre y horario son obligatorios")
     setSaving(true)
-    await onSave({ name, sport: sport || null, level: level || null, days, startTime, endTime, coachId: coachId || null, maxCapacity: parseInt(maxCapacity), monthlyPrice: parseFloat(monthlyPrice) || 0, color, notes: notes || null })
+    await onSave({ name, sport: sport || null, level: level || null, days, startTime, endTime, coachId: coachId || null, maxCapacity: parseInt(maxCapacity), monthlyPrice: parseFloat(monthlyPrice) || 0, color, startDate: startDate || null, endDate: endDate || null, notes: notes || null })
     setSaving(false)
   }
 
@@ -131,6 +148,23 @@ function GroupForm({ initial, coaches, onSave, onCancel }: {
           <input type="color" value={color} onChange={e => setColor(e.target.value)}
             className="w-full h-10 rounded-xl cursor-pointer" style={{ border: BORDER, padding: 2 }} />
         </div>
+        <div>
+          <label style={labelStyle}>Fecha inicio</label>
+          <input type="date" className={inputClass} style={inputStyle} value={startDate} onChange={e => setStartDate(e.target.value)} />
+        </div>
+        <div>
+          <label style={labelStyle}>Fecha término</label>
+          <input type="date" className={inputClass} style={inputStyle} value={endDate} onChange={e => setEndDate(e.target.value)} />
+        </div>
+        {sessionCount !== null && (
+          <div className="col-span-2 rounded-xl px-4 py-3 flex items-center gap-2"
+            style={{ background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.3)" }}>
+            <span className="text-lg font-black" style={{ color: "#0ea5e9" }}>{sessionCount}</span>
+            <span className="text-sm font-medium" style={{ color: "rgba(13,27,42,0.6)" }}>
+              sesiones en el período · {days.length > 0 && `${DAY_LABELS.filter((_,i) => days.includes(i)).join(", ")}`}
+            </span>
+          </div>
+        )}
         <div className="col-span-2">
           <label style={labelStyle}>Notas</label>
           <textarea className={inputClass} style={{ ...inputStyle, resize: "none" }} rows={2} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Observaciones…" />

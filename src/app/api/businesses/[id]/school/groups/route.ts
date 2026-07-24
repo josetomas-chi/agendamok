@@ -28,7 +28,7 @@ export async function POST(req: Request, { params }: Params) {
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
   const body = await req.json()
-  const { name, sport, level, days, startTime, endTime, coachId, maxCapacity, monthlyPrice, color, notes } = body
+  const { name, sport, level, days, startTime, endTime, coachId, maxCapacity, monthlyPrice, color, startDate, endDate, notes } = body
 
   const group = await prisma.schoolGroup.create({
     data: {
@@ -38,6 +38,8 @@ export async function POST(req: Request, { params }: Params) {
       maxCapacity: maxCapacity ?? 10,
       monthlyPrice: monthlyPrice ?? 0,
       color: color ?? "#38bdf8",
+      startDate: startDate ? new Date(startDate + "T00:00:00Z") : null,
+      endDate: endDate ? new Date(endDate + "T00:00:00Z") : null,
       notes: notes || null,
     },
     include: { coach: { select: { id: true, name: true, color: true } } },

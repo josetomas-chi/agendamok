@@ -1115,12 +1115,14 @@ model SchoolGroup {
   endTime      String
   coachId      String?
   maxCapacity  Int      @default(10)
-  monthlyPrice Decimal  @db.Decimal(10, 2) @default(0)
-  color        String   @default("#38bdf8")
-  isActive     Boolean  @default(true)
-  notes        String?  @db.Text
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  monthlyPrice Decimal   @db.Decimal(10, 2) @default(0)
+  color        String    @default("#38bdf8")
+  isActive     Boolean   @default(true)
+  startDate    DateTime? @db.Date
+  endDate      DateTime? @db.Date
+  notes        String?   @db.Text
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   business    Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
   coach       ClubCoach?         @relation(fields: [coachId], references: [id])

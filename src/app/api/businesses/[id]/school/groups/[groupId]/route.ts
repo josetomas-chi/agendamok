@@ -12,6 +12,8 @@ export async function PATCH(req: Request, { params }: Params) {
   const allowed = ["name","sport","level","days","startTime","endTime","coachId","maxCapacity","monthlyPrice","color","notes","isActive"]
   const data: Record<string, unknown> = {}
   for (const k of allowed) if (k in body) data[k] = body[k] ?? null
+  if ("startDate" in body) data.startDate = body.startDate ? new Date(body.startDate + "T00:00:00Z") : null
+  if ("endDate" in body) data.endDate = body.endDate ? new Date(body.endDate + "T00:00:00Z") : null
 
   const group = await prisma.schoolGroup.update({
     where: { id: groupId, businessId: id },
