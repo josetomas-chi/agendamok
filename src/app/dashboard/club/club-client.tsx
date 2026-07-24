@@ -168,12 +168,23 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
                 <ChevronRight className="w-3.5 h-3.5" style={{ color: "rgba(13,27,42,0.5)" }} />
               </button>
             </div>
-            <span className="text-sm font-bold capitalize hidden sm:block" style={{ color: "#0d1b2a" }}>
-              {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
-            </span>
-            <span className="text-sm font-bold capitalize sm:hidden" style={{ color: "#0d1b2a" }}>
-              {format(selectedDate, "d MMM", { locale: es })}
-            </span>
+            <label className="relative cursor-pointer group">
+              <span className="text-sm font-bold capitalize hidden sm:block transition-colors group-hover:text-sky-500"
+                style={{ color: "#0d1b2a" }}>
+                {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
+              </span>
+              <span className="text-sm font-bold capitalize sm:hidden transition-colors group-hover:text-sky-500"
+                style={{ color: "#0d1b2a" }}>
+                {format(selectedDate, "d MMM", { locale: es })}
+              </span>
+              <input
+                type="date"
+                value={format(selectedDate, "yyyy-MM-dd")}
+                onChange={e => { if (e.target.value) setSelectedDate(new Date(e.target.value + "T12:00:00")) }}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                style={{ fontSize: 0 }}
+              />
+            </label>
           </>
         )}
 
