@@ -58,6 +58,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   try {
     const body = await req.json()
     const data = schema.parse(body)
+
+    if (data.rut) {
+      const existing = await prisma.client.findUnique({
+        where: { businessId_rut: { businessId: id, rut: data.rut } },
+      })
+      if (existing) return NextResponse.json({ error: "Ya existe un cliente con ese RUT" }, { status: 409 })
+    }
+
     const client = await prisma.client.create({ data: { ...data, businessId: id } })
     return NextResponse.json({ client }, { status: 201 })
   } catch (e) {

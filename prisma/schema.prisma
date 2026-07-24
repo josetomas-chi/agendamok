@@ -532,6 +532,7 @@ model Client {
   recurringBookingGroups RecurringBookingGroup[]
   memberships            ClientMembership[]
 
+  @@unique([businessId, rut])
   @@index([businessId, email])
   @@map("clients")
 }

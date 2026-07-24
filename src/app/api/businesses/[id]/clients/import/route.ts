@@ -64,18 +64,31 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const valid = rows.filter(r => r.name && r.name.trim())
   if (valid.length === 0) return NextResponse.json({ error: "No hay filas válidas (se requiere al menos Nombre)" }, { status: 400 })
 
+  const ruts = valid.map(r => r.rut).filter(Boolean) as string[]
   const emails = valid.map(r => r.email?.toLowerCase()).filter(Boolean) as string[]
-  const existing = await prisma.client.findMany({
-    where: { businessId: id, email: { in: emails } },
-    select: { email: true },
-  })
-  const existingEmails = new Set(existing.map(c => c.email?.toLowerCase()))
+
+  const existingByRut = ruts.length > 0
+    ? new Set((await prisma.client.findMany({
+        where: { businessId: id, rut: { in: ruts } },
+        select: { rut: true },
+      })).map(c => c.rut!))
+    : new Set<string>()
+
+  const existingByEmail = emails.length > 0
+    ? new Set((await prisma.client.findMany({
+        where: { businessId: id, email: { in: emails } },
+        select: { email: true },
+      })).map(c => c.email!.toLowerCase()))
+    : new Set<string>()
 
   let created = 0, skipped = 0
 
   for (const row of valid) {
+    const rut = row.rut || undefined
     const email = row.email?.toLowerCase() || undefined
-    if (email && existingEmails.has(email)) { skipped++; continue }
+    // RUT is the primary dedup key; email is fallback if no RUT
+    if (rut && existingByRut.has(rut)) { skipped++; continue }
+    if (!rut && email && existingByEmail.has(email)) { skipped++; continue }
 
     const fullName = [row.name, row.lastName].filter(Boolean).join(" ")
     await prisma.client.create({
