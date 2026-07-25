@@ -136,7 +136,7 @@ export function Sidebar({ onClose, isSports = false, memberRole = "ADMIN", permi
 
   if (isSports) {
     return (
-      <aside className="w-56 flex flex-col flex-shrink-0 h-screen" style={{ background: S.bg, borderRight: `1px solid ${S.border}` }}>
+      <aside className="w-56 flex flex-col flex-shrink-0 h-full" style={{ background: S.bg, borderRight: `1px solid ${S.border}` }}>
         {/* Logo */}
         <div className="h-14 flex items-center px-4 gap-2" style={{ borderBottom: `1px solid ${S.border}` }}>
           <Link href="/dashboard/club" className="flex items-center gap-2.5 flex-1" onClick={onClose}>
@@ -213,7 +213,7 @@ export function Sidebar({ onClose, isSports = false, memberRole = "ADMIN", permi
 
   // ── GENERAL sidebar (unchanged) ──────────────────────────────────────────────
   return (
-    <aside className="w-56 flex flex-col flex-shrink-0 h-screen" style={{ background: "#2a2a2e" }}>
+    <aside className="w-56 flex flex-col flex-shrink-0 h-full" style={{ background: "#2a2a2e" }}>
       <div className="h-14 flex items-center px-4 gap-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <Link href="/dashboard" className="flex items-center gap-2.5 flex-1" onClick={onClose}>
           <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0" style={{ boxShadow: "0 0 12px rgba(56,189,248,0.4)" }}>
