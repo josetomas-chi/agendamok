@@ -27,6 +27,7 @@ type Business = {
   onlinePaymentsEnabled: boolean; primaryColor: string | null
   businessType: string
   chatBotEnabled: boolean
+  accessMode: string
   clubSettings: { bookingWindowDays: number } | null
   courts: Court[]
   services: Service[]; staff: Staff[]
@@ -67,10 +68,182 @@ export default function BookingClient({ slug }: { slug: string }) {
     </div>
   )
 
+  if (business.accessMode === "CLOSED") {
+    return <RutGate business={business} slug={slug} />
+  }
   if (business.businessType === "SPORTS_CLUB") {
     return <CourtBookingFlow business={business} slug={slug} />
   }
   return <ServiceBookingFlow business={business} slug={slug} />
+}
+
+// ─────────────────────────────────────────────────────────────────
+// RUT GATE — closed-access businesses
+// ─────────────────────────────────────────────────────────────────
+
+type RutCheckStatus = "OPEN" | "APPROVED" | "PENDING" | "REJECTED" | "NOT_FOUND" | null
+type RutCheckResult = { allowed: boolean; status: RutCheckStatus; name?: string }
+
+function RutGate({ business, slug }: { business: Business; slug: string }) {
+  const [rut, setRut] = useState("")
+  const [checking, setChecking] = useState(false)
+  const [result, setResult] = useState<RutCheckResult | null>(null)
+  const [approved, setApproved] = useState(false)
+
+  // Request form state
+  const [reqName, setReqName] = useState("")
+  const [reqEmail, setReqEmail] = useState("")
+  const [reqPhone, setReqPhone] = useState("")
+  const [reqRole, setReqRole] = useState("OTRO")
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+
+  const ROLES = [
+    { value: "APODERADO", label: "Apoderado" },
+    { value: "ALUMNO", label: "Alumno" },
+    { value: "PROFESOR", label: "Profesor" },
+    { value: "EXALUMNO", label: "Exalumno" },
+    { value: "OTRO", label: "Otro" },
+  ]
+
+  async function checkRut(e: React.FormEvent) {
+    e.preventDefault()
+    if (!rut.trim()) return
+    setChecking(true)
+    setResult(null)
+    try {
+      const r = await fetch(`/api/businesses/${business.id}/access-list/check?rut=${encodeURIComponent(rut.trim())}`)
+      const d = await r.json()
+      setResult(d)
+      if (d.allowed) setApproved(true)
+    } catch {
+      setResult({ allowed: false, status: null })
+    }
+    setChecking(false)
+  }
+
+  async function submitRequest(e: React.FormEvent) {
+    e.preventDefault()
+    if (!reqName.trim()) return
+    setSubmitting(true)
+    try {
+      await fetch(`/api/businesses/${business.id}/access-list/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rut: rut.trim(), name: reqName, email: reqEmail || null, phone: reqPhone || null, role: reqRole }),
+      })
+      setSubmitted(true)
+    } catch {}
+    setSubmitting(false)
+  }
+
+  if (approved) {
+    if (business.businessType === "SPORTS_CLUB") return <CourtBookingFlow business={business} slug={slug} />
+    return <ServiceBookingFlow business={business} slug={slug} />
+  }
+
+  const bg = business.businessType === "SPORTS_CLUB" ? "#0d1b2a" : "#0f0f11"
+  const card = business.businessType === "SPORTS_CLUB" ? "#0f2a3f" : "#1c1c1e"
+  const accent = "#38bdf8"
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: bg }}>
+      <div className="w-full max-w-sm">
+        {/* Logo + name */}
+        <div className="text-center mb-8">
+          {business.logo
+            ? <img src={business.logo} alt={business.name} className="w-16 h-16 rounded-2xl mx-auto mb-3 object-cover" />
+            : <div className="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center text-2xl font-black" style={{ background: accent, color: "#0d1b2a" }}>{business.name[0]}</div>}
+          <h1 className="text-lg font-black text-white">{business.name}</h1>
+          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>Ingresa tu RUT para acceder a las reservas</p>
+        </div>
+
+        <div className="rounded-2xl p-6" style={{ background: card, border: "1px solid rgba(255,255,255,0.07)" }}>
+          {/* RUT check form */}
+          <form onSubmit={checkRut} className="space-y-4">
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wide mb-1.5 block" style={{ color: "rgba(255,255,255,0.4)" }}>RUT</label>
+              <input
+                value={rut} onChange={e => { setRut(e.target.value); setResult(null) }}
+                placeholder="12345678-9"
+                className="w-full h-11 rounded-xl px-4 text-sm text-white outline-none"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+                disabled={checking}
+              />
+            </div>
+            <button type="submit" disabled={checking || !rut.trim()}
+              className="w-full h-11 rounded-xl font-bold text-sm disabled:opacity-40"
+              style={{ background: accent, color: "#0d1b2a" }}>
+              {checking ? "Verificando…" : "Verificar acceso"}
+            </button>
+          </form>
+
+          {/* Result states */}
+          {result && !result.allowed && (
+            <div className="mt-5 pt-5" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+              {result.status === "PENDING" && (
+                <div className="text-center space-y-2">
+                  <p className="text-sm font-bold" style={{ color: "#fbbf24" }}>Solicitud pendiente</p>
+                  <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>Tu solicitud de acceso está siendo revisada. Te avisaremos cuando sea aprobada.</p>
+                </div>
+              )}
+              {result.status === "REJECTED" && (
+                <div className="text-center space-y-2">
+                  <p className="text-sm font-bold" style={{ color: "#f87171" }}>Acceso rechazado</p>
+                  <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>Tu solicitud fue rechazada. Contacta al club para más información.</p>
+                </div>
+              )}
+              {(result.status === "NOT_FOUND" || result.status === null) && !submitted && (
+                <div>
+                  <p className="text-sm font-bold text-white mb-1">RUT no encontrado</p>
+                  <p className="text-xs mb-4" style={{ color: "rgba(255,255,255,0.4)" }}>Completa el formulario para solicitar acceso.</p>
+                  <form onSubmit={submitRequest} className="space-y-3">
+                    <div>
+                      <label className="text-xs font-bold uppercase tracking-wide mb-1 block" style={{ color: "rgba(255,255,255,0.4)" }}>Nombre completo *</label>
+                      <input value={reqName} onChange={e => setReqName(e.target.value)} placeholder="Tu nombre"
+                        className="w-full h-10 rounded-xl px-3 text-sm text-white outline-none"
+                        style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold uppercase tracking-wide mb-1 block" style={{ color: "rgba(255,255,255,0.4)" }}>Relación con el colegio</label>
+                      <select value={reqRole} onChange={e => setReqRole(e.target.value)}
+                        className="w-full h-10 rounded-xl px-3 text-sm text-white outline-none"
+                        style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                        {ROLES.map(r => <option key={r.value} value={r.value} style={{ background: "#1c1c1e" }}>{r.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold uppercase tracking-wide mb-1 block" style={{ color: "rgba(255,255,255,0.4)" }}>Email</label>
+                      <input value={reqEmail} onChange={e => setReqEmail(e.target.value)} placeholder="opcional" type="email"
+                        className="w-full h-10 rounded-xl px-3 text-sm text-white outline-none"
+                        style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold uppercase tracking-wide mb-1 block" style={{ color: "rgba(255,255,255,0.4)" }}>Teléfono</label>
+                      <input value={reqPhone} onChange={e => setReqPhone(e.target.value)} placeholder="opcional"
+                        className="w-full h-10 rounded-xl px-3 text-sm text-white outline-none"
+                        style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }} />
+                    </div>
+                    <button type="submit" disabled={submitting || !reqName.trim()}
+                      className="w-full h-10 rounded-xl font-bold text-sm disabled:opacity-40"
+                      style={{ background: "rgba(56,189,248,0.15)", border: "1px solid rgba(56,189,248,0.3)", color: accent }}>
+                      {submitting ? "Enviando…" : "Solicitar acceso"}
+                    </button>
+                  </form>
+                </div>
+              )}
+              {(result.status === "NOT_FOUND" || result.status === null) && submitted && (
+                <div className="text-center space-y-2 py-2">
+                  <p className="text-sm font-bold" style={{ color: accent }}>Solicitud enviada</p>
+                  <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>Tu solicitud fue enviada. El club te notificará cuando sea aprobada.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────

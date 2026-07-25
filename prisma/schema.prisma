@@ -247,6 +247,7 @@ model Business {
   waAddonStatus               String    @default("INACTIVE") // INACTIVE | ACTIVE | PAST_DUE | CANCELLED
   waFlowSubscriptionId        String?
   metaPhoneNumberId           String?
+  accessMode                  String    @default("OPEN") // OPEN | CLOSED
   createdAt                   DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   deletedAt             DateTime?
@@ -286,9 +287,30 @@ model Business {
   schoolGroups              SchoolGroup[]
   schoolEnrollments         SchoolEnrollment[]
   schoolClasses             SchoolClass[]
+  accessRequests            BusinessAccessRequest[]
 
   @@index([slug])
   @@map("businesses")
+}
+
+model BusinessAccessRequest {
+  id         String   @id @default(cuid())
+  businessId String
+  rut        String
+  name       String
+  email      String?
+  phone      String?
+  role       String   @default("OTRO") // APODERADO | ALUMNO | PROFESOR | EXALUMNO | OTRO
+  status     String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  notes      String?  @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, rut])
+  @@index([businessId, status])
+  @@map("business_access_requests")
 }
 
 model WhatsAppSession {
