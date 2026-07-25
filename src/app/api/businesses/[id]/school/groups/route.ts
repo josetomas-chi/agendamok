@@ -28,7 +28,15 @@ export async function POST(req: Request, { params }: Params) {
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
   const body = await req.json()
-  const { name, sport, level, days, startTime, endTime, coachId, maxCapacity, monthlyPrice, billingCycle, color, startDate, endDate, notes } = body
+  const { name, sport, level, days, startTime, endTime, coachId, maxCapacity, monthlyPrice, billingCycle, color, startDate, endDate, notes, image, slug } = body
+
+  // Auto-generate slug from name if not provided
+  const rawSlug = (slug || name || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+
+  // Ensure slug is unique within business
+  let finalSlug = rawSlug
+  const existing = await prisma.schoolGroup.findFirst({ where: { businessId: id, slug: rawSlug } })
+  if (existing) finalSlug = rawSlug + "-" + Date.now().toString(36)
 
   const group = await prisma.schoolGroup.create({
     data: {
@@ -42,6 +50,8 @@ export async function POST(req: Request, { params }: Params) {
       startDate: startDate ? new Date(startDate + "T00:00:00Z") : null,
       endDate: endDate ? new Date(endDate + "T00:00:00Z") : null,
       notes: notes || null,
+      image: image || null,
+      slug: finalSlug || null,
     },
     include: { coach: { select: { id: true, name: true, color: true } } },
   })

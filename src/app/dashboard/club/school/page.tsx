@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { useBusiness } from "@/contexts/business-context"
 import { toast } from "sonner"
-import { Plus, X, ChevronLeft, ChevronRight, Users, BookOpen, CreditCard, Pencil, Trash2, UserPlus, UserMinus } from "lucide-react"
+import { Plus, X, ChevronLeft, ChevronRight, Users, BookOpen, CreditCard, Pencil, Trash2, UserPlus, UserMinus, Link2, Image } from "lucide-react"
 import { format, addDays, subDays, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -24,6 +24,7 @@ type Group = {
   coachId: string | null; coach: Coach | null
   maxCapacity: number; monthlyPrice: number; color: string
   isActive: boolean; startDate: string | null; endDate: string | null; billingCycle: string; notes: string | null
+  image: string | null; slug: string | null
   enrollments: Enrollment[]
   _count: { enrollments: number }
 }
@@ -56,6 +57,8 @@ function GroupForm({ initial, coaches, onSave, onCancel }: {
   const [startDate, setStartDate] = useState(initial?.startDate ? initial.startDate.slice(0, 10) : "")
   const [endDate, setEndDate] = useState(initial?.endDate ? initial.endDate.slice(0, 10) : "")
   const [notes, setNotes] = useState(initial?.notes ?? "")
+  const [image, setImage] = useState(initial?.image ?? "")
+  const [slug, setSlug] = useState(initial?.slug ?? "")
   const [saving, setSaving] = useState(false)
 
   const toggleDay = (d: number) => setDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d].sort())
@@ -78,7 +81,7 @@ function GroupForm({ initial, coaches, onSave, onCancel }: {
   async function handleSubmit() {
     if (!name.trim() || !startTime || !endTime) return toast.error("Nombre y horario son obligatorios")
     setSaving(true)
-    await onSave({ name, sport: sport || null, level: level || null, days, startTime, endTime, coachId: coachId || null, maxCapacity: parseInt(maxCapacity), monthlyPrice: parseFloat(monthlyPrice) || 0, billingCycle, color, startDate: startDate || null, endDate: endDate || null, notes: notes || null })
+    await onSave({ name, sport: sport || null, level: level || null, days, startTime, endTime, coachId: coachId || null, maxCapacity: parseInt(maxCapacity), monthlyPrice: parseFloat(monthlyPrice) || 0, billingCycle, color, startDate: startDate || null, endDate: endDate || null, notes: notes || null, image: image || null, slug: slug || null })
     setSaving(false)
   }
 
@@ -175,6 +178,22 @@ function GroupForm({ initial, coaches, onSave, onCancel }: {
             </span>
           </div>
         )}
+        <div className="col-span-2">
+          <label style={labelStyle}>URL imagen (portada de la página pública)</label>
+          <div className="flex gap-2">
+            <input className={inputClass} style={inputStyle} value={image} onChange={e => setImage(e.target.value)} placeholder="https://…" />
+            {image && <img src={image} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" onError={e => (e.currentTarget.style.display = "none")} />}
+          </div>
+        </div>
+        <div className="col-span-2">
+          <label style={labelStyle}>Slug URL (ej: tenis-infantil)</label>
+          <div className="flex items-center gap-0">
+            <span className="px-3 h-[38px] flex items-center text-xs rounded-l-xl flex-shrink-0" style={{ background: "rgba(13,27,42,0.06)", border: BORDER, borderRight: "none", color: "rgba(13,27,42,0.4)" }}>/escuela/</span>
+            <input className="flex-1 h-[38px] px-3 text-sm outline-none rounded-r-xl" style={{ background: "#f5f4f0", border: BORDER, color: NAVY }}
+              value={slug} onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
+              placeholder="tenis-sub12" />
+          </div>
+        </div>
         <div className="col-span-2">
           <label style={labelStyle}>Notas</label>
           <textarea className={inputClass} style={{ ...inputStyle, resize: "none" }} rows={2} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Observaciones…" />
@@ -447,6 +466,7 @@ export default function SchoolPage() {
   const [groups, setGroups] = useState<Group[]>([])
   const [coaches, setCoaches] = useState<Coach[]>([])
   const [clients, setClients] = useState<Client[]>([])
+  const [businessSlug, setBusinessSlug] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editGroup, setEditGroup] = useState<Group | null>(null)
@@ -457,14 +477,16 @@ export default function SchoolPage() {
   const load = useCallback(async () => {
     if (!businessId) return
     setLoading(true)
-    const [gr, co, cl] = await Promise.all([
+    const [gr, co, cl, biz] = await Promise.all([
       fetch(`/api/businesses/${businessId}/school/groups`).then(r => r.json()),
       fetch(`/api/businesses/${businessId}/club-coaches`).then(r => r.json()),
       fetch(`/api/businesses/${businessId}/clients`).then(r => r.json()),
+      fetch(`/api/businesses/${businessId}`).then(r => r.json()),
     ])
     setGroups(gr.groups ?? [])
     setCoaches(co.coaches ?? [])
     setClients(cl.clients ?? [])
+    setBusinessSlug(biz.business?.slug ?? null)
     setLoading(false)
   }, [businessId])
 
@@ -609,6 +631,14 @@ export default function SchoolPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
+                      {selectedGroup.slug && businessSlug && (
+                        <button onClick={() => {
+                          const url = `${window.location.origin}/school/${businessSlug}/${selectedGroup.slug}`
+                          navigator.clipboard.writeText(url).then(() => toast.success("Link copiado"))
+                        }} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-black/5" style={{ border: BORDER }} title="Copiar link de inscripción">
+                          <Link2 className="w-3.5 h-3.5" style={{ color: "#0ea5e9" }} />
+                        </button>
+                      )}
                       <button onClick={() => setEditGroup(selectedGroup)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-black/5" style={{ border: BORDER }}>
                         <Pencil className="w-3.5 h-3.5" style={{ color: "rgba(13,27,42,0.5)" }} />
                       </button>
@@ -687,36 +717,55 @@ export default function SchoolPage() {
                   )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {groups.map(g => (
-                      <button key={g.id} onClick={() => setSelectedGroup(g)} className="text-left rounded-2xl p-4 transition-all hover:shadow-md"
+                      <div key={g.id} className="relative rounded-2xl overflow-hidden"
                         style={{ background: "#fff", border: `1.5px solid ${g.isActive ? g.color + "60" : "rgba(13,27,42,0.08)"}`, opacity: g.isActive ? 1 : 0.6 }}>
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-xl flex-shrink-0" style={{ background: `${g.color}25`, border: `1.5px solid ${g.color}50` }}>
-                            <div className="w-full h-full flex items-center justify-center">
-                              <div className="w-3 h-3 rounded-full" style={{ background: g.color }} />
-                            </div>
+                        {/* Group image */}
+                        {g.image && (
+                          <div className="h-28 w-full overflow-hidden">
+                            <img src={g.image} alt={g.name} className="w-full h-full object-cover" />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-black truncate" style={{ color: NAVY }}>{g.name}</p>
-                            <p className="text-xs mt-0.5 truncate" style={{ color: "rgba(13,27,42,0.5)" }}>
-                              {[g.sport, g.level].filter(Boolean).join(" · ")}
-                            </p>
-                            <div className="flex items-center gap-3 mt-2">
-                              <span className="text-xs font-bold" style={{ color: "rgba(13,27,42,0.6)" }}>
-                                👥 {g._count.enrollments}/{g.maxCapacity}
-                              </span>
-                              {g.days.length > 0 && (
+                        )}
+                        <button onClick={() => setSelectedGroup(g)} className="text-left w-full p-4 block">
+                          <div className="flex items-start gap-3">
+                            {!g.image && (
+                              <div className="w-10 h-10 rounded-xl flex-shrink-0" style={{ background: `${g.color}25`, border: `1.5px solid ${g.color}50` }}>
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <div className="w-3 h-3 rounded-full" style={{ background: g.color }} />
+                                </div>
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-black truncate" style={{ color: NAVY }}>{g.name}</p>
+                              <p className="text-xs mt-0.5 truncate" style={{ color: "rgba(13,27,42,0.5)" }}>
+                                {[g.sport, g.level].filter(Boolean).join(" · ")}
+                              </p>
+                              <div className="flex items-center gap-3 mt-2">
                                 <span className="text-xs font-bold" style={{ color: "rgba(13,27,42,0.6)" }}>
-                                  {g.days.map(d => DAY_LABELS[d]).join(" · ")} {g.startTime}–{g.endTime}
+                                  👥 {g._count.enrollments}/{g.maxCapacity}
                                 </span>
-                              )}
+                                {g.days.length > 0 && (
+                                  <span className="text-xs font-bold" style={{ color: "rgba(13,27,42,0.6)" }}>
+                                    {g.days.map(d => DAY_LABELS[d]).join(" · ")} {g.startTime}–{g.endTime}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <p className="text-sm font-black" style={{ color: g.color }}>{fmt(g.monthlyPrice)}</p>
+                              <p className="text-[10px]" style={{ color: "rgba(13,27,42,0.4)" }}>/mes</p>
                             </div>
                           </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className="text-sm font-black" style={{ color: g.color }}>{fmt(g.monthlyPrice)}</p>
-                            <p className="text-[10px]" style={{ color: "rgba(13,27,42,0.4)" }}>/mes</p>
-                          </div>
-                        </div>
-                      </button>
+                        </button>
+                        {g.slug && businessSlug && (
+                          <button onClick={() => {
+                            const url = `${window.location.origin}/school/${businessSlug}/${g.slug}`
+                            navigator.clipboard.writeText(url).then(() => toast.success("Link copiado"))
+                          }} className="absolute top-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center"
+                            style={{ background: "rgba(255,255,255,0.9)", border: BORDER }} title="Copiar link de inscripción">
+                            <Link2 className="w-3.5 h-3.5" style={{ color: "#0ea5e9" }} />
+                          </button>
+                        )}
+                      </div>
                     ))}
                   </div>
                   {inactiveGroups.length > 0 && (

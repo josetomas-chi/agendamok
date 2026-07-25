@@ -1144,6 +1144,8 @@ model SchoolGroup {
   startDate    DateTime? @db.Date
   endDate      DateTime? @db.Date
   notes        String?   @db.Text
+  image        String?   // URL imagen del grupo
+  slug         String?   // slug legible para URL pública
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -1152,6 +1154,7 @@ model SchoolGroup {
   enrollments SchoolEnrollment[]
   classes     SchoolClass[]
 
+  @@unique([businessId, slug])
   @@index([businessId])
   @@map("school_groups")
 }
