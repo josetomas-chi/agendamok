@@ -15,7 +15,7 @@ type Appointment = {
   status: string
   service: { name: string; color: string }
   staff: { id: string; color: string; user: { name: string | null; image: string | null } }
-  client: { name: string }
+  client: { name: string; lastName?: string | null }
   payment?: { status: string } | null
 }
 
@@ -522,7 +522,7 @@ function ApptCard({ appt, compact, height, onDragStart, onApptClick }: {
         opacity: isCompleted ? 0.7 : 1,
       }}
     >
-      <div className="font-semibold text-white truncate leading-tight pr-5">{appt.client?.name ?? "Sin cliente"}</div>
+      <div className="font-semibold text-white truncate leading-tight pr-5">{appt.client ? `${appt.client.name}${appt.client.lastName ? ` ${appt.client.lastName}` : ""}` : "Sin cliente"}</div>
       {(height === undefined || height > 44) && (
         <div className="text-white/75 truncate text-[10px] mt-0.5 leading-tight">{appt.service.name}</div>
       )}

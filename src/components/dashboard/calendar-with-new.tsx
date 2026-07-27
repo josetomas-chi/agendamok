@@ -14,7 +14,7 @@ type Appointment = {
   id: string; startTime: Date | string; endTime: Date | string; status: string
   service: { name: string; color: string; price: number | null }
   staff: { id: string; color: string; user: { name: string | null; image: string | null } }
-  client: { name: string; email: string | null; phone: string | null; segment?: string }
+  client: { name: string; lastName?: string | null; email: string | null; phone: string | null; segment?: string }
   notes: string | null
   payment: { status: string; method: string; amount: number } | null
 }
@@ -382,7 +382,7 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
             {selectedAppt && (
               <div className="flex items-center gap-2 text-sm text-white/50 bg-white/[0.03] rounded-xl px-3 py-2">
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: selectedAppt.service.color }} />
-                {selectedAppt.service.name} · {selectedAppt.client.name}
+                {selectedAppt.service.name} · {selectedAppt.client.name}{selectedAppt.client.lastName ? ` ${selectedAppt.client.lastName}` : ""}
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
@@ -452,7 +452,7 @@ export function CalendarWithNew({ businessId, services, staff, clients, location
             {selectedAppt && (
               <div className="flex items-center gap-2 text-sm text-white/50 bg-white/[0.03] rounded-xl px-3 py-2">
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: selectedAppt.service.color }} />
-                <span className="flex-1">{selectedAppt.service.name} · {selectedAppt.client.name}</span>
+                <span className="flex-1">{selectedAppt.service.name} · {selectedAppt.client.name}{selectedAppt.client.lastName ? ` ${selectedAppt.client.lastName}` : ""}</span>
                 {payDiscount > 0 && (
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-500/20 text-green-300 flex-shrink-0">
                     -{payDiscount}% descuento

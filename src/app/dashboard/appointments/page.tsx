@@ -17,7 +17,7 @@ type Appointment = {
   id: string; startTime: string; endTime: string; status: string; notes: string | null; price?: number | null
   service: { name: string; color: string; duration: number; price: number }
   staff: { id: string; color: string; user: { name: string | null } }
-  client: { id: string; name: string; email: string | null; phone: string | null }
+  client: { id: string; name: string; lastName?: string | null; email: string | null; phone: string | null }
   payment: { id: string; amount: number; status: string; method: string } | null
 }
 type Service = { id: string; name: string; duration: number; price: number; color: string }
@@ -199,7 +199,7 @@ export default function AppointmentsPage() {
               <div className="w-1 h-10 rounded-full flex-shrink-0" style={{ backgroundColor: a.service.color }} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium truncate">{a.client.name}</p>
+                  <p className="font-medium truncate">{a.client.name}{a.client.lastName ? ` ${a.client.lastName}` : ""}</p>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${STATUS[a.status as keyof typeof STATUS]?.color}`}>
                     {STATUS[a.status as keyof typeof STATUS]?.label}
                   </span>
@@ -320,7 +320,7 @@ export default function AppointmentsPage() {
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {[
-                  { label: "Cliente", value: selected.client.name },
+                  { label: "Cliente", value: `${selected.client.name}${selected.client.lastName ? ` ${selected.client.lastName}` : ""}` },
                   { label: "Profesional", value: selected.staff.user.name },
                   { label: "Fecha", value: format(new Date(selected.startTime), "EEEE d MMMM", { locale: es }) },
                   { label: "Hora", value: `${format(new Date(selected.startTime), "HH:mm")} — ${format(new Date(selected.endTime), "HH:mm")}` },

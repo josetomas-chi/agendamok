@@ -10,7 +10,7 @@ type Appt = {
   status: string
   service: { name: string; color: string; price: number | null }
   staff: { id: string; color: string; user: { name: string | null; image: string | null } }
-  client: { name: string; email: string | null; phone: string | null }
+  client: { name: string; lastName?: string | null; email: string | null; phone: string | null }
   notes: string | null
   payment: { status: string; method: string; amount: number } | null
 }
@@ -51,7 +51,7 @@ export function ApptDetailDialog({ appt, cancelling, onClose, onEdit, onPay, onC
               <div className="border-t border-white/5 pt-3 space-y-2.5">
                 <div className="flex items-center gap-3 text-sm">
                   <User className="w-4 h-4 text-white/40 flex-shrink-0" />
-                  <span className="text-white font-medium">{appt.client.name}</span>
+                  <span className="text-white font-medium">{appt.client.name}{appt.client.lastName ? ` ${appt.client.lastName}` : ""}</span>
                 </div>
                 {appt.client.phone && (
                   <a href={`tel:${appt.client.phone}`} className="flex items-center gap-3 text-sm group">

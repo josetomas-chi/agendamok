@@ -404,7 +404,7 @@ export default function ClientsPage() {
                   {selected.name[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <DialogTitle>{selected.name}</DialogTitle>
+                  <DialogTitle>{selected.name}{selected.lastName ? ` ${selected.lastName}` : ""}</DialogTitle>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SEGMENT_LABELS[selected.segment]?.color}`}>
                       {SEGMENT_LABELS[selected.segment]?.label}
@@ -801,7 +801,7 @@ export default function ClientsPage() {
                   {selected.name[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <DialogTitle>{selected.name}</DialogTitle>
+                  <DialogTitle>{selected.name}{selected.lastName ? ` ${selected.lastName}` : ""}</DialogTitle>
                 </div>
               </div>
             </DialogHeader>

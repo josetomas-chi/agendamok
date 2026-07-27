@@ -60,7 +60,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     include: {
       service: { select: { name: true, color: true, price: true, duration: true } },
       staff: { select: { id: true, commissionType: true, commissionValue: true, user: { select: { name: true } } } },
-      client: { select: { name: true, email: true, phone: true } },
+      client: { select: { name: true, lastName: true, email: true, phone: true } },
       business: { select: { name: true, slug: true } },
       payment: { select: { amount: true } },
     },

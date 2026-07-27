@@ -44,7 +44,7 @@ export default async function DashboardPage() {
     include: {
       service: { select: { name: true, color: true, price: true } },
       staff: { select: { id: true, color: true, user: { select: { name: true, image: true } } } },
-      client: { select: { name: true, email: true, phone: true, segment: true } },
+      client: { select: { name: true, lastName: true, email: true, phone: true, segment: true } },
       payment: { select: { status: true, method: true, amount: true } },
     },
     orderBy: { startTime: "asc" },
