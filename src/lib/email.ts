@@ -847,3 +847,32 @@ export async function sendPasswordReset({ clientName, clientEmail, resetUrl }: {
     `),
   }).catch(() => {})
 }
+
+export async function sendRecurringBookingConfirmation({
+  clientName, clientEmail, businessName, courtName,
+  dayLabel, timeLabel, totalSessions, firstDate, lastDate, totalPrice,
+}: {
+  clientName: string; clientEmail: string; businessName: string; courtName: string
+  dayLabel: string; timeLabel: string; totalSessions: number
+  firstDate: string; lastDate: string; totalPrice: number
+}) {
+  if (!process.env.RESEND_API_KEY) return
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `Reserva recurrente confirmada — ${businessName}`,
+    html: base(`
+      <h1>¡Reserva recurrente confirmada! ✓</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu reserva recurrente en <strong style="color:#38bdf8">${businessName}</strong> está confirmada.</p>
+      <div class="box">
+        <div class="row"><span class="label">Cancha</span><span class="value">${courtName}</span></div>
+        <div class="row"><span class="label">Día</span><span class="value">${dayLabel}</span></div>
+        <div class="row"><span class="label">Horario</span><span class="value">${timeLabel} hrs</span></div>
+        <div class="row"><span class="label">Período</span><span class="value">${firstDate} → ${lastDate}</span></div>
+        <div class="row"><span class="label">Sesiones</span><span class="value">${totalSessions} sesiones</span></div>
+        <div class="row"><span class="label">Total</span><span class="value">$${totalPrice.toLocaleString("es-CL")}</span></div>
+      </div>
+      <p class="subtitle" style="font-size:13px;margin-top:16px">Recibirás un recordatorio antes de cada sesión. Si tienes alguna consulta, contacta directamente a ${businessName}. ¡Te esperamos!</p>
+    `),
+  }).catch(() => {})
+}

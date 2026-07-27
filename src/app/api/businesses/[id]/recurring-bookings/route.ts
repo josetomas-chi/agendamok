@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server"
+import { after } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
+import { sendRecurringBookingConfirmation } from "@/lib/email"
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -158,6 +162,34 @@ export async function POST(req: Request, { params }: Params) {
     })
 
     return g
+  })
+
+  // Send confirmation email after responding
+  after(async () => {
+    if (!clientId || sessions.length === 0) return
+    const client = await prisma.client.findUnique({ where: { id: clientId }, select: { name: true, email: true } })
+    if (!client?.email) return
+    const court = await prisma.court.findUnique({ where: { id: courtId }, select: { name: true } })
+    const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
+    if (!court || !business) return
+
+    const DAY_LABELS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"]
+    const padTime = (h: number, m: number) => `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+    const endHour = Math.floor((startMinute + durationMinutes) / 60) + startHour
+    const endMin = (startMinute + durationMinutes) % 60
+
+    await sendRecurringBookingConfirmation({
+      clientName: client.name,
+      clientEmail: client.email,
+      businessName: business.name,
+      courtName: court.name,
+      dayLabel: `Todos los ${DAY_LABELS[dayOfWeek]}`,
+      timeLabel: `${padTime(startHour, startMinute)} – ${padTime(endHour, endMin)}`,
+      totalSessions: sessions.length,
+      firstDate: format(sessions[0].start, "d 'de' MMMM yyyy", { locale: es }),
+      lastDate: format(sessions[sessions.length - 1].start, "d 'de' MMMM yyyy", { locale: es }),
+      totalPrice: sessions.reduce((sum, s) => sum + s.price, 0),
+    })
   })
 
   return NextResponse.json(
