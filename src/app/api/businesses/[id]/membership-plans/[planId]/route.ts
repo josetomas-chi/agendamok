@@ -9,14 +9,22 @@ export async function PATCH(req: Request, { params }: Params) {
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id, planId } = await params
   const body = await req.json()
-  const plan = await prisma.membershipPlan.update({ where: { id: planId, businessId: id }, data: body })
+  const allowed = ["name", "description", "price", "durationDays", "isActive"]
+  const data: Record<string, unknown> = {}
+  for (const k of allowed) if (k in body) data[k] = body[k]
+
+  const plan = await prisma.membershipPlan.update({
+    where: { id: planId, businessId: id },
+    data,
+    include: { _count: { select: { memberships: { where: { status: "ACTIVE" } } } } },
+  })
   return NextResponse.json({ plan })
 }
 
-export async function DELETE(_: Request, { params }: Params) {
+export async function DELETE(_req: Request, { params }: Params) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id, planId } = await params
-  await prisma.membershipPlan.update({ where: { id: planId, businessId: id }, data: { isActive: false } })
-  return NextResponse.json({ success: true })
+  await prisma.membershipPlan.delete({ where: { id: planId, businessId: id } })
+  return NextResponse.json({ ok: true })
 }
