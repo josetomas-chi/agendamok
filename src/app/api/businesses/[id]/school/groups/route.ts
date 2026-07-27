@@ -13,8 +13,8 @@ export async function GET(_req: Request, { params }: Params) {
     include: {
       coach: { select: { id: true, name: true, color: true } },
       enrollments: {
-        where: { status: "ACTIVE" },
         include: { client: { select: { id: true, name: true, email: true, phone: true, rut: true } } },
+        orderBy: { createdAt: "desc" },
       },
       _count: { select: { enrollments: { where: { status: "ACTIVE" } } } },
     },

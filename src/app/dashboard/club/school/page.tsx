@@ -17,7 +17,7 @@ function fmt(n: number) { return `$${Number(n).toLocaleString("es-CL")}` }
 
 type Coach = { id: string; name: string; color: string }
 type Client = { id: string; name: string; email: string | null; phone: string | null; rut: string | null }
-type Enrollment = { id: string; clientId: string; status: string; startDate: string; notes: string | null; client: Client }
+type Enrollment = { id: string; clientId: string; status: string; startDate: string; notes: string | null; createdAt?: string; client: Client }
 type Group = {
   id: string; name: string; sport: string | null; level: string | null
   days: number[]; startTime: string; endTime: string
@@ -581,6 +581,15 @@ export default function SchoolPage() {
     else toast.error("Error")
   }
 
+  async function handleEnrollmentStatus(enrollmentId: string, status: "ACTIVE" | "CANCELLED") {
+    if (!selectedGroup) return
+    const r = await fetch(`/api/businesses/${businessId}/school/groups/${selectedGroup.id}/enrollments/${enrollmentId}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }),
+    })
+    if (r.ok) { toast.success(status === "ACTIVE" ? "Inscripción aprobada" : "Inscripción rechazada"); load() }
+    else toast.error("Error")
+  }
+
   // sync selectedGroup with refreshed data
   useEffect(() => {
     if (selectedGroup) {
@@ -702,6 +711,42 @@ export default function SchoolPage() {
                     ))}
                   </div>
 
+                  {/* Pending enrollments */}
+                  {selectedGroup.enrollments.filter(e => e.status === "PENDING").length > 0 && (
+                    <div style={{ borderBottom: BORDER }}>
+                      <div className="px-4 py-2 flex items-center gap-2" style={{ background: "rgba(251,191,36,0.08)" }}>
+                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "#f59e0b" }} />
+                        <p className="text-xs font-black uppercase tracking-wide" style={{ color: "#92400e" }}>
+                          {selectedGroup.enrollments.filter(e => e.status === "PENDING").length} solicitud{selectedGroup.enrollments.filter(e => e.status === "PENDING").length !== 1 ? "es" : ""} pendiente{selectedGroup.enrollments.filter(e => e.status === "PENDING").length !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                      {selectedGroup.enrollments.filter(e => e.status === "PENDING").map((e, i) => (
+                        <div key={e.id} className="flex items-center gap-3 px-4 py-3"
+                          style={{ borderTop: i > 0 ? BORDER : undefined, background: "rgba(251,191,36,0.03)" }}>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold truncate" style={{ color: NAVY }}>{e.client.name}</p>
+                            <p className="text-xs" style={{ color: "rgba(13,27,42,0.45)" }}>
+                              {[e.client.rut, e.client.phone, e.client.email].filter(Boolean).join(" · ")}
+                            </p>
+                            {e.notes && <p className="text-xs mt-0.5 italic" style={{ color: "rgba(13,27,42,0.4)" }}>{e.notes}</p>}
+                          </div>
+                          <div className="flex gap-1.5">
+                            <button onClick={() => handleEnrollmentStatus(e.id, "ACTIVE")}
+                              className="flex items-center gap-1 px-2.5 h-7 rounded-lg text-[11px] font-bold"
+                              style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", color: "#15803d" }}>
+                              ✓ Aprobar
+                            </button>
+                            <button onClick={() => handleEnrollmentStatus(e.id, "CANCELLED")}
+                              className="flex items-center gap-1 px-2.5 h-7 rounded-lg text-[11px] font-bold"
+                              style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", color: "#dc2626" }}>
+                              ✕ Rechazar
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Enroll */}
                   <div className="px-4 py-3 flex gap-2" style={{ borderBottom: BORDER }}>
                     <select value={enrollClientId} onChange={e => setEnrollClientId(e.target.value)}
@@ -772,7 +817,15 @@ export default function SchoolPage() {
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-black truncate" style={{ color: NAVY }}>{g.name}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-black truncate" style={{ color: NAVY }}>{g.name}</p>
+                                {g.enrollments.filter(e => e.status === "PENDING").length > 0 && (
+                                  <span className="flex-shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-full"
+                                    style={{ background: "#f59e0b", color: "#fff" }}>
+                                    {g.enrollments.filter(e => e.status === "PENDING").length}
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-xs mt-0.5 truncate" style={{ color: "rgba(13,27,42,0.5)" }}>
                                 {[g.sport, g.level].filter(Boolean).join(" · ")}
                               </p>
