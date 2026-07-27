@@ -421,7 +421,7 @@ function SettingsContent() {
       </div>
 
       <div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none border-b border-white/[0.06]">
           {([
             { value: "business",      icon: Building2,  label: "Negocio" },
             { value: "booking",       icon: Globe,      label: "Reservas" },
@@ -438,14 +438,14 @@ function SettingsContent() {
             <button
               key={value}
               onClick={() => setActiveTab(value)}
-              className={`flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl border transition-all min-w-[76px] ${
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-all ${
                 activeTab === value
-                  ? "bg-sky-500/15 border-sky-400/60 text-sky-500 shadow-[0_0_14px_rgba(56,189,248,0.15)]"
-                  : "bg-muted border-border text-muted-foreground hover:bg-accent hover:text-foreground"
+                  ? "border-sky-400 text-sky-400"
+                  : "border-transparent text-white/40 hover:text-white/70 hover:border-white/20"
               }`}
             >
-              <Icon className="w-5 h-5" />
-              <span className="text-xs font-medium">{label}</span>
+              <Icon className="w-4 h-4 flex-shrink-0" />
+              {label}
             </button>
           ))}
         </div>
