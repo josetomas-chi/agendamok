@@ -40,6 +40,28 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     body.slug = clean
   }
 
+  const previous = await prisma.business.findUnique({ where: { id }, select: { accessMode: true } })
   const business = await prisma.business.update({ where: { id }, data: body })
+
+  // When switching to CLOSED, create PENDING entries for existing clients with RUT not already in access list
+  if (body.accessMode === "CLOSED" && previous?.accessMode !== "CLOSED") {
+    const clients = await prisma.client.findMany({
+      where: { businessId: id, deletedAt: null, rut: { not: null } },
+      select: { rut: true, name: true, email: true, phone: true },
+    })
+    const existing = await prisma.businessAccessRequest.findMany({
+      where: { businessId: id },
+      select: { rut: true },
+    })
+    const existingRuts = new Set(existing.map(e => e.rut))
+    const toCreate = clients.filter(c => c.rut && !existingRuts.has(c.rut!))
+    if (toCreate.length > 0) {
+      await prisma.businessAccessRequest.createMany({
+        data: toCreate.map(c => ({ businessId: id, rut: c.rut!, name: c.name, email: c.email ?? null, phone: c.phone ?? null, status: "PENDING" })),
+        skipDuplicates: true,
+      })
+    }
+  }
+
   return NextResponse.json({ business })
 }

@@ -67,6 +67,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     const client = await prisma.client.create({ data: { ...data, businessId: id } })
+
+    // If business is closed-access and client has RUT, auto-approve in access list
+    if (data.rut) {
+      const business = await prisma.business.findUnique({ where: { id }, select: { accessMode: true } })
+      if (business?.accessMode === "CLOSED") {
+        await prisma.businessAccessRequest.upsert({
+          where: { businessId_rut: { businessId: id, rut: data.rut } },
+          update: { status: "APPROVED", name: data.name, email: data.email ?? null, phone: data.phone ?? null },
+          create: { businessId: id, rut: data.rut, name: data.name, email: data.email ?? null, phone: data.phone ?? null, status: "APPROVED" },
+        })
+      }
+    }
+
     return NextResponse.json({ client }, { status: 201 })
   } catch (e) {
     if (e instanceof z.ZodError) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 })
