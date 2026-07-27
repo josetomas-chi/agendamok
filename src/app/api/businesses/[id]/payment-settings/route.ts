@@ -11,14 +11,15 @@ export async function GET(_: Request, { params }: Params) {
 
   const business = await prisma.business.findFirst({
     where: { id, ownerId: session.user.id, deletedAt: null },
-    select: { onlinePaymentsEnabled: true, flowApiKey: true },
+    select: { onlinePaymentsEnabled: true, flowApiKey: true, mpConnected: true, mpPublicKey: true },
   })
   if (!business) return NextResponse.json({ error: "No encontrado" }, { status: 404 })
 
   return NextResponse.json({
     onlinePaymentsEnabled: business.onlinePaymentsEnabled,
-    // Only indicate if key exists, never return the actual secret
     hasCredentials: !!business.flowApiKey,
+    mpConnected: business.mpConnected,
+    mpPublicKey: business.mpPublicKey,
   })
 }
 
@@ -56,5 +57,7 @@ export async function PATCH(req: Request, { params }: Params) {
   return NextResponse.json({
     onlinePaymentsEnabled: updated.onlinePaymentsEnabled,
     hasCredentials: !!updated.flowApiKey,
+    mpConnected: updated.mpConnected,
+    mpPublicKey: updated.mpPublicKey,
   })
 }

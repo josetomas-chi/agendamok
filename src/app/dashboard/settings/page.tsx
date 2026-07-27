@@ -11,10 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle2, AlertCircle, Loader2, Gift, CalendarX2, ImagePlus, X, Users, UserPlus, Mail } from "lucide-react"
+import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle, CheckCircle2, AlertCircle, Loader2, Gift, CalendarX2, ImagePlus, X, Users, UserPlus, Mail } from "lucide-react"
 
 type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean; notifConfirmation: boolean; notifReminder24h: boolean; notifReminder1h: boolean; notifNewBooking: boolean; notifCancellation: boolean }
-type PaymentSettings = { onlinePaymentsEnabled: boolean; hasCredentials: boolean }
+type PaymentSettings = { onlinePaymentsEnabled: boolean; hasCredentials: boolean; mpConnected: boolean; mpPublicKey?: string }
 type Subscription = { plan: string; status: string; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean; flowCustomerId: string | null; trialEndsAt: string | null; isCourtesy: boolean }
 
 function SettingsContent() {
@@ -59,7 +59,7 @@ function SettingsContent() {
   const [subscribing, setSubscribing] = useState(false)
 
   // Payment settings (business Flow credentials)
-  const [paySettings, setPaySettings] = useState<PaymentSettings>({ onlinePaymentsEnabled: false, hasCredentials: false })
+  const [paySettings, setPaySettings] = useState<PaymentSettings>({ onlinePaymentsEnabled: false, hasCredentials: false, mpConnected: false })
   const [payForm, setPayForm] = useState({ flowApiKey: "", flowSecretKey: "" })
   const [savingPay, setSavingPay] = useState(false)
   const [showPaySecret, setShowPaySecret] = useState(false)
@@ -94,6 +94,22 @@ function SettingsContent() {
 
   const { businessId: bid, businessType } = useBusiness()
   const isSports = businessType === "SPORTS_CLUB"
+
+  // Handle MP OAuth redirect result
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const mp = params.get("mp")
+    const tab = params.get("tab")
+    if (mp === "success") {
+      toast.success("MercadoPago conectado exitosamente")
+      if (tab) setActiveTab(tab)
+      window.history.replaceState({}, "", "/dashboard/settings")
+    } else if (mp === "error") {
+      toast.error("Error al conectar MercadoPago. Intenta de nuevo.")
+      if (tab) setActiveTab(tab)
+      window.history.replaceState({}, "", "/dashboard/settings")
+    }
+  }, [])
 
   useEffect(() => {
     if (!bid) return
@@ -306,7 +322,7 @@ function SettingsContent() {
       body: JSON.stringify({ clearCredentials: true }),
     })
     if (r.ok) {
-      setPaySettings({ onlinePaymentsEnabled: false, hasCredentials: false })
+      setPaySettings({ onlinePaymentsEnabled: false, hasCredentials: false, mpConnected: false })
       toast.success("Credenciales eliminadas")
     }
   }
@@ -1153,6 +1169,78 @@ function SettingsContent() {
                   <p>Guarda las credenciales y activa el interruptor <strong className="text-foreground/60">Cobros online</strong> al inicio de esta sección. Tus clientes verán la opción de pagar al reservar y el dinero llegará directo a tu cuenta Flow.</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* MercadoPago */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-[#009EE3]">
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L6.32 13.617l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.828.942z"/></svg>
+                </span>
+                MercadoPago
+              </CardTitle>
+              <CardDescription>
+                Acepta pagos online en Chile, Argentina, México, Colombia y más países. Conecta tu cuenta con un click.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {paySettings.mpConnected ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-emerald-500/10 border border-emerald-400/30">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Cuenta conectada</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">MercadoPago activo — tus clientes pueden pagar online</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-400 border-red-400/20 hover:bg-red-500/10"
+                      onClick={async () => {
+                        if (!confirm("¿Desconectar MercadoPago? Los pagos online dejarán de funcionar.")) return
+                        const r = await fetch("/api/mp/disconnect", { method: "POST" })
+                        if (r.ok) {
+                          setPaySettings(s => ({ ...s, mpConnected: false }))
+                          toast.success("MercadoPago desconectado")
+                        }
+                      }}
+                    >
+                      Desconectar
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    AgendaMok retiene un 1% de comisión por transacción procesada. El resto se deposita directamente en tu cuenta MercadoPago.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">MercadoPago no conectado</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Conecta tu cuenta para aceptar pagos online</p>
+                    </div>
+                    <Button
+                      className="bg-[#009EE3] hover:bg-[#0081bb] text-white gap-2"
+                      onClick={() => window.location.href = "/api/mp/connect"}
+                    >
+                      Conectar MercadoPago
+                    </Button>
+                  </div>
+                  <div className="bg-blue-500/5 border border-blue-400/20 rounded-xl p-4 text-xs text-muted-foreground space-y-2">
+                    <p className="font-medium text-blue-400 text-sm">¿Cómo funciona?</p>
+                    <p>1. Haz click en <strong className="text-foreground/70">Conectar MercadoPago</strong> — serás redirigido a MP para autorizar.</p>
+                    <p>2. Inicia sesión con tu cuenta de MercadoPago (o créala gratis en mercadopago.cl).</p>
+                    <p>3. Autoriza a AgendaMok y listo — tus clientes podrán pagar al reservar.</p>
+                    <p>4. El dinero se deposita directamente en tu cuenta MP. AgendaMok retiene un 1% por transacción.</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>}

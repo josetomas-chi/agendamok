@@ -56,6 +56,7 @@ enum PaymentMethod {
   CARD
   TRANSFER
   ONLINE
+  MERCADOPAGO
 }
 
 enum NotificationType {
@@ -226,6 +227,11 @@ model Business {
   flowApiKey            String?
   flowSecretKey         String?
   onlinePaymentsEnabled       Boolean   @default(false)
+  mpAccessToken               String?
+  mpRefreshToken              String?
+  mpPublicKey                 String?
+  mpUserId                    String?
+  mpConnected                 Boolean   @default(false)
   bsaleApiKey                 String?
   bsaleAutoInvoice            Boolean   @default(false)
   bsaleDocType                InvoiceDocType @default(BOLETA)
@@ -618,6 +624,8 @@ model Payment {
   stripePaymentIntentId   String?       @unique
   stripeCheckoutSessionId String?       @unique
   flowToken               String?       @unique
+  mpPaymentId             String?       @unique
+  businessId              String?
   isDeposit               Boolean       @default(false)
   paidAt                  DateTime?
   invoiceUrl              String?
@@ -992,6 +1000,7 @@ model CourtBooking {
   paidOnline         Boolean                @default(false)
   status             CourtBookingStatus     @default(CONFIRMED)
   transferVoucher    String?
+  mpPaymentId        String?
   coachPaid          Boolean                @default(false)
   notes              String?                @db.Text
   createdAt          DateTime               @default(now())
