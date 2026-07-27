@@ -24,7 +24,7 @@ type Business = {
   id: string; name: string; category: string; description: string | null
   logo: string | null; coverImage: string | null; coverImagePositionY: number | null; phone: string | null
   address: string | null; city: string | null
-  onlinePaymentsEnabled: boolean; primaryColor: string | null
+  onlinePaymentsEnabled: boolean; mpConnected: boolean; primaryColor: string | null
   businessType: string
   chatBotEnabled: boolean
   accessMode: string
@@ -35,7 +35,7 @@ type Business = {
 
 type Step = "home" | "staff" | "datetime" | "form" | "confirmed"
 type CourtStep = "home" | "court" | "datetime" | "form" | "confirmed"
-type PayMethod = "online" | "local"
+type PayMethod = "online" | "local" | "mp"
 
 export default function BookingClient({ slug }: { slug: string }) {
   const [business, setBusiness] = useState<Business | null>(null)
@@ -936,13 +936,15 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
       setSubmitting(false)
       return
     }
+    const apptData = await r.json()
+    const apptId = apptData.appointment?.id
+
     if (payMethod === "online" && business.onlinePaymentsEnabled) {
-      const apptData = await r.json()
       const payR = await fetch(`/api/book/${slug}/pay`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          appointmentId: apptData.appointment?.id,
+          appointmentId: apptId,
           amount: selectedService.price,
           email: form.email,
           serviceName: selectedService.name,
@@ -951,6 +953,22 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
       if (payR.ok) {
         const payData = await payR.json()
         if (payData.url) { window.location.href = `${payData.url}?token=${payData.token}`; return }
+      }
+    }
+
+    if (payMethod === "mp" && business.mpConnected) {
+      const payR = await fetch(`/api/book/${slug}/pay-mp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          appointmentId: apptId,
+          amount: selectedService.price,
+          serviceName: selectedService.name,
+        }),
+      })
+      if (payR.ok) {
+        const payData = await payR.json()
+        if (payData.url) { window.location.href = payData.url; return }
       }
     }
     setStep("confirmed")
@@ -1272,14 +1290,15 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
             </div>
 
             {/* Payment */}
-            {business.onlinePaymentsEnabled && Number(selectedService.price) > 0 && (
+            {(business.onlinePaymentsEnabled || business.mpConnected) && Number(selectedService.price) > 0 && (
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider" style={{ color: MUTED }}>Forma de pago</label>
                 <div className="grid grid-cols-2 gap-2">
                   {([
-                    { value: "local" as PayMethod, label: "En el local", sub: "Efectivo o tarjeta" },
-                    { value: "online" as PayMethod, label: "Pagar ahora", sub: `$${Number(selectedService.price).toLocaleString("es-CL")}` },
-                  ]).map(opt => (
+                    { value: "local" as PayMethod, label: "En el local", sub: "Efectivo o tarjeta", show: true },
+                    { value: "online" as PayMethod, label: "Flow", sub: `$${Number(selectedService.price).toLocaleString("es-CL")}`, show: business.onlinePaymentsEnabled },
+                    { value: "mp" as PayMethod, label: "MercadoPago", sub: `$${Number(selectedService.price).toLocaleString("es-CL")}`, show: business.mpConnected },
+                  ]).filter(o => o.show).map(opt => (
                     <button key={opt.value} onClick={() => setPayMethod(opt.value)}
                       className="p-3.5 rounded-xl text-left transition-all"
                       style={payMethod === opt.value
@@ -1320,8 +1339,8 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
               className="w-full py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-40"
               style={{ background: brand, color: "#fff" }}>
               {submitting
-                ? <><Loader2 className="w-4 h-4 animate-spin" />{payMethod === "online" ? "Redirigiendo al pago..." : "Confirmando..."}</>
-                : payMethod === "online" && business.onlinePaymentsEnabled
+                ? <><Loader2 className="w-4 h-4 animate-spin" />{payMethod !== "local" ? "Redirigiendo al pago..." : "Confirmando..."}</>
+                : payMethod !== "local"
                   ? `Pagar $${Number(selectedService.price).toLocaleString("es-CL")} →`
                   : "Confirmar reserva →"}
             </button>

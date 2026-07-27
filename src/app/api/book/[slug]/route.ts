@@ -9,7 +9,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
     where: { slug, isActive: true, deletedAt: null },
     select: {
       id: true, name: true, category: true, description: true, logo: true, phone: true,
-      address: true, city: true, onlinePaymentsEnabled: true, primaryColor: true,
+      address: true, city: true, onlinePaymentsEnabled: true, mpConnected: true, primaryColor: true,
       coverImage: true, coverImagePositionY: true, businessType: true, chatBotEnabled: true, accessMode: true,
       clubSettings: { select: { bookingWindowDays: true } },
       courts: {
