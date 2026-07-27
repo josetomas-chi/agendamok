@@ -804,3 +804,27 @@ export async function sendWhatsAppUsageWarning({
     `),
   }).catch(() => {})
 }
+
+export async function sendAccessApproved({
+  clientName, clientEmail, businessName, bookingUrl,
+}: {
+  clientName: string; clientEmail: string; businessName: string; bookingUrl: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `✅ Acceso autorizado — ${businessName}`,
+    html: base(`
+      <h1>¡Tu acceso fue autorizado!</h1>
+      <p class="subtitle">Hola ${clientName}, <strong>${businessName}</strong> ha aprobado tu acceso para realizar reservas online.</p>
+      <div class="box">
+        <div class="row"><span class="label">Negocio</span><span class="value">${businessName}</span></div>
+        <div class="row"><span class="label">Estado</span><span class="value" style="color:#4ade80">✅ Autorizado</span></div>
+      </div>
+      <p style="text-align:center;margin-top:24px">
+        <a href="${bookingUrl}" class="btn">Reservar ahora</a>
+      </p>
+    `),
+  }).catch(() => {})
+}
