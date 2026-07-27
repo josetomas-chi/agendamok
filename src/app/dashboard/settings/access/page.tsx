@@ -46,6 +46,9 @@ export default function AccessPage() {
   const [addRole, setAddRole] = useState("OTRO")
   const [adding, setAdding] = useState(false)
 
+  // Client search suggestions
+  const [clientSuggestions, setClientSuggestions] = useState<{ id: string; name: string; rut: string | null; email: string | null; phone: string | null }[]>([])
+
   // CSV import
   const fileRef = useRef<HTMLInputElement>(null)
   const [importing, setImporting] = useState(false)
@@ -65,6 +68,27 @@ export default function AccessPage() {
   }, [businessId])
 
   useEffect(() => { loadAll() }, [loadAll])
+
+  useEffect(() => {
+    if (!businessId || !search.trim()) { setClientSuggestions([]); return }
+    const t = setTimeout(async () => {
+      const r = await fetch(`/api/businesses/${businessId}/clients?search=${encodeURIComponent(search)}`)
+      const d = await r.json()
+      const existingRuts = new Set(entries.map(e => e.rut))
+      const suggestions = (d.clients ?? []).filter((c: { rut: string | null }) => !c.rut || !existingRuts.has(c.rut))
+      setClientSuggestions(suggestions.slice(0, 5))
+    }, 300)
+    return () => clearTimeout(t)
+  }, [search, businessId, entries])
+
+  async function addClientToList(client: { name: string; rut: string | null; email: string | null; phone: string | null }) {
+    if (!client.rut) return
+    const r = await fetch(`/api/businesses/${businessId}/access-list`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rut: client.rut, name: client.name, email: client.email, phone: client.phone, status: "APPROVED" }),
+    })
+    if (r.ok) { loadAll(); setSearch(""); setClientSuggestions([]) }
+  }
 
   async function toggleMode() {
     const next = accessMode === "OPEN" ? "CLOSED" : "OPEN"
@@ -282,6 +306,35 @@ export default function AccessPage() {
             <Plus className="w-3 h-3" /> Agregar RUT
           </button>
         </div>
+
+        {/* Client suggestions */}
+        {clientSuggestions.length > 0 && (
+          <div style={{ borderBottom: BORDER }}>
+            <p className="px-4 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wide" style={{ color: "rgba(13,27,42,0.4)" }}>
+              Clientes encontrados — click para agregar a la lista
+            </p>
+            {clientSuggestions.map((c, i) => (
+              <div key={c.id} className="flex items-center justify-between px-4 py-2"
+                style={{ borderTop: i > 0 ? BORDER : undefined, background: "rgba(13,27,42,0.02)" }}>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: NAVY }}>{c.name}</p>
+                  <p className="text-xs" style={{ color: "rgba(13,27,42,0.45)" }}>
+                    {[c.rut, c.email, c.phone].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
+                {c.rut ? (
+                  <button onClick={() => addClientToList(c)}
+                    className="flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-bold"
+                    style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", color: "#15803d" }}>
+                    <Check className="w-3 h-3" /> Agregar
+                  </button>
+                ) : (
+                  <span className="text-[10px] px-2 py-1 rounded-lg" style={{ background: "rgba(251,191,36,0.1)", color: "#92400e" }}>Sin RUT</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Add form */}
         {showAdd && (
