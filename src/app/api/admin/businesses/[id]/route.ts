@@ -67,3 +67,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   return NextResponse.json({ success: true })
 }
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth()
+  if ((session?.user as { role?: string })?.role !== "SUPER_ADMIN") {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  }
+  const { id } = await params
+  await prisma.business.delete({ where: { id } })
+  return NextResponse.json({ success: true })
+}

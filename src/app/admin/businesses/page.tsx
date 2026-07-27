@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { Search, Building2, ExternalLink, Ban, CheckCircle, Plus, Gift } from "lucide-react"
+import { Search, Building2, ExternalLink, Ban, CheckCircle, Plus, Gift, Trash2 } from "lucide-react"
 import { Label } from "@/components/ui/label"
 
 type Business = {
@@ -447,6 +447,24 @@ export default function AdminBusinessesPage() {
             <div className="flex gap-2">
               <Button className="flex-1" onClick={updatePlan} disabled={saving}>{saving ? "Guardando..." : "Guardar cambios"}</Button>
               <Button variant="outline" onClick={() => setSelected(null)}>Cancelar</Button>
+            </div>
+
+            <div className="pt-2 border-t border-white/[0.07]">
+              <Button
+                variant="ghost"
+                className="w-full text-red-500 hover:text-red-400 hover:bg-red-500/10 gap-2"
+                onClick={async () => {
+                  if (!selected) return
+                  if (!confirm(`¿Eliminar "${selected.name}"? Esto borrará todos sus datos permanentemente.`)) return
+                  if (!confirm("Segunda confirmación: esta acción NO se puede deshacer. ¿Continuar?")) return
+                  await fetch(`/api/admin/businesses/${selected.id}`, { method: "DELETE" })
+                  toast.success("Negocio eliminado")
+                  setSelected(null)
+                  loadBusinesses()
+                }}
+              >
+                <Trash2 className="w-4 h-4" /> Eliminar negocio permanentemente
+              </Button>
             </div>
           </div>
         </DialogContent>
