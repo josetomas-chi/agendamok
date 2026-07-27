@@ -36,6 +36,20 @@ export default async function DashboardPage() {
   if (!business) redirect("/onboarding")
   if (business.businessType === "SPORTS_CLUB") redirect("/dashboard/club")
 
+  // Pre-fetch appointments server-side so the calendar renders with data immediately
+  const calFrom = new Date(); calFrom.setDate(1); calFrom.setHours(0, 0, 0, 0)
+  const calTo = new Date(calFrom.getFullYear(), calFrom.getMonth() + 2, 0, 23, 59, 59)
+  const initialAppointments = await prisma.appointment.findMany({
+    where: { businessId: business.id, deletedAt: null, startTime: { gte: calFrom, lte: calTo }, status: { notIn: ["CANCELLED", "NO_SHOW"] } },
+    include: {
+      service: { select: { name: true, color: true, price: true } },
+      staff: { select: { id: true, color: true, user: { select: { name: true, image: true } } } },
+      client: { select: { name: true, email: true, phone: true, segment: true } },
+      payment: { select: { status: true, method: true, amount: true } },
+    },
+    orderBy: { startTime: "asc" },
+  })
+
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
   const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999)
   const todayCount = await prisma.appointment.count({
@@ -72,6 +86,7 @@ export default async function DashboardPage() {
         staff={business.staff.map((s: typeof business.staff[number]) => ({ id: s.id, color: s.color, user: { name: s.user.name, image: s.user.image } }))}
         clients={business.clients}
         locations={business.locations}
+        initialAppointments={initialAppointments}
       />
     </div>
   )

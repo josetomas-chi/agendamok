@@ -121,13 +121,13 @@ function ClientCombobox({ clients, value, onChange }: {
   )
 }
 
-export function CalendarWithNew({ businessId, services, staff, clients, locations = [] }: Props) {
+export function CalendarWithNew({ businessId, services, staff, clients, locations = [], initialAppointments = [] }: Props & { initialAppointments?: Appointment[] }) {
   const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(DEFAULT_FORM)
   const [staffLocked, setStaffLocked] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [appts, setAppts] = useState<Appointment[]>([])
+  const [appts, setAppts] = useState<Appointment[]>(initialAppointments)
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [editForm, setEditForm] = useState({ date: "", time: "", staffId: "", notes: "" })
