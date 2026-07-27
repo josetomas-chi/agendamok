@@ -726,6 +726,30 @@ export async function sendTournamentMatchAdvance({
 }
 
 
+export async function sendAbsenceNotification({
+  clientName, clientEmail, businessName, groupName, classDate,
+}: {
+  clientName: string; clientEmail: string; businessName: string
+  groupName: string; classDate: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `Inasistencia registrada — ${groupName}`,
+    html: base(`
+      <h1>Inasistencia registrada</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, te informamos que no se registró tu asistencia a la clase de <strong style="color:#38bdf8">${groupName}</strong>.</p>
+      <div class="box">
+        <div class="row"><span class="label">Grupo</span><span class="value">${groupName}</span></div>
+        <div class="row"><span class="label">Fecha</span><span class="value">${classDate}</span></div>
+        <div class="row"><span class="label">Estado</span><span class="value" style="color:#f87171">Ausente</span></div>
+      </div>
+      <p class="subtitle" style="font-size:13px;margin-top:8px">Si crees que esto es un error, comunícate directamente con <strong style="color:#fff">${businessName}</strong>.</p>
+    `),
+  })
+}
+
 export async function sendPaymentFailedAlert({
   ownerName, ownerEmail, planLabel, settingsUrl,
 }: {
