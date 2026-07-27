@@ -466,18 +466,20 @@ export default function ClientsPage() {
                   <input value={editForm.rut} onChange={e => setEditForm(f => ({ ...f, rut: formatRut(e.target.value) }))} placeholder="12.345.678-9"
                     className="w-full h-8 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-sky-500/60" />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">Rol</label>
-                  <select value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}
-                    className="w-full h-8 rounded-lg border border-white/10 bg-[#1c1c1e] px-3 text-sm text-white focus:outline-none focus:border-sky-500/60" style={{ colorScheme: "dark" }}>
-                    <option value="" style={{ background: "#1c1c1e" }}>Sin especificar</option>
-                    <option value="CLIENTE" style={{ background: "#1c1c1e" }}>Cliente</option>
-                    <option value="ALUMNO" style={{ background: "#1c1c1e" }}>Alumno</option>
-                    <option value="APODERADO" style={{ background: "#1c1c1e" }}>Apoderado</option>
-                    <option value="PROFESOR" style={{ background: "#1c1c1e" }}>Profesor</option>
-                    <option value="EXALUMNO" style={{ background: "#1c1c1e" }}>Exalumno</option>
-                  </select>
-                </div>
+                {isSports && (
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">Rol</label>
+                    <select value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}
+                      className="w-full h-8 rounded-lg border border-white/10 bg-[#1c1c1e] px-3 text-sm text-white focus:outline-none focus:border-sky-500/60" style={{ colorScheme: "dark" }}>
+                      <option value="" style={{ background: "#1c1c1e" }}>Sin especificar</option>
+                      <option value="CLIENTE" style={{ background: "#1c1c1e" }}>Cliente</option>
+                      <option value="ALUMNO" style={{ background: "#1c1c1e" }}>Alumno</option>
+                      <option value="APODERADO" style={{ background: "#1c1c1e" }}>Apoderado</option>
+                      <option value="PROFESOR" style={{ background: "#1c1c1e" }}>Profesor</option>
+                      <option value="EXALUMNO" style={{ background: "#1c1c1e" }}>Exalumno</option>
+                    </select>
+                  </div>
+                )}
               </div>
               <div className="space-y-1">
                 <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">Género</label>
