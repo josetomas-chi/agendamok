@@ -405,23 +405,79 @@ function AttendanceTab({ businessId, groups }: { businessId: string; groups: Gro
 }
 
 // ─── Billing Tab ─────────────────────────────────────────────────────────────
-function BillingTab({ groups }: { groups: Group[] }) {
+function currentPeriod(billingCycle: string): string {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = now.getMonth() + 1
+  if (billingCycle === "MONTHLY") return `${y}-${String(m).padStart(2, "0")}`
+  if (billingCycle === "QUARTERLY") return `${y}-Q${Math.ceil(m / 3)}`
+  if (billingCycle === "SEMESTER") return `${y}-S${m <= 6 ? 1 : 2}`
+  return String(y)
+}
+
+function periodLabel(period: string): string {
+  if (/^\d{4}-\d{2}$/.test(period)) {
+    const [y, m] = period.split("-")
+    return new Date(Number(y), Number(m) - 1).toLocaleDateString("es-CL", { month: "long", year: "numeric" })
+  }
+  if (period.includes("-Q")) return `Trimestre ${period.split("-Q")[1]} ${period.split("-Q")[0]}`
+  if (period.includes("-S")) return `Semestre ${period.split("-S")[1]} ${period.split("-S")[0]}`
+  return period
+}
+
+function BillingTab({ businessId, groups }: { businessId: string; groups: Group[] }) {
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null)
-  const [paid, setPaid] = useState<Record<string, boolean>>({})
+  const [period, setPeriod] = useState("")
+  const [payments, setPayments] = useState<Record<string, string>>({}) // enrollmentId → PAID | PENDING
+  const [loadingPayments, setLoadingPayments] = useState(false)
+  const [saving, setSaving] = useState<string | null>(null)
 
   useEffect(() => {
-    if (selectedGroup) setPaid({})
+    if (selectedGroup) setPeriod(currentPeriod(selectedGroup.billingCycle))
   }, [selectedGroup])
 
+  useEffect(() => {
+    if (!selectedGroup || !period) return
+    setLoadingPayments(true)
+    fetch(`/api/businesses/${businessId}/school/groups/${selectedGroup.id}/payments?period=${period}`)
+      .then(r => r.json())
+      .then(d => {
+        const map: Record<string, string> = {}
+        for (const p of d.payments ?? []) map[p.enrollmentId] = p.status
+        setPayments(map)
+      })
+      .finally(() => setLoadingPayments(false))
+  }, [selectedGroup, period, businessId])
+
+  async function togglePayment(enrollment: Enrollment, newStatus: "PAID" | "PENDING") {
+    if (!selectedGroup) return
+    setSaving(enrollment.id)
+    const r = await fetch(`/api/businesses/${businessId}/school/groups/${selectedGroup.id}/payments`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        enrollmentId: enrollment.id,
+        period,
+        amount: selectedGroup.monthlyPrice,
+        status: newStatus,
+      }),
+    })
+    if (r.ok) setPayments(p => ({ ...p, [enrollment.id]: newStatus }))
+    setSaving(null)
+  }
+
   const activeEnrollments = selectedGroup?.enrollments.filter(e => e.status === "ACTIVE") ?? []
-  const total = activeEnrollments.length * (selectedGroup?.monthlyPrice ?? 0)
-  const totalPaid = activeEnrollments.filter(e => paid[e.clientId]).length * (selectedGroup?.monthlyPrice ?? 0)
+  const paidCount = activeEnrollments.filter(e => payments[e.id] === "PAID").length
+  const price = Number(selectedGroup?.monthlyPrice ?? 0)
+  const totalPaid = paidCount * price
+  const totalPending = (activeEnrollments.length - paidCount) * price
+
+  const CYCLE_LABEL: Record<string, string> = { MONTHLY: "mes", QUARTERLY: "trimestre", SEMESTER: "semestre", ANNUAL: "año" }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         {groups.filter(g => g.isActive).map(g => (
-          <button key={g.id} onClick={() => setSelectedGroup(g)}
+          <button key={g.id} onClick={() => { setSelectedGroup(g); setPayments({}) }}
             className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
             style={selectedGroup?.id === g.id
               ? { background: g.color, color: "#fff", border: `1px solid ${g.color}` }
@@ -433,6 +489,23 @@ function BillingTab({ groups }: { groups: Group[] }) {
 
       {selectedGroup && (
         <>
+          {/* Period selector */}
+          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl" style={{ background: "rgba(13,27,42,0.04)", border: BORDER }}>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "rgba(13,27,42,0.4)" }}>Período</p>
+              <p className="text-sm font-black capitalize" style={{ color: NAVY }}>{periodLabel(period)}</p>
+            </div>
+            <input type={selectedGroup.billingCycle === "MONTHLY" ? "month" : "number"}
+              value={selectedGroup.billingCycle === "MONTHLY" ? period : period.replace(/\D/g, "").slice(0, 4)}
+              onChange={e => {
+                if (selectedGroup.billingCycle === "MONTHLY") setPeriod(e.target.value)
+                else setPeriod(currentPeriod(selectedGroup.billingCycle).replace(/\d{4}/, e.target.value))
+              }}
+              min={2020} max={2099}
+              className="h-8 rounded-lg px-3 text-sm outline-none"
+              style={{ background: "#fff", border: BORDER, color: NAVY, width: 140 }} />
+          </div>
+
           {/* Summary */}
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-xl p-3" style={{ background: "rgba(13,27,42,0.04)", border: BORDER }}>
@@ -445,47 +518,53 @@ function BillingTab({ groups }: { groups: Group[] }) {
             </div>
             <div className="rounded-xl p-3" style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)" }}>
               <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: "rgba(13,27,42,0.45)" }}>Pendiente</p>
-              <p className="text-xl font-black" style={{ color: GOLD }}>{fmt(total - totalPaid)}</p>
+              <p className="text-xl font-black" style={{ color: GOLD }}>{fmt(totalPending)}</p>
             </div>
           </div>
 
           <div className="rounded-2xl overflow-hidden" style={{ border: BORDER }}>
             <div className="px-4 py-3" style={{ background: "rgba(13,27,42,0.03)", borderBottom: BORDER }}>
               <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "rgba(13,27,42,0.5)" }}>
-                {fmt(selectedGroup.monthlyPrice)}/{selectedGroup.billingCycle === "MONTHLY" ? "mes" : selectedGroup.billingCycle === "QUARTERLY" ? "trimestre" : selectedGroup.billingCycle === "SEMESTER" ? "semestre" : "año"} por alumno
+                {fmt(price)}/{CYCLE_LABEL[selectedGroup.billingCycle] ?? "mes"} por alumno · {paidCount}/{activeEnrollments.length} pagados
               </p>
             </div>
-            {activeEnrollments.length === 0 && (
+            {loadingPayments && <p className="p-6 text-sm text-center" style={{ color: "rgba(13,27,42,0.4)" }}>Cargando…</p>}
+            {!loadingPayments && activeEnrollments.length === 0 && (
               <p className="p-6 text-sm text-center" style={{ color: "rgba(13,27,42,0.4)" }}>Sin alumnos inscritos</p>
             )}
-            {activeEnrollments.map((e, i) => (
-              <div key={e.clientId} className="flex items-center gap-3 px-4 py-3"
-                style={{ borderTop: i > 0 ? BORDER : undefined, background: i % 2 === 0 ? "#fff" : "rgba(13,27,42,0.015)" }}>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate" style={{ color: NAVY }}>{e.client.name}</p>
-                  <p className="text-xs" style={{ color: "rgba(13,27,42,0.4)" }}>
-                    {e.client.phone ?? e.client.email ?? ""}
-                  </p>
+            {!loadingPayments && activeEnrollments.map((e, i) => {
+              const status = payments[e.id]
+              const isPaid = status === "PAID"
+              const isSavingThis = saving === e.id
+              return (
+                <div key={e.id} className="flex items-center gap-3 px-4 py-3"
+                  style={{ borderTop: i > 0 ? BORDER : undefined, background: i % 2 === 0 ? "#fff" : "rgba(13,27,42,0.015)" }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold truncate" style={{ color: NAVY }}>{e.client.name}</p>
+                    <p className="text-xs" style={{ color: "rgba(13,27,42,0.4)" }}>
+                      {e.client.phone ?? e.client.email ?? ""}
+                    </p>
+                  </div>
+                  <p className="text-sm font-bold mr-2" style={{ color: NAVY }}>{fmt(price)}</p>
+                  <div className="flex gap-1.5">
+                    <button onClick={() => togglePayment(e, "PAID")} disabled={isSavingThis}
+                      className="h-7 px-3 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                      style={isPaid
+                        ? { background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.4)", color: "#15803d" }
+                        : { background: "transparent", border: "1px solid rgba(13,27,42,0.1)", color: "rgba(13,27,42,0.3)" }}>
+                      ✓ Pagado
+                    </button>
+                    <button onClick={() => togglePayment(e, "PENDING")} disabled={isSavingThis}
+                      className="h-7 px-3 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                      style={status === "PENDING"
+                        ? { background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.4)", color: "#92400e" }
+                        : { background: "transparent", border: "1px solid rgba(13,27,42,0.1)", color: "rgba(13,27,42,0.3)" }}>
+                      Pendiente
+                    </button>
+                  </div>
                 </div>
-                <p className="text-sm font-bold mr-2" style={{ color: NAVY }}>{fmt(selectedGroup.monthlyPrice)}</p>
-                <div className="flex gap-1.5">
-                  <button onClick={() => setPaid(p => ({ ...p, [e.clientId]: true }))}
-                    className="h-7 px-3 rounded-lg text-xs font-bold transition-all"
-                    style={paid[e.clientId]
-                      ? { background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.4)", color: "#15803d" }
-                      : { background: "transparent", border: "1px solid rgba(13,27,42,0.1)", color: "rgba(13,27,42,0.3)" }}>
-                    ✓ Pagado
-                  </button>
-                  <button onClick={() => setPaid(p => ({ ...p, [e.clientId]: false }))}
-                    className="h-7 px-3 rounded-lg text-xs font-bold transition-all"
-                    style={paid[e.clientId] === false
-                      ? { background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.4)", color: "#92400e" }
-                      : { background: "transparent", border: "1px solid rgba(13,27,42,0.1)", color: "rgba(13,27,42,0.3)" }}>
-                    Pendiente
-                  </button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </>
       )}
@@ -869,7 +948,7 @@ export default function SchoolPage() {
           )}
 
           {tab === "asistencia" && <AttendanceTab businessId={businessId} groups={activeGroups} />}
-          {tab === "facturacion" && <BillingTab groups={activeGroups} />}
+          {tab === "facturacion" && <BillingTab businessId={businessId} groups={activeGroups} />}
         </>
       )}
     </div>

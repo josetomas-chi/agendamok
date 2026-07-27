@@ -288,6 +288,7 @@ model Business {
   schoolEnrollments         SchoolEnrollment[]
   schoolClasses             SchoolClass[]
   accessRequests            BusinessAccessRequest[]
+  schoolPayments            SchoolPayment[]
 
   @@index([slug])
   @@map("businesses")
@@ -1174,9 +1175,32 @@ model SchoolEnrollment {
   group    SchoolGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   client   Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
+  payments SchoolPayment[]
+
   @@unique([groupId, clientId])
   @@index([businessId])
   @@map("school_enrollments")
+}
+
+model SchoolPayment {
+  id           String    @id @default(cuid())
+  businessId   String
+  groupId      String
+  enrollmentId String
+  period       String    // "2026-07" | "2026-Q3" | "2026-S1" | "2026"
+  amount       Decimal   @db.Decimal(10, 2)
+  status       String    @default("PENDING") // PENDING | PAID
+  paidAt       DateTime?
+  notes        String?   @db.Text
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  business   Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  enrollment SchoolEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, period])
+  @@index([businessId, groupId, period])
+  @@map("school_payments")
 }
 
 model SchoolClass {
