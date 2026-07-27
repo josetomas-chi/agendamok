@@ -876,3 +876,57 @@ export async function sendRecurringBookingConfirmation({
     `),
   }).catch(() => {})
 }
+
+export async function sendHolidaySessionCancelled({
+  clientName, clientEmail, businessName, courtName, date, holidayName,
+}: {
+  clientName: string; clientEmail: string; businessName: string
+  courtName: string; date: string; holidayName: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `Sesión cancelada — ${businessName}`,
+    html: base(`
+      <h1>Sesión cancelada por feriado</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, te informamos que tu sesión en <strong style="color:#38bdf8">${businessName}</strong> ha sido cancelada por feriado.</p>
+      <div class="box">
+        <div class="row"><span class="label">Cancha</span><span class="value">${courtName}</span></div>
+        <div class="row"><span class="label">Fecha</span><span class="value">${date}</span></div>
+        <div class="row"><span class="label">Motivo</span><span class="value">${holidayName}</span></div>
+      </div>
+      <p class="subtitle" style="font-size:13px;margin-top:16px">El resto de tus sesiones recurrentes siguen en pie. Ante cualquier consulta, contacta directamente a ${businessName}.</p>
+    `),
+  }).catch(() => {})
+}
+
+export async function sendHolidaySurcharge({
+  clientName, clientEmail, businessName, courtName, date, holidayName,
+  originalPrice, newPrice, surchargeType, surchargeValue,
+}: {
+  clientName: string; clientEmail: string; businessName: string
+  courtName: string; date: string; holidayName: string
+  originalPrice: number; newPrice: number; surchargeType: string; surchargeValue: number
+}) {
+  if (!process.env.RESEND_API_KEY) return
+  const surchargeLabel = surchargeType === "PERCENT" ? `+${surchargeValue}%` : `+$${surchargeValue.toLocaleString("es-CL")}`
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `Recargo por feriado — ${businessName}`,
+    html: base(`
+      <h1>Recargo por feriado</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, te informamos que tu sesión del <strong style="color:#38bdf8">${date}</strong> en <strong style="color:#fff">${businessName}</strong> tiene un recargo por feriado.</p>
+      <div class="box">
+        <div class="row"><span class="label">Cancha</span><span class="value">${courtName}</span></div>
+        <div class="row"><span class="label">Fecha</span><span class="value">${date}</span></div>
+        <div class="row"><span class="label">Feriado</span><span class="value">${holidayName}</span></div>
+        <div class="row"><span class="label">Recargo</span><span class="value">${surchargeLabel}</span></div>
+        <div class="row"><span class="label">Precio original</span><span class="value">$${originalPrice.toLocaleString("es-CL")}</span></div>
+        <div class="row"><span class="label">Precio con recargo</span><span class="value" style="color:#38bdf8;font-weight:700">$${newPrice.toLocaleString("es-CL")}</span></div>
+      </div>
+      <p class="subtitle" style="font-size:13px;margin-top:16px">Ante cualquier consulta, contacta directamente a ${businessName}.</p>
+    `),
+  }).catch(() => {})
+}
