@@ -328,7 +328,7 @@ export default function ClientsPage() {
                         {c.name[0].toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-semibold truncate" style={{ color: "#fff" }}>{c.name}</p>
+                        <p className="font-semibold truncate" style={{ color: "#fff" }}>{c.name}{c.lastName ? ` ${c.lastName}` : ""}</p>
                         <div className="flex gap-3 text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>
                           {c.email && <span className="flex items-center gap-1 truncate"><Mail className="w-3 h-3" />{c.email}</span>}
                           {c.phone && <a href={waHref(c.phone)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:opacity-80 transition-opacity" style={{ color: "#25D366" }}><WaIcon />{formatPhone(c.phone)}</a>}
@@ -723,7 +723,7 @@ export default function ClientsPage() {
                         {c.name[0].toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium truncate">{c.name}</p>
+                        <p className="font-medium truncate">{c.name}{c.lastName ? ` ${c.lastName}` : ""}</p>
                         <div className="flex gap-2 text-xs text-muted-foreground">
                           {c.email && <span className="flex items-center gap-1 truncate"><Mail className="w-3 h-3" />{c.email}</span>}
                           {c.phone && <a href={waHref(c.phone)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:opacity-80 transition-opacity" style={{ color: "#25D366" }}><WaIcon />{formatPhone(c.phone)}</a>}
