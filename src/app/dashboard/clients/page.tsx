@@ -389,7 +389,7 @@ export default function ClientsPage() {
       {/* Client detail dialog */}
       {selected && (
         <Dialog open={!!selected} onOpenChange={() => { setSelected(null); setPointsInput("") }}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl flex-shrink-0">
@@ -784,7 +784,7 @@ export default function ClientsPage() {
 
       {selected && (
         <Dialog open={!!selected} onOpenChange={() => { setSelected(null); setPointsInput("") }}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl flex-shrink-0">
