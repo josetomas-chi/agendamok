@@ -59,7 +59,23 @@ function GroupForm({ initial, coaches, onSave, onCancel }: {
   const [notes, setNotes] = useState(initial?.notes ?? "")
   const [image, setImage] = useState(initial?.image ?? "")
   const [slug, setSlug] = useState(initial?.slug ?? "")
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [saving, setSaving] = useState(false)
+  const imageInputRef = React.useRef<HTMLInputElement>(null)
+
+  async function handleImageFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingImage(true)
+    const fd = new FormData()
+    fd.append("file", file)
+    const r = await fetch("/api/upload", { method: "POST", body: fd })
+    const d = await r.json()
+    if (r.ok) setImage(d.url)
+    else toast.error(d.error ?? "Error al subir imagen")
+    setUploadingImage(false)
+    e.target.value = ""
+  }
 
   const toggleDay = (d: number) => setDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d].sort())
 
@@ -179,11 +195,32 @@ function GroupForm({ initial, coaches, onSave, onCancel }: {
           </div>
         )}
         <div className="col-span-2">
-          <label style={labelStyle}>URL imagen (portada de la página pública)</label>
-          <div className="flex gap-2">
-            <input className={inputClass} style={inputStyle} value={image} onChange={e => setImage(e.target.value)} placeholder="https://…" />
-            {image && <img src={image} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" onError={e => (e.currentTarget.style.display = "none")} />}
-          </div>
+          <label style={labelStyle}>Imagen (portada de la página pública)</label>
+          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFile} />
+          {image ? (
+            <div className="relative rounded-xl overflow-hidden" style={{ height: 120 }}>
+              <img src={image} alt="" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 flex items-center justify-center gap-2" style={{ background: "rgba(0,0,0,0.4)" }}>
+                <button type="button" onClick={() => imageInputRef.current?.click()} disabled={uploadingImage}
+                  className="px-3 h-8 rounded-lg text-xs font-bold text-white"
+                  style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)" }}>
+                  {uploadingImage ? "Subiendo…" : "Cambiar"}
+                </button>
+                <button type="button" onClick={() => setImage("")}
+                  className="px-3 h-8 rounded-lg text-xs font-bold"
+                  style={{ background: "rgba(239,68,68,0.7)", color: "#fff" }}>
+                  Quitar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button type="button" onClick={() => imageInputRef.current?.click()} disabled={uploadingImage}
+              className="w-full h-24 rounded-xl flex flex-col items-center justify-center gap-1.5 text-sm font-bold disabled:opacity-50"
+              style={{ background: "#f5f4f0", border: `2px dashed rgba(13,27,42,0.15)`, color: "rgba(13,27,42,0.4)" }}>
+              <Image className="w-5 h-5" />
+              {uploadingImage ? "Subiendo…" : "Subir imagen"}
+            </button>
+          )}
         </div>
         <div className="col-span-2">
           <label style={labelStyle}>Slug URL (ej: tenis-infantil)</label>
