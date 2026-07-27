@@ -545,6 +545,7 @@ model Client {
   email         String?
   phone         String?
   gender        String?
+  role          String?
   notes         String?       @db.Text
   tags          String[]      @default([])
   segment       ClientSegment @default(NEW)

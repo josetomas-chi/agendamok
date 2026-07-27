@@ -37,7 +37,7 @@ function waHref(phone: string) {
 }
 
 type Client = {
-  id: string; name: string; lastName: string | null; email: string | null; phone: string | null; rut: string | null; gender: string | null
+  id: string; name: string; lastName: string | null; email: string | null; phone: string | null; rut: string | null; gender: string | null; role: string | null
   notes: string | null; tags: string[]; segment: string; loyaltyPoints: number; creditBalance: number
   allowTransfer: boolean
   createdAt: string
@@ -189,7 +189,7 @@ export default function ClientsPage() {
 
   const [pointsInput, setPointsInput] = useState("")
   const [savingClient, setSavingClient] = useState(false)
-  const [editForm, setEditForm] = useState({ name: "", lastName: "", rut: "", email: "", phone: "", gender: "", notes: "" })
+  const [editForm, setEditForm] = useState({ name: "", lastName: "", rut: "", email: "", phone: "", gender: "", role: "", notes: "" })
 
   async function patchClient(clientId: string, data: Record<string, unknown>) {
     setSavingClient(true)
@@ -215,6 +215,7 @@ export default function ClientsPage() {
         email: selected.email ?? "",
         phone: selected.phone ?? "",
         gender: selected.gender ?? "",
+        role: selected.role ?? "",
         notes: selected.notes ?? "",
       })
     }
@@ -466,15 +467,27 @@ export default function ClientsPage() {
                     className="w-full h-8 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-sky-500/60" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">Género</label>
-                  <select value={editForm.gender} onChange={e => setEditForm(f => ({ ...f, gender: e.target.value }))}
+                  <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">Rol</label>
+                  <select value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}
                     className="w-full h-8 rounded-lg border border-white/10 bg-[#1c1c1e] px-3 text-sm text-white focus:outline-none focus:border-sky-500/60" style={{ colorScheme: "dark" }}>
                     <option value="" style={{ background: "#1c1c1e" }}>Sin especificar</option>
-                    <option value="M" style={{ background: "#1c1c1e" }}>Masculino</option>
-                    <option value="F" style={{ background: "#1c1c1e" }}>Femenino</option>
-                    <option value="O" style={{ background: "#1c1c1e" }}>Otro</option>
+                    <option value="CLIENTE" style={{ background: "#1c1c1e" }}>Cliente</option>
+                    <option value="ALUMNO" style={{ background: "#1c1c1e" }}>Alumno</option>
+                    <option value="APODERADO" style={{ background: "#1c1c1e" }}>Apoderado</option>
+                    <option value="PROFESOR" style={{ background: "#1c1c1e" }}>Profesor</option>
+                    <option value="EXALUMNO" style={{ background: "#1c1c1e" }}>Exalumno</option>
                   </select>
                 </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">Género</label>
+                <select value={editForm.gender} onChange={e => setEditForm(f => ({ ...f, gender: e.target.value }))}
+                  className="w-full h-8 rounded-lg border border-white/10 bg-[#1c1c1e] px-3 text-sm text-white focus:outline-none focus:border-sky-500/60" style={{ colorScheme: "dark" }}>
+                  <option value="" style={{ background: "#1c1c1e" }}>Sin especificar</option>
+                  <option value="M" style={{ background: "#1c1c1e" }}>Masculino</option>
+                  <option value="F" style={{ background: "#1c1c1e" }}>Femenino</option>
+                  <option value="O" style={{ background: "#1c1c1e" }}>Otro</option>
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
@@ -494,7 +507,7 @@ export default function ClientsPage() {
                   className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-sm text-white resize-none focus:outline-none focus:border-sky-500/60" />
               </div>
               <button
-                onClick={() => patchClient(selected.id, { name: editForm.name, lastName: editForm.lastName || null, rut: editForm.rut || null, email: editForm.email || null, phone: editForm.phone || null, gender: editForm.gender || null, notes: editForm.notes || null })}
+                onClick={() => patchClient(selected.id, { name: editForm.name, lastName: editForm.lastName || null, rut: editForm.rut || null, email: editForm.email || null, phone: editForm.phone || null, gender: editForm.gender || null, role: editForm.role || null, notes: editForm.notes || null })}
                 disabled={savingClient || !editForm.name}
                 className="w-full h-8 rounded-lg bg-sky-500/20 text-sky-300 text-sm font-medium hover:bg-sky-500/30 disabled:opacity-40 transition-colors"
               >
