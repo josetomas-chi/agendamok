@@ -828,3 +828,22 @@ export async function sendAccessApproved({
     `),
   }).catch(() => {})
 }
+
+export async function sendPasswordReset({ clientName, clientEmail, resetUrl }: {
+  clientName: string; clientEmail: string; resetUrl: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: "Restablecer tu contraseña — AgendaMok",
+    html: base(`
+      <h1>Restablecer contraseña</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu administrador ha solicitado un restablecimiento de contraseña para tu cuenta.</p>
+      <p style="text-align:center;margin:28px 0">
+        <a href="${resetUrl}" class="btn">Crear nueva contraseña</a>
+      </p>
+      <p style="color:rgba(255,255,255,0.35);font-size:13px;text-align:center;margin:0">Este enlace expira en 1 hora. Si no esperabas este correo, puedes ignorarlo.</p>
+    `),
+  }).catch(() => {})
+}

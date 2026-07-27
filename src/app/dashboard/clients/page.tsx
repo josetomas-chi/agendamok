@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { Plus, Search, Mail, Phone, Calendar, Tag, Upload, CheckCircle, AlertCircle, Stethoscope, Star, Gift } from "lucide-react"
+import { Plus, Search, Mail, Phone, Calendar, Tag, Upload, CheckCircle, AlertCircle, Stethoscope, Star, Gift, Trash2, KeyRound } from "lucide-react"
 import Link from "next/link"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -802,13 +802,168 @@ export default function ClientsPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <DialogTitle>{selected.name}{selected.lastName ? ` ${selected.lastName}` : ""}</DialogTitle>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SEGMENT_LABELS[selected.segment]?.color}`}>
+                      {SEGMENT_LABELS[selected.segment]?.label}
+                    </span>
+                    <select
+                      value={selected.segment}
+                      onChange={e => patchClient(selected.id, { segment: e.target.value })}
+                      disabled={savingClient}
+                      className="text-xs h-6 rounded-full border border-white/15 bg-white/[0.05] px-2 text-white/60 focus:outline-none focus:border-sky-500/60 appearance-none cursor-pointer"
+                      style={{ colorScheme: "dark" }}
+                    >
+                      {Object.entries(SEGMENT_LABELS).map(([val, { label }]) => (
+                        <option key={val} value={val} style={{ backgroundColor: "#28282c" }}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             </DialogHeader>
-            <div className="space-y-2 text-sm">
-              {selected.email && <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-4 h-4" />{selected.email}</div>}
-              {selected.phone && <a href={waHref(selected.phone)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity" style={{ color: "#25D366" }}><WaIcon />{formatPhone(selected.phone)}</a>}
-              <div className="flex items-center gap-2 text-muted-foreground"><Calendar className="w-4 h-4" />Cliente desde {format(new Date(selected.createdAt), "MMMM yyyy", { locale: es })}</div>
+
+            <div className="grid grid-cols-3 gap-3 py-2">
+              <div className="bg-muted/50 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold">{selected._count.appointments}</p>
+                <p className="text-xs text-muted-foreground mt-1">Turnos</p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold">${totalSpend(selected).toLocaleString("es-CL")}</p>
+                <p className="text-xs text-muted-foreground mt-1">Gasto total</p>
+              </div>
+              <div className="bg-yellow-400/5 border border-yellow-400/20 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-yellow-300">{selected.loyaltyPoints}</p>
+                <p className="text-xs text-yellow-400/60 mt-1">Puntos</p>
+              </div>
+            </div>
+
+            {/* Editable fields */}
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">Nombre *</label>
+                  <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                    className="w-full h-8 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-sm text-white focus:outline-none focus:border-sky-500/60" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">Apellido</label>
+                  <input value={editForm.lastName} onChange={e => setEditForm(f => ({ ...f, lastName: e.target.value }))}
+                    className="w-full h-8 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-sm text-white focus:outline-none focus:border-sky-500/60" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">RUT</label>
+                  <input value={editForm.rut} onChange={e => setEditForm(f => ({ ...f, rut: formatRut(e.target.value) }))} placeholder="12.345.678-9"
+                    className="w-full h-8 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-sky-500/60" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">Género</label>
+                  <select value={editForm.gender} onChange={e => setEditForm(f => ({ ...f, gender: e.target.value }))}
+                    className="w-full h-8 rounded-lg border border-white/10 bg-[#1c1c1e] px-3 text-sm text-white focus:outline-none focus:border-sky-500/60" style={{ colorScheme: "dark" }}>
+                    <option value="" style={{ background: "#1c1c1e" }}>Sin especificar</option>
+                    <option value="M" style={{ background: "#1c1c1e" }}>Masculino</option>
+                    <option value="F" style={{ background: "#1c1c1e" }}>Femenino</option>
+                    <option value="O" style={{ background: "#1c1c1e" }}>Otro</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">Email</label>
+                  <input type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))}
+                    className="w-full h-8 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-sm text-white focus:outline-none focus:border-sky-500/60" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">Teléfono</label>
+                  <input value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
+                    className="w-full h-8 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-sm text-white focus:outline-none focus:border-sky-500/60" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">Notas</label>
+                <textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} rows={2}
+                  className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-sm text-white resize-none focus:outline-none focus:border-sky-500/60" />
+              </div>
+              <button
+                onClick={() => patchClient(selected.id, { name: editForm.name, lastName: editForm.lastName || null, rut: editForm.rut || null, email: editForm.email || null, phone: editForm.phone || null, gender: editForm.gender || null, notes: editForm.notes || null })}
+                disabled={savingClient || !editForm.name}
+                className="w-full h-8 rounded-lg bg-sky-500/20 text-sky-300 text-sm font-medium hover:bg-sky-500/30 disabled:opacity-40 transition-colors"
+              >
+                {savingClient ? "Guardando…" : "Guardar cambios"}
+              </button>
+            </div>
+
+            {/* Points adjustment */}
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
+              <p className="text-xs font-medium text-white/50 mb-2 flex items-center gap-1.5">
+                <Gift className="w-3.5 h-3.5 text-yellow-400/60" /> Ajustar puntos manualmente
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={pointsInput}
+                  onFocus={e => e.target.select()}
+                  onChange={e => setPointsInput(e.target.value)}
+                  placeholder={String(selected.loyaltyPoints)}
+                  className="flex-1 h-8 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+                <button
+                  onClick={() => { if (pointsInput === "") return; patchClient(selected.id, { loyaltyPoints: Number(pointsInput) }); setPointsInput("") }}
+                  disabled={savingClient || pointsInput === ""}
+                  className="px-3 h-8 rounded-lg bg-sky-500/20 text-sky-300 text-xs font-medium hover:bg-sky-500/30 disabled:opacity-40 transition-colors"
+                >Guardar</button>
+              </div>
+            </div>
+
+            {/* Transfer toggle */}
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-white/70 flex items-center gap-1.5"><span>🏦</span> Pago por transferencia</p>
+                <p className="text-[11px] text-white/30 mt-0.5">El cliente puede adjuntar comprobante al reservar</p>
+              </div>
+              <button
+                onClick={() => patchClient(selected.id, { allowTransfer: !selected.allowTransfer })}
+                disabled={savingClient}
+                className={`relative rounded-full transition-colors flex-shrink-0 overflow-hidden ${selected.allowTransfer ? "bg-sky-500" : "bg-white/10"}`}
+                style={{ height: 22, width: 40, minWidth: 40 }}
+              >
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${selected.allowTransfer ? "translate-x-5" : "translate-x-0.5"}`} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs text-white/30">
+              <Calendar className="w-3.5 h-3.5" />Cliente desde {format(new Date(selected.createdAt), "MMMM yyyy", { locale: es })}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-1 border-t border-white/[0.06]">
+              {selected.email && (
+                <button
+                  onClick={async () => {
+                    const r = await fetch(`/api/businesses/${businessId}/clients/${selected.id}/reset-password`, { method: "POST" })
+                    if (r.ok) toast.success("Email de restablecimiento enviado")
+                    else { const d = await r.json().catch(() => ({})); toast.error(d.error || "Error al enviar") }
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg bg-amber-500/10 text-amber-300 text-xs font-medium hover:bg-amber-500/20 border border-amber-400/20 transition-colors"
+                >
+                  <KeyRound className="w-3.5 h-3.5" /> Resetear contraseña
+                </button>
+              )}
+              <button
+                onClick={async () => {
+                  if (!confirm(`¿Eliminar a ${selected.name}? Esta acción no se puede deshacer.`)) return
+                  const r = await fetch(`/api/businesses/${businessId}/clients/${selected.id}`, { method: "DELETE" })
+                  if (r.ok) {
+                    toast.success("Cliente eliminado")
+                    setClients(prev => prev.filter(c => c.id !== selected.id))
+                    setSelected(null)
+                  } else toast.error("Error al eliminar")
+                }}
+                className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg bg-red-500/10 text-red-400 text-xs font-medium hover:bg-red-500/20 border border-red-400/20 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Eliminar
+              </button>
             </div>
           </DialogContent>
         </Dialog>

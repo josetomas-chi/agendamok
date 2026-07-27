@@ -139,6 +139,17 @@ model User {
   @@map("users")
 }
 
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique @default(cuid())
+  email     String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@map("password_reset_tokens")
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String
