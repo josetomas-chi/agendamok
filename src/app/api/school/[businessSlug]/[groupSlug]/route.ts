@@ -37,7 +37,7 @@ export async function POST(req: Request, { params }: Params) {
 
   const business = await prisma.business.findFirst({
     where: { slug: businessSlug, isActive: true, deletedAt: null },
-    select: { id: true },
+    select: { id: true, accessMode: true },
   })
   if (!business) return NextResponse.json({ error: "Negocio no encontrado" }, { status: 404 })
 
@@ -88,6 +88,24 @@ export async function POST(req: Request, { params }: Params) {
       notes: notes || null,
     },
   })
+
+  // Si el negocio tiene acceso cerrado, agregar RUT a la whitelist como PENDING
+  // (el admin lo aprueba junto con la inscripción)
+  if (business.accessMode === "CLOSED" && rut) {
+    await prisma.businessAccessRequest.upsert({
+      where: { businessId_rut: { businessId: business.id, rut } },
+      update: {}, // no sobreescribir si ya existe (puede estar APPROVED)
+      create: {
+        businessId: business.id,
+        rut,
+        name,
+        email: email || null,
+        phone: phone || null,
+        role: "OTRO",
+        status: "PENDING",
+      },
+    })
+  }
 
   return NextResponse.json({ status: enrollment.status }, { status: 201 })
 }
