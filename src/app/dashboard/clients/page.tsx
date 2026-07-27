@@ -35,6 +35,14 @@ function waHref(phone: string) {
   const digits = phone.replace(/\D/g, "")
   return `https://wa.me/${digits.startsWith("56") ? digits : `56${digits}`}`
 }
+function formatPhone(phone: string) {
+  const digits = phone.replace(/\D/g, "")
+  const local = digits.startsWith("56") ? digits.slice(2) : digits
+  if (local.length === 9 && local.startsWith("9")) {
+    return `+56 ${local[0]} ${local.slice(1, 5)} ${local.slice(5)}`
+  }
+  return `+56 ${local}`
+}
 
 type Client = {
   id: string; name: string; lastName: string | null; email: string | null; phone: string | null; rut: string | null; gender: string | null; role: string | null
@@ -323,7 +331,7 @@ export default function ClientsPage() {
                         <p className="font-semibold truncate" style={{ color: "#fff" }}>{c.name}</p>
                         <div className="flex gap-3 text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>
                           {c.email && <span className="flex items-center gap-1 truncate"><Mail className="w-3 h-3" />{c.email}</span>}
-                          {c.phone && <a href={waHref(c.phone)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:opacity-80 transition-opacity" style={{ color: "#25D366" }}><WaIcon />{c.phone}</a>}
+                          {c.phone && <a href={waHref(c.phone)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:opacity-80 transition-opacity" style={{ color: "#25D366" }}><WaIcon />{formatPhone(c.phone)}</a>}
                         </div>
                       </div>
                     </div>
@@ -718,7 +726,7 @@ export default function ClientsPage() {
                         <p className="font-medium truncate">{c.name}</p>
                         <div className="flex gap-2 text-xs text-muted-foreground">
                           {c.email && <span className="flex items-center gap-1 truncate"><Mail className="w-3 h-3" />{c.email}</span>}
-                          {c.phone && <a href={waHref(c.phone)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:opacity-80 transition-opacity" style={{ color: "#25D366" }}><WaIcon />{c.phone}</a>}
+                          {c.phone && <a href={waHref(c.phone)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:opacity-80 transition-opacity" style={{ color: "#25D366" }}><WaIcon />{formatPhone(c.phone)}</a>}
                         </div>
                       </div>
                     </div>
@@ -799,7 +807,7 @@ export default function ClientsPage() {
             </DialogHeader>
             <div className="space-y-2 text-sm">
               {selected.email && <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-4 h-4" />{selected.email}</div>}
-              {selected.phone && <a href={waHref(selected.phone)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity" style={{ color: "#25D366" }}><WaIcon />{selected.phone}</a>}
+              {selected.phone && <a href={waHref(selected.phone)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity" style={{ color: "#25D366" }}><WaIcon />{formatPhone(selected.phone)}</a>}
               <div className="flex items-center gap-2 text-muted-foreground"><Calendar className="w-4 h-4" />Cliente desde {format(new Date(selected.createdAt), "MMMM yyyy", { locale: es })}</div>
             </div>
           </DialogContent>
