@@ -48,6 +48,7 @@ export default function AccessPage() {
 
   // Client search suggestions
   const [clientSuggestions, setClientSuggestions] = useState<{ id: string; name: string; rut: string | null; email: string | null; phone: string | null }[]>([])
+  const [pendingRut, setPendingRut] = useState<{ clientId: string; rut: string } | null>(null)
 
   // CSV import
   const fileRef = useRef<HTMLInputElement>(null)
@@ -81,13 +82,21 @@ export default function AccessPage() {
     return () => clearTimeout(t)
   }, [search, businessId, entries])
 
-  async function addClientToList(client: { name: string; rut: string | null; email: string | null; phone: string | null }) {
-    if (!client.rut) return
+  async function addClientToList(client: { id: string; name: string; rut: string | null; email: string | null; phone: string | null }, rutOverride?: string) {
+    const rut = rutOverride ?? client.rut
+    if (!rut) return
+    // Save RUT to client record if it didn't have one
+    if (!client.rut && rutOverride) {
+      await fetch(`/api/businesses/${businessId}/clients/${client.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rut: rutOverride }),
+      })
+    }
     const r = await fetch(`/api/businesses/${businessId}/access-list`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rut: client.rut, name: client.name, email: client.email, phone: client.phone, status: "APPROVED" }),
+      body: JSON.stringify({ rut, name: client.name, email: client.email, phone: client.phone, status: "APPROVED" }),
     })
-    if (r.ok) { loadAll(); setSearch(""); setClientSuggestions([]) }
+    if (r.ok) { loadAll(); setSearch(""); setClientSuggestions([]); setPendingRut(null) }
   }
 
   async function toggleMode() {
@@ -328,8 +337,32 @@ export default function AccessPage() {
                     style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", color: "#15803d" }}>
                     <Check className="w-3 h-3" /> Agregar
                   </button>
+                ) : pendingRut?.clientId === c.id ? (
+                  <div className="flex items-center gap-1">
+                    <input
+                      autoFocus
+                      value={pendingRut.rut}
+                      onChange={e => setPendingRut({ clientId: c.id, rut: e.target.value })}
+                      placeholder="12.345.678-9"
+                      className="h-7 w-32 rounded-lg px-2 text-xs outline-none"
+                      style={{ background: "#f5f4f0", border: BORDER, color: NAVY }}
+                      onKeyDown={e => {
+                        if (e.key === "Enter" && pendingRut.rut.trim()) addClientToList(c, pendingRut.rut.trim())
+                        if (e.key === "Escape") setPendingRut(null)
+                      }}
+                    />
+                    <button onClick={() => { if (pendingRut.rut.trim()) addClientToList(c, pendingRut.rut.trim()) }}
+                      className="flex items-center gap-1 h-7 px-2 rounded-lg text-xs font-bold"
+                      style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.35)", color: "#15803d" }}>
+                      <Check className="w-3 h-3" />
+                    </button>
+                  </div>
                 ) : (
-                  <span className="text-[10px] px-2 py-1 rounded-lg" style={{ background: "rgba(251,191,36,0.1)", color: "#92400e" }}>Sin RUT</span>
+                  <button onClick={() => setPendingRut({ clientId: c.id, rut: "" })}
+                    className="text-[10px] px-2 py-1 rounded-lg font-bold"
+                    style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", color: "#92400e" }}>
+                    + Agregar RUT
+                  </button>
                 )}
               </div>
             ))}
