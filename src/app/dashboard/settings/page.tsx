@@ -940,7 +940,7 @@ function SettingsContent() {
           <Card>
             <CardHeader><CardTitle>Plan actual</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className={`flex items-center justify-between p-4 border rounded-xl ${info.color}`}>
+              <div className={`flex items-center justify-between p-4 border rounded-xl ${subscription?.isCourtesy ? "bg-purple-500/10 border-purple-400/30 text-foreground" : info.color}`}>
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="font-bold text-lg">Plan {info.label}</p>
@@ -1012,7 +1012,7 @@ function SettingsContent() {
               ? [["SPORTS", PLAN_INFO.SPORTS]] as [string, typeof PLAN_INFO[string]][]
               : (Object.entries(PLAN_INFO).filter(([k]) => k !== "SPORTS") as [string, typeof PLAN_INFO[string]][])
             ).map(([key, plan]) => {
-              const isCurrent = (key === currentPlan && subscription?.status === "ACTIVE") || subscription?.isCourtesy
+              const isCurrent = (key === currentPlan && subscription?.status === "ACTIVE") || (subscription?.isCourtesy && key === "PRO")
               return (
                 <Card key={key} className={`relative border overflow-visible ${isCurrent ? "border-sky-400/50 bg-sky-500/5" : ""}`}>
                   {isCurrent && (
