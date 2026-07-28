@@ -43,7 +43,6 @@ export default function BookingClient({ slug }: { slug: string }) {
   const [notFound, setNotFound] = useState(false)
   const [autoClient, setAutoClient] = useState<{ name: string; email: string; phone: string; rut?: string } | null>(null)
   const [autoChecked, setAutoChecked] = useState(false)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   useEffect(() => {
     fetch(`/api/book/${slug}`)
@@ -53,29 +52,43 @@ export default function BookingClient({ slug }: { slug: string }) {
       .finally(() => setLoading(false))
   }, [slug])
 
-  // Auto-fill / auto-skip gate for logged-in users (no SessionProvider needed)
+  // Auto-fill for logged-in users; for CLOSED businesses use saved RUT from sessionStorage
   useEffect(() => {
     if (!business) return
+
+    if (business.accessMode === "CLOSED") {
+      // For CLOSED businesses: only auto-skip if returning from login with a saved RUT
+      const saved = sessionStorage.getItem(COURT_SESSION_KEY(slug))
+      if (saved) {
+        try {
+          const s = JSON.parse(saved)
+          if (s.rut) {
+            fetch(`/api/businesses/${business.id}/access-list/check?rut=${encodeURIComponent(s.rut)}`)
+              .then(r => r.json())
+              .then(d => {
+                if (d.allowed) {
+                  setAutoClient({ name: s.form?.name || d.name || "", email: s.form?.email || d.email || "", phone: s.form?.phone || d.phone || "", rut: s.rut })
+                }
+              })
+              .catch(() => {})
+              .finally(() => setAutoChecked(true))
+            return
+          }
+        } catch {}
+      }
+      setAutoChecked(true)
+      return
+    }
+
+    // Open businesses: pre-fill from session email
     fetch("/api/auth/session")
       .then(r => r.ok ? r.json() : null)
       .then(async session => {
         const email = session?.user?.email
         if (!email) { setAutoChecked(true); return }
-
-        if (business.accessMode === "CLOSED") {
-          setIsLoggedIn(true)
-          // For closed businesses, check if user has APPROVED access by email
-          const d = await fetch(`/api/businesses/${business.id}/access-list/check?email=${encodeURIComponent(email)}`).then(r => r.json())
-          if (d.allowed) {
-            setAutoClient({ name: d.name || session.user.name || "", email: d.email || email, phone: d.phone || "", rut: d.rut ?? undefined })
-          }
-          setAutoChecked(true)
-        } else {
-          // Open businesses: pre-fill from any client record
-          const d = await fetch(`/api/book/${slug}/check-email?email=${encodeURIComponent(email)}`).then(r => r.json())
-          setAutoClient({ name: d.name || session.user.name || "", email, phone: d.phone || "" })
-          setAutoChecked(true)
-        }
+        const d = await fetch(`/api/book/${slug}/check-email?email=${encodeURIComponent(email)}`).then(r => r.json())
+        setAutoClient({ name: d.name || session.user.name || "", email, phone: d.phone || "" })
+        setAutoChecked(true)
       })
       .catch(() => setAutoChecked(true))
   }, [business, slug])
@@ -102,30 +115,6 @@ export default function BookingClient({ slug }: { slug: string }) {
     if (autoClient) {
       if (business.businessType === "SPORTS_CLUB") return <CourtBookingFlow business={business} slug={slug} initialClient={autoClient} />
       return <ServiceBookingFlow business={business} slug={slug} initialClient={autoClient} />
-    }
-    if (isLoggedIn) {
-      // Logged in but no approved access — show clear message
-      return (
-        <div className="min-h-screen flex items-center justify-center px-6" style={{ background: "#0f0f11" }}>
-          <div className="text-center max-w-sm space-y-4">
-            {business.logo && (
-              <img src={business.logo} alt={business.name} className="w-16 h-16 rounded-2xl object-cover mx-auto mb-2" />
-            )}
-            <h1 className="text-white font-bold text-lg">{business.name}</h1>
-            <div className="rounded-2xl p-5 space-y-2" style={{ background: "#1c1c20", border: "1px solid rgba(255,255,255,0.07)" }}>
-              <p className="text-sm font-semibold" style={{ color: "#f59e0b" }}>Acceso no autorizado</p>
-              <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
-                Tu cuenta no tiene autorización para reservar en este negocio. Contacta al administrador para solicitar acceso.
-              </p>
-            </div>
-            <button
-              onClick={() => window.location.reload()}
-              className="text-sm underline" style={{ color: "rgba(255,255,255,0.3)" }}>
-              Intentar con otro RUT
-            </button>
-          </div>
-        </div>
-      )
     }
     return <RutGate business={business} slug={slug} />
   }
