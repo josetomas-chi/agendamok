@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { after } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { auth } from "@/lib/auth"
 import { addMinutes, format } from "date-fns"
 import { es } from "date-fns/locale"
 import { sendBookingConfirmation, sendNewBookingAlert } from "@/lib/email"
@@ -25,11 +26,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   if (!service) return NextResponse.json({ error: "Servicio no encontrado" }, { status: 404 })
 
   // Find or create client, actualizando nombre si ya existe
+  const session = await auth()
+  const loggedUserId = session?.user?.id ?? null
+
   let client = await prisma.client.findFirst({ where: { businessId: business.id, email: clientEmail } })
   if (client) {
-    client = await prisma.client.update({ where: { id: client.id }, data: { name: clientName, phone: clientPhone || null } })
+    client = await prisma.client.update({
+      where: { id: client.id },
+      data: { name: clientName, phone: clientPhone || null, ...(loggedUserId && !client.userId ? { userId: loggedUserId } : {}) },
+    })
   } else {
-    client = await prisma.client.create({ data: { businessId: business.id, name: clientName, email: clientEmail, phone: clientPhone || null } })
+    client = await prisma.client.create({
+      data: { businessId: business.id, name: clientName, email: clientEmail, phone: clientPhone || null, ...(loggedUserId ? { userId: loggedUserId } : {}) },
+    })
   }
 
   const start = new Date(startTime)

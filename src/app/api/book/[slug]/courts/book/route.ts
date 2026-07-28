@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { auth } from "@/lib/auth"
 import { addMinutes, parseISO } from "date-fns"
 import { sendCourtBookingConfirmation } from "@/lib/email"
 
@@ -33,13 +34,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   if (conflict) return NextResponse.json({ error: "Horario no disponible" }, { status: 409 })
 
   // Find or create client
+  const session = await auth()
+  const loggedUser = session?.user?.id
+    ? await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true } })
+    : null
+
   let client = await prisma.client.findFirst({
     where: { businessId: business.id, email: clientEmail },
   })
   if (!client) {
     client = await prisma.client.create({
-      data: { businessId: business.id, name: clientName, email: clientEmail, phone: clientPhone || null },
+      data: { businessId: business.id, name: clientName, email: clientEmail, phone: clientPhone || null, ...(loggedUser ? { userId: loggedUser.id } : {}) },
     })
+  } else if (loggedUser && !client.userId) {
+    client = await prisma.client.update({ where: { id: client.id }, data: { userId: loggedUser.id } })
   }
 
   const court = await prisma.court.findUnique({
