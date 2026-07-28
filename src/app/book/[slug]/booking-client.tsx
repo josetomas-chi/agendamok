@@ -318,6 +318,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   const [courtPayMethod, setCourtPayMethod] = useState<"local" | "online">("local")
   const [step, setStep] = useState<CourtStep>("home")
   const [form, setForm] = useState({ name: initialClient?.name ?? "", email: initialClient?.email ?? "", phone: initialClient?.phone ?? "", notes: "" })
+  const [rut, setRut] = useState("")
   const [createAccount, setCreateAccount] = useState(false)
   const [password, setPassword] = useState("")
   const [emailExists, setEmailExists] = useState(!!initialClient?.email)
@@ -679,6 +680,24 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
             {/* Fields */}
             <div className="space-y-3">
               <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: SPORTS_ACCENT }}>Tus datos</p>
+              {/* RUT — optional, pre-fills data on blur */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.4)" }}>RUT (opcional)</label>
+                <input value={rut} onChange={e => setRut(formatRut(e.target.value))}
+                  onBlur={async e => {
+                    const v = e.target.value.trim()
+                    if (!v) return
+                    const r = await fetch(`/api/book/${slug}/lookup-rut?rut=${encodeURIComponent(v)}`)
+                    const d = await r.json()
+                    if (d.found) {
+                      setForm(f => ({ ...f, name: d.name || f.name, email: d.email || f.email, phone: d.phone || f.phone }))
+                      if (d.email) setEmailExists(true)
+                    }
+                  }}
+                  placeholder="12.345.678-9"
+                  className="w-full rounded-xl px-4 py-3 text-sm outline-none placeholder:opacity-25 transition-all"
+                  style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}`, color: "#f0f6ff" }} />
+              </div>
               {[
                 { key: "name", label: "Nombre completo", type: "text", placeholder: "María González" },
                 { key: "phone", label: "Teléfono (opcional)", type: "tel", placeholder: "+56 9 1234 5678" },
@@ -909,6 +928,7 @@ function ServiceBookingFlow({ business, slug, initialClient }: { business: Busin
   const catBarRef = useRef<HTMLDivElement>(null)
 
   const [form, setForm] = useState({ name: initialClient?.name ?? "", email: initialClient?.email ?? "", phone: initialClient?.phone ?? "", notes: "" })
+  const [rut, setRut] = useState("")
   const [payMethod, setPayMethod] = useState<PayMethod>("local")
   const [submitting, setSubmitting] = useState(false)
   const [emailExists, setEmailExists] = useState(!!initialClient?.email)
@@ -1339,6 +1359,24 @@ function ServiceBookingFlow({ business, slug, initialClient }: { business: Busin
             {/* Fields */}
             <div className="space-y-3">
               <label className="text-xs font-bold uppercase tracking-wider" style={{ color: MUTED }}>Tus datos</label>
+              {/* RUT — optional, pre-fills data on blur */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium" style={{ color: MUTED }}>RUT (opcional)</label>
+                <input value={rut} onChange={e => setRut(formatRut(e.target.value))}
+                  onBlur={async e => {
+                    const v = e.target.value.trim()
+                    if (!v) return
+                    const r = await fetch(`/api/book/${slug}/lookup-rut?rut=${encodeURIComponent(v)}`)
+                    const d = await r.json()
+                    if (d.found) {
+                      setForm(f => ({ ...f, name: d.name || f.name, email: d.email || f.email, phone: d.phone || f.phone }))
+                      if (d.email) setEmailExists(true)
+                    }
+                  }}
+                  placeholder="12.345.678-9"
+                  className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all"
+                  style={{ background: CARD, border: `1px solid ${BORDER}`, color: TEXT }} />
+              </div>
               {[
                 { key: "name", label: "Nombre completo", type: "text", placeholder: "María González" },
                 { key: "phone", label: "Teléfono (opcional)", type: "tel", placeholder: "+56 9 1234 5678" },
