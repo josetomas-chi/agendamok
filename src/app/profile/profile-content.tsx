@@ -82,14 +82,15 @@ const BD       = "#e2e8f0"                    // light border
 const LTXT     = "#f0f6ff"                    // light text on dark
 const LMUTED   = "rgba(240,246,255,0.5)"
 
-type Tab = "upcoming" | "matches" | "history" | "clubs" | "loyalty"
+type Tab = "upcoming" | "competitions" | "matches" | "history" | "clubs" | "loyalty"
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }> }[] = [
-  { id: "upcoming", label: "Reservas",     icon: Calendar  },
-  { id: "matches",  label: "Partidos",     icon: Trophy    },
-  { id: "history",  label: "Historial",    icon: Clock     },
-  { id: "clubs",    label: "Mis clubs",    icon: Building2 },
-  { id: "loyalty",  label: "Fidelización", icon: Star      },
+  { id: "upcoming",     label: "Reservas",       icon: Calendar  },
+  { id: "competitions", label: "Competiciones",  icon: Medal     },
+  { id: "matches",      label: "Partidos",       icon: Trophy    },
+  { id: "history",      label: "Historial",      icon: Clock     },
+  { id: "clubs",        label: "Mis clubs",      icon: Building2 },
+  { id: "loyalty",      label: "Fidelización",   icon: Star      },
 ]
 
 function statusLabel(s: string) {
@@ -550,6 +551,158 @@ export default function ProfileContent() {
                       )
                     })}
                   </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* ── TAB: Competiciones ─────────────────────────────────────────── */}
+          {tab === "competitions" && (
+            <section>
+              <SectionHeading>Mis competiciones</SectionHeading>
+              {tournaments.length === 0 ? (
+                <div style={{
+                  background: WHITE, border: `1px solid ${BD}`, borderRadius: 12,
+                  padding: "40px 24px", textAlign: "center",
+                }}>
+                  <Medal style={{ width: 32, height: 32, color: BD, margin: "0 auto 10px" }} />
+                  <p style={{ color: MUTED, fontSize: 13 }}>Sin competiciones registradas</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {tournaments.map(t => {
+                    const statusMap: Record<string, { label: string; bg: string; color: string }> = {
+                      ACTIVE:    { label: "En curso",   bg: "rgba(56,189,248,0.1)",  color: ACCENT },
+                      UPCOMING:  { label: "Por iniciar",bg: "rgba(56,189,248,0.08)", color: ACCENT },
+                      FINISHED:  { label: "Finalizado", bg: "rgba(100,116,139,0.1)", color: MUTED  },
+                      CANCELLED: { label: "Cancelado",  bg: "rgba(220,38,38,0.1)",   color: "#dc2626" },
+                    }
+                    const st = statusMap[t.tournament.status] ?? statusMap.UPCOMING
+                    const sport = t.tournament.sport ?? ""
+                    const sportEmoji: Record<string, string> = {
+                      PADEL: "🎾", TENNIS: "🎾", SOCCER: "⚽", BASKETBALL: "🏀",
+                      VOLLEYBALL: "🏐", BASEBALL: "⚾", FUTSAL: "⚽",
+                    }
+                    const emoji = sportEmoji[sport.toUpperCase()] ?? "🏆"
+
+                    // Match stats for this tournament
+                    const myMatches = recentMatches.filter(m => m.tournamentName === t.tournament.name)
+                    const myWins   = myMatches.filter(m => m.result === "W").length
+                    const myLosses = myMatches.filter(m => m.result === "L").length
+
+                    return (
+                      <div key={t.participantId} style={{
+                        background: WHITE, border: `1px solid ${BD}`,
+                        borderRadius: 16, overflow: "hidden",
+                      }}>
+                        {/* Header navy */}
+                        <div style={{ background: SB, padding: "14px 16px" }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                              <span style={{ fontSize: 22, flexShrink: 0 }}>{emoji}</span>
+                              <div style={{ minWidth: 0 }}>
+                                <p style={{ fontSize: 14, fontWeight: 800, color: LTXT, lineHeight: 1.2 }}>{t.tournament.name}</p>
+                                <p style={{ fontSize: 11, color: LMUTED, marginTop: 3 }}>{t.tournament.business.name}</p>
+                              </div>
+                            </div>
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 100, flexShrink: 0,
+                              background: st.bg, color: st.color,
+                            }}>
+                              {st.label}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Body */}
+                        <div style={{ padding: "14px 16px" }}>
+                          {/* Participant + category row */}
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                            <span style={{
+                              fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 100,
+                              background: "rgba(56,189,248,0.08)", color: ACCENT,
+                            }}>
+                              {t.participantName}
+                            </span>
+                            {t.category && (
+                              <span style={{
+                                fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 100,
+                                background: "#f8fafc", color: MUTED, border: `1px solid ${BD}`,
+                              }}>
+                                {t.category}
+                              </span>
+                            )}
+                            {t.group && (
+                              <span style={{
+                                fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 100,
+                                background: "#f8fafc", color: MUTED, border: `1px solid ${BD}`,
+                              }}>
+                                Grupo {t.group}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Stats grid */}
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(70px, 1fr))", gap: 8 }}>
+                            {t.seed != null && (
+                              <div style={{
+                                textAlign: "center", padding: "10px 8px", borderRadius: 10,
+                                background: GOLD_BG, border: `1px solid rgba(201,146,43,0.25)`,
+                              }}>
+                                <p style={{ fontSize: 20, fontWeight: 900, color: GOLD, lineHeight: 1 }}>#{t.seed}</p>
+                                <p style={{ fontSize: 9, color: MUTED, marginTop: 3, textTransform: "uppercase", letterSpacing: "0.06em" }}>Cabeza de serie</p>
+                              </div>
+                            )}
+                            {t.ladderPosition != null && (
+                              <div style={{
+                                textAlign: "center", padding: "10px 8px", borderRadius: 10,
+                                background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.15)",
+                              }}>
+                                <p style={{ fontSize: 20, fontWeight: 900, color: ACCENT, lineHeight: 1 }}>#{t.ladderPosition}</p>
+                                <p style={{ fontSize: 9, color: MUTED, marginTop: 3, textTransform: "uppercase", letterSpacing: "0.06em" }}>Escalerilla</p>
+                              </div>
+                            )}
+                            {myMatches.length > 0 && (
+                              <>
+                                <div style={{
+                                  textAlign: "center", padding: "10px 8px", borderRadius: 10,
+                                  background: "rgba(22,163,74,0.06)", border: "1px solid rgba(22,163,74,0.2)",
+                                }}>
+                                  <p style={{ fontSize: 20, fontWeight: 900, color: "#16a34a", lineHeight: 1 }}>{myWins}</p>
+                                  <p style={{ fontSize: 9, color: MUTED, marginTop: 3, textTransform: "uppercase", letterSpacing: "0.06em" }}>Victorias</p>
+                                </div>
+                                <div style={{
+                                  textAlign: "center", padding: "10px 8px", borderRadius: 10,
+                                  background: "rgba(220,38,38,0.06)", border: "1px solid rgba(220,38,38,0.18)",
+                                }}>
+                                  <p style={{ fontSize: 20, fontWeight: 900, color: "#dc2626", lineHeight: 1 }}>{myLosses}</p>
+                                  <p style={{ fontSize: 9, color: MUTED, marginTop: 3, textTransform: "uppercase", letterSpacing: "0.06em" }}>Derrotas</p>
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          {/* Dates */}
+                          {(t.tournament.startDate || t.tournament.endDate) && (
+                            <div style={{ display: "flex", gap: 16, marginTop: 12, fontSize: 11, color: MUTED }}>
+                              {t.tournament.startDate && (
+                                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                  <Calendar style={{ width: 11, height: 11 }} />
+                                  Inicio: {format(new Date(t.tournament.startDate), "d 'de' MMMM yyyy", { locale: es })}
+                                </span>
+                              )}
+                              {t.tournament.endDate && (
+                                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                  <Calendar style={{ width: 11, height: 11 }} />
+                                  Fin: {format(new Date(t.tournament.endDate), "d 'de' MMMM", { locale: es })}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </section>
