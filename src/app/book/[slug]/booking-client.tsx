@@ -52,24 +52,28 @@ export default function BookingClient({ slug }: { slug: string }) {
       .finally(() => setLoading(false))
   }, [slug])
 
-  // Auto-skip RutGate for logged-in users (no SessionProvider needed)
+  // Auto-fill / auto-skip gate for logged-in users (no SessionProvider needed)
   useEffect(() => {
     if (!business) return
     fetch("/api/auth/session")
       .then(r => r.ok ? r.json() : null)
-      .then(session => {
+      .then(async session => {
         const email = session?.user?.email
         if (!email) { setAutoChecked(true); return }
-        return fetch(`/api/book/${slug}/check-email?email=${encodeURIComponent(email)}`)
-          .then(r => r.json())
-          .then(d => {
-            setAutoClient({
-              name: d.name || session.user.name || "",
-              email,
-              phone: d.phone || "",
-            })
-          })
-          .finally(() => setAutoChecked(true))
+
+        if (business.accessMode === "CLOSED") {
+          // For closed businesses, check if user has APPROVED access by email
+          const d = await fetch(`/api/businesses/${business.id}/access-list/check?email=${encodeURIComponent(email)}`).then(r => r.json())
+          if (d.allowed) {
+            setAutoClient({ name: d.name || session.user.name || "", email: d.email || email, phone: d.phone || "", rut: d.rut ?? undefined })
+          }
+          setAutoChecked(true)
+        } else {
+          // Open businesses: pre-fill from any client record
+          const d = await fetch(`/api/book/${slug}/check-email?email=${encodeURIComponent(email)}`).then(r => r.json())
+          setAutoClient({ name: d.name || session.user.name || "", email, phone: d.phone || "" })
+          setAutoChecked(true)
+        }
       })
       .catch(() => setAutoChecked(true))
   }, [business, slug])
@@ -93,7 +97,11 @@ export default function BookingClient({ slug }: { slug: string }) {
   )
 
   if (business.accessMode === "CLOSED") {
-    // CLOSED = access control per business — always require RUT gate regardless of login
+    // If user is logged in and has APPROVED access in this business, skip the gate
+    if (autoClient) {
+      if (business.businessType === "SPORTS_CLUB") return <CourtBookingFlow business={business} slug={slug} initialClient={autoClient} />
+      return <ServiceBookingFlow business={business} slug={slug} initialClient={autoClient} />
+    }
     return <RutGate business={business} slug={slug} />
   }
   if (business.businessType === "SPORTS_CLUB") {
