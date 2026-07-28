@@ -15,10 +15,20 @@ export async function GET(req: Request, { params }: Params) {
   })
   if (!business) return NextResponse.json({ found: false })
 
-  const client = await prisma.client.findUnique({
+  // First: look in this business
+  let client = await prisma.client.findUnique({
     where: { businessId_rut: { businessId: business.id, rut } },
     select: { name: true, lastName: true, email: true, phone: true },
   })
+
+  // Fallback: look in any other business on the platform
+  if (!client) {
+    client = await prisma.client.findFirst({
+      where: { rut, deletedAt: null, NOT: { businessId: business.id } },
+      select: { name: true, lastName: true, email: true, phone: true },
+      orderBy: { updatedAt: "desc" },
+    })
+  }
 
   if (!client) return NextResponse.json({ found: false })
 

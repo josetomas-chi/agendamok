@@ -16,10 +16,20 @@ export async function GET(req: Request, { params }: Params) {
 
   if (!business) return NextResponse.json({ exists: !!user })
 
-  const client = await prisma.client.findFirst({
+  // First: look in this business
+  let client = await prisma.client.findFirst({
     where: { businessId: business.id, email, deletedAt: null },
     select: { name: true, lastName: true, phone: true },
   })
+
+  // Fallback: look in any other business on the platform
+  if (!client) {
+    client = await prisma.client.findFirst({
+      where: { email, deletedAt: null, NOT: { businessId: business.id } },
+      select: { name: true, lastName: true, phone: true },
+      orderBy: { updatedAt: "desc" },
+    })
+  }
 
   return NextResponse.json({
     exists: !!user,
