@@ -49,7 +49,7 @@ type Client = {
   notes: string | null; tags: string[]; segment: string; loyaltyPoints: number; creditBalance: number
   allowTransfer: boolean
   createdAt: string
-  _count: { appointments: number }
+  _count: { appointments: number; courtBookings: number }
   appointments: { payment: { amount: number } | null }[]
 }
 
@@ -339,7 +339,7 @@ export default function ClientsPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5 text-center font-semibold" style={{ color: "rgba(255,255,255,0.7)" }}>{c._count.appointments}</td>
+                  <td className="px-5 py-3.5 text-center font-semibold" style={{ color: "rgba(255,255,255,0.7)" }}>{c._count.appointments + (c._count.courtBookings ?? 0)}</td>
                   <td className="px-5 py-3.5 text-center font-bold" style={{ color: GOLD }}>${totalSpend(c).toLocaleString("es-CL")}</td>
                   <td className="px-5 py-3.5 text-center">
                     <span className="flex items-center justify-center gap-1 text-sm font-semibold" style={{ color: "rgba(255,255,255,0.6)" }}>
@@ -430,7 +430,7 @@ export default function ClientsPage() {
 
             <div className="grid grid-cols-3 gap-3 py-2">
               <div className="bg-muted/50 rounded-lg p-3 text-center">
-                <p className="text-2xl font-bold">{selected._count.appointments}</p>
+                <p className="text-2xl font-bold">{selected._count.appointments + (selected._count.courtBookings ?? 0)}</p>
                 <p className="text-xs text-muted-foreground mt-1">Turnos</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-3 text-center">
@@ -749,7 +749,7 @@ export default function ClientsPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-center font-medium">{c._count.appointments}</td>
+                  <td className="px-4 py-3 text-center font-medium">{c._count.appointments + (c._count.courtBookings ?? 0)}</td>
                   <td className="px-4 py-3 text-right font-medium">${totalSpend(c).toLocaleString("es-AR")}</td>
                   <td className="px-4 py-3 text-center">
                     <span className="flex items-center justify-center gap-1 text-sm font-medium">
@@ -842,7 +842,7 @@ export default function ClientsPage() {
 
             <div className="grid grid-cols-3 gap-3 py-2">
               <div className="bg-muted/50 rounded-lg p-3 text-center">
-                <p className="text-2xl font-bold">{selected._count.appointments}</p>
+                <p className="text-2xl font-bold">{selected._count.appointments + (selected._count.courtBookings ?? 0)}</p>
                 <p className="text-xs text-muted-foreground mt-1">Turnos</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-3 text-center">

@@ -37,7 +37,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       ...(segment && { segment: segment as never }),
     },
     include: {
-      _count: { select: { appointments: { where: { deletedAt: null } } } },
+      _count: { select: { appointments: { where: { deletedAt: null } }, courtBookings: { where: { deletedAt: null } } } },
       appointments: {
         where: { deletedAt: null, status: "COMPLETED" },
         select: { payment: { select: { amount: true } } },
