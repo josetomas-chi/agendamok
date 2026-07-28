@@ -17,7 +17,7 @@ const schema = z.object({
   businessName: z.string().min(2),
   category: z.string().min(1),
   slug: z.string().min(2).regex(/^[a-z0-9-]+$/),
-  plan: z.enum(["STARTER", "NEGOCIO", "PRO"]).default("STARTER"),
+  plan: z.enum(["STARTER", "NEGOCIO", "PRO", "SPORTS"]).default("STARTER"),
   businessType: z.enum(["GENERAL", "SPORTS_CLUB"]).default("GENERAL"),
 })
 
