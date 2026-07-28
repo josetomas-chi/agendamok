@@ -91,9 +91,12 @@ function dateLabel(dateStr: string) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-[11px] font-bold uppercase tracking-widest mb-2.5" style={{ color: ACCENT }}>
-      {children}
-    </h2>
+    <div className="flex items-center gap-2 mb-3">
+      <span className="w-1 h-4 rounded-full flex-shrink-0" style={{ background: ACCENT }} />
+      <h2 className="text-[11px] font-black uppercase tracking-widest" style={{ color: ACCENT }}>
+        {children}
+      </h2>
+    </div>
   )
 }
 
@@ -166,26 +169,30 @@ export default function ProfileContent() {
 
   return (
     <div className="min-h-screen pb-12" style={{ background: BG, color: TEXT }}>
-      {/* Sticky nav */}
-      <div className="sticky top-0 z-20 flex items-center justify-between px-4 h-14"
-        style={{ background: `${BG}ee`, backdropFilter: "blur(12px)", borderBottom: `1px solid ${BORDER2}` }}>
-        <span className="font-black text-base tracking-wide">Mi perfil</span>
-        <button onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-1.5 text-xs hover:opacity-70 transition-opacity"
-          style={{ color: MUTED }}>
-          <LogOut className="w-3.5 h-3.5" />Salir
-        </button>
-      </div>
-
       {/* Hero */}
-      <div className="relative px-4 pb-6 pt-8" style={{ background: `linear-gradient(180deg, rgba(56,189,248,0.07) 0%, ${BG} 100%)` }}>
-        <div className="max-w-lg mx-auto flex items-center gap-5">
+      <div className="relative overflow-hidden" style={{ background: CARD }}>
+        {/* Decorative glow */}
+        <div className="absolute top-0 right-0 w-48 h-48 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(56,189,248,0.15) 0%, transparent 70%)", transform: "translate(30%, -30%)" }} />
+
+        {/* Nav row */}
+        <div className="relative flex items-center justify-between px-4 pt-4 pb-0">
+          <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: ACCENT }}>AgendaMok</span>
+          <button onClick={() => signOut({ callbackUrl: "/login" })}
+            className="flex items-center gap-1.5 text-xs hover:opacity-70 transition-opacity"
+            style={{ color: MUTED }}>
+            <LogOut className="w-3.5 h-3.5" />Salir
+          </button>
+        </div>
+
+        {/* Avatar + info */}
+        <div className="relative max-w-lg mx-auto px-4 pt-5 pb-6 flex items-center gap-4">
           <div className="relative flex-shrink-0">
-            <div className="w-22 h-22 rounded-full overflow-hidden flex items-center justify-center"
-              style={{ width: 80, height: 80, background: "rgba(56,189,248,0.12)", border: `2px solid ${ACCENT}40` }}>
+            <div className="rounded-full overflow-hidden flex items-center justify-center"
+              style={{ width: 86, height: 86, background: "rgba(56,189,248,0.12)", border: `3px solid ${ACCENT}` }}>
               {user.image
                 ? <img src={user.image} alt="" className="w-full h-full object-cover" />
-                : <User className="w-9 h-9" style={{ color: ACCENT }} />}
+                : <User className="w-10 h-10" style={{ color: ACCENT }} />}
             </div>
             <button onClick={() => fileRef.current?.click()} disabled={uploadingPhoto}
               className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center shadow-lg"
@@ -196,16 +203,24 @@ export default function ProfileContent() {
             </button>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
           </div>
-          <div className="min-w-0">
-            <h1 className="font-black text-xl leading-tight truncate" style={{ color: TEXT }}>{user.name ?? "Sin nombre"}</h1>
-            <p className="text-sm mt-0.5 truncate" style={{ color: MUTED }}>{user.email}</p>
+          <div className="min-w-0 flex-1">
+            <h1 className="font-black text-2xl leading-tight" style={{ color: TEXT }}>{user.name ?? "Sin nombre"}</h1>
+            <p className="text-sm mt-1 truncate" style={{ color: MUTED }}>{user.email}</p>
             {user.phone && <p className="text-xs mt-0.5" style={{ color: MUTED }}>{user.phone}</p>}
-            {user.rut && <p className="text-xs mt-1 font-mono font-bold" style={{ color: ACCENT + "aa" }}>{user.rut}</p>}
+            {user.rut && (
+              <span className="inline-block mt-1.5 text-[11px] font-mono font-bold px-2 py-0.5 rounded-full"
+                style={{ background: "rgba(56,189,248,0.12)", color: ACCENT }}>
+                {user.rut}
+              </span>
+            )}
           </div>
         </div>
+
+        {/* Bottom border with glow */}
+        <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${ACCENT}50, transparent)` }} />
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pt-2 space-y-6">
+      <div className="max-w-lg mx-auto px-4 pt-5 space-y-6">
 
         {/* ── SPORTS: stats de partidos ── */}
         {isSportsUser && recentMatches.length > 0 && (
