@@ -378,6 +378,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   const [voucherUploading, setVoucherUploading] = useState(false)
   const [voucherUploaded, setVoucherUploaded] = useState(false)
   const [pendingRestore, setPendingRestore] = useState<{ courtId: string; slot: { time: string; price: number; paymentPlayers: number } } | null>(null)
+  const autoConfirmRef = useRef(false)
 
   // Restore booking state if returning from login
   useEffect(() => {
@@ -390,9 +391,10 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
       if (s.sports) setSelectedSports(s.sports)
       if (s.duration) setDuration(s.duration)
       if (s.form) setForm(f => ({ ...f, ...s.form }))
-      if (s.rut) setRut(s.rut)
+      if (s.rut) { setRut(s.rut); setRutFound(true) }
       if (s.emailExists) setEmailExists(true)
       if (s.courtId && s.slot) setPendingRestore({ courtId: s.courtId, slot: s.slot })
+      if (s.autoConfirm) autoConfirmRef.current = true
     } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -429,6 +431,15 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
     search(pendingRestore ?? undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, selectedSports, duration])
+
+  // Auto-confirm when returning from login with autoConfirm flag
+  useEffect(() => {
+    if (step === "form" && autoConfirmRef.current && selectedCourt && selectedSlot && form.name && form.email) {
+      autoConfirmRef.current = false
+      setTimeout(() => handleConfirm(), 0)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, selectedCourt, selectedSlot])
 
   async function handleConfirm() {
     if (!selectedCourt || !selectedSlot || !form.name || !form.email) return
@@ -495,10 +506,8 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
       })
     }
 
-    setConfirmedBookingId(d.booking?.id || null)
-    setAllowTransfer(d.allowTransfer || false)
-    setStep("confirmed")
     setSubmitting(false)
+    window.location.href = "/profile"
   }
 
   function reset() {
@@ -838,6 +847,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                       date: selectedDate, sports: selectedSports, duration,
                       courtId: selectedCourt?.id, slot: selectedSlot,
                       form, rut, emailExists,
+                      autoConfirm: true,
                     }))
                     window.location.href = `/login?callbackUrl=/book/${slug}`
                   }}
@@ -1117,8 +1127,8 @@ function ServiceBookingFlow({ business, slug, initialClient }: { business: Busin
         body: JSON.stringify({ name: form.name, email: form.email, password }),
       })
     }
-    setStep("confirmed")
     setSubmitting(false)
+    window.location.href = "/profile"
   }
 
   function downloadIcs() {
