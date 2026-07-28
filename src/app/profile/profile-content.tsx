@@ -232,6 +232,48 @@ export default function ProfileContent() {
     }
   }, [])
 
+  // Detect just-confirmed booking (coming from booking page direct confirm → redirect)
+  useEffect(() => {
+    const saved = sessionStorage.getItem("booking_just_confirmed")
+    if (!saved) return
+    sessionStorage.removeItem("booking_just_confirmed")
+    try {
+      const b = JSON.parse(saved)
+      const startISO = `${b.date}T${b.time}:00`
+      const endDate = new Date(startISO)
+      endDate.setMinutes(endDate.getMinutes() + (b.duration ?? 60))
+      const optimisticBooking = {
+        id: b.bookingId ?? `opt-${Date.now()}`,
+        startTime: startISO,
+        endTime: endDate.toISOString(),
+        price: b.price ?? 0,
+        paidAmount: 0,
+        status: "CONFIRMED" as const,
+        paidOnline: false,
+        court: { name: b.courtName, sport: b.sport ?? null, color: b.courtColor ?? "#38bdf8" },
+        business: { name: b.businessName, slug: b.businessSlug, cancellationHoursNotice: null },
+      }
+      setData(d => d ? { ...d, upcomingCourtBookings: [...d.upcomingCourtBookings, optimisticBooking] } : d)
+      setCancelSuccess({ message: `¡Reserva confirmada! ${b.courtName} · ${format(parseISO(b.date), "d 'de' MMMM", { locale: es })} · ${b.time}` })
+      if (b.allowTransfer && b.bookingId) {
+        setPendingTransfer({
+          bookingId: b.bookingId,
+          businessId: b.businessId,
+          businessSlug: b.businessSlug,
+          businessName: b.businessName,
+          courtName: b.courtName,
+          date: b.date,
+          time: b.time,
+          price: b.price ?? 0,
+        })
+      }
+      // Background sync after short delay
+      setTimeout(() => {
+        fetch("/api/profile").then(r => r.ok ? r.json() : null).then(d => { if (d) setData(d) })
+      }, 800)
+    } catch {}
+  }, [])
+
   async function confirmPendingBooking() {
     if (!pendingBooking || !data) return
     setPendingConfirming(true)

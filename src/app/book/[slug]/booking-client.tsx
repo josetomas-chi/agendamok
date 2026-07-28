@@ -527,6 +527,22 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
       })
     }
 
+    // Pass confirmed booking to profile via sessionStorage so it shows immediately
+    sessionStorage.setItem("booking_just_confirmed", JSON.stringify({
+      bookingId: d.booking?.id,
+      businessSlug: slug,
+      businessName: business.name,
+      businessId: business.id,
+      courtName: selectedCourt.name,
+      courtColor: selectedCourt.color,
+      sport: selectedCourt.sport,
+      date: selectedDate,
+      time: selectedSlot.time,
+      duration,
+      price: selectedSlot.price,
+      allowTransfer: d.allowTransfer ?? false,
+    }))
+
     setSubmitting(false)
     window.location.href = "/profile"
   }
