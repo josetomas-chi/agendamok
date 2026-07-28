@@ -36,6 +36,31 @@ export async function DELETE(_req: Request, { params }: Params) {
     return NextResponse.json({ error: "No puedes eliminarte a ti mismo" }, { status: 400 })
   }
 
-  await prisma.user.delete({ where: { id: userId } })
-  return NextResponse.json({ success: true })
+  // Block deletion if user owns a business (would leave it orphaned)
+  const ownedBusiness = await prisma.business.findFirst({
+    where: { ownerId: userId },
+    select: { name: true },
+  })
+  if (ownedBusiness) {
+    return NextResponse.json({
+      error: `No se puede eliminar — el usuario es dueño del negocio "${ownedBusiness.name}". Transfiere el negocio primero.`
+    }, { status: 400 })
+  }
+
+  try {
+    await prisma.$transaction([
+      // Deslinkar client records (userId nullable)
+      prisma.client.updateMany({ where: { userId }, data: { userId: null } }),
+      // Eliminar membresías de negocio
+      prisma.businessMember.deleteMany({ where: { userId } }),
+      // Eliminar staff profile (cascada a horarios y días libres via schema)
+      prisma.staffMember.deleteMany({ where: { userId } }),
+      // Eliminar el usuario (cascada a accounts y sessions via schema)
+      prisma.user.delete({ where: { id: userId } }),
+    ])
+    return NextResponse.json({ success: true })
+  } catch (e) {
+    console.error("Error deleting user:", e)
+    return NextResponse.json({ error: "No se puede eliminar — tiene datos asociados que impiden la eliminación" }, { status: 400 })
+  }
 }
