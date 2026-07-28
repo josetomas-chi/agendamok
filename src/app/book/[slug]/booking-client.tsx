@@ -320,7 +320,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   const [form, setForm] = useState({ name: initialClient?.name ?? "", email: initialClient?.email ?? "", phone: initialClient?.phone ?? "", notes: "" })
   const [createAccount, setCreateAccount] = useState(false)
   const [password, setPassword] = useState("")
-  const [emailExists, setEmailExists] = useState(false)
+  const [emailExists, setEmailExists] = useState(!!initialClient?.email)
   const [submitting, setSubmitting] = useState(false)
   const [confirmedBookingId, setConfirmedBookingId] = useState<string | null>(null)
   const [allowTransfer, setAllowTransfer] = useState(false)
