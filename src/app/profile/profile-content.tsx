@@ -10,10 +10,17 @@ import {
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 
+type BusinessBenefit = {
+  businessId: string; businessName: string; businessSlug: string; businessLogo: string | null
+  loyaltyPoints: number; creditBalance: number; segment: string
+  segmentDiscount: number; pointsPerVisit: number; vipThreshold: number; ptsToNext: number
+}
+
 type ProfileData = {
   user: { id: string; name: string | null; email: string | null; image: string | null; phone: string | null; rut: string | null }
   loyaltyPoints: number
   creditBalance: number
+  businessBenefits: BusinessBenefit[]
   totalCompleted: number
   topService: { name: string; color: string; count: number } | null
   topStaff: { name: string; count: number } | null
@@ -191,7 +198,8 @@ export default function ProfileContent() {
   )
 
   const {
-    user, loyaltyPoints, creditBalance, totalCompleted, topService, topStaff,
+    user, loyaltyPoints, creditBalance, businessBenefits,
+    totalCompleted, topService, topStaff,
     activeMemberships, upcomingAppointments, upcomingCourtBookings,
     courtBookings, appointments, tournaments, recentMatches,
   } = data
@@ -306,6 +314,112 @@ export default function ProfileContent() {
               </div>
             )}
           </div>
+        )}
+
+        {/* ── Beneficios por negocio ── */}
+        {businessBenefits.length > 0 && (
+          <section>
+            <SectionTitle>Mis beneficios</SectionTitle>
+            <div className="space-y-3">
+              {businessBenefits.map(b => {
+                const segLabel: Record<string,string> = { VIP:"VIP", FREQUENT:"Frecuente", REGULAR:"Regular", NEW:"Nuevo", AT_RISK:"Recuperar", INFLUENCER:"Influencer" }
+                const segColor: Record<string,string> = { VIP:"#facc15", FREQUENT:ACCENT, REGULAR:"#94a3b8", NEW:"#94a3b8", AT_RISK:"#f87171", INFLUENCER:"#c084fc" }
+                const sc = segColor[b.segment] ?? MUTED
+                const progress = b.vipThreshold > 0 ? Math.min(100, Math.round((b.loyaltyPoints / b.vipThreshold) * 100)) : 0
+                const isVip = b.segment === "VIP"
+
+                return (
+                  <div key={b.businessId} className="rounded-2xl overflow-hidden"
+                    style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
+                    {/* Business header */}
+                    <div className="flex items-center justify-between px-4 py-3"
+                      style={{ borderBottom: `1px solid ${BORDER2}` }}>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {b.businessLogo
+                          ? <img src={b.businessLogo} alt="" className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
+                          : <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                              style={{ background: "rgba(56,189,248,0.15)" }}>
+                              <Trophy className="w-3.5 h-3.5" style={{ color: ACCENT }} />
+                            </div>
+                        }
+                        <span className="text-sm font-bold truncate" style={{ color: TEXT }}>{b.businessName}</span>
+                      </div>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full flex-shrink-0 ml-2"
+                        style={{ background: `${sc}18`, color: sc, border: `1px solid ${sc}30` }}>
+                        {segLabel[b.segment] ?? b.segment}
+                      </span>
+                    </div>
+
+                    <div className="px-4 py-3 space-y-3">
+                      {/* Points + credit */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-xl p-3 text-center"
+                          style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${BORDER2}` }}>
+                          <p className="text-xl font-black" style={{ color: "#f59e0b" }}>{b.loyaltyPoints}</p>
+                          <p className="text-[10px] mt-0.5 uppercase tracking-wide" style={{ color: MUTED }}>Puntos</p>
+                          {b.pointsPerVisit > 0 && (
+                            <p className="text-[10px] mt-0.5" style={{ color: "rgba(245,158,11,0.5)" }}>+{b.pointsPerVisit} por visita</p>
+                          )}
+                        </div>
+                        <div className="rounded-xl p-3 text-center"
+                          style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${BORDER2}` }}>
+                          <p className="text-xl font-black" style={{ color: "#22c55e" }}>
+                            ${(b.creditBalance / 100).toLocaleString("es-CL")}
+                          </p>
+                          <p className="text-[10px] mt-0.5 uppercase tracking-wide" style={{ color: MUTED }}>Crédito</p>
+                          <p className="text-[10px] mt-0.5" style={{ color: "rgba(34,197,94,0.5)" }}>Uso automático</p>
+                        </div>
+                      </div>
+
+                      {/* Progress to VIP */}
+                      {!isVip && b.vipThreshold > 0 && (
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[10px]" style={{ color: MUTED }}>Progreso VIP</span>
+                            <span className="text-[10px] font-bold" style={{ color: "#facc15" }}>
+                              {b.ptsToNext > 0 ? `Faltan ${b.ptsToNext} pts` : "¡Casi!"}
+                            </span>
+                          </div>
+                          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                            <div className="h-full rounded-full transition-all"
+                              style={{ width: `${progress}%`, background: "linear-gradient(90deg, #f59e0b, #facc15)" }} />
+                          </div>
+                          <p className="text-[10px] mt-1" style={{ color: "rgba(255,255,255,0.18)" }}>
+                            {b.loyaltyPoints} / {b.vipThreshold} pts para VIP
+                          </p>
+                        </div>
+                      )}
+
+                      {isVip && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                          style={{ background: "rgba(250,204,21,0.08)", border: "1px solid rgba(250,204,21,0.2)" }}>
+                          <span style={{ fontSize: 16 }}>⭐</span>
+                          <p className="text-xs font-bold" style={{ color: "#facc15" }}>Cliente VIP</p>
+                          {b.segmentDiscount > 0 && (
+                            <span className="ml-auto text-[10px] font-black px-1.5 py-0.5 rounded-full"
+                              style={{ background: "rgba(250,204,21,0.15)", color: "#facc15" }}>
+                              -{b.segmentDiscount}% descuento
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Segment discount (non-VIP) */}
+                      {!isVip && b.segmentDiscount > 0 && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                          style={{ background: "rgba(56,189,248,0.06)", border: `1px solid ${BORDER}` }}>
+                          <Zap className="w-3.5 h-3.5 flex-shrink-0" style={{ color: ACCENT }} />
+                          <p className="text-xs" style={{ color: MUTED }}>
+                            Descuento <span className="font-black" style={{ color: ACCENT }}>{b.segmentDiscount}%</span> por tu segmento
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
         )}
 
         {/* ── GENERAL: servicio y profesional favorito ── */}

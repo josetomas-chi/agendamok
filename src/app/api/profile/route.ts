@@ -21,7 +21,12 @@ export async function GET() {
     select: {
       id: true, businessId: true, rut: true, phone: true,
       loyaltyPoints: true, creditBalance: true, segment: true,
-      business: { select: { name: true, slug: true, businessType: true } },
+      business: {
+        select: {
+          name: true, slug: true, businessType: true, logoUrl: true,
+          loyaltyPointsPerVisit: true, loyaltyVipThreshold: true, segmentDiscounts: true,
+        },
+      },
       memberships: {
         where: { status: "ACTIVE" },
         select: {
@@ -40,6 +45,30 @@ export async function GET() {
   const loyaltyPoints = clients.reduce((s, c) => s + c.loyaltyPoints, 0)
   const creditBalance = clients.reduce((s, c) => s + c.creditBalance, 0)
   const activeMemberships = clients.flatMap(c => c.memberships)
+
+  // Per-business loyalty summary (only businesses with some data)
+  const businessBenefits = clients
+    .filter(c => c.loyaltyPoints > 0 || c.creditBalance > 0 || c.segment !== "NEW" || c.memberships.length > 0)
+    .map(c => {
+      const discounts = (c.business.segmentDiscounts ?? {}) as Record<string, number>
+      const segmentDiscount = discounts[c.segment] ?? 0
+      const vipThreshold = c.business.loyaltyVipThreshold ?? 500
+      const pointsPerVisit = c.business.loyaltyPointsPerVisit ?? 10
+      const ptsToNext = c.segment === "VIP" ? 0 : Math.max(0, vipThreshold - c.loyaltyPoints)
+      return {
+        businessId: c.businessId,
+        businessName: c.business.name,
+        businessSlug: c.business.slug,
+        businessLogo: c.business.logoUrl ?? null,
+        loyaltyPoints: c.loyaltyPoints,
+        creditBalance: c.creditBalance,
+        segment: c.segment,
+        segmentDiscount,
+        pointsPerVisit,
+        vipThreshold,
+        ptsToNext,
+      }
+    })
 
   const now = new Date()
 
@@ -166,6 +195,7 @@ export async function GET() {
     user: { ...user, phone, rut },
     loyaltyPoints,
     creditBalance,
+    businessBenefits,
     totalCompleted,
     topService,
     topStaff,
