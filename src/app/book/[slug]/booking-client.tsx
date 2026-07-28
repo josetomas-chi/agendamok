@@ -93,11 +93,7 @@ export default function BookingClient({ slug }: { slug: string }) {
   )
 
   if (business.accessMode === "CLOSED") {
-    // If user is logged in and we found their client data, skip the gate
-    if (autoClient) {
-      if (business.businessType === "SPORTS_CLUB") return <CourtBookingFlow business={business} slug={slug} initialClient={autoClient} />
-      return <ServiceBookingFlow business={business} slug={slug} initialClient={autoClient} />
-    }
+    // CLOSED = access control per business — always require RUT gate regardless of login
     return <RutGate business={business} slug={slug} />
   }
   if (business.businessType === "SPORTS_CLUB") {
