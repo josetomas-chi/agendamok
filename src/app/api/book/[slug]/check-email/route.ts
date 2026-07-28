@@ -1,10 +1,29 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-export async function GET(req: Request) {
+type Params = { params: Promise<{ slug: string }> }
+
+export async function GET(req: Request, { params }: Params) {
+  const { slug } = await params
   const { searchParams } = new URL(req.url)
-  const email = searchParams.get("email")
+  const email = searchParams.get("email")?.trim()
   if (!email) return NextResponse.json({ exists: false })
-  const user = await prisma.user.findUnique({ where: { email }, select: { id: true } })
-  return NextResponse.json({ exists: !!user })
+
+  const [user, business] = await Promise.all([
+    prisma.user.findUnique({ where: { email }, select: { id: true } }),
+    prisma.business.findUnique({ where: { slug }, select: { id: true } }),
+  ])
+
+  if (!business) return NextResponse.json({ exists: !!user })
+
+  const client = await prisma.client.findFirst({
+    where: { businessId: business.id, email, deletedAt: null },
+    select: { name: true, lastName: true, phone: true },
+  })
+
+  return NextResponse.json({
+    exists: !!user,
+    name: client ? [client.name, client.lastName].filter(Boolean).join(" ") : undefined,
+    phone: client?.phone ?? undefined,
+  })
 }

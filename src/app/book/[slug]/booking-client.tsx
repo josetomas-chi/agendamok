@@ -721,6 +721,8 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                     const r = await fetch(`/api/book/${slug}/check-email?email=${encodeURIComponent(email)}`)
                     const d = await r.json()
                     setEmailExists(d.exists)
+                    if (d.name) setForm(f => ({ ...f, name: f.name || d.name }))
+                    if (d.phone) setForm(f => ({ ...f, phone: f.phone || d.phone }))
                   }}
                   placeholder="tu@email.com"
                   className="w-full rounded-xl px-4 py-3 text-sm outline-none placeholder:opacity-25 transition-all"
@@ -1400,6 +1402,8 @@ function ServiceBookingFlow({ business, slug, initialClient }: { business: Busin
                     const r = await fetch(`/api/book/${slug}/check-email?email=${encodeURIComponent(email)}`)
                     const d = await r.json()
                     setEmailExists(d.exists)
+                    if (d.name) setForm(f => ({ ...f, name: f.name || d.name }))
+                    if (d.phone) setForm(f => ({ ...f, phone: f.phone || d.phone }))
                   }}
                   placeholder="tu@email.com"
                   className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all"
