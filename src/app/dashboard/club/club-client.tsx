@@ -1335,6 +1335,27 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                 <a href={booking.transferVoucher} target="_blank" rel="noopener noreferrer">
                   <img src={booking.transferVoucher} alt="Comprobante" className="w-full max-h-48 object-cover hover:opacity-90 transition-opacity" />
                 </a>
+                {/* Accept transfer payment */}
+                {Number(booking.paidAmount) < Number(booking.price) ? (
+                  <div className="px-3 py-2.5" style={{ borderTop: "1px solid rgba(13,27,42,0.06)" }}>
+                    <button
+                      disabled={saving}
+                      onClick={async () => {
+                        setSaving(true)
+                        await fetch(`/api/businesses/${businessId}/court-bookings/${booking.id}/accept-transfer`, { method: "POST" })
+                        setSaving(false)
+                        onSaved()
+                      }}
+                      className="w-full h-10 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
+                      style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.4)", color: "#16a34a" }}>
+                      {saving ? "Procesando…" : "✓ Aceptar pago — marcar como pagada"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="px-3 py-2 flex items-center gap-2" style={{ borderTop: "1px solid rgba(13,27,42,0.06)", background: "rgba(34,197,94,0.05)" }}>
+                    <span className="text-xs font-bold" style={{ color: "#16a34a" }}>✓ Pago confirmado — ${Number(booking.paidAmount).toLocaleString("es-CL")}</span>
+                  </div>
+                )}
               </div>
             )}
 

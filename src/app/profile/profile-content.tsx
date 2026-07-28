@@ -16,6 +16,7 @@ type BusinessBenefit = {
   businessId: string; businessName: string; businessSlug: string; businessLogo: string | null
   loyaltyPoints: number; creditBalance: number; segment: string
   segmentDiscount: number; pointsPerVisit: number; vipThreshold: number; ptsToNext: number
+  allowTransfer: boolean
 }
 
 type ProfileData = {
@@ -39,7 +40,7 @@ type ProfileData = {
   }[]
   upcomingCourtBookings: {
     id: string; startTime: string; endTime: string; price: number; status: string; paidOnline: boolean
-    paidAmount: number
+    paidAmount: number; transferVoucher: string | null
     court: { name: string; sport: string | null; color: string }
     business: { name: string; slug: string; cancellationHoursNotice: number | null }
   }[]
@@ -166,6 +167,28 @@ export default function ProfileContent() {
   } | null>(null)
   const [voucherUploading, setVoucherUploading] = useState(false)
   const [voucherUploaded, setVoucherUploaded] = useState(false)
+  // Per-booking inline voucher upload state
+  const [inlineVoucherUploading, setInlineVoucherUploading] = useState<string | null>(null)
+  const [inlineVoucherUrls, setInlineVoucherUrls] = useState<Record<string, string>>({})
+
+  async function uploadInlineVoucher(bookingId: string, businessId: string, file: File) {
+    setInlineVoucherUploading(bookingId)
+    const fd = new FormData()
+    fd.append("file", file)
+    const r = await fetch(`/api/businesses/${businessId}/court-bookings/${bookingId}/voucher`, { method: "POST", body: fd })
+    setInlineVoucherUploading(null)
+    if (r.ok) {
+      const { url } = await r.json()
+      setInlineVoucherUrls(prev => ({ ...prev, [bookingId]: url }))
+      // Update local data to reflect uploaded voucher
+      setData(d => d ? {
+        ...d,
+        upcomingCourtBookings: d.upcomingCourtBookings.map(b =>
+          b.id === bookingId ? { ...b, transferVoucher: url } : b
+        ),
+      } : d)
+    }
+  }
   const fileRef = useRef<HTMLInputElement>(null)
 
   function handleNewBooking(businesses: BusinessBenefit[]) {
@@ -856,6 +879,55 @@ export default function ProfileContent() {
                             </span>
                           )}
                         </div>
+
+                        {/* Transfer voucher section (court bookings only) */}
+                        {b.type === "court" && (() => {
+                          const biz = businessBenefits.find(bz => bz.businessSlug === b.business.slug)
+                          const canTransfer = biz?.allowTransfer ?? false
+                          const price = Number(b.price)
+                          const paid = Number(b.paidAmount ?? 0)
+                          const isPaid = paid >= price && price > 0
+                          const hasVoucher = !!(b.transferVoucher || inlineVoucherUrls[b.id])
+                          const isUploading = inlineVoucherUploading === b.id
+
+                          if (!canTransfer && !hasVoucher) return null
+
+                          return (
+                            <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid rgba(255,255,255,0.06)` }}>
+                              {isPaid ? (
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#4ade80", fontWeight: 700 }}>
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                  Pago confirmado por el club
+                                </div>
+                              ) : hasVoucher ? (
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "rgba(251,191,36,0.9)", fontWeight: 600 }}>
+                                  <Clock style={{ width: 11, height: 11 }} />
+                                  Comprobante enviado · esperando confirmación del club
+                                </div>
+                              ) : (
+                                <label style={{ cursor: isUploading ? "wait" : "pointer", display: "block" }}>
+                                  <input type="file" accept="image/*" className="hidden" disabled={isUploading}
+                                    onChange={e => {
+                                      const file = e.target.files?.[0]
+                                      if (file && biz) uploadInlineVoucher(b.id, biz.businessId, file)
+                                    }} />
+                                  <div style={{
+                                    display: "inline-flex", alignItems: "center", gap: 6,
+                                    fontSize: 11, fontWeight: 700,
+                                    padding: "5px 12px", borderRadius: 8,
+                                    background: "rgba(56,189,248,0.12)", color: ACCENT,
+                                    border: "1px solid rgba(56,189,248,0.2)",
+                                    opacity: isUploading ? 0.6 : 1,
+                                  }}>
+                                    {isUploading
+                                      ? <><Loader2 style={{ width: 11, height: 11 }} className="animate-spin" />Subiendo...</>
+                                      : <>🏦 Subir comprobante de pago</>}
+                                  </div>
+                                </label>
+                              )}
+                            </div>
+                          )
+                        })()}
 
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, gap: 8 }}>
                           <div style={{ flex: 1, minWidth: 0 }}>

@@ -21,6 +21,7 @@ export async function GET() {
     select: {
       id: true, businessId: true, rut: true, phone: true,
       loyaltyPoints: true, creditBalance: true, segment: true,
+      allowTransfer: true,
       business: {
         select: {
           name: true, slug: true, businessType: true,
@@ -65,6 +66,7 @@ export async function GET() {
         pointsPerVisit,
         vipThreshold,
         ptsToNext,
+        allowTransfer: c.allowTransfer,
       }
     })
 
@@ -88,6 +90,7 @@ export async function GET() {
     where: { clientId: { in: clientIds }, deletedAt: null, startTime: { gt: now }, status: { in: ["CONFIRMED"] } },
     select: {
       id: true, startTime: true, endTime: true, price: true, paidAmount: true, status: true, paidOnline: true,
+      transferVoucher: true,
       court: { select: { name: true, sport: true, color: true } },
       business: { select: { name: true, slug: true, cancellationHoursNotice: true } },
     },
