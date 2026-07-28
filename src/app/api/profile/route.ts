@@ -169,6 +169,30 @@ export async function GET() {
       })
     : []
 
+  // Tournaments open for registration (not already joined)
+  const joinedTournamentIds = tournamentParticipants.map(p => p.tournament.id)
+  const now2 = new Date()
+  const availableTournaments = await prisma.tournament.findMany({
+    where: {
+      status: { in: ["UPCOMING", "ACTIVE"] },
+      id: joinedTournamentIds.length > 0 ? { notIn: joinedTournamentIds } : undefined,
+      OR: [
+        { registrationDeadline: null },
+        { registrationDeadline: { gt: now2 } },
+      ],
+    },
+    select: {
+      id: true, name: true, sport: true, format: true, participantType: true,
+      startDate: true, endDate: true, maxParticipants: true, entryFee: true,
+      status: true, description: true, slug: true, registrationDeadline: true,
+      business: { select: { name: true, slug: true } },
+      categories: { select: { id: true, name: true }, take: 10 },
+      participants: { select: { id: true }, where: { status: { not: "WITHDRAWN" } } },
+    },
+    orderBy: { startDate: "asc" },
+    take: 20,
+  })
+
   const recentMatches = tournamentParticipants.flatMap(p => {
     const asP1 = p.matchesAs1.map(m => ({
       id: m.id, round: m.round, status: m.status,
@@ -213,6 +237,24 @@ export async function GET() {
       tournament: p.tournament,
     })),
     recentMatches,
+    availableTournaments: availableTournaments.map(t => ({
+      id: t.id,
+      name: t.name,
+      sport: t.sport,
+      format: t.format,
+      participantType: t.participantType,
+      startDate: t.startDate,
+      endDate: t.endDate,
+      maxParticipants: t.maxParticipants,
+      entryFee: t.entryFee ? Number(t.entryFee) : null,
+      status: t.status,
+      description: t.description,
+      slug: t.slug,
+      registrationDeadline: t.registrationDeadline,
+      business: t.business,
+      categories: t.categories,
+      participantCount: t.participants.length,
+    })),
   })
 }
 
