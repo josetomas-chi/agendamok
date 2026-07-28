@@ -25,6 +25,18 @@ export async function POST(req: Request) {
     where: { id: userId },
     select: { name: true, email: true },
   })
+
+  // Auto-link orphan clients before looking up booking (same logic as profile GET)
+  if (userRecord?.email) {
+    const orphans = await prisma.client.findMany({
+      where: { email: userRecord.email, userId: null, deletedAt: null },
+      select: { id: true },
+    })
+    for (const o of orphans) {
+      try { await prisma.client.update({ where: { id: o.id }, data: { userId } }) } catch { /* skip */ }
+    }
+  }
+
   const clients = await prisma.client.findMany({
     where: { userId, deletedAt: null },
     select: { id: true },
