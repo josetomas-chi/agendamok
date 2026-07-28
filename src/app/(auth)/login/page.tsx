@@ -47,8 +47,21 @@ function LoginForm() {
     if (role === "SUPER_ADMIN") {
       router.push("/admin")
     } else {
+      const callbackUrl = searchParams.get("callbackUrl")
       const plan = searchParams.get("plan")
-      router.push(isNew ? `/onboarding${plan ? `?plan=${plan}` : ""}` : isInvited ? "/onboarding/setup" : "/dashboard")
+      if (callbackUrl) {
+        router.push(callbackUrl)
+        return
+      }
+      if (isNew || isInvited) {
+        router.push(isNew ? `/onboarding${plan ? `?plan=${plan}` : ""}` : "/onboarding/setup")
+        return
+      }
+      // Check if user has a business — if not, redirect to client profile
+      const bizRes = await fetch("/api/businesses")
+      const bizData = await bizRes.json()
+      const hasBusiness = Array.isArray(bizData) ? bizData.length > 0 : !!bizData?.id
+      router.push(hasBusiness ? "/dashboard" : "/profile")
     }
   }
 

@@ -3,6 +3,16 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 
+export async function GET() {
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json([], { status: 401 })
+  const businesses = await prisma.business.findMany({
+    where: { ownerId: session.user.id, deletedAt: null },
+    select: { id: true, name: true, slug: true },
+  })
+  return NextResponse.json(businesses)
+}
+
 const schema = z.object({
   businessName: z.string().min(2),
   category: z.string().min(1),
