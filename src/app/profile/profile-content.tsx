@@ -160,6 +160,12 @@ export default function ProfileContent() {
   } | null>(null)
   const [cancelSuccess, setCancelSuccess] = useState<{ message: string } | null>(null)
   const [showBookPicker, setShowBookPicker] = useState(false)
+  const [pendingTransfer, setPendingTransfer] = useState<{
+    bookingId: string; businessId: string; businessSlug: string; businessName: string
+    courtName: string; date: string; time: string; price: number
+  } | null>(null)
+  const [voucherUploading, setVoucherUploading] = useState(false)
+  const [voucherUploaded, setVoucherUploaded] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   function handleNewBooking(businesses: BusinessBenefit[]) {
@@ -274,8 +280,43 @@ export default function ProfileContent() {
       sessionStorage.removeItem("booking_pending")
       setPendingBooking(null)
       setCancelSuccess({ message: `¡Reserva confirmada! ${pendingBooking.courtName} · ${format(parseISO(pendingBooking.date), "d 'de' MMMM", { locale: es })} · ${pendingBooking.slot.time}` })
-      // Reload profile to show new upcoming booking
-      fetch("/api/profile").then(r => r.ok ? r.json() : null).then(d => { if (d) setData(d) })
+
+      // Optimistically add booking to the upcoming list so it shows immediately
+      const startISO = `${pendingBooking.date}T${pendingBooking.slot.time}:00`
+      const endDate = new Date(startISO)
+      endDate.setMinutes(endDate.getMinutes() + pendingBooking.duration)
+      const optimisticBooking = {
+        id: json.booking?.id ?? `opt-${Date.now()}`,
+        startTime: startISO,
+        endTime: endDate.toISOString(),
+        price: pendingBooking.price,
+        paidAmount: 0,
+        status: "CONFIRMED" as const,
+        paidOnline: false,
+        court: { name: pendingBooking.courtName, sport: pendingBooking.sport, color: pendingBooking.courtColor },
+        business: { name: pendingBooking.businessName, slug: pendingBooking.slug, cancellationHoursNotice: null },
+      }
+      setData(d => d ? { ...d, upcomingCourtBookings: [...d.upcomingCourtBookings, optimisticBooking] } : d)
+
+      // Also show transfer banner if client has transfer enabled
+      if (json.allowTransfer && json.booking?.id) {
+        const biz = data.businessBenefits.find(b => b.businessSlug === pendingBooking.slug)
+        setPendingTransfer({
+          bookingId: json.booking.id,
+          businessId: biz?.businessId ?? json.booking.businessId,
+          businessSlug: pendingBooking.slug,
+          businessName: pendingBooking.businessName,
+          courtName: pendingBooking.courtName,
+          date: pendingBooking.date,
+          time: pendingBooking.slot.time,
+          price: pendingBooking.price,
+        })
+      }
+
+      // Background refresh to sync server state
+      setTimeout(() => {
+        fetch("/api/profile").then(r => r.ok ? r.json() : null).then(d => { if (d) setData(d) })
+      }, 800)
     } catch { setPendingError("Error de conexión. Intenta de nuevo.") }
     setPendingConfirming(false)
   }
@@ -599,6 +640,73 @@ export default function ProfileContent() {
                   Descartar
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Transfer upload banner ────────────────────────────────────────── */}
+        {pendingTransfer && (
+          <div style={{
+            margin: "12px 20px 0",
+            borderRadius: 16, overflow: "hidden",
+            border: "1px solid rgba(56,189,248,0.3)",
+            maxWidth: 720,
+          }}>
+            <div style={{ background: NAVY_C, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 800, color: LTXT }}>🏦 Adjunta tu comprobante de transferencia</p>
+                <p style={{ fontSize: 11, color: LMUTED, marginTop: 2 }}>
+                  {pendingTransfer.courtName} · {format(parseISO(pendingTransfer.date), "d 'de' MMMM", { locale: es })} · {pendingTransfer.time}
+                  {pendingTransfer.price > 0 && <> · <span style={{ color: GOLD, fontWeight: 700 }}>${pendingTransfer.price.toLocaleString("es-CL")}</span></>}
+                </p>
+              </div>
+              <button onClick={() => setPendingTransfer(null)}
+                style={{ background: "transparent", border: "none", cursor: "pointer", color: LMUTED, flexShrink: 0 }}>
+                <X style={{ width: 16, height: 16 }} />
+              </button>
+            </div>
+            <div style={{ background: WHITE, padding: "14px 16px" }}>
+              <p style={{ fontSize: 12, color: MUTED, marginBottom: 12 }}>
+                El club validará el pago una vez recibido el comprobante.
+              </p>
+              {voucherUploaded ? (
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "10px 14px", borderRadius: 10,
+                  background: "rgba(22,163,74,0.08)", border: "1px solid rgba(22,163,74,0.25)",
+                }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#16a34a" }}>Comprobante enviado</span>
+                </div>
+              ) : (
+                <label style={{ display: "block", cursor: voucherUploading ? "wait" : "pointer" }}>
+                  <input type="file" accept="image/*" className="hidden" disabled={voucherUploading}
+                    onChange={async e => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      setVoucherUploading(true)
+                      const fd = new FormData()
+                      fd.append("file", file)
+                      const r = await fetch(
+                        `/api/businesses/${pendingTransfer.businessId}/court-bookings/${pendingTransfer.bookingId}/voucher`,
+                        { method: "POST", body: fd }
+                      )
+                      setVoucherUploading(false)
+                      if (r.ok) setVoucherUploaded(true)
+                    }} />
+                  <div style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    padding: "11px 16px", borderRadius: 10, fontSize: 13, fontWeight: 700,
+                    background: SB, color: ACCENT,
+                    border: "1px solid rgba(56,189,248,0.25)",
+                    opacity: voucherUploading ? 0.6 : 1,
+                  }}>
+                    {voucherUploading
+                      ? <><Loader2 style={{ width: 14, height: 14 }} className="animate-spin" />Subiendo...</>
+                      : <>📎 Subir comprobante</>}
+                  </div>
+                </label>
+              )}
             </div>
           </div>
         )}
