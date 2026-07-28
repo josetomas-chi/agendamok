@@ -7,6 +7,7 @@ import {
   Check, ChevronLeft, ChevronRight, Clock, MapPin, Calendar, User,
   Loader2, Download, Share2, Search, Phone, Star, ChevronDown, X
 } from "lucide-react"
+import { useSession } from "next-auth/react"
 import { ChatWidget } from "@/components/booking/chat-widget"
 
 type Category = { id: string; name: string; order: number }
@@ -38,9 +39,12 @@ type CourtStep = "home" | "court" | "datetime" | "form" | "confirmed"
 type PayMethod = "online" | "local" | "mp"
 
 export default function BookingClient({ slug }: { slug: string }) {
+  const { data: session, status: sessionStatus } = useSession()
   const [business, setBusiness] = useState<Business | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [autoClient, setAutoClient] = useState<{ name: string; email: string; phone: string; rut?: string } | null>(null)
+  const [autoChecked, setAutoChecked] = useState(false)
 
   useEffect(() => {
     fetch(`/api/book/${slug}`)
@@ -50,7 +54,24 @@ export default function BookingClient({ slug }: { slug: string }) {
       .finally(() => setLoading(false))
   }, [slug])
 
-  if (loading) return (
+  // Auto-skip RutGate for logged-in users
+  useEffect(() => {
+    if (sessionStatus === "loading" || !business) return
+    if (!session?.user?.email) { setAutoChecked(true); return }
+    fetch(`/api/book/${slug}/check-email?email=${encodeURIComponent(session.user.email)}`)
+      .then(r => r.json())
+      .then(d => {
+        setAutoClient({
+          name: d.name || session.user.name || "",
+          email: session.user.email!,
+          phone: d.phone || "",
+        })
+      })
+      .catch(() => {})
+      .finally(() => setAutoChecked(true))
+  }, [session, sessionStatus, business, slug])
+
+  if (loading || sessionStatus === "loading" || (session && !autoChecked)) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: "#0f0f11" }}>
       <div className="flex flex-col items-center gap-3">
         <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#38bdf8" }} />
@@ -69,12 +90,17 @@ export default function BookingClient({ slug }: { slug: string }) {
   )
 
   if (business.accessMode === "CLOSED") {
+    // If user is logged in and we found their client data, skip the gate
+    if (autoClient) {
+      if (business.businessType === "SPORTS_CLUB") return <CourtBookingFlow business={business} slug={slug} initialClient={autoClient} />
+      return <ServiceBookingFlow business={business} slug={slug} initialClient={autoClient} />
+    }
     return <RutGate business={business} slug={slug} />
   }
   if (business.businessType === "SPORTS_CLUB") {
-    return <CourtBookingFlow business={business} slug={slug} />
+    return <CourtBookingFlow business={business} slug={slug} initialClient={autoClient ?? undefined} />
   }
-  return <ServiceBookingFlow business={business} slug={slug} />
+  return <ServiceBookingFlow business={business} slug={slug} initialClient={autoClient ?? undefined} />
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -270,6 +296,8 @@ const SPORTS_BORDER = "rgba(56,189,248,0.18)"
 
 type CourtResult = Court & { slots: { time: string; price: number; paymentPlayers: number }[] }
 
+const COURT_SESSION_KEY = (slug: string) => `booking_court_${slug}`
+
 function CourtBookingFlow({ business, slug, initialClient }: { business: Business; slug: string; initialClient?: { name: string; email: string; phone: string; rut?: string } }) {
   const today = startOfToday()
 
@@ -328,26 +356,56 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   const [allowTransfer, setAllowTransfer] = useState(false)
   const [voucherUploading, setVoucherUploading] = useState(false)
   const [voucherUploaded, setVoucherUploaded] = useState(false)
+  const [pendingRestore, setPendingRestore] = useState<{ courtId: string; slot: { time: string; price: number; paymentPlayers: number } } | null>(null)
+
+  // Restore booking state if returning from login
+  useEffect(() => {
+    const saved = sessionStorage.getItem(COURT_SESSION_KEY(slug))
+    if (!saved) return
+    sessionStorage.removeItem(COURT_SESSION_KEY(slug))
+    try {
+      const s = JSON.parse(saved)
+      if (s.date) setSelectedDate(s.date)
+      if (s.sports) setSelectedSports(s.sports)
+      if (s.duration) setDuration(s.duration)
+      if (s.form) setForm(f => ({ ...f, ...s.form }))
+      if (s.rut) setRut(s.rut)
+      if (s.emailExists) setEmailExists(true)
+      if (s.courtId && s.slot) setPendingRestore({ courtId: s.courtId, slot: s.slot })
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const bookingWindowDays = business.clubSettings?.bookingWindowDays ?? 30
   const maxDate = addDays(today, bookingWindowDays - 1)
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(today, weekOffset * 7 + i))
   const maxWeekOffset = Math.floor(bookingWindowDays / 7)
 
-  async function search() {
+  async function search(restore?: typeof pendingRestore) {
     setSearching(true)
     const multiSport = selectedSports.length > 1
     const params = new URLSearchParams({ date: selectedDate, duration: multiSport ? "0" : String(duration) })
     if (selectedSports.length > 0) params.set("sport", selectedSports.join(","))
     const r = await fetch(`/api/book/${slug}/courts/availability?${params}`)
     const d = await r.json()
-    setResults(d.courts || [])
+    const courts: CourtResult[] = d.courts || []
+    setResults(courts)
     setSearching(false)
+    // Restore selected court/slot from sessionStorage if returning from login
+    if (restore) {
+      const court = courts.find(c => c.id === restore.courtId)
+      if (court) {
+        setSelectedCourt(court)
+        setSelectedSlot(restore.slot)
+        setStep("form")
+      }
+      setPendingRestore(null)
+    }
   }
 
   // Auto-search on mount and when date/sport/duration changes
   useEffect(() => {
-    search()
+    search(pendingRestore ?? undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, selectedSports, duration])
 
@@ -753,7 +811,16 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                   <p className="text-sm font-bold text-white">Ya tienes cuenta</p>
                   <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>Tu reserva quedará asociada a tu perfil automáticamente</p>
                 </div>
-                <a href={`/login?callbackUrl=/book/${slug}`} className="text-xs font-bold flex-shrink-0" style={{ color: SPORTS_ACCENT }}>Ingresar →</a>
+                <button
+                  onClick={() => {
+                    sessionStorage.setItem(COURT_SESSION_KEY(slug), JSON.stringify({
+                      date: selectedDate, sports: selectedSports, duration,
+                      courtId: selectedCourt?.id, slot: selectedSlot,
+                      form, rut, emailExists,
+                    }))
+                    window.location.href = `/login?callbackUrl=/book/${slug}`
+                  }}
+                  className="text-xs font-bold flex-shrink-0" style={{ color: SPORTS_ACCENT }}>Ingresar →</button>
               </div>
             ) : (
             <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${createAccount ? SPORTS_ACCENT + "50" : SPORTS_BORDER}`, background: createAccount ? "rgba(56,189,248,0.05)" : SPORTS_CARD }}>
@@ -1445,7 +1512,9 @@ function ServiceBookingFlow({ business, slug, initialClient }: { business: Busin
                   <p className="text-sm font-bold" style={{ color: TEXT }}>Ya tienes cuenta</p>
                   <p className="text-xs mt-0.5" style={{ color: MUTED }}>Tu reserva quedará asociada a tu perfil automáticamente</p>
                 </div>
-                <a href={`/login?callbackUrl=/book/${slug}`} className="text-xs font-bold flex-shrink-0" style={{ color: brand }}>Ingresar →</a>
+                <button
+                  onClick={() => window.location.href = `/login?callbackUrl=/book/${slug}`}
+                  className="text-xs font-bold flex-shrink-0" style={{ color: brand }}>Ingresar →</button>
               </div>
             ) : (
               <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${createAccount ? brand + "50" : BORDER}`, background: createAccount ? brand + "08" : CARD }}>
