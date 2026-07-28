@@ -717,10 +717,11 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
             {emailExists ? (
               <div className="rounded-2xl px-4 py-3.5 flex items-center gap-3" style={{ background: "rgba(56,189,248,0.06)", border: `1px solid ${SPORTS_ACCENT}40` }}>
                 <Check className="w-4 h-4 flex-shrink-0" style={{ color: SPORTS_ACCENT }} />
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-white">Ya tienes cuenta</p>
                   <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>Tu reserva quedará asociada a tu perfil automáticamente</p>
                 </div>
+                <a href="/login" className="text-xs font-bold flex-shrink-0" style={{ color: SPORTS_ACCENT }}>Ingresar →</a>
               </div>
             ) : (
             <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${createAccount ? SPORTS_ACCENT + "50" : SPORTS_BORDER}`, background: createAccount ? "rgba(56,189,248,0.05)" : SPORTS_CARD }}>
