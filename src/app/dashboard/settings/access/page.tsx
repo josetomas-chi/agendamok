@@ -7,6 +7,15 @@ import { Lock, LockOpen, Plus, Trash2, Check, X, Upload, Download, Search, Chevr
 const NAVY = "#0d1b2a"
 const BORDER = "1px solid rgba(13,27,42,0.1)"
 
+function formatRut(value: string) {
+  const clean = value.replace(/[^0-9kK]/g, "").toUpperCase()
+  if (clean.length === 0) return ""
+  const dv = clean.slice(-1)
+  const body = clean.slice(0, -1)
+  if (body.length === 0) return dv
+  return `${body.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${dv}`
+}
+
 const ROLES = [
   { value: "APODERADO", label: "Apoderado" },
   { value: "ALUMNO", label: "Alumno" },
@@ -386,7 +395,7 @@ export default function AccessPage() {
           <div className="px-4 py-4 grid grid-cols-2 gap-3" style={{ borderBottom: BORDER, background: "rgba(13,27,42,0.02)" }}>
             <div>
               <label style={labelStyle}>RUT *</label>
-              <input className={inputClass} style={inputStyle} value={addRut} onChange={e => setAddRut(e.target.value)} placeholder="12345678-9" />
+              <input className={inputClass} style={inputStyle} value={addRut} onChange={e => setAddRut(formatRut(e.target.value))} placeholder="12.345.678-9" />
             </div>
             <div>
               <label style={labelStyle}>Nombre *</label>

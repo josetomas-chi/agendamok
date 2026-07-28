@@ -8,6 +8,15 @@ import { toast } from "sonner"
 import NewBookingModal from "./_components/new-booking-modal"
 import CoachesTab from "./_components/coaches-tab"
 
+function formatRut(value: string) {
+  const clean = value.replace(/[^0-9kK]/g, "").toUpperCase()
+  if (clean.length === 0) return ""
+  const dv = clean.slice(-1)
+  const body = clean.slice(0, -1)
+  if (body.length === 0) return dv
+  return `${body.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${dv}`
+}
+
 type PricingRule = { days: number[]; startTime: string; endTime: string; fixedSlots: string[] }
 type Court = { id: string; name: string; sport: string | null; color: string; isActive: boolean; pricingRules?: PricingRule[] }
 type Client = { id: string; name: string; email: string | null; phone: string | null; rut: string | null }
@@ -1573,7 +1582,7 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                       type="text"
                       placeholder="Ej: 12.345.678-9"
                       value={rutInput}
-                      onChange={e => setRutInput(e.target.value)}
+                      onChange={e => setRutInput(formatRut(e.target.value))}
                       className="w-full h-10 px-3 rounded-xl text-sm outline-none"
                       style={{ background: "#f5f4f0", border: "1px solid rgba(13,27,42,0.12)", color: NAVY }}
                       autoFocus

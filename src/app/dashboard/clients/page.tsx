@@ -62,7 +62,7 @@ const SEGMENT_LABELS: Record<string, { label: string; color: string }> = {
   AT_RISK: { label: "En riesgo", color: "bg-orange-500/30 text-orange-200" },
 }
 
-type ImportRow = { name: string; email: string; phone: string; notes: string; _error?: string }
+type ImportRow = { name: string; rut: string; email: string; phone: string; notes: string; _error?: string; _warnRut?: boolean }
 type ImportState = "idle" | "preview" | "importing" | "done"
 
 export default function ClientsPage() {
@@ -134,6 +134,7 @@ export default function ClientsPage() {
     const normalize = (key: string) => key.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim()
     const colMap: Record<string, string> = {
       nombre: "name", name: "name",
+      rut: "rut", run: "rut",
       email: "email", correo: "email",
       telefono: "phone", phone: "phone", cel: "phone", celular: "phone",
       notas: "notes", notes: "notes", observaciones: "notes",
@@ -155,12 +156,14 @@ export default function ClientsPage() {
     }
 
     const rows: ImportRow[] = raw.map(r => {
-      const mapped: ImportRow = { name: "", email: "", phone: "", notes: "" }
+      const mapped: ImportRow = { name: "", rut: "", email: "", phone: "", notes: "" }
       for (const [k, v] of Object.entries(r)) {
         const field = colMap[normalize(k)]
         if (field) (mapped as Record<string, string>)[field] = String(v).trim()
       }
+      if (mapped.rut) mapped.rut = formatRut(mapped.rut)
       if (!mapped.name) mapped._error = "Sin nombre"
+      else if (!mapped.rut) mapped._warnRut = true
       return mapped
     }).filter(r => r.name || r._error)
 
@@ -609,10 +612,18 @@ export default function ClientsPage() {
 
           {(importState === "preview" || importState === "importing") && (
             <>
-              <div className="text-sm text-muted-foreground">
-                {importRows.filter(r => !r._error).length} filas válidas ·{" "}
-                {importRows.filter(r => r._error).length > 0 && (
-                  <span className="text-orange-400">{importRows.filter(r => r._error).length} con error (se omitirán)</span>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <div>
+                  {importRows.filter(r => !r._error).length} filas válidas ·{" "}
+                  {importRows.filter(r => r._error).length > 0 && (
+                    <span className="text-orange-400">{importRows.filter(r => r._error).length} con error (se omitirán)</span>
+                  )}
+                </div>
+                {importRows.filter(r => r._warnRut).length > 0 && (
+                  <div className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg" style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", color: "#b45309" }}>
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span><strong>{importRows.filter(r => r._warnRut).length} clientes sin RUT.</strong> Se importarán, pero deberán completar su RUT desde el perfil.</span>
+                  </div>
                 )}
               </div>
 
@@ -622,6 +633,7 @@ export default function ClientsPage() {
                     <tr>
                       <th className="px-3 py-2 text-left">#</th>
                       <th className="px-3 py-2 text-left">Nombre</th>
+                      <th className="px-3 py-2 text-left">RUT</th>
                       <th className="px-3 py-2 text-left">Email</th>
                       <th className="px-3 py-2 text-left">Teléfono</th>
                       <th className="px-3 py-2 text-left">Estado</th>
@@ -632,6 +644,12 @@ export default function ClientsPage() {
                       <tr key={i} className={row._error ? "opacity-50" : ""}>
                         <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
                         <td className="px-3 py-2 font-medium">{row.name || "—"}</td>
+                        <td className="px-3 py-2 font-mono text-xs">
+                          {row.rut
+                            ? <span className="text-white/80">{row.rut}</span>
+                            : <span className="text-yellow-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" />Sin RUT</span>
+                          }
+                        </td>
                         <td className="px-3 py-2 text-muted-foreground">{row.email || "—"}</td>
                         <td className="px-3 py-2 text-muted-foreground">{row.phone || "—"}</td>
                         <td className="px-3 py-2">
@@ -654,7 +672,7 @@ export default function ClientsPage() {
               </div>
 
               <p className="text-xs text-muted-foreground text-center">
-                Columnas aceptadas: <strong>nombre</strong>, <strong>email</strong>, <strong>teléfono</strong> (o phone/cel), <strong>notas</strong>
+                Columnas aceptadas: <strong>nombre</strong>, <strong>rut</strong>, <strong>email</strong>, <strong>teléfono</strong> (o phone/cel), <strong>notas</strong>
               </p>
             </>
           )}

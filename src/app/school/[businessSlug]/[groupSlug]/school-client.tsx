@@ -23,6 +23,15 @@ function fmtPrice(p: number) {
   return new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(p)
 }
 
+function formatRut(value: string) {
+  const clean = value.replace(/[^0-9kK]/g, "").toUpperCase()
+  if (clean.length === 0) return ""
+  const dv = clean.slice(-1)
+  const body = clean.slice(0, -1)
+  if (body.length === 0) return dv
+  return `${body.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${dv}`
+}
+
 export default function SchoolGroupClient({ businessSlug, groupSlug }: { businessSlug: string; groupSlug: string }) {
   const [business, setBusiness] = useState<Business | null>(null)
   const [group, setGroup] = useState<Group | null>(null)
@@ -217,7 +226,7 @@ export default function SchoolGroupClient({ businessSlug, groupSlug }: { busines
                   style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }} />
               </Field>
               <Field label="RUT *">
-                <input value={rut} onChange={e => setRut(e.target.value)} placeholder="12345678-9"
+                <input value={rut} onChange={e => setRut(formatRut(e.target.value))} placeholder="12.345.678-9"
                   className="w-full h-10 rounded-xl px-3 text-sm text-white outline-none"
                   style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }} />
               </Field>
