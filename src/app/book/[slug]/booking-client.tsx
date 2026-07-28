@@ -319,6 +319,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   const [step, setStep] = useState<CourtStep>("home")
   const [form, setForm] = useState({ name: initialClient?.name ?? "", email: initialClient?.email ?? "", phone: initialClient?.phone ?? "", notes: "" })
   const [rut, setRut] = useState("")
+  const [rutFound, setRutFound] = useState(!!initialClient?.name)
   const [createAccount, setCreateAccount] = useState(false)
   const [password, setPassword] = useState("")
   const [emailExists, setEmailExists] = useState(!!initialClient?.email)
@@ -428,7 +429,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   }
 
   return (
-    <div style={{ background: SPORTS_BG, minHeight: "100vh", color: "#f0f6ff", fontFamily: "sans-serif" }}>
+    <div style={{ background: SPORTS_BG, minHeight: "100vh", color: "#f0f6ff", fontFamily: "sans-serif", overflowX: "hidden" }}>
       {business.chatBotEnabled && <ChatWidget businessId={business.id} businessName={business.name} />}
 
       {/* ── HEADER AgendaMok Sports ────────────────────── */}
@@ -638,7 +639,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
 
       {/* ── FORM ───────────────────────────────────────── */}
       {step === "form" && selectedCourt && selectedSlot && (
-        <div className="max-w-lg mx-auto">
+        <div className="max-w-lg mx-auto w-full overflow-x-hidden">
           <div className="sticky top-0 z-20 px-4 py-3 flex items-center gap-3" style={{ background: `${SPORTS_BG}ee`, backdropFilter: "blur(12px)", borderBottom: `1px solid ${SPORTS_BORDER}` }}>
             <button onClick={() => setStep("home")} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
               style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT }}>
@@ -680,24 +681,34 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
             {/* Fields */}
             <div className="space-y-3">
               <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: SPORTS_ACCENT }}>Tus datos</p>
-              {/* RUT — optional, pre-fills data on blur */}
-              <div className="space-y-1">
-                <label className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.4)" }}>RUT (opcional)</label>
-                <input value={rut} onChange={e => setRut(formatRut(e.target.value))}
-                  onBlur={async e => {
-                    const v = e.target.value.trim()
-                    if (!v) return
-                    const r = await fetch(`/api/book/${slug}/lookup-rut?rut=${encodeURIComponent(v)}`)
-                    const d = await r.json()
-                    if (d.found) {
-                      setForm(f => ({ ...f, name: d.name || f.name, email: d.email || f.email, phone: d.phone || f.phone }))
-                      if (d.email) setEmailExists(true)
-                    }
-                  }}
-                  placeholder="12.345.678-9"
-                  className="w-full rounded-xl px-4 py-3 text-sm outline-none placeholder:opacity-25 transition-all"
-                  style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}`, color: "#f0f6ff" }} />
-              </div>
+              {/* RUT — chip si reconocido, input si no */}
+              {rutFound && rut ? (
+                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl" style={{ background: "rgba(56,189,248,0.08)", border: `1px solid ${SPORTS_ACCENT}40` }}>
+                  <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: SPORTS_ACCENT }} />
+                  <span className="text-sm font-mono flex-1" style={{ color: SPORTS_ACCENT }}>{rut}</span>
+                  <button type="button" onClick={() => { setRut(""); setRutFound(false); setForm(f => ({ ...f, name: "", email: "", phone: "" })); setEmailExists(false) }}
+                    className="text-xs opacity-50 hover:opacity-100" style={{ color: SPORTS_ACCENT }}>✕</button>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.4)" }}>RUT (opcional)</label>
+                  <input value={rut} onChange={e => setRut(formatRut(e.target.value))}
+                    onBlur={async e => {
+                      const v = e.target.value.trim()
+                      if (!v) return
+                      const r = await fetch(`/api/book/${slug}/lookup-rut?rut=${encodeURIComponent(v)}`)
+                      const d = await r.json()
+                      if (d.found) {
+                        setForm(f => ({ ...f, name: d.name || f.name, email: d.email || f.email, phone: d.phone || f.phone }))
+                        if (d.email) setEmailExists(true)
+                        setRutFound(true)
+                      }
+                    }}
+                    placeholder="12.345.678-9"
+                    className="w-full rounded-xl px-4 py-3 text-sm outline-none placeholder:opacity-25 transition-all"
+                    style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}`, color: "#f0f6ff" }} />
+                </div>
+              )}
               {[
                 { key: "name", label: "Nombre completo", type: "text", placeholder: "María González" },
                 { key: "phone", label: "Teléfono (opcional)", type: "tel", placeholder: "+56 9 1234 5678" },
@@ -931,6 +942,7 @@ function ServiceBookingFlow({ business, slug, initialClient }: { business: Busin
 
   const [form, setForm] = useState({ name: initialClient?.name ?? "", email: initialClient?.email ?? "", phone: initialClient?.phone ?? "", notes: "" })
   const [rut, setRut] = useState("")
+  const [rutFound, setRutFound] = useState(!!initialClient?.name)
   const [payMethod, setPayMethod] = useState<PayMethod>("local")
   const [submitting, setSubmitting] = useState(false)
   const [emailExists, setEmailExists] = useState(!!initialClient?.email)
@@ -1361,24 +1373,34 @@ function ServiceBookingFlow({ business, slug, initialClient }: { business: Busin
             {/* Fields */}
             <div className="space-y-3">
               <label className="text-xs font-bold uppercase tracking-wider" style={{ color: MUTED }}>Tus datos</label>
-              {/* RUT — optional, pre-fills data on blur */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium" style={{ color: MUTED }}>RUT (opcional)</label>
-                <input value={rut} onChange={e => setRut(formatRut(e.target.value))}
-                  onBlur={async e => {
-                    const v = e.target.value.trim()
-                    if (!v) return
-                    const r = await fetch(`/api/book/${slug}/lookup-rut?rut=${encodeURIComponent(v)}`)
-                    const d = await r.json()
-                    if (d.found) {
-                      setForm(f => ({ ...f, name: d.name || f.name, email: d.email || f.email, phone: d.phone || f.phone }))
-                      if (d.email) setEmailExists(true)
-                    }
-                  }}
-                  placeholder="12.345.678-9"
-                  className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all"
-                  style={{ background: CARD, border: `1px solid ${BORDER}`, color: TEXT }} />
-              </div>
+              {/* RUT — chip si reconocido, input si no */}
+              {rutFound && rut ? (
+                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl" style={{ background: brand + "12", border: `1px solid ${brand}40` }}>
+                  <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: brand }} />
+                  <span className="text-sm font-mono flex-1" style={{ color: brand }}>{rut}</span>
+                  <button type="button" onClick={() => { setRut(""); setRutFound(false); setForm(f => ({ ...f, name: "", email: "", phone: "" })); setEmailExists(false) }}
+                    className="text-xs opacity-50 hover:opacity-100" style={{ color: brand }}>✕</button>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium" style={{ color: MUTED }}>RUT (opcional)</label>
+                  <input value={rut} onChange={e => setRut(formatRut(e.target.value))}
+                    onBlur={async e => {
+                      const v = e.target.value.trim()
+                      if (!v) return
+                      const r = await fetch(`/api/book/${slug}/lookup-rut?rut=${encodeURIComponent(v)}`)
+                      const d = await r.json()
+                      if (d.found) {
+                        setForm(f => ({ ...f, name: d.name || f.name, email: d.email || f.email, phone: d.phone || f.phone }))
+                        if (d.email) setEmailExists(true)
+                        setRutFound(true)
+                      }
+                    }}
+                    placeholder="12.345.678-9"
+                    className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all"
+                    style={{ background: CARD, border: `1px solid ${BORDER}`, color: TEXT }} />
+                </div>
+              )}
               {[
                 { key: "name", label: "Nombre completo", type: "text", placeholder: "María González" },
                 { key: "phone", label: "Teléfono (opcional)", type: "tel", placeholder: "+56 9 1234 5678" },
