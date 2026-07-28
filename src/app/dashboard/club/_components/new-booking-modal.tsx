@@ -55,7 +55,7 @@ function TimeSelect({ value, onChange, label, minTime }: { value: string; onChan
 }
 
 type NewClientForm = { name: string; email: string; phone: string }
-type Client = { id: string; name: string; email: string | null; phone: string | null; creditBalance?: number }
+type Client = { id: string; name: string; email: string | null; phone: string | null; rut: string | null; creditBalance?: number }
 type CoachFeeRule = { days: number[]; startTime: string; endTime: string; classPrice: number }
 type Coach = { id: string; name: string; color: string; paymentType: string; feeRules: CoachFeeRule[] }
 
@@ -140,7 +140,14 @@ function ClientCombobox({ clients, value, onSelect }: {
                         style={{ background: NAVY }}>
                         {c.name[0].toUpperCase()}
                       </div>
-                      {c.name}
+                      <div className="min-w-0">
+                        <p className="truncate">{c.name}</p>
+                        {(c.rut || c.email) && (
+                          <p className="text-[10px] truncate" style={{ color: "rgba(13,27,42,0.4)" }}>
+                            {c.rut ?? c.email}
+                          </p>
+                        )}
+                      </div>
                     </button>
                   ))}
                 </div>
