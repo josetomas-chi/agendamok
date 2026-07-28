@@ -911,6 +911,9 @@ function ServiceBookingFlow({ business, slug, initialClient }: { business: Busin
   const [form, setForm] = useState({ name: initialClient?.name ?? "", email: initialClient?.email ?? "", phone: initialClient?.phone ?? "", notes: "" })
   const [payMethod, setPayMethod] = useState<PayMethod>("local")
   const [submitting, setSubmitting] = useState(false)
+  const [emailExists, setEmailExists] = useState(!!initialClient?.email)
+  const [createAccount, setCreateAccount] = useState(false)
+  const [password, setPassword] = useState("")
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(today, weekOffset * 7 + i))
 
@@ -984,6 +987,13 @@ function ServiceBookingFlow({ business, slug, initialClient }: { business: Busin
         const payData = await payR.json()
         if (payData.url) { window.location.href = payData.url; return }
       }
+    }
+    if (createAccount && password.length >= 6) {
+      await fetch(`/api/book/${slug}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: form.name, email: form.email, password }),
+      })
     }
     setStep("confirmed")
     setSubmitting(false)
@@ -1331,7 +1341,6 @@ function ServiceBookingFlow({ business, slug, initialClient }: { business: Busin
               <label className="text-xs font-bold uppercase tracking-wider" style={{ color: MUTED }}>Tus datos</label>
               {[
                 { key: "name", label: "Nombre completo", type: "text", placeholder: "María González" },
-                { key: "email", label: "Email", type: "email", placeholder: "tu@email.com" },
                 { key: "phone", label: "Teléfono (opcional)", type: "tel", placeholder: "+56 9 1234 5678" },
               ].map(({ key, label, type, placeholder }) => (
                 <div key={key} className="space-y-1">
@@ -1343,11 +1352,62 @@ function ServiceBookingFlow({ business, slug, initialClient }: { business: Busin
                     style={{ background: CARD, border: `1px solid ${BORDER}`, color: TEXT }} />
                 </div>
               ))}
+              <div className="space-y-1">
+                <label className="text-xs font-medium" style={{ color: MUTED }}>Email</label>
+                <input type="email" value={form.email}
+                  onChange={e => { setForm(f => ({ ...f, email: e.target.value })); setEmailExists(false) }}
+                  onBlur={async e => {
+                    const email = e.target.value.trim()
+                    if (!email || !email.includes("@")) return
+                    const r = await fetch(`/api/book/${slug}/check-email?email=${encodeURIComponent(email)}`)
+                    const d = await r.json()
+                    setEmailExists(d.exists)
+                  }}
+                  placeholder="tu@email.com"
+                  className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all"
+                  style={{ background: CARD, border: `1px solid ${BORDER}`, color: TEXT }} />
+              </div>
               <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                 rows={3} placeholder="Comentario para el profesional (opcional)"
                 className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none"
                 style={{ background: CARD, border: `1px solid ${BORDER}`, color: TEXT }} />
             </div>
+
+            {/* Account creation / already registered */}
+            {emailExists ? (
+              <div className="rounded-2xl px-4 py-3.5 flex items-center gap-3" style={{ background: brand + "10", border: `1px solid ${brand}40` }}>
+                <Check className="w-4 h-4 flex-shrink-0" style={{ color: brand }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold" style={{ color: TEXT }}>Ya tienes cuenta</p>
+                  <p className="text-xs mt-0.5" style={{ color: MUTED }}>Tu reserva quedará asociada a tu perfil automáticamente</p>
+                </div>
+                <a href="/login" className="text-xs font-bold flex-shrink-0" style={{ color: brand }}>Ingresar →</a>
+              </div>
+            ) : (
+              <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${createAccount ? brand + "50" : BORDER}`, background: createAccount ? brand + "08" : CARD }}>
+                <button type="button" onClick={() => setCreateAccount(v => !v)}
+                  className="w-full px-4 py-3.5 flex items-center gap-3 text-left transition-all">
+                  <div className="w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center transition-all"
+                    style={{ background: createAccount ? brand : SUBTLE, border: `1.5px solid ${createAccount ? brand : BORDER}` }}>
+                    {createAccount && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold" style={{ color: TEXT }}>Crear cuenta gratis</p>
+                    <p className="text-xs mt-0.5" style={{ color: MUTED }}>Accede a tu historial, cancela reservas y acumula beneficios</p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: brand + "18", color: brand }}>Gratis</span>
+                </button>
+                {createAccount && (
+                  <div className="px-4 pb-4 space-y-2">
+                    <div className="h-px" style={{ background: BORDER }} />
+                    <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                      placeholder="Crea una contraseña (mín. 6 caracteres)"
+                      className="w-full rounded-xl px-4 py-3 text-sm outline-none mt-1"
+                      style={{ background: SUBTLE, border: `1px solid ${BORDER}`, color: TEXT }} />
+                  </div>
+                )}
+              </div>
+            )}
 
             <button onClick={handleConfirm} disabled={submitting || !form.name || !form.email}
               className="w-full py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-40"
