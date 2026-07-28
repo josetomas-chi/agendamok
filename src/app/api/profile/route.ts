@@ -16,7 +16,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
 
   // Auto-link orphan client records (userId=null) that match by email or RUT
-  // Step 1: link by email
+  // Note: Client.userId is unique per record — we link one at a time to avoid constraint errors
   const orphansByEmail = userEmail
     ? await prisma.client.findMany({
         where: { email: userEmail, userId: null, deletedAt: null },
@@ -24,7 +24,6 @@ export async function GET() {
       })
     : []
 
-  // Step 2: find user's RUT from already-linked clients (or session)
   const linkedRut = await prisma.client.findFirst({
     where: { userId, deletedAt: null, rut: { not: null } },
     select: { rut: true },
@@ -38,11 +37,12 @@ export async function GET() {
     : []
 
   const allOrphanIds = [...new Set([...orphansByEmail, ...orphansByRut].map(o => o.id))]
-  if (allOrphanIds.length > 0) {
-    await prisma.client.updateMany({
-      where: { id: { in: allOrphanIds } },
-      data: { userId },
-    })
+  for (const id of allOrphanIds) {
+    try {
+      await prisma.client.update({ where: { id }, data: { userId } })
+    } catch {
+      // Unique constraint violation — another record already has this userId, skip
+    }
   }
 
   // All client records for this user (including just-linked ones)

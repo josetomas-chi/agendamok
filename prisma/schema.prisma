@@ -132,7 +132,7 @@ model User {
   sessions        Session[]
   businessOwner   Business?      @relation("BusinessOwner")
   staffProfile    StaffMember?
-  clientProfile   Client?
+  clientProfiles  Client[]
   businessMembers BusinessMember[]
 
   @@index([email])
@@ -548,7 +548,7 @@ model DayOff {
 
 model Client {
   id            String        @id @default(cuid())
-  userId        String?       @unique
+  userId        String?
   businessId    String
   name          String
   lastName      String?
