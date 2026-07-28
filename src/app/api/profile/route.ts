@@ -15,18 +15,34 @@ export async function GET() {
   })
   if (!user) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
 
-  // Auto-link orphan client records that match by email but have no userId
-  if (userEmail) {
-    const orphans = await prisma.client.findMany({
-      where: { email: userEmail, userId: null, deletedAt: null },
-      select: { id: true },
-    })
-    if (orphans.length > 0) {
-      await prisma.client.updateMany({
-        where: { id: { in: orphans.map(o => o.id) } },
-        data: { userId },
+  // Auto-link orphan client records (userId=null) that match by email or RUT
+  // Step 1: link by email
+  const orphansByEmail = userEmail
+    ? await prisma.client.findMany({
+        where: { email: userEmail, userId: null, deletedAt: null },
+        select: { id: true },
       })
-    }
+    : []
+
+  // Step 2: find user's RUT from already-linked clients (or session)
+  const linkedRut = await prisma.client.findFirst({
+    where: { userId, deletedAt: null, rut: { not: null } },
+    select: { rut: true },
+  })
+  const knownRut = linkedRut?.rut ?? null
+  const orphansByRut = knownRut
+    ? await prisma.client.findMany({
+        where: { rut: knownRut, userId: null, deletedAt: null },
+        select: { id: true },
+      })
+    : []
+
+  const allOrphanIds = [...new Set([...orphansByEmail, ...orphansByRut].map(o => o.id))]
+  if (allOrphanIds.length > 0) {
+    await prisma.client.updateMany({
+      where: { id: { in: allOrphanIds } },
+      data: { userId },
+    })
   }
 
   // All client records for this user (including just-linked ones)
