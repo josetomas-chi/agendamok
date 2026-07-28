@@ -98,7 +98,7 @@ function RutGate({ business, slug }: { business: Business; slug: string }) {
   const [checking, setChecking] = useState(false)
   const [result, setResult] = useState<RutCheckResult | null>(null)
   const [approved, setApproved] = useState(false)
-  const [clientData, setClientData] = useState<{ name: string; email: string; phone: string }>({ name: "", email: "", phone: "" })
+  const [clientData, setClientData] = useState<{ name: string; email: string; phone: string; rut: string }>({ name: "", email: "", phone: "", rut: "" })
 
   // Request form state
   const [reqName, setReqName] = useState("")
@@ -126,7 +126,7 @@ function RutGate({ business, slug }: { business: Business; slug: string }) {
       const d = await r.json()
       setResult(d)
       if (d.allowed) {
-        setClientData({ name: d.name ?? "", email: d.email ?? "", phone: d.phone ?? "" })
+        setClientData({ name: d.name ?? "", email: d.email ?? "", phone: d.phone ?? "", rut: rut.trim() })
         setApproved(true)
       }
     } catch {
@@ -270,7 +270,7 @@ const SPORTS_BORDER = "rgba(56,189,248,0.18)"
 
 type CourtResult = Court & { slots: { time: string; price: number; paymentPlayers: number }[] }
 
-function CourtBookingFlow({ business, slug, initialClient }: { business: Business; slug: string; initialClient?: { name: string; email: string; phone: string } }) {
+function CourtBookingFlow({ business, slug, initialClient }: { business: Business; slug: string; initialClient?: { name: string; email: string; phone: string; rut?: string } }) {
   const today = startOfToday()
 
   // Search state
@@ -318,7 +318,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   const [courtPayMethod, setCourtPayMethod] = useState<"local" | "online">("local")
   const [step, setStep] = useState<CourtStep>("home")
   const [form, setForm] = useState({ name: initialClient?.name ?? "", email: initialClient?.email ?? "", phone: initialClient?.phone ?? "", notes: "" })
-  const [rut, setRut] = useState("")
+  const [rut, setRut] = useState(initialClient?.rut ? formatRut(initialClient.rut) : "")
   const [rutFound, setRutFound] = useState(!!initialClient?.name)
   const [createAccount, setCreateAccount] = useState(false)
   const [password, setPassword] = useState("")
@@ -924,7 +924,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
 // SERVICE BOOKING FLOW (regular businesses)
 // ─────────────────────────────────────────────────────────────────
 
-function ServiceBookingFlow({ business, slug, initialClient }: { business: Business; slug: string; initialClient?: { name: string; email: string; phone: string } }) {
+function ServiceBookingFlow({ business, slug, initialClient }: { business: Business; slug: string; initialClient?: { name: string; email: string; phone: string; rut?: string } }) {
   const brand = business.primaryColor || "#38bdf8"
   const today = startOfToday()
 
@@ -941,7 +941,7 @@ function ServiceBookingFlow({ business, slug, initialClient }: { business: Busin
   const catBarRef = useRef<HTMLDivElement>(null)
 
   const [form, setForm] = useState({ name: initialClient?.name ?? "", email: initialClient?.email ?? "", phone: initialClient?.phone ?? "", notes: "" })
-  const [rut, setRut] = useState("")
+  const [rut, setRut] = useState(initialClient?.rut ? formatRut(initialClient.rut) : "")
   const [rutFound, setRutFound] = useState(!!initialClient?.name)
   const [payMethod, setPayMethod] = useState<PayMethod>("local")
   const [submitting, setSubmitting] = useState(false)
