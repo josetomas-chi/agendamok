@@ -57,11 +57,14 @@ type ProfileData = {
   }[]
 }
 
-const ACCENT = "#38bdf8"
-const BG = "#0f0f11"
-const CARD = "#1c1c20"
-const BORDER = "rgba(255,255,255,0.07)"
-const MUTED = "rgba(255,255,255,0.38)"
+const ACCENT  = "#38bdf8"
+const BG      = "#0d1b2a"
+const CARD    = "#0f2a3f"
+const CARD2   = "#112233"
+const BORDER  = "rgba(56,189,248,0.15)"
+const BORDER2 = "rgba(255,255,255,0.07)"
+const TEXT    = "#f0f6ff"
+const MUTED   = "rgba(240,246,255,0.45)"
 
 function statusLabel(s: string) {
   const map: Record<string, string> = {
@@ -132,7 +135,7 @@ export default function ProfileContent() {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: BG }}>
-      <Loader2 className="w-7 h-7 animate-spin" style={{ color: ACCENT }} />
+      <Loader2 className="w-8 h-8 animate-spin" style={{ color: ACCENT }} />
     </div>
   )
   if (!data) return (
@@ -162,11 +165,11 @@ export default function ProfileContent() {
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   return (
-    <div className="min-h-screen pb-12" style={{ background: BG }}>
-      {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center justify-between px-4 h-14"
-        style={{ background: BG, borderBottom: `1px solid ${BORDER}` }}>
-        <span className="font-bold text-white text-base">Mi perfil</span>
+    <div className="min-h-screen pb-12" style={{ background: BG, color: TEXT }}>
+      {/* Sticky nav */}
+      <div className="sticky top-0 z-20 flex items-center justify-between px-4 h-14"
+        style={{ background: `${BG}ee`, backdropFilter: "blur(12px)", borderBottom: `1px solid ${BORDER2}` }}>
+        <span className="font-black text-base tracking-wide">Mi perfil</span>
         <button onClick={() => signOut({ callbackUrl: "/login" })}
           className="flex items-center gap-1.5 text-xs hover:opacity-70 transition-opacity"
           style={{ color: MUTED }}>
@@ -174,19 +177,18 @@ export default function ProfileContent() {
         </button>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pt-6 space-y-6">
-
-        {/* Avatar + datos */}
-        <div className="flex items-center gap-4">
+      {/* Hero */}
+      <div className="relative px-4 pb-6 pt-8" style={{ background: `linear-gradient(180deg, rgba(56,189,248,0.07) 0%, ${BG} 100%)` }}>
+        <div className="max-w-lg mx-auto flex items-center gap-5">
           <div className="relative flex-shrink-0">
-            <div className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center"
-              style={{ background: "rgba(56,189,248,0.1)", border: `2px solid ${ACCENT}30` }}>
+            <div className="w-22 h-22 rounded-full overflow-hidden flex items-center justify-center"
+              style={{ width: 80, height: 80, background: "rgba(56,189,248,0.12)", border: `2px solid ${ACCENT}40` }}>
               {user.image
                 ? <img src={user.image} alt="" className="w-full h-full object-cover" />
                 : <User className="w-9 h-9" style={{ color: ACCENT }} />}
             </div>
             <button onClick={() => fileRef.current?.click()} disabled={uploadingPhoto}
-              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center"
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center shadow-lg"
               style={{ background: ACCENT }}>
               {uploadingPhoto
                 ? <Loader2 className="w-3.5 h-3.5 text-black animate-spin" />
@@ -195,12 +197,15 @@ export default function ProfileContent() {
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
           </div>
           <div className="min-w-0">
-            <h1 className="text-white font-bold text-xl leading-tight truncate">{user.name ?? "Sin nombre"}</h1>
+            <h1 className="font-black text-xl leading-tight truncate" style={{ color: TEXT }}>{user.name ?? "Sin nombre"}</h1>
             <p className="text-sm mt-0.5 truncate" style={{ color: MUTED }}>{user.email}</p>
-            {user.phone && <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>{user.phone}</p>}
-            {user.rut && <p className="text-xs mt-0.5 font-mono" style={{ color: ACCENT + "99" }}>{user.rut}</p>}
+            {user.phone && <p className="text-xs mt-0.5" style={{ color: MUTED }}>{user.phone}</p>}
+            {user.rut && <p className="text-xs mt-1 font-mono font-bold" style={{ color: ACCENT + "aa" }}>{user.rut}</p>}
           </div>
         </div>
+      </div>
+
+      <div className="max-w-lg mx-auto px-4 pt-2 space-y-6">
 
         {/* ── SPORTS: stats de partidos ── */}
         {isSportsUser && recentMatches.length > 0 && (
@@ -211,7 +216,7 @@ export default function ProfileContent() {
               { label: "Derrotas", value: losses, color: "#ef4444" },
             ].map(s => (
               <div key={s.label} className="rounded-2xl p-3 text-center"
-                style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+                style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
                 <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
                 <p className="text-[10px] mt-0.5 uppercase tracking-wider" style={{ color: MUTED }}>{s.label}</p>
               </div>
@@ -223,19 +228,19 @@ export default function ProfileContent() {
         {!isSportsUser && (totalCompleted > 0 || loyaltyPoints > 0 || creditBalance > 0) && (
           <div className="grid grid-cols-3 gap-3">
             {totalCompleted > 0 && (
-              <div className="rounded-2xl p-3 text-center" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-                <p className="text-2xl font-bold text-white">{totalCompleted}</p>
+              <div className="rounded-2xl p-3 text-center" style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
+                <p className="text-2xl font-bold" style={{ color: TEXT }}>{totalCompleted}</p>
                 <p className="text-[10px] mt-0.5 uppercase tracking-wider" style={{ color: MUTED }}>Visitas</p>
               </div>
             )}
             {loyaltyPoints > 0 && (
-              <div className="rounded-2xl p-3 text-center" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+              <div className="rounded-2xl p-3 text-center" style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
                 <p className="text-2xl font-bold" style={{ color: "#f59e0b" }}>{loyaltyPoints}</p>
                 <p className="text-[10px] mt-0.5 uppercase tracking-wider" style={{ color: MUTED }}>Puntos</p>
               </div>
             )}
             {creditBalance > 0 && (
-              <div className="rounded-2xl p-3 text-center" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+              <div className="rounded-2xl p-3 text-center" style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
                 <p className="text-2xl font-bold" style={{ color: "#22c55e" }}>
                   ${(creditBalance / 100).toLocaleString("es-CL")}
                 </p>
@@ -248,7 +253,7 @@ export default function ProfileContent() {
         {/* ── GENERAL: servicio y profesional favorito ── */}
         {!isSportsUser && (topService || topStaff) && (
           <div className="rounded-2xl p-4 space-y-3" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: MUTED }}>Tus favoritos</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: ACCENT }}>Tus favoritos</p>
             {topService && (
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -256,7 +261,7 @@ export default function ProfileContent() {
                   <Zap className="w-4 h-4" style={{ color: topService.color }} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-white font-medium truncate">{topService.name}</p>
+                  <p className="text-sm font-medium truncate">{topService.name}</p>
                   <p className="text-[11px]" style={{ color: MUTED }}>Servicio · {topService.count} visitas</p>
                 </div>
                 <Star className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#f59e0b" }} />
@@ -269,7 +274,7 @@ export default function ProfileContent() {
                   <User className="w-4 h-4" style={{ color: ACCENT }} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-white font-medium truncate">{topStaff.name}</p>
+                  <p className="text-sm font-medium truncate">{topStaff.name}</p>
                   <p className="text-[11px]" style={{ color: MUTED }}>Profesional · {topStaff.count} turnos</p>
                 </div>
                 <Star className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#f59e0b" }} />
@@ -291,7 +296,7 @@ export default function ProfileContent() {
                     style={{ background: CARD, border: `1px solid ${urgent ? "#f59e0b40" : BORDER}` }}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-white font-semibold text-sm">{m.plan.name}</p>
+                        <p className="font-semibold text-sm">{m.plan.name}</p>
                         <p className="text-xs mt-0.5" style={{ color: MUTED }}>{m.business.name}</p>
                       </div>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
@@ -322,7 +327,7 @@ export default function ProfileContent() {
             <div className="space-y-2">
               {allUpcoming.map(b => (
                 <div key={b.id} className="rounded-2xl p-4"
-                  style={{ background: "rgba(56,189,248,0.06)", border: `1px solid ${ACCENT}25` }}>
+                  style={{ background: "rgba(56,189,248,0.07)", border: `1px solid ${BORDER}` }}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-2 h-2 rounded-full flex-shrink-0"
@@ -357,10 +362,10 @@ export default function ProfileContent() {
             <div className="space-y-2">
               {tournaments.filter(t => t.tournament.status !== "FINISHED" && t.tournament.status !== "CANCELLED").map(t => (
                 <div key={t.participantId} className="rounded-2xl p-4"
-                  style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+                  style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-white font-semibold text-sm leading-snug">{t.tournament.name}</p>
+                      <p className="font-semibold text-sm leading-snug">{t.tournament.name}</p>
                       <p className="text-xs mt-0.5" style={{ color: MUTED }}>{t.tournament.business.name}</p>
                     </div>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
@@ -388,7 +393,7 @@ export default function ProfileContent() {
         {isSportsUser && recentMatches.length > 0 && (
           <section>
             <SectionTitle>Últimos resultados</SectionTitle>
-            <div className="rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+            <div className="rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
               {recentMatches.slice(0, 5).map((m, i) => (
                 <div key={m.id} className="flex items-center gap-3 px-4 py-3"
                   style={{ borderBottom: i < 4 ? `1px solid ${BORDER}` : undefined }}>
@@ -400,7 +405,7 @@ export default function ProfileContent() {
                     {m.result === "P" ? "—" : m.result}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white font-medium truncate">vs {m.opponent}</p>
+                    <p className="text-sm font-medium truncate">vs {m.opponent}</p>
                     <p className="text-[11px] truncate" style={{ color: MUTED }}>
                       Ronda {m.round} · {m.tournamentName}
                     </p>
@@ -422,7 +427,7 @@ export default function ProfileContent() {
           <SectionTitle>Historial de reservas</SectionTitle>
           {allHistory.length === 0
             ? (
-              <div className="rounded-2xl p-8 text-center" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+              <div className="rounded-2xl p-8 text-center" style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
                 <Calendar className="w-8 h-8 mx-auto mb-2" style={{ color: "rgba(255,255,255,0.1)" }} />
                 <p className="text-sm" style={{ color: MUTED }}>Sin reservas aún</p>
               </div>
@@ -430,7 +435,7 @@ export default function ProfileContent() {
             : (
               <div className="space-y-2">
                 {allHistory.map(b => (
-                  <div key={b.id} className="rounded-2xl p-4" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+                  <div key={b.id} className="rounded-2xl p-4" style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <div className="w-2 h-2 rounded-full flex-shrink-0"
@@ -465,8 +470,8 @@ export default function ProfileContent() {
         </section>
 
         <div className="text-center pt-2">
-          <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.12)" }}>
-            Reservas gestionadas por <span style={{ color: ACCENT + "60" }}>AgendaMok</span>
+          <p className="text-[10px]" style={{ color: "rgba(240,246,255,0.15)" }}>
+            Reservas gestionadas por <span style={{ color: `${ACCENT}60` }}>AgendaMok</span>
           </p>
         </div>
       </div>
