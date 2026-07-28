@@ -6,7 +6,7 @@ import { format, isToday, isTomorrow, differenceInDays } from "date-fns"
 import { es } from "date-fns/locale"
 import {
   User, Camera, Calendar, Trophy, LogOut, Clock,
-  Loader2, Medal, Star, CreditCard, Zap, Gift, CheckCircle2,
+  Loader2, Medal, Star, Zap, Gift, X, AlertCircle,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 
@@ -26,12 +26,12 @@ type ProfileData = {
     id: string; startTime: string; endTime: string; status: string
     service: { name: string; color: string; duration: number; price: number | null }
     staff: { user: { name: string | null } } | null
-    business: { name: string; slug: string }
+    business: { name: string; slug: string; cancellationHoursNotice: number | null }
   }[]
   upcomingCourtBookings: {
     id: string; startTime: string; endTime: string; price: number; status: string; paidOnline: boolean
     court: { name: string; sport: string | null; color: string }
-    business: { name: string; slug: string }
+    business: { name: string; slug: string; cancellationHoursNotice: number | null }
   }[]
   courtBookings: {
     id: string; startTime: string; endTime: string; price: number; status: string; paidOnline: boolean
@@ -105,7 +105,36 @@ export default function ProfileContent() {
   const [data, setData] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [cancelError, setCancelError] = useState<string | null>(null)
+  const [cancelledIds, setCancelledIds] = useState<Set<string>>(new Set())
   const fileRef = useRef<HTMLInputElement>(null)
+
+  async function handleCancel(type: "court" | "appt", id: string) {
+    setCancellingId(id)
+    setCancelError(null)
+    const res = await fetch("/api/profile/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, id }),
+    })
+    const json = await res.json()
+    if (!res.ok) {
+      setCancelError(json.error ?? "Error al cancelar")
+    } else {
+      setCancelledIds(prev => new Set([...prev, id]))
+    }
+    setCancellingId(null)
+  }
+
+  function canCancel(startTime: string, hoursNotice: number | null): { allowed: boolean; reason?: string } {
+    if (!hoursNotice || hoursNotice === 0) return { allowed: true }
+    const hoursUntil = (new Date(startTime).getTime() - Date.now()) / 3_600_000
+    if (hoursUntil < hoursNotice) {
+      return { allowed: false, reason: `Cancelación permitida hasta ${hoursNotice}h antes` }
+    }
+    return { allowed: true }
+  }
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -339,33 +368,67 @@ export default function ProfileContent() {
         {allUpcoming.length > 0 && (
           <section>
             <SectionTitle>Próximas reservas</SectionTitle>
+            {cancelError && (
+              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl mb-2 text-xs"
+                style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171" }}>
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                {cancelError}
+                <button onClick={() => setCancelError(null)} className="ml-auto"><X className="w-3.5 h-3.5" /></button>
+              </div>
+            )}
             <div className="space-y-2">
-              {allUpcoming.map(b => (
-                <div key={b.id} className="rounded-2xl p-4"
-                  style={{ background: "rgba(56,189,248,0.07)", border: `1px solid ${BORDER}` }}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-2 h-2 rounded-full flex-shrink-0"
-                        style={{ background: b.type === "court" ? b.court.color : b.service.color }} />
-                      <p className="text-white text-sm font-semibold truncate">
-                        {b.type === "court" ? b.court.name : b.service.name}
-                      </p>
+              {allUpcoming.filter(b => !cancelledIds.has(b.id)).map(b => {
+                const hoursNotice = b.business.cancellationHoursNotice ?? null
+                const { allowed, reason } = canCancel(b.startTime, hoursNotice)
+                const isCancelling = cancellingId === b.id
+
+                return (
+                  <div key={b.id} className="rounded-2xl p-4"
+                    style={{ background: "rgba(56,189,248,0.07)", border: `1px solid ${BORDER}` }}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ background: b.type === "court" ? b.court.color : b.service.color }} />
+                        <p className="text-sm font-semibold truncate" style={{ color: TEXT }}>
+                          {b.type === "court" ? b.court.name : b.service.name}
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-bold flex-shrink-0" style={{ color: ACCENT }}>
+                        {dateLabel(b.startTime)}
+                      </span>
                     </div>
-                    <span className="text-[11px] font-bold flex-shrink-0" style={{ color: ACCENT }}>
-                      {dateLabel(b.startTime)}
-                    </span>
+                    <div className="flex gap-3 mt-1.5 text-[11px]" style={{ color: MUTED }}>
+                      <span><Clock className="w-3 h-3 inline mr-1" />{format(new Date(b.startTime), "HH:mm")}</span>
+                      <span>{b.business.name}</span>
+                      {b.type === "appt" && b.staff?.user.name && <span>{b.staff.user.name}</span>}
+                    </div>
+                    {/* Cancel button */}
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        {!allowed && reason && (
+                          <p className="text-[10px] truncate" style={{ color: "rgba(248,113,113,0.7)" }}>
+                            <AlertCircle className="w-3 h-3 inline mr-1" />{reason}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => allowed && !isCancelling && handleCancel(b.type, b.id)}
+                        disabled={!allowed || isCancelling}
+                        title={!allowed ? reason : "Cancelar reserva"}
+                        className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all flex-shrink-0"
+                        style={allowed
+                          ? { background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)", cursor: "pointer" }
+                          : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.06)", cursor: "not-allowed" }
+                        }>
+                        {isCancelling
+                          ? <Loader2 className="w-3 h-3 animate-spin" />
+                          : <X className="w-3 h-3" />}
+                        Cancelar
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-3 mt-1.5 text-[11px]" style={{ color: MUTED }}>
-                    <span><Clock className="w-3 h-3 inline mr-1" />
-                      {format(new Date(b.startTime), "HH:mm")}
-                    </span>
-                    <span>{b.business.name}</span>
-                    {b.type === "appt" && b.staff?.user.name && (
-                      <span>{b.staff.user.name}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </section>
         )}

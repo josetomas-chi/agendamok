@@ -50,7 +50,7 @@ export async function GET() {
       id: true, startTime: true, endTime: true, status: true,
       service: { select: { name: true, color: true, duration: true, price: true } },
       staff: { select: { user: { select: { name: true } } } },
-      business: { select: { name: true, slug: true } },
+      business: { select: { name: true, slug: true, cancellationHoursNotice: true } },
     },
     orderBy: { startTime: "asc" },
     take: 5,
@@ -62,7 +62,7 @@ export async function GET() {
     select: {
       id: true, startTime: true, endTime: true, price: true, status: true, paidOnline: true,
       court: { select: { name: true, sport: true, color: true } },
-      business: { select: { name: true, slug: true } },
+      business: { select: { name: true, slug: true, cancellationHoursNotice: true } },
     },
     orderBy: { startTime: "asc" },
     take: 5,
