@@ -1204,7 +1204,7 @@ function SettingsContent() {
                       className="text-red-400 border-red-400/20 hover:bg-red-500/10"
                       onClick={async () => {
                         if (!confirm("¿Desconectar MercadoPago? Los pagos online dejarán de funcionar.")) return
-                        const r = await fetch("/api/mp/disconnect", { method: "POST" })
+                        const r = await fetch(`/api/mp/disconnect?businessId=${bid}`, { method: "POST" })
                         if (r.ok) {
                           setPaySettings(s => ({ ...s, mpConnected: false }))
                           toast.success("MercadoPago desconectado")
@@ -1227,7 +1227,7 @@ function SettingsContent() {
                     </div>
                     <Button
                       className="bg-[#009EE3] hover:bg-[#0081bb] text-white gap-2"
-                      onClick={() => window.location.href = "/api/mp/connect"}
+                      onClick={() => window.location.href = `/api/mp/connect?businessId=${bid}`}
                     >
                       Conectar MercadoPago
                     </Button>
