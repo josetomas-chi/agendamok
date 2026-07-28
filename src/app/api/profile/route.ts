@@ -9,38 +9,68 @@ export async function GET() {
   const userId = session.user.id
   const userEmail = session.user.email
 
-  // Basic user data
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, name: true, email: true, image: true },
   })
   if (!user) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
 
-  // All client records linked to this user (across businesses)
+  // All client records for this user
   const clients = await prisma.client.findMany({
     where: { userId, deletedAt: null },
-    select: { id: true, businessId: true, rut: true, phone: true, business: { select: { name: true, slug: true, businessType: true } } },
+    select: {
+      id: true, businessId: true, rut: true, phone: true,
+      loyaltyPoints: true, creditBalance: true, segment: true,
+      business: { select: { name: true, slug: true, businessType: true } },
+      memberships: {
+        where: { status: "ACTIVE" },
+        select: {
+          id: true, startDate: true, endDate: true, status: true,
+          plan: { select: { name: true, description: true } },
+          business: { select: { name: true } },
+        },
+        orderBy: { endDate: "asc" },
+      },
+    },
   })
 
   const clientIds = clients.map(c => c.id)
   const rut = clients.find(c => c.rut)?.rut ?? null
   const phone = clients.find(c => c.phone)?.phone ?? null
+  const loyaltyPoints = clients.reduce((s, c) => s + c.loyaltyPoints, 0)
+  const creditBalance = clients.reduce((s, c) => s + c.creditBalance, 0)
+  const activeMemberships = clients.flatMap(c => c.memberships)
 
-  // Court bookings (last 20, most recent first)
-  const courtBookings = await prisma.courtBooking.findMany({
-    where: { clientId: { in: clientIds }, deletedAt: null },
+  const now = new Date()
+
+  // Upcoming appointments
+  const upcomingAppointments = await prisma.appointment.findMany({
+    where: { clientId: { in: clientIds }, deletedAt: null, startTime: { gt: now }, status: { in: ["PENDING", "CONFIRMED"] } },
+    select: {
+      id: true, startTime: true, endTime: true, status: true,
+      service: { select: { name: true, color: true, duration: true, price: true } },
+      staff: { select: { user: { select: { name: true } } } },
+      business: { select: { name: true, slug: true } },
+    },
+    orderBy: { startTime: "asc" },
+    take: 5,
+  })
+
+  // Upcoming court bookings
+  const upcomingCourtBookings = await prisma.courtBooking.findMany({
+    where: { clientId: { in: clientIds }, deletedAt: null, startTime: { gt: now }, status: { in: ["CONFIRMED"] } },
     select: {
       id: true, startTime: true, endTime: true, price: true, status: true, paidOnline: true,
       court: { select: { name: true, sport: true, color: true } },
       business: { select: { name: true, slug: true } },
     },
-    orderBy: { startTime: "desc" },
-    take: 20,
+    orderBy: { startTime: "asc" },
+    take: 5,
   })
 
-  // Service appointments (last 20)
+  // Past appointments (history)
   const appointments = await prisma.appointment.findMany({
-    where: { clientId: { in: clientIds }, deletedAt: null },
+    where: { clientId: { in: clientIds }, deletedAt: null, startTime: { lte: now } },
     select: {
       id: true, startTime: true, endTime: true, status: true,
       service: { select: { name: true, color: true, duration: true, price: true } },
@@ -48,10 +78,41 @@ export async function GET() {
       business: { select: { name: true, slug: true } },
     },
     orderBy: { startTime: "desc" },
-    take: 20,
+    take: 30,
   })
 
-  // Tournament participations (match by email or rut)
+  // Past court bookings (history)
+  const courtBookings = await prisma.courtBooking.findMany({
+    where: { clientId: { in: clientIds }, deletedAt: null, startTime: { lte: now } },
+    select: {
+      id: true, startTime: true, endTime: true, price: true, status: true, paidOnline: true,
+      court: { select: { name: true, sport: true, color: true } },
+      business: { select: { name: true, slug: true } },
+    },
+    orderBy: { startTime: "desc" },
+    take: 30,
+  })
+
+  // Stats: most used service and staff
+  const serviceCounts: Record<string, { name: string; color: string; count: number }> = {}
+  const staffCounts: Record<string, { name: string; count: number }> = {}
+  for (const a of appointments) {
+    if (a.status === "COMPLETED") {
+      const sn = a.service.name
+      serviceCounts[sn] = serviceCounts[sn] ?? { name: sn, color: a.service.color, count: 0 }
+      serviceCounts[sn].count++
+      const stName = a.staff?.user.name
+      if (stName) {
+        staffCounts[stName] = staffCounts[stName] ?? { name: stName, count: 0 }
+        staffCounts[stName].count++
+      }
+    }
+  }
+  const topService = Object.values(serviceCounts).sort((a, b) => b.count - a.count)[0] ?? null
+  const topStaff = Object.values(staffCounts).sort((a, b) => b.count - a.count)[0] ?? null
+  const totalCompleted = appointments.filter(a => a.status === "COMPLETED").length
+
+  // Tournament participations (by email or rut)
   const emailOrRutFilter = [
     userEmail ? { email: userEmail } : null,
     rut ? { rut } : null,
@@ -81,8 +142,7 @@ export async function GET() {
       })
     : []
 
-  // Build match results from both sides
-  const matches = tournamentParticipants.flatMap(p => {
+  const recentMatches = tournamentParticipants.flatMap(p => {
     const asP1 = p.matchesAs1.map(m => ({
       id: m.id, round: m.round, status: m.status,
       myScore: m.score1, opponentScore: m.score2,
@@ -104,7 +164,14 @@ export async function GET() {
 
   return NextResponse.json({
     user: { ...user, phone, rut },
-    clients,
+    loyaltyPoints,
+    creditBalance,
+    totalCompleted,
+    topService,
+    topStaff,
+    activeMemberships,
+    upcomingAppointments,
+    upcomingCourtBookings,
     courtBookings,
     appointments,
     tournaments: tournamentParticipants.map(p => ({
@@ -117,7 +184,7 @@ export async function GET() {
       category: p.category?.name ?? null,
       tournament: p.tournament,
     })),
-    recentMatches: matches,
+    recentMatches,
   })
 }
 

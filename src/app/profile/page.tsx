@@ -2,17 +2,37 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { format, isPast } from "date-fns"
+import { format, isPast, isToday, isTomorrow, differenceInDays } from "date-fns"
 import { es } from "date-fns/locale"
 import {
-  User, Camera, Calendar, Trophy, LogOut, ChevronRight,
-  MapPin, Clock, CheckCircle2, XCircle, Loader2, Medal,
+  User, Camera, Calendar, Trophy, LogOut, Clock,
+  Loader2, Medal, Star, CreditCard, Zap, Gift, CheckCircle2,
 } from "lucide-react"
 import { signOut, useSession } from "next-auth/react"
 
-// ─── types ────────────────────────────────────────────────────────────────────
 type ProfileData = {
   user: { id: string; name: string | null; email: string | null; image: string | null; phone: string | null; rut: string | null }
+  loyaltyPoints: number
+  creditBalance: number
+  totalCompleted: number
+  topService: { name: string; color: string; count: number } | null
+  topStaff: { name: string; count: number } | null
+  activeMemberships: {
+    id: string; startDate: string; endDate: string; status: string
+    plan: { name: string; description: string | null }
+    business: { name: string }
+  }[]
+  upcomingAppointments: {
+    id: string; startTime: string; endTime: string; status: string
+    service: { name: string; color: string; duration: number; price: number | null }
+    staff: { user: { name: string | null } } | null
+    business: { name: string; slug: string }
+  }[]
+  upcomingCourtBookings: {
+    id: string; startTime: string; endTime: string; price: number; status: string; paidOnline: boolean
+    court: { name: string; sport: string | null; color: string }
+    business: { name: string; slug: string }
+  }[]
   courtBookings: {
     id: string; startTime: string; endTime: string; price: number; status: string; paidOnline: boolean
     court: { name: string; sport: string | null; color: string }
@@ -41,6 +61,7 @@ const ACCENT = "#38bdf8"
 const BG = "#0f0f11"
 const CARD = "#1c1c20"
 const BORDER = "rgba(255,255,255,0.07)"
+const MUTED = "rgba(255,255,255,0.38)"
 
 function statusLabel(s: string) {
   const map: Record<string, string> = {
@@ -54,6 +75,23 @@ function statusColor(s: string) {
   if (s === "COMPLETED") return "#38bdf8"
   if (s === "CANCELLED" || s === "NO_SHOW") return "#ef4444"
   return "rgba(255,255,255,0.4)"
+}
+
+function dateLabel(dateStr: string) {
+  const d = new Date(dateStr)
+  if (isToday(d)) return "Hoy"
+  if (isTomorrow(d)) return "Mañana"
+  const days = differenceInDays(d, new Date())
+  if (days > 0 && days <= 6) return `En ${days} días`
+  return format(d, "d MMM", { locale: es })
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="text-[11px] font-bold uppercase tracking-widest mb-2.5" style={{ color: ACCENT }}>
+      {children}
+    </h2>
+  )
 }
 
 export default function ProfilePage() {
@@ -94,42 +132,48 @@ export default function ProfilePage() {
       <Loader2 className="w-7 h-7 animate-spin" style={{ color: ACCENT }} />
     </div>
   )
-
   if (!data) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: BG }}>
-      <p className="text-white/40 text-sm">Error al cargar perfil</p>
+      <p className="text-sm" style={{ color: MUTED }}>Error al cargar perfil</p>
     </div>
   )
 
-  const { user, courtBookings, appointments, tournaments, recentMatches } = data
+  const {
+    user, loyaltyPoints, creditBalance, totalCompleted, topService, topStaff,
+    activeMemberships, upcomingAppointments, upcomingCourtBookings,
+    courtBookings, appointments, tournaments, recentMatches,
+  } = data
 
-  // Merge and sort all bookings
-  const allBookings = [
+  const isSportsUser = tournaments.length > 0 || upcomingCourtBookings.length > 0 || courtBookings.length > 0
+  const wins = recentMatches.filter(m => m.result === "W").length
+  const losses = recentMatches.filter(m => m.result === "L").length
+
+  const allUpcoming = [
+    ...upcomingAppointments.map(a => ({ ...a, type: "appt" as const, date: a.startTime })),
+    ...upcomingCourtBookings.map(b => ({ ...b, type: "court" as const, date: b.startTime })),
+  ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+  const allHistory = [
     ...courtBookings.map(b => ({ ...b, type: "court" as const, date: b.startTime })),
     ...appointments.map(a => ({ ...a, type: "appt" as const, date: a.startTime })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
-  const activeTournaments = tournaments.filter(t => t.tournament.status !== "FINISHED" && t.tournament.status !== "CANCELLED")
-  const wins = recentMatches.filter(m => m.result === "W").length
-  const losses = recentMatches.filter(m => m.result === "L").length
-
   return (
     <div className="min-h-screen pb-12" style={{ background: BG }}>
-      {/* Header bar */}
-      <div className="sticky top-0 z-10 flex items-center justify-between px-4 h-14" style={{ background: BG, borderBottom: `1px solid ${BORDER}` }}>
+      {/* Header */}
+      <div className="sticky top-0 z-10 flex items-center justify-between px-4 h-14"
+        style={{ background: BG, borderBottom: `1px solid ${BORDER}` }}>
         <span className="font-bold text-white text-base">Mi perfil</span>
-        <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60 transition-colors"
-        >
-          <LogOut className="w-3.5 h-3.5" />
-          Salir
+        <button onClick={() => signOut({ callbackUrl: "/login" })}
+          className="flex items-center gap-1.5 text-xs hover:opacity-70 transition-opacity"
+          style={{ color: MUTED }}>
+          <LogOut className="w-3.5 h-3.5" />Salir
         </button>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pt-6 space-y-5">
+      <div className="max-w-lg mx-auto px-4 pt-6 space-y-6">
 
-        {/* Avatar + nombre */}
+        {/* Avatar + datos */}
         <div className="flex items-center gap-4">
           <div className="relative flex-shrink-0">
             <div className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center"
@@ -138,10 +182,8 @@ export default function ProfilePage() {
                 ? <img src={user.image} alt="" className="w-full h-full object-cover" />
                 : <User className="w-9 h-9" style={{ color: ACCENT }} />}
             </div>
-            <button
-              onClick={() => fileRef.current?.click()}
-              disabled={uploadingPhoto}
-              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center transition-opacity"
+            <button onClick={() => fileRef.current?.click()} disabled={uploadingPhoto}
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center"
               style={{ background: ACCENT }}>
               {uploadingPhoto
                 ? <Loader2 className="w-3.5 h-3.5 text-black animate-spin" />
@@ -151,66 +193,184 @@ export default function ProfilePage() {
           </div>
           <div className="min-w-0">
             <h1 className="text-white font-bold text-xl leading-tight truncate">{user.name ?? "Sin nombre"}</h1>
-            <p className="text-sm mt-0.5 truncate" style={{ color: "rgba(255,255,255,0.4)" }}>{user.email}</p>
+            <p className="text-sm mt-0.5 truncate" style={{ color: MUTED }}>{user.email}</p>
             {user.phone && <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>{user.phone}</p>}
             {user.rut && <p className="text-xs mt-0.5 font-mono" style={{ color: ACCENT + "99" }}>{user.rut}</p>}
           </div>
         </div>
 
-        {/* Stats */}
-        {recentMatches.length > 0 && (
+        {/* ── SPORTS: stats de partidos ── */}
+        {isSportsUser && recentMatches.length > 0 && (
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: "Partidos", value: recentMatches.length },
+              { label: "Partidos", value: recentMatches.length, color: "white" },
               { label: "Victorias", value: wins, color: "#22c55e" },
               { label: "Derrotas", value: losses, color: "#ef4444" },
             ].map(s => (
-              <div key={s.label} className="rounded-2xl p-3 text-center" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-                <p className="text-2xl font-bold" style={{ color: s.color ?? "white" }}>{s.value}</p>
-                <p className="text-[10px] mt-0.5 uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.3)" }}>{s.label}</p>
+              <div key={s.label} className="rounded-2xl p-3 text-center"
+                style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+                <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+                <p className="text-[10px] mt-0.5 uppercase tracking-wider" style={{ color: MUTED }}>{s.label}</p>
               </div>
             ))}
           </div>
         )}
 
-        {/* Torneos activos */}
-        {activeTournaments.length > 0 && (
+        {/* ── GENERAL: stats de visitas + puntos + crédito ── */}
+        {!isSportsUser && (totalCompleted > 0 || loyaltyPoints > 0 || creditBalance > 0) && (
+          <div className="grid grid-cols-3 gap-3">
+            {totalCompleted > 0 && (
+              <div className="rounded-2xl p-3 text-center" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+                <p className="text-2xl font-bold text-white">{totalCompleted}</p>
+                <p className="text-[10px] mt-0.5 uppercase tracking-wider" style={{ color: MUTED }}>Visitas</p>
+              </div>
+            )}
+            {loyaltyPoints > 0 && (
+              <div className="rounded-2xl p-3 text-center" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+                <p className="text-2xl font-bold" style={{ color: "#f59e0b" }}>{loyaltyPoints}</p>
+                <p className="text-[10px] mt-0.5 uppercase tracking-wider" style={{ color: MUTED }}>Puntos</p>
+              </div>
+            )}
+            {creditBalance > 0 && (
+              <div className="rounded-2xl p-3 text-center" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+                <p className="text-2xl font-bold" style={{ color: "#22c55e" }}>
+                  ${(creditBalance / 100).toLocaleString("es-CL")}
+                </p>
+                <p className="text-[10px] mt-0.5 uppercase tracking-wider" style={{ color: MUTED }}>Crédito</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── GENERAL: servicio y profesional favorito ── */}
+        {!isSportsUser && (topService || topStaff) && (
+          <div className="rounded-2xl p-4 space-y-3" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: MUTED }}>Tus favoritos</p>
+            {topService && (
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: topService.color + "22" }}>
+                  <Zap className="w-4 h-4" style={{ color: topService.color }} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-white font-medium truncate">{topService.name}</p>
+                  <p className="text-[11px]" style={{ color: MUTED }}>Servicio · {topService.count} visitas</p>
+                </div>
+                <Star className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#f59e0b" }} />
+              </div>
+            )}
+            {topStaff && (
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: "rgba(56,189,248,0.1)" }}>
+                  <User className="w-4 h-4" style={{ color: ACCENT }} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-white font-medium truncate">{topStaff.name}</p>
+                  <p className="text-[11px]" style={{ color: MUTED }}>Profesional · {topStaff.count} turnos</p>
+                </div>
+                <Star className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#f59e0b" }} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Membresías activas ── */}
+        {activeMemberships.length > 0 && (
           <section>
-            <h2 className="text-[11px] font-bold uppercase tracking-widest mb-2.5" style={{ color: ACCENT }}>
-              Torneos activos
-            </h2>
+            <SectionTitle>Membresías activas</SectionTitle>
             <div className="space-y-2">
-              {activeTournaments.map(t => (
-                <div key={t.participantId} className="rounded-2xl p-4" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+              {activeMemberships.map(m => {
+                const daysLeft = differenceInDays(new Date(m.endDate), new Date())
+                const urgent = daysLeft <= 7
+                return (
+                  <div key={m.id} className="rounded-2xl p-4"
+                    style={{ background: CARD, border: `1px solid ${urgent ? "#f59e0b40" : BORDER}` }}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-white font-semibold text-sm">{m.plan.name}</p>
+                        <p className="text-xs mt-0.5" style={{ color: MUTED }}>{m.business.name}</p>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                        style={{
+                          background: urgent ? "rgba(245,158,11,0.12)" : "rgba(34,197,94,0.12)",
+                          color: urgent ? "#f59e0b" : "#22c55e",
+                        }}>
+                        {urgent ? `Vence en ${daysLeft}d` : "Activa"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <Gift className="w-3 h-3" style={{ color: MUTED }} />
+                      <p className="text-[11px]" style={{ color: MUTED }}>
+                        Hasta el {format(new Date(m.endDate), "d 'de' MMMM yyyy", { locale: es })}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ── Próximas reservas ── */}
+        {allUpcoming.length > 0 && (
+          <section>
+            <SectionTitle>Próximas reservas</SectionTitle>
+            <div className="space-y-2">
+              {allUpcoming.map(b => (
+                <div key={b.id} className="rounded-2xl p-4"
+                  style={{ background: "rgba(56,189,248,0.06)", border: `1px solid ${ACCENT}25` }}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ background: b.type === "court" ? b.court.color : b.service.color }} />
+                      <p className="text-white text-sm font-semibold truncate">
+                        {b.type === "court" ? b.court.name : b.service.name}
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-bold flex-shrink-0" style={{ color: ACCENT }}>
+                      {dateLabel(b.startTime)}
+                    </span>
+                  </div>
+                  <div className="flex gap-3 mt-1.5 text-[11px]" style={{ color: MUTED }}>
+                    <span><Clock className="w-3 h-3 inline mr-1" />
+                      {format(new Date(b.startTime), "HH:mm")}
+                    </span>
+                    <span>{b.business.name}</span>
+                    {b.type === "appt" && b.staff?.user.name && (
+                      <span>{b.staff.user.name}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── SPORTS: torneos activos ── */}
+        {isSportsUser && tournaments.filter(t => t.tournament.status !== "FINISHED").length > 0 && (
+          <section>
+            <SectionTitle>Torneos activos</SectionTitle>
+            <div className="space-y-2">
+              {tournaments.filter(t => t.tournament.status !== "FINISHED" && t.tournament.status !== "CANCELLED").map(t => (
+                <div key={t.participantId} className="rounded-2xl p-4"
+                  style={{ background: CARD, border: `1px solid ${BORDER}` }}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-white font-semibold text-sm leading-snug">{t.tournament.name}</p>
-                      <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>{t.tournament.business.name}</p>
+                      <p className="text-xs mt-0.5" style={{ color: MUTED }}>{t.tournament.business.name}</p>
                     </div>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
                       style={{ background: "rgba(56,189,248,0.12)", color: ACCENT }}>
                       {t.tournament.status === "ACTIVE" ? "En curso" : "Por iniciar"}
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-3 mt-2.5">
-                    {t.category && (
-                      <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.5)" }}>
-                        <Trophy className="w-3 h-3 inline mr-1" />{t.category}
-                      </span>
-                    )}
-                    {t.seed && (
-                      <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.5)" }}>
-                        <Medal className="w-3 h-3 inline mr-1" />Cabeza #{t.seed}
-                      </span>
-                    )}
-                    {t.group && (
-                      <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.5)" }}>
-                        Grupo {t.group}
-                      </span>
-                    )}
+                  <div className="flex flex-wrap gap-3 mt-2.5 text-[11px]" style={{ color: MUTED }}>
+                    {t.category && <span><Trophy className="w-3 h-3 inline mr-1" />{t.category}</span>}
+                    {t.seed && <span><Medal className="w-3 h-3 inline mr-1" />Cabeza #{t.seed}</span>}
+                    {t.group && <span>Grupo {t.group}</span>}
                     {t.tournament.startDate && (
-                      <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.5)" }}>
-                        <Calendar className="w-3 h-3 inline mr-1" />
+                      <span><Calendar className="w-3 h-3 inline mr-1" />
                         {format(new Date(t.tournament.startDate), "d MMM", { locale: es })}
                       </span>
                     )}
@@ -221,33 +381,30 @@ export default function ProfilePage() {
           </section>
         )}
 
-        {/* Últimos resultados */}
-        {recentMatches.length > 0 && (
+        {/* ── SPORTS: últimos resultados ── */}
+        {isSportsUser && recentMatches.length > 0 && (
           <section>
-            <h2 className="text-[11px] font-bold uppercase tracking-widest mb-2.5" style={{ color: ACCENT }}>
-              Últimos resultados
-            </h2>
+            <SectionTitle>Últimos resultados</SectionTitle>
             <div className="rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
               {recentMatches.slice(0, 5).map((m, i) => (
                 <div key={m.id} className="flex items-center gap-3 px-4 py-3"
-                  style={{ borderBottom: i < Math.min(recentMatches.length, 5) - 1 ? `1px solid ${BORDER}` : undefined }}>
-                  {/* Result badge */}
+                  style={{ borderBottom: i < 4 ? `1px solid ${BORDER}` : undefined }}>
                   <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-black"
                     style={{
                       background: m.result === "W" ? "rgba(34,197,94,0.15)" : m.result === "L" ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.06)",
-                      color: m.result === "W" ? "#22c55e" : m.result === "L" ? "#ef4444" : "rgba(255,255,255,0.4)",
+                      color: m.result === "W" ? "#22c55e" : m.result === "L" ? "#ef4444" : MUTED,
                     }}>
                     {m.result === "P" ? "—" : m.result}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-white font-medium truncate">vs {m.opponent}</p>
-                    <p className="text-[11px] truncate" style={{ color: "rgba(255,255,255,0.35)" }}>
+                    <p className="text-[11px] truncate" style={{ color: MUTED }}>
                       Ronda {m.round} · {m.tournamentName}
                     </p>
                   </div>
                   {m.myScore && (
                     <p className="text-sm font-mono font-bold flex-shrink-0"
-                      style={{ color: m.result === "W" ? "#22c55e" : m.result === "L" ? "#ef4444" : "rgba(255,255,255,0.5)" }}>
+                      style={{ color: m.result === "W" ? "#22c55e" : m.result === "L" ? "#ef4444" : MUTED }}>
                       {m.myScore}–{m.opponentScore}
                     </p>
                   )}
@@ -257,80 +414,56 @@ export default function ProfilePage() {
           </section>
         )}
 
-        {/* Historial de reservas */}
+        {/* ── Historial ── */}
         <section>
-          <h2 className="text-[11px] font-bold uppercase tracking-widest mb-2.5" style={{ color: ACCENT }}>
-            Historial de reservas
-          </h2>
-          {allBookings.length === 0
+          <SectionTitle>Historial de reservas</SectionTitle>
+          {allHistory.length === 0
             ? (
               <div className="rounded-2xl p-8 text-center" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-                <Calendar className="w-8 h-8 mx-auto mb-2" style={{ color: "rgba(255,255,255,0.15)" }} />
-                <p className="text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>Sin reservas aún</p>
+                <Calendar className="w-8 h-8 mx-auto mb-2" style={{ color: "rgba(255,255,255,0.1)" }} />
+                <p className="text-sm" style={{ color: MUTED }}>Sin reservas aún</p>
               </div>
             )
             : (
               <div className="space-y-2">
-                {allBookings.map(b => {
-                  const past = isPast(new Date(b.date))
-                  if (b.type === "court") {
-                    return (
-                      <div key={b.id} className="rounded-2xl p-4" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: b.court.color }} />
-                              <p className="text-white text-sm font-semibold truncate">{b.court.name}</p>
-                            </div>
-                            <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>{b.business.name}</p>
-                          </div>
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
-                            style={{ background: statusColor(b.status) + "20", color: statusColor(b.status) }}>
-                            {statusLabel(b.status)}
-                          </span>
-                        </div>
-                        <div className="flex gap-3 mt-2.5 text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>
-                          <span><Calendar className="w-3 h-3 inline mr-1" />{format(new Date(b.startTime), "d MMM yyyy", { locale: es })}</span>
-                          <span><Clock className="w-3 h-3 inline mr-1" />{format(new Date(b.startTime), "HH:mm")}</span>
-                          {b.court.sport && <span><MapPin className="w-3 h-3 inline mr-1" />{b.court.sport}</span>}
-                        </div>
-                      </div>
-                    )
-                  }
-                  // appointment
-                  return (
-                    <div key={b.id} className="rounded-2xl p-4" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-                      <div className="flex items-start justify-between gap-2">
+                {allHistory.map(b => (
+                  <div key={b.id} className="rounded-2xl p-4" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ background: b.type === "court" ? b.court.color : b.service.color }} />
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: b.service.color }} />
-                            <p className="text-white text-sm font-semibold truncate">{b.service.name}</p>
-                          </div>
-                          <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>
-                            {b.business.name}{b.staff?.user.name ? ` · ${b.staff.user.name}` : ""}
+                          <p className="text-white text-sm font-semibold truncate">
+                            {b.type === "court" ? b.court.name : b.service.name}
+                          </p>
+                          <p className="text-[11px] truncate" style={{ color: MUTED }}>
+                            {b.business.name}
+                            {b.type === "appt" && b.staff?.user.name ? ` · ${b.staff.user.name}` : ""}
                           </p>
                         </div>
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
-                          style={{ background: statusColor(b.status) + "20", color: statusColor(b.status) }}>
-                          {statusLabel(b.status)}
-                        </span>
                       </div>
-                      <div className="flex gap-3 mt-2.5 text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>
-                        <span><Calendar className="w-3 h-3 inline mr-1" />{format(new Date(b.startTime), "d MMM yyyy", { locale: es })}</span>
-                        <span><Clock className="w-3 h-3 inline mr-1" />{format(new Date(b.startTime), "HH:mm")}</span>
-                      </div>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+                        style={{ background: statusColor(b.status) + "20", color: statusColor(b.status) }}>
+                        {statusLabel(b.status)}
+                      </span>
                     </div>
-                  )
-                })}
+                    <div className="flex gap-3 mt-2 text-[11px]" style={{ color: MUTED }}>
+                      <span><Calendar className="w-3 h-3 inline mr-1" />
+                        {format(new Date(b.startTime), "d MMM yyyy", { locale: es })}
+                      </span>
+                      <span><Clock className="w-3 h-3 inline mr-1" />
+                        {format(new Date(b.startTime), "HH:mm")}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
         </section>
 
-        {/* Branding */}
         <div className="text-center pt-2">
-          <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.15)" }}>
-            Reservas gestionadas por{" "}
-            <span style={{ color: ACCENT + "80" }}>AgendaMok</span>
+          <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.12)" }}>
+            Reservas gestionadas por <span style={{ color: ACCENT + "60" }}>AgendaMok</span>
           </p>
         </div>
       </div>
