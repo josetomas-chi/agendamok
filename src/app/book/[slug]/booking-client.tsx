@@ -52,12 +52,12 @@ export default function BookingClient({ slug }: { slug: string }) {
       .finally(() => setLoading(false))
   }, [slug])
 
-  // Auto-fill for logged-in users; for CLOSED businesses use saved RUT from sessionStorage
+  // Auto-fill for logged-in users
   useEffect(() => {
     if (!business) return
 
     if (business.accessMode === "CLOSED") {
-      // For CLOSED businesses: only auto-skip if returning from login with a saved RUT
+      // Priority 1: sessionStorage RUT (returning from login redirect)
       const saved = sessionStorage.getItem(COURT_SESSION_KEY(slug))
       if (saved) {
         try {
@@ -76,18 +76,39 @@ export default function BookingClient({ slug }: { slug: string }) {
           }
         } catch {}
       }
-      setAutoChecked(true)
+
+      // Priority 2: logged-in session → look up RUT from client record
+      fetch("/api/auth/session")
+        .then(r => r.ok ? r.json() : null)
+        .then(async session => {
+          const email = session?.user?.email
+          if (!email) { setAutoChecked(true); return }
+          const d = await fetch(`/api/book/${slug}/check-email?email=${encodeURIComponent(email)}`).then(r => r.json())
+          if (d.rut) {
+            const access = await fetch(`/api/businesses/${business.id}/access-list/check?rut=${encodeURIComponent(d.rut)}`).then(r => r.json())
+            if (access.allowed) {
+              setAutoClient({
+                name: d.name || session.user.name || "",
+                email,
+                phone: d.phone || "",
+                rut: d.rut,
+              })
+            }
+          }
+          setAutoChecked(true)
+        })
+        .catch(() => setAutoChecked(true))
       return
     }
 
-    // Open businesses: pre-fill from session email
+    // Open businesses: pre-fill from session email (including RUT if found)
     fetch("/api/auth/session")
       .then(r => r.ok ? r.json() : null)
       .then(async session => {
         const email = session?.user?.email
         if (!email) { setAutoChecked(true); return }
         const d = await fetch(`/api/book/${slug}/check-email?email=${encodeURIComponent(email)}`).then(r => r.json())
-        setAutoClient({ name: d.name || session.user.name || "", email, phone: d.phone || "" })
+        setAutoClient({ name: d.name || session.user.name || "", email, phone: d.phone || "", rut: d.rut || "" })
         setAutoChecked(true)
       })
       .catch(() => setAutoChecked(true))

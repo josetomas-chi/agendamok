@@ -19,14 +19,14 @@ export async function GET(req: Request, { params }: Params) {
   // First: look in this business
   let client = await prisma.client.findFirst({
     where: { businessId: business.id, email, deletedAt: null },
-    select: { name: true, lastName: true, phone: true },
+    select: { name: true, lastName: true, phone: true, rut: true },
   })
 
   // Fallback: look in any other business on the platform
   if (!client) {
     client = await prisma.client.findFirst({
       where: { email, deletedAt: null, NOT: { businessId: business.id } },
-      select: { name: true, lastName: true, phone: true },
+      select: { name: true, lastName: true, phone: true, rut: true },
       orderBy: { updatedAt: "desc" },
     })
   }
@@ -35,5 +35,6 @@ export async function GET(req: Request, { params }: Params) {
     exists: !!user,
     name: client ? [client.name, client.lastName].filter(Boolean).join(" ") : undefined,
     phone: client?.phone ?? undefined,
+    rut: client?.rut ?? undefined,
   })
 }
