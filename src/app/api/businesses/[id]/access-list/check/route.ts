@@ -20,11 +20,11 @@ export async function GET(req: Request, { params }: Params) {
 
   const entry = await prisma.businessAccessRequest.findUnique({
     where: { businessId_rut: { businessId: id, rut } },
-    select: { status: true, name: true, role: true },
+    select: { status: true, name: true, email: true, phone: true, role: true },
   })
 
   if (!entry) return NextResponse.json({ allowed: false, status: "NOT_FOUND" })
-  if (entry.status === "APPROVED") return NextResponse.json({ allowed: true, status: "APPROVED", name: entry.name, role: entry.role })
+  if (entry.status === "APPROVED") return NextResponse.json({ allowed: true, status: "APPROVED", name: entry.name, email: entry.email, phone: entry.phone, role: entry.role })
   if (entry.status === "PENDING") return NextResponse.json({ allowed: false, status: "PENDING" })
   return NextResponse.json({ allowed: false, status: "REJECTED" })
 }

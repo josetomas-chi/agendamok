@@ -82,7 +82,7 @@ export default function BookingClient({ slug }: { slug: string }) {
 // ─────────────────────────────────────────────────────────────────
 
 type RutCheckStatus = "OPEN" | "APPROVED" | "PENDING" | "REJECTED" | "NOT_FOUND" | null
-type RutCheckResult = { allowed: boolean; status: RutCheckStatus; name?: string }
+type RutCheckResult = { allowed: boolean; status: RutCheckStatus; name?: string; email?: string; phone?: string }
 
 function formatRut(value: string) {
   const clean = value.replace(/[^0-9kK]/g, "").toUpperCase()
@@ -98,6 +98,7 @@ function RutGate({ business, slug }: { business: Business; slug: string }) {
   const [checking, setChecking] = useState(false)
   const [result, setResult] = useState<RutCheckResult | null>(null)
   const [approved, setApproved] = useState(false)
+  const [clientData, setClientData] = useState<{ name: string; email: string; phone: string }>({ name: "", email: "", phone: "" })
 
   // Request form state
   const [reqName, setReqName] = useState("")
@@ -124,7 +125,10 @@ function RutGate({ business, slug }: { business: Business; slug: string }) {
       const r = await fetch(`/api/businesses/${business.id}/access-list/check?rut=${encodeURIComponent(rut.trim())}`)
       const d = await r.json()
       setResult(d)
-      if (d.allowed) setApproved(true)
+      if (d.allowed) {
+        setClientData({ name: d.name ?? "", email: d.email ?? "", phone: d.phone ?? "" })
+        setApproved(true)
+      }
     } catch {
       setResult({ allowed: false, status: null })
     }
@@ -147,8 +151,8 @@ function RutGate({ business, slug }: { business: Business; slug: string }) {
   }
 
   if (approved) {
-    if (business.businessType === "SPORTS_CLUB") return <CourtBookingFlow business={business} slug={slug} />
-    return <ServiceBookingFlow business={business} slug={slug} />
+    if (business.businessType === "SPORTS_CLUB") return <CourtBookingFlow business={business} slug={slug} initialClient={clientData} />
+    return <ServiceBookingFlow business={business} slug={slug} initialClient={clientData} />
   }
 
   const bg = business.businessType === "SPORTS_CLUB" ? "#0d1b2a" : "#0f0f11"
@@ -266,7 +270,7 @@ const SPORTS_BORDER = "rgba(56,189,248,0.18)"
 
 type CourtResult = Court & { slots: { time: string; price: number; paymentPlayers: number }[] }
 
-function CourtBookingFlow({ business, slug }: { business: Business; slug: string }) {
+function CourtBookingFlow({ business, slug, initialClient }: { business: Business; slug: string; initialClient?: { name: string; email: string; phone: string } }) {
   const today = startOfToday()
 
   // Search state
@@ -313,7 +317,7 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
   const [selectedSlot, setSelectedSlot] = useState<{ time: string; price: number; paymentPlayers: number } | null>(null)
   const [courtPayMethod, setCourtPayMethod] = useState<"local" | "online">("local")
   const [step, setStep] = useState<CourtStep>("home")
-  const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "" })
+  const [form, setForm] = useState({ name: initialClient?.name ?? "", email: initialClient?.email ?? "", phone: initialClient?.phone ?? "", notes: "" })
   const [createAccount, setCreateAccount] = useState(false)
   const [password, setPassword] = useState("")
   const [emailExists, setEmailExists] = useState(false)
@@ -887,7 +891,7 @@ function CourtBookingFlow({ business, slug }: { business: Business; slug: string
 // SERVICE BOOKING FLOW (regular businesses)
 // ─────────────────────────────────────────────────────────────────
 
-function ServiceBookingFlow({ business, slug }: { business: Business; slug: string }) {
+function ServiceBookingFlow({ business, slug, initialClient }: { business: Business; slug: string; initialClient?: { name: string; email: string; phone: string } }) {
   const brand = business.primaryColor || "#38bdf8"
   const today = startOfToday()
 
@@ -903,7 +907,7 @@ function ServiceBookingFlow({ business, slug }: { business: Business; slug: stri
   const [activeCategory, setActiveCategory] = useState<string>("all")
   const catBarRef = useRef<HTMLDivElement>(null)
 
-  const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "" })
+  const [form, setForm] = useState({ name: initialClient?.name ?? "", email: initialClient?.email ?? "", phone: initialClient?.phone ?? "", notes: "" })
   const [payMethod, setPayMethod] = useState<PayMethod>("local")
   const [submitting, setSubmitting] = useState(false)
 
