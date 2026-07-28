@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { businessRefundPayment } from "@/lib/flow"
 import { refundMpPayment } from "@/lib/mercadopago"
+import { sendCancellationRefundEmail } from "@/lib/email"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
 
 type RefundChoice = "refund" | "credit"
 
@@ -18,6 +21,10 @@ export async function POST(req: Request) {
   if (!type || !id) return NextResponse.json({ error: "Faltan parámetros" }, { status: 400 })
 
   const userId = session.user.id
+  const userRecord = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true, email: true },
+  })
   const clients = await prisma.client.findMany({
     where: { userId, deletedAt: null },
     select: { id: true },
@@ -32,6 +39,7 @@ export async function POST(req: Request) {
         paidAmount: true, mpPaymentId: true, clientId: true,
         business: {
           select: {
+            name: true, slug: true,
             cancellationHoursNotice: true,
             flowApiKey: true, flowSecretKey: true,
             mpAccessToken: true,
@@ -115,6 +123,23 @@ export async function POST(req: Request) {
     }
 
     await prisma.courtBooking.update({ where: { id }, data: { status: "CANCELLED" } })
+
+    // Send confirmation email
+    if (userRecord?.email) {
+      const APP_URL = process.env.NEXTAUTH_URL ?? process.env.APP_URL ?? "https://agendamok.cl"
+      sendCancellationRefundEmail({
+        clientName: userRecord.name ?? "Cliente",
+        clientEmail: userRecord.email,
+        businessName: booking.business.name ?? "el club",
+        bookingName: `Cancha — ${format(new Date(booking.startTime), "EEEE d 'de' MMMM", { locale: es })}`,
+        date: format(new Date(booking.startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
+        time: format(new Date(booking.startTime), "HH:mm"),
+        amount: paidAmount,
+        refundResult,
+        bookingUrl: `${APP_URL}/book/${booking.business.slug}`,
+      }).catch(() => {})
+    }
+
     return NextResponse.json({ ok: true, refundResult, amount: paidAmount })
   }
 
@@ -123,7 +148,7 @@ export async function POST(req: Request) {
       where: { id, clientId: { in: clientIds }, deletedAt: null },
       select: {
         id: true, startTime: true, status: true, clientId: true,
-        business: { select: { cancellationHoursNotice: true } },
+        business: { select: { name: true, slug: true, cancellationHoursNotice: true } },
         payment: {
           select: { id: true, flowToken: true, mpPaymentId: true, method: true, amount: true, status: true },
         },
@@ -145,6 +170,22 @@ export async function POST(req: Request) {
     }
 
     await prisma.appointment.update({ where: { id }, data: { status: "CANCELLED" } })
+
+    if (userRecord?.email) {
+      const APP_URL = process.env.NEXTAUTH_URL ?? process.env.APP_URL ?? "https://agendamok.cl"
+      sendCancellationRefundEmail({
+        clientName: userRecord.name ?? "Cliente",
+        clientEmail: userRecord.email,
+        businessName: appt.business.name ?? "el negocio",
+        bookingName: `Turno — ${format(new Date(appt.startTime), "EEEE d 'de' MMMM", { locale: es })}`,
+        date: format(new Date(appt.startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
+        time: format(new Date(appt.startTime), "HH:mm"),
+        amount: 0,
+        refundResult: "none",
+        bookingUrl: `${APP_URL}/book/${appt.business.slug}`,
+      }).catch(() => {})
+    }
+
     return NextResponse.json({ ok: true, refundResult: "none", amount: 0 })
   }
 

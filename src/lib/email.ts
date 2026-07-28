@@ -930,3 +930,74 @@ export async function sendHolidaySurcharge({
     `),
   }).catch(() => {})
 }
+
+export async function sendCancellationRefundEmail({
+  clientName, clientEmail, businessName, bookingName, date, time,
+  amount, refundResult, bookingUrl,
+}: {
+  clientName: string; clientEmail: string; businessName: string
+  bookingName: string; date: string; time: string
+  amount: number; refundResult: "refunded" | "credited" | "none"
+  bookingUrl?: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+
+  const fmtAmt = `$${amount.toLocaleString("es-CL")}`
+
+  const refundBox = amount > 0 ? (() => {
+    if (refundResult === "refunded") {
+      return `
+        <div class="box" style="border-color:rgba(56,189,248,0.25);background:rgba(56,189,248,0.06)">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(56,189,248,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span style="font-size:18px">↩</span>
+            </div>
+            <div>
+              <div style="color:#38bdf8;font-size:15px;font-weight:700">Reembolso en camino</div>
+              <div style="color:rgba(255,255,255,0.45);font-size:13px">Se procesará en 3–10 días hábiles</div>
+            </div>
+          </div>
+          <div class="row"><span class="label">Monto a reembolsar</span><span class="value" style="color:#38bdf8;font-weight:700">${fmtAmt}</span></div>
+          <div class="row"><span class="label">Destino</span><span class="value">Método de pago original</span></div>
+        </div>`
+    }
+    if (refundResult === "credited") {
+      return `
+        <div class="box" style="border-color:rgba(34,197,94,0.25);background:rgba(34,197,94,0.06)">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(34,197,94,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span style="font-size:18px">🎁</span>
+            </div>
+            <div>
+              <div style="color:#22c55e;font-size:15px;font-weight:700">Crédito abonado a tu cuenta</div>
+              <div style="color:rgba(255,255,255,0.45);font-size:13px">Disponible para tu próxima reserva</div>
+            </div>
+          </div>
+          <div class="row"><span class="label">Monto abonado</span><span class="value" style="color:#22c55e;font-weight:700">${fmtAmt}</span></div>
+          <div class="row"><span class="label">Cómo usarlo</span><span class="value">Se descuenta automáticamente al reservar</span></div>
+        </div>`
+    }
+    return ""
+  })() : ""
+
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `Reserva cancelada — ${businessName}`,
+    html: base(`
+      <h1>Reserva cancelada</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, confirmamos la cancelación de tu reserva en <strong style="color:#38bdf8">${businessName}</strong>.</p>
+      <div class="box">
+        <div class="row"><span class="label">Reserva</span><span class="value">${bookingName}</span></div>
+        <div class="row"><span class="label">Fecha</span><span class="value">${date}</span></div>
+        <div class="row"><span class="label">Hora</span><span class="value">${time} hrs</span></div>
+      </div>
+      ${refundBox}
+      ${bookingUrl ? `
+      <div style="text-align:center;margin:24px 0 8px">
+        <a href="${bookingUrl}" class="btn">Hacer una nueva reserva →</a>
+      </div>` : ""}
+      <p class="subtitle" style="font-size:13px;margin-top:20px">Si tienes alguna duda, contáctate directamente con ${businessName}.</p>
+    `),
+  }).catch(() => {})
+}
