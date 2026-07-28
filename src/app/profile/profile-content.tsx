@@ -7,6 +7,7 @@ import { es } from "date-fns/locale"
 import {
   User, Camera, Calendar, Trophy, LogOut, Clock,
   Loader2, Medal, Star, Zap, Gift, X, AlertCircle, CreditCard, ArrowLeft,
+  Building2, Award, List, ChevronRight,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 
@@ -65,14 +66,31 @@ type ProfileData = {
   }[]
 }
 
-const ACCENT  = "#38bdf8"
-const BG      = "#0d1b2a"
-const CARD    = "#0f2a3f"
-const CARD2   = "#112233"
-const BORDER  = "rgba(56,189,248,0.15)"
-const BORDER2 = "rgba(255,255,255,0.07)"
-const TEXT    = "#f0f6ff"
-const MUTED   = "rgba(240,246,255,0.45)"
+// ── Design tokens ──────────────────────────────────────────────────────────
+const SB       = "#0d1b2a"                    // sidebar navy
+const SB_BD    = "rgba(56,189,248,0.1)"
+const ACCENT   = "#38bdf8"                    // sky blue
+const GOLD     = "#c9922b"
+const GOLD_BD  = "rgba(201,146,43,0.4)"
+const GOLD_BG  = "rgba(201,146,43,0.08)"
+const PAGE_BG  = "#f0f4f8"                    // light page background
+const WHITE    = "#ffffff"
+const NAVY_C   = "#0f2a3f"                    // dark navy card
+const TXT      = "#0f172a"                    // dark text
+const MUTED    = "#64748b"
+const BD       = "#e2e8f0"                    // light border
+const LTXT     = "#f0f6ff"                    // light text on dark
+const LMUTED   = "rgba(240,246,255,0.5)"
+
+type Tab = "upcoming" | "matches" | "history" | "clubs" | "loyalty"
+
+const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }> }[] = [
+  { id: "upcoming", label: "Reservas",     icon: Calendar  },
+  { id: "matches",  label: "Partidos",     icon: Trophy    },
+  { id: "history",  label: "Historial",    icon: Clock     },
+  { id: "clubs",    label: "Mis clubs",    icon: Building2 },
+  { id: "loyalty",  label: "Fidelización", icon: Star      },
+]
 
 function statusLabel(s: string) {
   const map: Record<string, string> = {
@@ -82,10 +100,10 @@ function statusLabel(s: string) {
   return map[s] ?? s
 }
 function statusColor(s: string) {
-  if (s === "CONFIRMED") return "#22c55e"
-  if (s === "COMPLETED") return "#38bdf8"
-  if (s === "CANCELLED" || s === "NO_SHOW") return "#ef4444"
-  return "rgba(255,255,255,0.4)"
+  if (s === "CONFIRMED") return "#16a34a"
+  if (s === "COMPLETED") return "#0284c7"
+  if (s === "CANCELLED" || s === "NO_SHOW") return "#dc2626"
+  return MUTED
 }
 
 function dateLabel(dateStr: string) {
@@ -97,26 +115,24 @@ function dateLabel(dateStr: string) {
   return format(d, "d MMM", { locale: es })
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
+function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 mb-3">
-      <span className="w-1 h-4 rounded-full flex-shrink-0" style={{ background: ACCENT }} />
-      <h2 className="text-[11px] font-black uppercase tracking-widest" style={{ color: ACCENT }}>
-        {children}
-      </h2>
-    </div>
+    <h2 style={{ fontSize: 11, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: MUTED, marginBottom: 12 }}>
+      {children}
+    </h2>
   )
 }
 
 export default function ProfileContent() {
   const router = useRouter()
-  const [data, setData] = useState<ProfileData | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [data, setData]           = useState<ProfileData | null>(null)
+  const [loading, setLoading]     = useState(true)
+  const [tab, setTab]             = useState<Tab>("upcoming")
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
-  const [cancellingId, setCancellingId] = useState<string | null>(null)
-  const [cancelError, setCancelError] = useState<string | null>(null)
-  const [cancelledIds, setCancelledIds] = useState<Set<string>>(new Set())
-  const [confirmCancel, setConfirmCancel] = useState<{
+  const [cancellingId, setCancellingId]     = useState<string | null>(null)
+  const [cancelError, setCancelError]       = useState<string | null>(null)
+  const [cancelledIds, setCancelledIds]     = useState<Set<string>>(new Set())
+  const [confirmCancel, setConfirmCancel]   = useState<{
     type: "court" | "appt"; id: string; paidAmount: number; paidOnline: boolean; name: string
   } | null>(null)
   const [cancelSuccess, setCancelSuccess] = useState<{ message: string } | null>(null)
@@ -152,7 +168,7 @@ export default function ProfileContent() {
     if (!hoursNotice || hoursNotice === 0) return { allowed: true }
     const hoursUntil = (new Date(startTime).getTime() - Date.now()) / 3_600_000
     if (hoursUntil < hoursNotice) {
-      return { allowed: false, reason: `Cancelación permitida hasta ${hoursNotice}h antes` }
+      return { allowed: false, reason: `Cancelación hasta ${hoursNotice}h antes` }
     }
     return { allowed: true }
   }
@@ -187,25 +203,23 @@ export default function ProfileContent() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: BG }}>
+    <div style={{ background: SB, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <Loader2 className="w-8 h-8 animate-spin" style={{ color: ACCENT }} />
     </div>
   )
   if (!data) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: BG }}>
-      <p className="text-sm" style={{ color: MUTED }}>Error al cargar perfil</p>
+    <div style={{ background: SB, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <p style={{ color: LMUTED, fontSize: 14 }}>Error al cargar perfil</p>
     </div>
   )
 
   const {
-    user, loyaltyPoints, creditBalance, businessBenefits,
-    totalCompleted, topService, topStaff,
-    activeMemberships, upcomingAppointments, upcomingCourtBookings,
+    user, businessBenefits, activeMemberships,
+    upcomingAppointments, upcomingCourtBookings,
     courtBookings, appointments, tournaments, recentMatches,
   } = data
 
-  const isSportsUser = tournaments.length > 0 || upcomingCourtBookings.length > 0 || courtBookings.length > 0
-  const wins = recentMatches.filter(m => m.result === "W").length
+  const wins   = recentMatches.filter(m => m.result === "W").length
   const losses = recentMatches.filter(m => m.result === "L").length
 
   const allUpcoming = [
@@ -218,585 +232,854 @@ export default function ProfileContent() {
     ...appointments.map(a => ({ ...a, type: "appt" as const, date: a.startTime })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
-  return (
-    <div className="min-h-screen pb-12" style={{ background: BG, color: TEXT }}>
-      {/* Hero */}
-      <div className="relative overflow-hidden" style={{ background: CARD }}>
-        {/* Decorative glow */}
-        <div className="absolute top-0 right-0 w-48 h-48 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(56,189,248,0.15) 0%, transparent 70%)", transform: "translate(30%, -30%)" }} />
+  // ── Avatar section (reused in both sidebar and mobile header)
+  const AvatarBlock = ({ size = 48 }: { size?: number }) => (
+    <div style={{ position: "relative", flexShrink: 0 }}>
+      <div style={{
+        width: size, height: size, borderRadius: "50%",
+        border: `2px solid ${ACCENT}`, overflow: "hidden",
+        background: "rgba(56,189,248,0.1)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        {user.image
+          ? <img src={user.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          : <User style={{ width: size * 0.44, height: size * 0.44, color: ACCENT }} />}
+      </div>
+      <button onClick={() => fileRef.current?.click()} disabled={uploadingPhoto}
+        style={{
+          position: "absolute", bottom: -2, right: -2,
+          width: 20, height: 20, borderRadius: "50%",
+          background: ACCENT, display: "flex", alignItems: "center", justifyContent: "center",
+          border: `2px solid ${SB}`, cursor: "pointer",
+        }}>
+        {uploadingPhoto
+          ? <Loader2 style={{ width: 9, height: 9, color: "#000" }} className="animate-spin" />
+          : <Camera style={{ width: 9, height: 9, color: "#000" }} />}
+      </button>
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+    </div>
+  )
 
-        {/* Nav row */}
-        <div className="relative flex items-center justify-between px-4 pt-4 pb-0">
-          <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: ACCENT }}>AgendaMok</span>
+  return (
+    <div style={{ display: "flex", minHeight: "100vh", background: PAGE_BG }}>
+
+      {/* ─── SIDEBAR (desktop only) ────────────────────────────────────────── */}
+      <aside style={{
+        width: 240, background: SB, display: "flex", flexDirection: "column",
+        flexShrink: 0, position: "sticky", top: 0, height: "100vh", overflowY: "auto",
+      }} className="hidden lg:flex">
+
+        {/* Logo */}
+        <div style={{ padding: "20px 24px 16px", borderBottom: `1px solid ${SB_BD}` }}>
+          <span style={{ color: LTXT, fontSize: 13, fontWeight: 900, letterSpacing: "0.05em" }}>
+            Agenda<span style={{ color: ACCENT }}>Mok</span>
+          </span>
+          <p style={{ color: LMUTED, fontSize: 10, marginTop: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            Mi perfil
+          </p>
+        </div>
+
+        {/* Avatar + user info */}
+        <div style={{ padding: "20px 24px", borderBottom: `1px solid ${SB_BD}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <AvatarBlock size={44} />
+            <div style={{ minWidth: 0 }}>
+              <p style={{ color: LTXT, fontSize: 13, fontWeight: 700, lineHeight: 1.2 }} className="truncate">
+                {user.name ?? "Sin nombre"}
+              </p>
+              <p style={{ color: LMUTED, fontSize: 11, marginTop: 2 }} className="truncate">
+                {user.email}
+              </p>
+              {user.rut && (
+                <span style={{
+                  display: "inline-block", marginTop: 5, fontSize: 10,
+                  fontFamily: "monospace", fontWeight: 700,
+                  padding: "1px 8px", borderRadius: 100,
+                  background: "rgba(56,189,248,0.12)", color: ACCENT,
+                }}>
+                  {user.rut}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav style={{ padding: "16px 12px", flex: 1 }}>
+          {TABS.map(t => {
+            const active = tab === t.id
+            return (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10, width: "100%",
+                  padding: "9px 12px", borderRadius: 8, marginBottom: 2,
+                  background: active ? "rgba(56,189,248,0.12)" : "transparent",
+                  color: active ? ACCENT : LMUTED,
+                  fontSize: 13, fontWeight: active ? 700 : 500,
+                  border: active ? "1px solid rgba(56,189,248,0.2)" : "1px solid transparent",
+                  cursor: "pointer", transition: "all 0.15s", textAlign: "left",
+                }}>
+                <t.icon style={{ width: 15, height: 15, flexShrink: 0 }} />
+                {t.label}
+              </button>
+            )
+          })}
+        </nav>
+
+        {/* Logout */}
+        <div style={{ padding: "16px 24px", borderTop: `1px solid ${SB_BD}` }}>
           <button onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center gap-1.5 text-xs hover:opacity-70 transition-opacity"
-            style={{ color: MUTED }}>
-            <LogOut className="w-3.5 h-3.5" />Salir
+            style={{ display: "flex", alignItems: "center", gap: 8, color: LMUTED, fontSize: 12, cursor: "pointer", background: "transparent", border: "none" }}>
+            <LogOut style={{ width: 14, height: 14 }} />
+            Cerrar sesión
           </button>
         </div>
+      </aside>
 
-        {/* Avatar + info */}
-        <div className="relative max-w-lg mx-auto px-4 pt-5 pb-6 flex items-center gap-4">
-          <div className="relative flex-shrink-0">
-            <div className="rounded-full overflow-hidden flex items-center justify-center"
-              style={{ width: 86, height: 86, background: "rgba(56,189,248,0.12)", border: `3px solid ${ACCENT}` }}>
-              {user.image
-                ? <img src={user.image} alt="" className="w-full h-full object-cover" />
-                : <User className="w-10 h-10" style={{ color: ACCENT }} />}
-            </div>
-            <button onClick={() => fileRef.current?.click()} disabled={uploadingPhoto}
-              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center shadow-lg"
-              style={{ background: ACCENT }}>
-              {uploadingPhoto
-                ? <Loader2 className="w-3.5 h-3.5 text-black animate-spin" />
-                : <Camera className="w-3.5 h-3.5 text-black" />}
+      {/* ─── MAIN CONTENT ──────────────────────────────────────────────────── */}
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+
+        {/* Mobile header (hidden on desktop) */}
+        <div style={{ background: SB }} className="lg:hidden">
+          <div style={{ padding: "12px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ color: LTXT, fontSize: 13, fontWeight: 900, letterSpacing: "0.05em" }}>
+              Agenda<span style={{ color: ACCENT }}>Mok</span>
+            </span>
+            <button onClick={() => signOut({ callbackUrl: "/login" })}
+              style={{ display: "flex", alignItems: "center", gap: 6, color: LMUTED, fontSize: 12, background: "transparent", border: "none", cursor: "pointer" }}>
+              <LogOut style={{ width: 13, height: 13 }} />Salir
             </button>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
           </div>
-          <div className="min-w-0 flex-1">
-            <h1 className="font-black text-2xl leading-tight" style={{ color: TEXT }}>{user.name ?? "Sin nombre"}</h1>
-            <p className="text-sm mt-1 truncate" style={{ color: MUTED }}>{user.email}</p>
-            {user.phone && <p className="text-xs mt-0.5" style={{ color: MUTED }}>{user.phone}</p>}
-            {user.rut && (
-              <span className="inline-block mt-1.5 text-[11px] font-mono font-bold px-2 py-0.5 rounded-full"
-                style={{ background: "rgba(56,189,248,0.12)", color: ACCENT }}>
-                {user.rut}
-              </span>
-            )}
+
+          <div style={{ padding: "14px 16px 16px", display: "flex", alignItems: "center", gap: 14 }}>
+            <AvatarBlock size={58} />
+            <div style={{ minWidth: 0 }}>
+              <p style={{ color: LTXT, fontSize: 18, fontWeight: 800, lineHeight: 1.2 }}>{user.name ?? "Sin nombre"}</p>
+              <p style={{ color: LMUTED, fontSize: 12, marginTop: 3 }}>{user.email}</p>
+              {user.phone && <p style={{ color: LMUTED, fontSize: 11 }}>{user.phone}</p>}
+              {user.rut && (
+                <span style={{
+                  display: "inline-block", marginTop: 5, fontSize: 10, fontFamily: "monospace",
+                  fontWeight: 700, padding: "2px 8px", borderRadius: 100,
+                  background: "rgba(56,189,248,0.12)", color: ACCENT,
+                }}>
+                  {user.rut}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile tab bar */}
+          <div style={{
+            display: "flex", overflowX: "auto", gap: 0,
+            borderTop: `1px solid ${SB_BD}`,
+            scrollbarWidth: "none",
+          }}>
+            {TABS.map(t => {
+              const active = tab === t.id
+              return (
+                <button key={t.id} onClick={() => setTab(t.id)}
+                  style={{
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                    padding: "10px 16px", flexShrink: 0,
+                    borderBottom: active ? `2px solid ${ACCENT}` : "2px solid transparent",
+                    color: active ? ACCENT : LMUTED,
+                    fontSize: 10, fontWeight: active ? 700 : 500,
+                    background: "transparent", cursor: "pointer", border: "none",
+                    borderBottomStyle: "solid",
+                    borderBottomWidth: 2,
+                    borderBottomColor: active ? ACCENT : "transparent",
+                    transition: "all 0.15s", whiteSpace: "nowrap",
+                  }}>
+                  <t.icon style={{ width: 16, height: 16 }} />
+                  {t.label}
+                </button>
+              )
+            })}
           </div>
         </div>
 
-        {/* Bottom border with glow */}
-        <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${ACCENT}50, transparent)` }} />
-      </div>
+        {/* Page body */}
+        <div style={{ padding: "24px 20px", maxWidth: 720, width: "100%" }}>
 
-      <div className="max-w-lg mx-auto px-4 pt-5 space-y-6">
+          {/* ── TAB: Próximas reservas ─────────────────────────────────────── */}
+          {tab === "upcoming" && (
+            <section>
+              <SectionHeading>Próximas reservas</SectionHeading>
 
-        {/* ── SPORTS: stats de partidos ── */}
-        {isSportsUser && recentMatches.length > 0 && (
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: "Partidos", value: recentMatches.length, color: "white" },
-              { label: "Victorias", value: wins, color: "#22c55e" },
-              { label: "Derrotas", value: losses, color: "#ef4444" },
-            ].map(s => (
-              <div key={s.label} className="rounded-2xl p-3 text-center"
-                style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
-                <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
-                <p className="text-[10px] mt-0.5 uppercase tracking-wider" style={{ color: MUTED }}>{s.label}</p>
-              </div>
-            ))}
-          </div>
-        )}
+              {cancelError && (
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "10px 14px", borderRadius: 10, marginBottom: 10,
+                  background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.2)",
+                  color: "#dc2626", fontSize: 12,
+                }}>
+                  <AlertCircle style={{ width: 14, height: 14, flexShrink: 0 }} />
+                  {cancelError}
+                  <button onClick={() => setCancelError(null)} style={{ marginLeft: "auto", background: "transparent", border: "none", cursor: "pointer" }}>
+                    <X style={{ width: 14, height: 14, color: "#dc2626" }} />
+                  </button>
+                </div>
+              )}
 
-        {/* ── GENERAL: stats de visitas + puntos + crédito ── */}
-        {!isSportsUser && (totalCompleted > 0 || loyaltyPoints > 0 || creditBalance > 0) && (
-          <div className="grid grid-cols-3 gap-3">
-            {totalCompleted > 0 && (
-              <div className="rounded-2xl p-3 text-center" style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
-                <p className="text-2xl font-bold" style={{ color: TEXT }}>{totalCompleted}</p>
-                <p className="text-[10px] mt-0.5 uppercase tracking-wider" style={{ color: MUTED }}>Visitas</p>
-              </div>
-            )}
-            {loyaltyPoints > 0 && (
-              <div className="rounded-2xl p-3 text-center" style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
-                <p className="text-2xl font-bold" style={{ color: "#f59e0b" }}>{loyaltyPoints}</p>
-                <p className="text-[10px] mt-0.5 uppercase tracking-wider" style={{ color: MUTED }}>Puntos</p>
-              </div>
-            )}
-            {creditBalance > 0 && (
-              <div className="rounded-2xl p-3 text-center" style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
-                <p className="text-2xl font-bold" style={{ color: "#22c55e" }}>
-                  ${(creditBalance / 100).toLocaleString("es-CL")}
-                </p>
-                <p className="text-[10px] mt-0.5 uppercase tracking-wider" style={{ color: MUTED }}>Crédito</p>
-              </div>
-            )}
-          </div>
-        )}
+              {allUpcoming.length === 0 ? (
+                <div style={{
+                  background: WHITE, border: `1px solid ${BD}`, borderRadius: 16,
+                  padding: "40px 24px", textAlign: "center",
+                }}>
+                  <Calendar style={{ width: 32, height: 32, color: BD, margin: "0 auto 10px" }} />
+                  <p style={{ color: MUTED, fontSize: 13 }}>Sin próximas reservas</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {allUpcoming.filter(b => !cancelledIds.has(b.id)).map(b => {
+                    const hoursNotice = b.business.cancellationHoursNotice ?? null
+                    const { allowed, reason } = canCancel(b.startTime, hoursNotice)
+                    const isCancelling = cancellingId === b.id
+                    const dotColor = b.type === "court" ? b.court.color : b.service.color
 
-        {/* ── Beneficios por negocio ── */}
-        {businessBenefits.length > 0 && (
-          <section>
-            <SectionTitle>Mis beneficios</SectionTitle>
-            <div className="space-y-3">
-              {businessBenefits.map(b => {
-                const segLabel: Record<string,string> = { VIP:"VIP", FREQUENT:"Frecuente", REGULAR:"Regular", NEW:"Nuevo", AT_RISK:"Recuperar", INFLUENCER:"Influencer" }
-                const segColor: Record<string,string> = { VIP:"#facc15", FREQUENT:ACCENT, REGULAR:"#94a3b8", NEW:"#94a3b8", AT_RISK:"#f87171", INFLUENCER:"#c084fc" }
-                const sc = segColor[b.segment] ?? MUTED
-                const progress = b.vipThreshold > 0 ? Math.min(100, Math.round((b.loyaltyPoints / b.vipThreshold) * 100)) : 0
-                const isVip = b.segment === "VIP"
-
-                return (
-                  <div key={b.businessId} className="rounded-2xl overflow-hidden"
-                    style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
-                    {/* Business header */}
-                    <div className="flex items-center justify-between px-4 py-3"
-                      style={{ borderBottom: `1px solid ${BORDER2}` }}>
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        {b.businessLogo
-                          ? <img src={b.businessLogo} alt="" className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
-                          : <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                              style={{ background: "rgba(56,189,248,0.15)" }}>
-                              <Trophy className="w-3.5 h-3.5" style={{ color: ACCENT }} />
-                            </div>
-                        }
-                        <span className="text-sm font-bold truncate" style={{ color: TEXT }}>{b.businessName}</span>
-                      </div>
-                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full flex-shrink-0 ml-2"
-                        style={{ background: `${sc}18`, color: sc, border: `1px solid ${sc}30` }}>
-                        {segLabel[b.segment] ?? b.segment}
-                      </span>
-                    </div>
-
-                    <div className="px-4 py-3 space-y-3">
-                      {/* Points + credit */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="rounded-xl p-3 text-center"
-                          style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${BORDER2}` }}>
-                          <p className="text-xl font-black" style={{ color: "#f59e0b" }}>{b.loyaltyPoints}</p>
-                          <p className="text-[10px] mt-0.5 uppercase tracking-wide" style={{ color: MUTED }}>Puntos</p>
-                          {b.pointsPerVisit > 0 && (
-                            <p className="text-[10px] mt-0.5" style={{ color: "rgba(245,158,11,0.5)" }}>+{b.pointsPerVisit} por visita</p>
-                          )}
-                        </div>
-                        <div className="rounded-xl p-3 text-center"
-                          style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${BORDER2}` }}>
-                          <p className="text-xl font-black" style={{ color: "#22c55e" }}>
-                            ${(b.creditBalance / 100).toLocaleString("es-CL")}
-                          </p>
-                          <p className="text-[10px] mt-0.5 uppercase tracking-wide" style={{ color: MUTED }}>Crédito</p>
-                          <p className="text-[10px] mt-0.5" style={{ color: "rgba(34,197,94,0.5)" }}>Uso automático</p>
-                        </div>
-                      </div>
-
-                      {/* Progress to VIP */}
-                      {!isVip && b.vipThreshold > 0 && (
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-[10px]" style={{ color: MUTED }}>Progreso VIP</span>
-                            <span className="text-[10px] font-bold" style={{ color: "#facc15" }}>
-                              {b.ptsToNext > 0 ? `Faltan ${b.ptsToNext} pts` : "¡Casi!"}
-                            </span>
+                    return (
+                      <div key={b.id} style={{
+                        background: NAVY_C, border: `1px solid ${GOLD_BD}`,
+                        borderRadius: 14, padding: "14px 16px",
+                      }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
+                            <p style={{ color: LTXT, fontSize: 14, fontWeight: 700 }} className="truncate">
+                              {b.type === "court" ? b.court.name : b.service.name}
+                            </p>
                           </div>
-                          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-                            <div className="h-full rounded-full transition-all"
-                              style={{ width: `${progress}%`, background: "linear-gradient(90deg, #f59e0b, #facc15)" }} />
-                          </div>
-                          <p className="text-[10px] mt-1" style={{ color: "rgba(255,255,255,0.18)" }}>
-                            {b.loyaltyPoints} / {b.vipThreshold} pts para VIP
-                          </p>
+                          <span style={{
+                            fontSize: 11, fontWeight: 700, flexShrink: 0,
+                            padding: "2px 10px", borderRadius: 100,
+                            background: GOLD_BG, color: GOLD,
+                            border: `1px solid rgba(201,146,43,0.3)`,
+                          }}>
+                            {dateLabel(b.startTime)}
+                          </span>
                         </div>
-                      )}
 
-                      {isVip && (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
-                          style={{ background: "rgba(250,204,21,0.08)", border: "1px solid rgba(250,204,21,0.2)" }}>
-                          <span style={{ fontSize: 16 }}>⭐</span>
-                          <p className="text-xs font-bold" style={{ color: "#facc15" }}>Cliente VIP</p>
-                          {b.segmentDiscount > 0 && (
-                            <span className="ml-auto text-[10px] font-black px-1.5 py-0.5 rounded-full"
-                              style={{ background: "rgba(250,204,21,0.15)", color: "#facc15" }}>
-                              -{b.segmentDiscount}% descuento
+                        <div style={{ display: "flex", gap: 16, marginTop: 6, fontSize: 11, color: LMUTED, alignItems: "center" }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                            <Clock style={{ width: 11, height: 11 }} />
+                            {format(new Date(b.startTime), "HH:mm")}
+                          </span>
+                          <span>{b.business.name}</span>
+                          {b.type === "appt" && b.staff?.user.name && <span>{b.staff.user.name}</span>}
+                          {b.type === "court" && b.price > 0 && (
+                            <span style={{ marginLeft: "auto", color: GOLD, fontWeight: 700 }}>
+                              ${Number(b.price).toLocaleString("es-CL")}
                             </span>
                           )}
                         </div>
-                      )}
 
-                      {/* Segment discount (non-VIP) */}
-                      {!isVip && b.segmentDiscount > 0 && (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
-                          style={{ background: "rgba(56,189,248,0.06)", border: `1px solid ${BORDER}` }}>
-                          <Zap className="w-3.5 h-3.5 flex-shrink-0" style={{ color: ACCENT }} />
-                          <p className="text-xs" style={{ color: MUTED }}>
-                            Descuento <span className="font-black" style={{ color: ACCENT }}>{b.segmentDiscount}%</span> por tu segmento
-                          </p>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, gap: 8 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            {!allowed && reason && (
+                              <p style={{ fontSize: 10, color: "rgba(248,113,113,0.7)", display: "flex", alignItems: "center", gap: 3 }}>
+                                <AlertCircle style={{ width: 10, height: 10 }} />{reason}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (!allowed || isCancelling) return
+                              const name = b.type === "court" ? b.court.name : b.service.name
+                              const paidAmount = b.type === "court" ? (Number(b.paidAmount) ?? 0) : 0
+                              const paidOnline = b.type === "court" ? (b.paidOnline ?? false) : false
+                              setConfirmCancel({ type: b.type, id: b.id, paidAmount, paidOnline, name })
+                            }}
+                            disabled={!allowed || isCancelling}
+                            style={allowed ? {
+                              display: "flex", alignItems: "center", gap: 5,
+                              fontSize: 11, fontWeight: 700, padding: "6px 12px", borderRadius: 8,
+                              background: "rgba(220,38,38,0.15)", color: "#f87171",
+                              border: "1px solid rgba(220,38,38,0.25)", cursor: "pointer", flexShrink: 0,
+                            } : {
+                              display: "flex", alignItems: "center", gap: 5,
+                              fontSize: 11, fontWeight: 700, padding: "6px 12px", borderRadius: 8,
+                              background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.2)",
+                              border: "1px solid rgba(255,255,255,0.07)", cursor: "not-allowed", flexShrink: 0,
+                            }}>
+                            {isCancelling
+                              ? <Loader2 style={{ width: 11, height: 11 }} className="animate-spin" />
+                              : <X style={{ width: 11, height: 11 }} />}
+                            Cancelar
+                          </button>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* ── GENERAL: servicio y profesional favorito ── */}
-        {!isSportsUser && (topService || topStaff) && (
-          <div className="rounded-2xl p-4 space-y-3" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: ACCENT }}>Tus favoritos</p>
-            {topService && (
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: topService.color + "22" }}>
-                  <Zap className="w-4 h-4" style={{ color: topService.color }} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{topService.name}</p>
-                  <p className="text-[11px]" style={{ color: MUTED }}>Servicio · {topService.count} visitas</p>
-                </div>
-                <Star className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#f59e0b" }} />
-              </div>
-            )}
-            {topStaff && (
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(56,189,248,0.1)" }}>
-                  <User className="w-4 h-4" style={{ color: ACCENT }} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{topStaff.name}</p>
-                  <p className="text-[11px]" style={{ color: MUTED }}>Profesional · {topStaff.count} turnos</p>
-                </div>
-                <Star className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#f59e0b" }} />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Membresías activas ── */}
-        {activeMemberships.length > 0 && (
-          <section>
-            <SectionTitle>Membresías activas</SectionTitle>
-            <div className="space-y-2">
-              {activeMemberships.map(m => {
-                const daysLeft = differenceInDays(new Date(m.endDate), new Date())
-                const urgent = daysLeft <= 7
-                return (
-                  <div key={m.id} className="rounded-2xl p-4"
-                    style={{ background: CARD, border: `1px solid ${urgent ? "#f59e0b40" : BORDER}` }}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-sm">{m.plan.name}</p>
-                        <p className="text-xs mt-0.5" style={{ color: MUTED }}>{m.business.name}</p>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
-                        style={{
-                          background: urgent ? "rgba(245,158,11,0.12)" : "rgba(34,197,94,0.12)",
-                          color: urgent ? "#f59e0b" : "#22c55e",
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Active memberships */}
+              {activeMemberships.length > 0 && (
+                <div style={{ marginTop: 28 }}>
+                  <SectionHeading>Membresías activas</SectionHeading>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {activeMemberships.map(m => {
+                      const daysLeft = differenceInDays(new Date(m.endDate), new Date())
+                      const urgent = daysLeft <= 7
+                      return (
+                        <div key={m.id} style={{
+                          background: WHITE, border: `1px solid ${urgent ? "rgba(245,158,11,0.4)" : BD}`,
+                          borderRadius: 12, padding: "14px 16px",
+                          display: "flex", alignItems: "center", gap: 12,
                         }}>
-                        {urgent ? `Vence en ${daysLeft}d` : "Activa"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-2">
-                      <Gift className="w-3 h-3" style={{ color: MUTED }} />
-                      <p className="text-[11px]" style={{ color: MUTED }}>
-                        Hasta el {format(new Date(m.endDate), "d 'de' MMMM yyyy", { locale: es })}
-                      </p>
-                    </div>
+                          <div style={{
+                            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                            background: urgent ? "rgba(245,158,11,0.1)" : "rgba(56,189,248,0.08)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}>
+                            <Award style={{ width: 16, height: 16, color: urgent ? "#f59e0b" : ACCENT }} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: TXT }}>{m.plan.name}</p>
+                            <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{m.business.name}</p>
+                          </div>
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 100, flexShrink: 0,
+                            background: urgent ? "rgba(245,158,11,0.1)" : "rgba(34,197,94,0.1)",
+                            color: urgent ? "#d97706" : "#16a34a",
+                          }}>
+                            {urgent ? `Vence en ${daysLeft}d` : "Activa"}
+                          </span>
+                        </div>
+                      )
+                    })}
                   </div>
-                )
-              })}
-            </div>
-          </section>
-        )}
+                </div>
+              )}
+            </section>
+          )}
 
-        {/* ── Próximas reservas ── */}
-        {allUpcoming.length > 0 && (
-          <section>
-            <SectionTitle>Próximas reservas</SectionTitle>
-            {cancelError && (
-              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl mb-2 text-xs"
-                style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171" }}>
-                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                {cancelError}
-                <button onClick={() => setCancelError(null)} className="ml-auto"><X className="w-3.5 h-3.5" /></button>
-              </div>
-            )}
-            <div className="space-y-2">
-              {allUpcoming.filter(b => !cancelledIds.has(b.id)).map(b => {
-                const hoursNotice = b.business.cancellationHoursNotice ?? null
-                const { allowed, reason } = canCancel(b.startTime, hoursNotice)
-                const isCancelling = cancellingId === b.id
+          {/* ── TAB: Partidos ──────────────────────────────────────────────── */}
+          {tab === "matches" && (
+            <section>
+              <SectionHeading>Mis partidos</SectionHeading>
 
-                return (
-                  <div key={b.id} className="rounded-2xl p-4"
-                    style={{ background: "rgba(56,189,248,0.07)", border: `1px solid ${BORDER}` }}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ background: b.type === "court" ? b.court.color : b.service.color }} />
-                        <p className="text-sm font-semibold truncate" style={{ color: TEXT }}>
-                          {b.type === "court" ? b.court.name : b.service.name}
-                        </p>
+              {/* Stats */}
+              {recentMatches.length > 0 && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
+                  {[
+                    { label: "Jugados", value: recentMatches.length, color: TXT },
+                    { label: "Victorias", value: wins, color: "#16a34a" },
+                    { label: "Derrotas", value: losses, color: "#dc2626" },
+                  ].map(s => (
+                    <div key={s.label} style={{
+                      background: WHITE, border: `1px solid ${BD}`,
+                      borderRadius: 12, padding: "14px 12px", textAlign: "center",
+                    }}>
+                      <p style={{ fontSize: 28, fontWeight: 900, color: s.color, lineHeight: 1 }}>{s.value}</p>
+                      <p style={{ fontSize: 10, color: MUTED, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Tournaments */}
+              {tournaments.filter(t => t.tournament.status !== "FINISHED" && t.tournament.status !== "CANCELLED").length > 0 && (
+                <div style={{ marginBottom: 24 }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: MUTED, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Torneos activos</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {tournaments.filter(t => t.tournament.status !== "FINISHED" && t.tournament.status !== "CANCELLED").map(t => (
+                      <div key={t.participantId} style={{
+                        background: WHITE, border: `1px solid ${BD}`,
+                        borderRadius: 12, padding: "14px 16px",
+                        display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10,
+                      }}>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: TXT }}>{t.tournament.name}</p>
+                          <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{t.tournament.business.name}</p>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 8, fontSize: 11, color: MUTED }}>
+                            {t.category && <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Trophy style={{ width: 10, height: 10 }} />{t.category}</span>}
+                            {t.seed && <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Medal style={{ width: 10, height: 10 }} />Cabeza #{t.seed}</span>}
+                            {t.group && <span>Grupo {t.group}</span>}
+                            {t.tournament.startDate && (
+                              <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                                <Calendar style={{ width: 10, height: 10 }} />
+                                {format(new Date(t.tournament.startDate), "d MMM", { locale: es })}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span style={{
+                          fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 100, flexShrink: 0,
+                          background: "rgba(56,189,248,0.1)", color: ACCENT,
+                        }}>
+                          {t.tournament.status === "ACTIVE" ? "En curso" : "Por iniciar"}
+                        </span>
                       </div>
-                      <span className="text-[11px] font-bold flex-shrink-0" style={{ color: ACCENT }}>
-                        {dateLabel(b.startTime)}
-                      </span>
-                    </div>
-                    <div className="flex gap-3 mt-1.5 text-[11px]" style={{ color: MUTED }}>
-                      <span><Clock className="w-3 h-3 inline mr-1" />{format(new Date(b.startTime), "HH:mm")}</span>
-                      <span>{b.business.name}</span>
-                      {b.type === "appt" && b.staff?.user.name && <span>{b.staff.user.name}</span>}
-                    </div>
-                    {/* Cancel button */}
-                    <div className="mt-3 flex items-center justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        {!allowed && reason && (
-                          <p className="text-[10px] truncate" style={{ color: "rgba(248,113,113,0.7)" }}>
-                            <AlertCircle className="w-3 h-3 inline mr-1" />{reason}
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recent match results */}
+              {recentMatches.length > 0 ? (
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: MUTED, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Últimos resultados</p>
+                  <div style={{ background: WHITE, border: `1px solid ${BD}`, borderRadius: 12, overflow: "hidden" }}>
+                    {recentMatches.slice(0, 8).map((m, i) => (
+                      <div key={m.id} style={{
+                        display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
+                        borderBottom: i < recentMatches.slice(0, 8).length - 1 ? `1px solid ${BD}` : undefined,
+                      }}>
+                        <div style={{
+                          width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 12, fontWeight: 900,
+                          background: m.result === "W" ? "rgba(22,163,74,0.12)" : m.result === "L" ? "rgba(220,38,38,0.1)" : "rgba(100,116,139,0.1)",
+                          color: m.result === "W" ? "#16a34a" : m.result === "L" ? "#dc2626" : MUTED,
+                        }}>
+                          {m.result === "P" ? "–" : m.result}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: TXT }} className="truncate">vs {m.opponent}</p>
+                          <p style={{ fontSize: 11, color: MUTED, marginTop: 1 }} className="truncate">
+                            Ronda {m.round} · {m.tournamentName}
+                          </p>
+                        </div>
+                        {m.myScore && (
+                          <p style={{
+                            fontSize: 13, fontWeight: 700, fontFamily: "monospace", flexShrink: 0,
+                            color: m.result === "W" ? "#16a34a" : m.result === "L" ? "#dc2626" : MUTED,
+                          }}>
+                            {m.myScore}–{m.opponentScore}
                           </p>
                         )}
                       </div>
-                      <button
-                        onClick={() => {
-                          if (!allowed || isCancelling) return
-                          const name = b.type === "court" ? b.court.name : b.service.name
-                          const paidAmount = b.type === "court" ? (Number(b.paidAmount) ?? 0) : 0
-                          const paidOnline = b.type === "court" ? (b.paidOnline ?? false) : false
-                          setConfirmCancel({ type: b.type, id: b.id, paidAmount, paidOnline, name })
-                        }}
-                        disabled={!allowed || isCancelling}
-                        title={!allowed ? reason : "Cancelar reserva"}
-                        className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all flex-shrink-0"
-                        style={allowed
-                          ? { background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)", cursor: "pointer" }
-                          : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.06)", cursor: "not-allowed" }
-                        }>
-                        {isCancelling && cancellingId === b.id
-                          ? <Loader2 className="w-3 h-3 animate-spin" />
-                          : <X className="w-3 h-3" />}
-                        Cancelar
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* ── SPORTS: torneos activos ── */}
-        {isSportsUser && tournaments.filter(t => t.tournament.status !== "FINISHED").length > 0 && (
-          <section>
-            <SectionTitle>Torneos activos</SectionTitle>
-            <div className="space-y-2">
-              {tournaments.filter(t => t.tournament.status !== "FINISHED" && t.tournament.status !== "CANCELLED").map(t => (
-                <div key={t.participantId} className="rounded-2xl p-4"
-                  style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm leading-snug">{t.tournament.name}</p>
-                      <p className="text-xs mt-0.5" style={{ color: MUTED }}>{t.tournament.business.name}</p>
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
-                      style={{ background: "rgba(56,189,248,0.12)", color: ACCENT }}>
-                      {t.tournament.status === "ACTIVE" ? "En curso" : "Por iniciar"}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-3 mt-2.5 text-[11px]" style={{ color: MUTED }}>
-                    {t.category && <span><Trophy className="w-3 h-3 inline mr-1" />{t.category}</span>}
-                    {t.seed && <span><Medal className="w-3 h-3 inline mr-1" />Cabeza #{t.seed}</span>}
-                    {t.group && <span>Grupo {t.group}</span>}
-                    {t.tournament.startDate && (
-                      <span><Calendar className="w-3 h-3 inline mr-1" />
-                        {format(new Date(t.tournament.startDate), "d MMM", { locale: es })}
-                      </span>
-                    )}
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          </section>
-        )}
+              ) : (
+                <div style={{
+                  background: WHITE, border: `1px solid ${BD}`, borderRadius: 12,
+                  padding: "40px 24px", textAlign: "center",
+                }}>
+                  <Trophy style={{ width: 32, height: 32, color: BD, margin: "0 auto 10px" }} />
+                  <p style={{ color: MUTED, fontSize: 13 }}>Sin partidos registrados</p>
+                </div>
+              )}
+            </section>
+          )}
 
-        {/* ── SPORTS: últimos resultados ── */}
-        {isSportsUser && recentMatches.length > 0 && (
-          <section>
-            <SectionTitle>Últimos resultados</SectionTitle>
-            <div className="rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
-              {recentMatches.slice(0, 5).map((m, i) => (
-                <div key={m.id} className="flex items-center gap-3 px-4 py-3"
-                  style={{ borderBottom: i < 4 ? `1px solid ${BORDER}` : undefined }}>
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-black"
-                    style={{
-                      background: m.result === "W" ? "rgba(34,197,94,0.15)" : m.result === "L" ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.06)",
-                      color: m.result === "W" ? "#22c55e" : m.result === "L" ? "#ef4444" : MUTED,
+          {/* ── TAB: Historial ─────────────────────────────────────────────── */}
+          {tab === "history" && (
+            <section>
+              <SectionHeading>Historial de reservas</SectionHeading>
+              {allHistory.length === 0 ? (
+                <div style={{
+                  background: WHITE, border: `1px solid ${BD}`, borderRadius: 12,
+                  padding: "40px 24px", textAlign: "center",
+                }}>
+                  <Clock style={{ width: 32, height: 32, color: BD, margin: "0 auto 10px" }} />
+                  <p style={{ color: MUTED, fontSize: 13 }}>Sin historial aún</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {allHistory.map(b => (
+                    <div key={b.id} style={{
+                      background: WHITE, border: `1px solid ${BD}`,
+                      borderRadius: 12, padding: "14px 16px",
+                      display: "flex", alignItems: "flex-start", gap: 10,
                     }}>
-                    {m.result === "P" ? "—" : m.result}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">vs {m.opponent}</p>
-                    <p className="text-[11px] truncate" style={{ color: MUTED }}>
-                      Ronda {m.round} · {m.tournamentName}
-                    </p>
-                  </div>
-                  {m.myScore && (
-                    <p className="text-sm font-mono font-bold flex-shrink-0"
-                      style={{ color: m.result === "W" ? "#22c55e" : m.result === "L" ? "#ef4444" : MUTED }}>
-                      {m.myScore}–{m.opponentScore}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── Historial ── */}
-        <section>
-          <SectionTitle>Historial de reservas</SectionTitle>
-          {allHistory.length === 0
-            ? (
-              <div className="rounded-2xl p-8 text-center" style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
-                <Calendar className="w-8 h-8 mx-auto mb-2" style={{ color: "rgba(255,255,255,0.1)" }} />
-                <p className="text-sm" style={{ color: MUTED }}>Sin reservas aún</p>
-              </div>
-            )
-            : (
-              <div className="space-y-2">
-                {allHistory.map(b => (
-                  <div key={b.id} className="rounded-2xl p-4" style={{ background: CARD, border: `1px solid ${BORDER2}` }}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ background: b.type === "court" ? b.court.color : b.service.color }} />
-                        <div className="min-w-0">
-                          <p className="text-white text-sm font-semibold truncate">
-                            {b.type === "court" ? b.court.name : b.service.name}
-                          </p>
-                          <p className="text-[11px] truncate" style={{ color: MUTED }}>
-                            {b.business.name}
-                            {b.type === "appt" && b.staff?.user.name ? ` · ${b.staff.user.name}` : ""}
-                          </p>
+                      <div style={{
+                        width: 8, height: 8, borderRadius: "50%", flexShrink: 0, marginTop: 5,
+                        background: b.type === "court" ? b.court.color : b.service.color,
+                      }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                          <div style={{ minWidth: 0 }}>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: TXT }} className="truncate">
+                              {b.type === "court" ? b.court.name : b.service.name}
+                            </p>
+                            <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }} className="truncate">
+                              {b.business.name}
+                              {b.type === "appt" && b.staff?.user.name ? ` · ${b.staff.user.name}` : ""}
+                            </p>
+                          </div>
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 100, flexShrink: 0,
+                            background: statusColor(b.status) + "15", color: statusColor(b.status),
+                          }}>
+                            {statusLabel(b.status)}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 11, color: MUTED }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                            <Calendar style={{ width: 10, height: 10 }} />
+                            {format(new Date(b.startTime), "d MMM yyyy", { locale: es })}
+                          </span>
+                          <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                            <Clock style={{ width: 10, height: 10 }} />
+                            {format(new Date(b.startTime), "HH:mm")}
+                          </span>
+                          {b.type === "court" && b.price > 0 && (
+                            <span style={{ marginLeft: "auto", fontWeight: 700, color: TXT }}>
+                              ${Number(b.price).toLocaleString("es-CL")}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
-                        style={{ background: statusColor(b.status) + "20", color: statusColor(b.status) }}>
-                        {statusLabel(b.status)}
-                      </span>
                     </div>
-                    <div className="flex gap-3 mt-2 text-[11px]" style={{ color: MUTED }}>
-                      <span><Calendar className="w-3 h-3 inline mr-1" />
-                        {format(new Date(b.startTime), "d MMM yyyy", { locale: es })}
-                      </span>
-                      <span><Clock className="w-3 h-3 inline mr-1" />
-                        {format(new Date(b.startTime), "HH:mm")}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-        </section>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
 
-        <div className="text-center pt-2">
-          <p className="text-[10px]" style={{ color: "rgba(240,246,255,0.15)" }}>
-            Reservas gestionadas por <span style={{ color: `${ACCENT}60` }}>AgendaMok</span>
-          </p>
+          {/* ── TAB: Mis clubs ──────────────────────────────────────────────── */}
+          {tab === "clubs" && (
+            <section>
+              <SectionHeading>Mis clubs vinculados</SectionHeading>
+              {businessBenefits.length === 0 ? (
+                <div style={{
+                  background: WHITE, border: `1px solid ${BD}`, borderRadius: 12,
+                  padding: "40px 24px", textAlign: "center",
+                }}>
+                  <Building2 style={{ width: 32, height: 32, color: BD, margin: "0 auto 10px" }} />
+                  <p style={{ color: MUTED, fontSize: 13 }}>Sin clubs vinculados</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {businessBenefits.map(b => {
+                    const segLabel: Record<string, string> = { VIP: "VIP", FREQUENT: "Frecuente", REGULAR: "Regular", NEW: "Nuevo", AT_RISK: "Recuperar", INFLUENCER: "Influencer" }
+                    const segColor: Record<string, string> = { VIP: "#d97706", FREQUENT: ACCENT, REGULAR: MUTED, NEW: MUTED, AT_RISK: "#dc2626", INFLUENCER: "#9333ea" }
+                    const sc = segColor[b.segment] ?? MUTED
+
+                    return (
+                      <div key={b.businessId} style={{
+                        background: WHITE, border: `1px solid ${BD}`,
+                        borderRadius: 14, overflow: "hidden",
+                      }}>
+                        <div style={{
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                          padding: "14px 16px", borderBottom: `1px solid ${BD}`,
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                            <div style={{
+                              width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                              background: "rgba(56,189,248,0.1)",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                            }}>
+                              <Building2 style={{ width: 15, height: 15, color: ACCENT }} />
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <p style={{ fontSize: 14, fontWeight: 700, color: TXT }} className="truncate">{b.businessName}</p>
+                              <p style={{ fontSize: 11, color: MUTED }}>/{b.businessSlug}</p>
+                            </div>
+                          </div>
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, padding: "2px 10px", borderRadius: 100, flexShrink: 0,
+                            background: sc + "15", color: sc, border: `1px solid ${sc}30`,
+                          }}>
+                            {segLabel[b.segment] ?? b.segment}
+                          </span>
+                        </div>
+                        <div style={{ padding: "12px 16px", display: "flex", gap: 20, fontSize: 12 }}>
+                          <div>
+                            <p style={{ color: MUTED, fontSize: 10 }}>Puntos</p>
+                            <p style={{ color: "#d97706", fontWeight: 800, fontSize: 18 }}>{b.loyaltyPoints}</p>
+                          </div>
+                          <div>
+                            <p style={{ color: MUTED, fontSize: 10 }}>Crédito</p>
+                            <p style={{ color: "#16a34a", fontWeight: 800, fontSize: 18 }}>
+                              ${(b.creditBalance / 100).toLocaleString("es-CL")}
+                            </p>
+                          </div>
+                          {b.segmentDiscount > 0 && (
+                            <div>
+                              <p style={{ color: MUTED, fontSize: 10 }}>Descuento</p>
+                              <p style={{ color: ACCENT, fontWeight: 800, fontSize: 18 }}>{b.segmentDiscount}%</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* ── TAB: Fidelización ──────────────────────────────────────────── */}
+          {tab === "loyalty" && (
+            <section>
+              <SectionHeading>Puntos por negocio</SectionHeading>
+              {businessBenefits.length === 0 ? (
+                <div style={{
+                  background: WHITE, border: `1px solid ${BD}`, borderRadius: 12,
+                  padding: "40px 24px", textAlign: "center",
+                }}>
+                  <Star style={{ width: 32, height: 32, color: BD, margin: "0 auto 10px" }} />
+                  <p style={{ color: MUTED, fontSize: 13 }}>Sin beneficios registrados</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {businessBenefits.map(b => {
+                    const segLabel: Record<string, string> = { VIP: "VIP", FREQUENT: "Frecuente", REGULAR: "Regular", NEW: "Nuevo", AT_RISK: "Recuperar", INFLUENCER: "Influencer" }
+                    const isVip = b.segment === "VIP"
+                    const progress = b.vipThreshold > 0 ? Math.min(100, Math.round((b.loyaltyPoints / b.vipThreshold) * 100)) : 0
+
+                    return (
+                      <div key={b.businessId} style={{
+                        background: WHITE, border: `1px solid ${BD}`,
+                        borderRadius: 16, overflow: "hidden",
+                      }}>
+                        {/* Header */}
+                        <div style={{
+                          padding: "14px 16px", background: SB,
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                        }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: LTXT }}>{b.businessName}</p>
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, padding: "2px 10px", borderRadius: 100,
+                            background: isVip ? "rgba(217,119,6,0.2)" : "rgba(56,189,248,0.15)",
+                            color: isVip ? "#f59e0b" : ACCENT,
+                          }}>
+                            {segLabel[b.segment] ?? b.segment}
+                          </span>
+                        </div>
+
+                        <div style={{ padding: "16px" }}>
+                          {/* Points + credit grid */}
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+                            <div style={{
+                              background: "rgba(217,119,6,0.06)", border: "1px solid rgba(217,119,6,0.2)",
+                              borderRadius: 12, padding: "12px", textAlign: "center",
+                            }}>
+                              <p style={{ fontSize: 26, fontWeight: 900, color: "#d97706", lineHeight: 1 }}>{b.loyaltyPoints}</p>
+                              <p style={{ fontSize: 10, color: MUTED, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>Puntos</p>
+                              {b.pointsPerVisit > 0 && (
+                                <p style={{ fontSize: 10, color: "rgba(217,119,6,0.6)", marginTop: 3 }}>+{b.pointsPerVisit} por visita</p>
+                              )}
+                            </div>
+                            <div style={{
+                              background: "rgba(22,163,74,0.06)", border: "1px solid rgba(22,163,74,0.2)",
+                              borderRadius: 12, padding: "12px", textAlign: "center",
+                            }}>
+                              <p style={{ fontSize: 26, fontWeight: 900, color: "#16a34a", lineHeight: 1 }}>
+                                ${(b.creditBalance / 100).toLocaleString("es-CL")}
+                              </p>
+                              <p style={{ fontSize: 10, color: MUTED, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>Crédito</p>
+                              <p style={{ fontSize: 10, color: "rgba(22,163,74,0.6)", marginTop: 3 }}>Uso automático</p>
+                            </div>
+                          </div>
+
+                          {/* Progress to VIP */}
+                          {!isVip && b.vipThreshold > 0 && (
+                            <div>
+                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 11 }}>
+                                <span style={{ color: MUTED }}>Progreso VIP</span>
+                                <span style={{ color: "#d97706", fontWeight: 700 }}>
+                                  {b.ptsToNext > 0 ? `Faltan ${b.ptsToNext} pts` : "¡Casi!"}
+                                </span>
+                              </div>
+                              <div style={{ height: 6, borderRadius: 100, background: "#f1f5f9", overflow: "hidden" }}>
+                                <div style={{
+                                  height: "100%", borderRadius: 100,
+                                  width: `${progress}%`,
+                                  background: "linear-gradient(90deg, #f59e0b, #fbbf24)",
+                                  transition: "width 0.5s ease",
+                                }} />
+                              </div>
+                              <p style={{ fontSize: 10, color: MUTED, marginTop: 5 }}>
+                                {b.loyaltyPoints} / {b.vipThreshold} puntos para VIP
+                              </p>
+                            </div>
+                          )}
+
+                          {isVip && (
+                            <div style={{
+                              display: "flex", alignItems: "center", gap: 8,
+                              padding: "10px 14px", borderRadius: 10,
+                              background: "rgba(217,119,6,0.08)", border: "1px solid rgba(217,119,6,0.2)",
+                            }}>
+                              <Star style={{ width: 16, height: 16, color: "#d97706", flexShrink: 0 }} />
+                              <p style={{ fontSize: 13, fontWeight: 700, color: "#d97706" }}>Cliente VIP</p>
+                              {b.segmentDiscount > 0 && (
+                                <span style={{
+                                  marginLeft: "auto", fontSize: 11, fontWeight: 700,
+                                  padding: "2px 8px", borderRadius: 100,
+                                  background: "rgba(217,119,6,0.12)", color: "#d97706",
+                                }}>
+                                  -{b.segmentDiscount}% descuento
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Discount (non-VIP) */}
+                          {!isVip && b.segmentDiscount > 0 && (
+                            <div style={{
+                              display: "flex", alignItems: "center", gap: 8, marginTop: 10,
+                              padding: "10px 14px", borderRadius: 10,
+                              background: "rgba(56,189,248,0.06)", border: `1px solid rgba(56,189,248,0.2)`,
+                            }}>
+                              <Zap style={{ width: 14, height: 14, color: ACCENT, flexShrink: 0 }} />
+                              <p style={{ fontSize: 12, color: MUTED }}>
+                                Descuento <span style={{ fontWeight: 800, color: ACCENT }}>{b.segmentDiscount}%</span> activo para tu segmento
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </section>
+          )}
+
         </div>
       </div>
 
-      {/* ── Cancel confirm modal ── */}
+      {/* ── Cancel confirm modal ────────────────────────────────────────────── */}
       {confirmCancel && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-4 sm:pb-0"
-          style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
-          onClick={() => setConfirmCancel(null)}>
-          <div className="w-full max-w-sm rounded-3xl p-6 space-y-5"
-            style={{ background: CARD, border: `1px solid ${BORDER}` }}
-            onClick={e => e.stopPropagation()}>
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 50,
+          display: "flex", alignItems: "flex-end", justifyContent: "center",
+          padding: "0 16px 16px",
+          background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
+        }} onClick={() => setConfirmCancel(null)}>
+          <div style={{
+            width: "100%", maxWidth: 400, borderRadius: 24, padding: 24,
+            background: WHITE, boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+          }} onClick={e => e.stopPropagation()}>
 
-            {/* Header */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "rgba(239,68,68,0.12)" }}>
-                <X className="w-5 h-5" style={{ color: "#f87171" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+                background: "rgba(220,38,38,0.1)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <X style={{ width: 20, height: 20, color: "#dc2626" }} />
               </div>
               <div>
-                <p className="font-black text-sm" style={{ color: TEXT }}>Cancelar reserva</p>
-                <p className="text-xs mt-0.5" style={{ color: MUTED }}>{confirmCancel.name}</p>
+                <p style={{ fontSize: 14, fontWeight: 800, color: TXT }}>Cancelar reserva</p>
+                <p style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>{confirmCancel.name}</p>
               </div>
             </div>
 
-            {/* Refund options — only when there's a paid amount */}
             {confirmCancel.paidAmount > 0 ? (
-              <div className="space-y-3">
-                <p className="text-xs font-semibold" style={{ color: MUTED }}>
-                  Monto pagado: <span className="font-black" style={{ color: TEXT }}>
-                    ${confirmCancel.paidAmount.toLocaleString("es-CL")}
-                  </span> — ¿cómo quieres recuperarlo?
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <p style={{ fontSize: 12, color: MUTED, marginBottom: 4 }}>
+                  Monto pagado: <strong style={{ color: TXT }}>${confirmCancel.paidAmount.toLocaleString("es-CL")}</strong> — ¿cómo quieres recuperarlo?
                 </p>
 
-                {/* Refund to original method */}
                 {confirmCancel.paidOnline && (
                   <button
                     onClick={() => handleCancel(confirmCancel.type, confirmCancel.id, "refund")}
                     disabled={!!cancellingId}
-                    className="w-full flex items-center gap-3 p-4 rounded-2xl text-left transition-all"
-                    style={{ background: "rgba(56,189,248,0.08)", border: `1px solid ${BORDER}` }}>
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "rgba(56,189,248,0.15)" }}>
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12, padding: 16, borderRadius: 14,
+                      background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.25)",
+                      textAlign: "left", cursor: "pointer", width: "100%",
+                    }}>
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                      background: "rgba(56,189,248,0.1)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
                       {cancellingId === confirmCancel.id
-                        ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: ACCENT }} />
-                        : <CreditCard className="w-4 h-4" style={{ color: ACCENT }} />}
+                        ? <Loader2 style={{ width: 18, height: 18, color: ACCENT }} className="animate-spin" />
+                        : <CreditCard style={{ width: 18, height: 18, color: ACCENT }} />}
                     </div>
                     <div>
-                      <p className="text-sm font-bold" style={{ color: TEXT }}>Reembolso automático</p>
-                      <p className="text-[11px]" style={{ color: MUTED }}>De vuelta a tu método de pago original</p>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Reembolso automático</p>
+                      <p style={{ fontSize: 11, color: MUTED }}>De vuelta a tu método de pago original</p>
                     </div>
                   </button>
                 )}
 
-                {/* Credit to account */}
                 <button
                   onClick={() => handleCancel(confirmCancel.type, confirmCancel.id, "credit")}
                   disabled={!!cancellingId}
-                  className="w-full flex items-center gap-3 p-4 rounded-2xl text-left transition-all"
-                  style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)" }}>
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: "rgba(34,197,94,0.12)" }}>
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12, padding: 16, borderRadius: 14,
+                    background: "rgba(22,163,74,0.06)", border: "1px solid rgba(22,163,74,0.25)",
+                    textAlign: "left", cursor: "pointer", width: "100%",
+                  }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                    background: "rgba(22,163,74,0.1)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
                     {cancellingId === confirmCancel.id
-                      ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#22c55e" }} />
-                      : <Gift className="w-4 h-4" style={{ color: "#22c55e" }} />}
+                      ? <Loader2 style={{ width: 18, height: 18, color: "#16a34a" }} className="animate-spin" />
+                      : <Gift style={{ width: 18, height: 18, color: "#16a34a" }} />}
                   </div>
                   <div>
-                    <p className="text-sm font-bold" style={{ color: TEXT }}>Abonar a mi cuenta</p>
-                    <p className="text-[11px]" style={{ color: MUTED }}>Crédito para tu próxima reserva</p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Abonar a mi cuenta</p>
+                    <p style={{ fontSize: 11, color: MUTED }}>Crédito para tu próxima reserva</p>
                   </div>
                 </button>
               </div>
             ) : (
-              /* No payment — just confirm cancellation */
-              <div className="space-y-3">
-                <p className="text-sm" style={{ color: MUTED }}>¿Confirmas la cancelación de esta reserva?</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <p style={{ fontSize: 13, color: MUTED }}>¿Confirmas la cancelación de esta reserva?</p>
                 <button
                   onClick={() => handleCancel(confirmCancel.type, confirmCancel.id, "refund")}
                   disabled={!!cancellingId}
-                  className="w-full h-12 rounded-2xl font-black text-sm flex items-center justify-center gap-2"
-                  style={{ background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}>
-                  {cancellingId ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                  style={{
+                    height: 50, borderRadius: 14, fontSize: 13, fontWeight: 800,
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    background: "rgba(220,38,38,0.1)", color: "#dc2626",
+                    border: "1px solid rgba(220,38,38,0.25)", cursor: "pointer", width: "100%",
+                  }}>
+                  {cancellingId ? <Loader2 style={{ width: 16, height: 16 }} className="animate-spin" /> : <X style={{ width: 16, height: 16 }} />}
                   Confirmar cancelación
                 </button>
               </div>
             )}
 
             {cancelError && (
-              <p className="text-xs px-3 py-2 rounded-xl" style={{ background: "rgba(239,68,68,0.1)", color: "#f87171" }}>
+              <p style={{
+                fontSize: 12, padding: "10px 14px", borderRadius: 10, marginTop: 10,
+                background: "rgba(220,38,38,0.08)", color: "#dc2626",
+              }}>
                 {cancelError}
               </p>
             )}
 
             <button onClick={() => { setConfirmCancel(null); setCancelError(null) }}
-              className="w-full flex items-center justify-center gap-1.5 text-xs py-2"
-              style={{ color: MUTED }}>
-              <ArrowLeft className="w-3.5 h-3.5" />Volver
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                width: "100%", marginTop: 14, fontSize: 12, color: MUTED,
+                background: "transparent", border: "none", cursor: "pointer",
+              }}>
+              <ArrowLeft style={{ width: 13, height: 13 }} />Volver
             </button>
           </div>
         </div>
       )}
 
-      {/* ── Success toast ── */}
+      {/* ── Success toast ───────────────────────────────────────────────────── */}
       {cancelSuccess && (
-        <div className="fixed bottom-6 left-0 right-0 flex justify-center px-4 z-50">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl max-w-sm w-full"
-            style={{ background: "#0f2a3f", border: `1px solid rgba(34,197,94,0.4)` }}>
-            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: "rgba(34,197,94,0.15)" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <div style={{
+          position: "fixed", bottom: 24, left: 0, right: 0,
+          display: "flex", justifyContent: "center", padding: "0 16px", zIndex: 50,
+        }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 12,
+            padding: "12px 16px", borderRadius: 16, maxWidth: 400, width: "100%",
+            background: WHITE, boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+            border: "1px solid rgba(22,163,74,0.3)",
+          }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+              background: "rgba(22,163,74,0.1)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
-            <p className="text-xs font-semibold flex-1" style={{ color: TEXT }}>{cancelSuccess.message}</p>
-            <button onClick={() => setCancelSuccess(null)}><X className="w-4 h-4" style={{ color: MUTED }} /></button>
+            <p style={{ fontSize: 12, fontWeight: 600, color: TXT, flex: 1 }}>{cancelSuccess.message}</p>
+            <button onClick={() => setCancelSuccess(null)} style={{ background: "transparent", border: "none", cursor: "pointer" }}>
+              <X style={{ width: 16, height: 16, color: MUTED }} />
+            </button>
           </div>
         </div>
       )}
