@@ -7,7 +7,7 @@ import { sendCourtBookingConfirmation } from "@/lib/email"
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const body = await req.json()
-  const { courtId, date, time, duration = 60, clientName, clientEmail, clientPhone, notes, price = 0 } = body
+  const { courtId, date, time, duration = 60, clientName, clientEmail, clientPhone, clientRut, notes, price = 0 } = body
 
   if (!courtId || !date || !time || !clientName || !clientEmail) {
     return NextResponse.json({ error: "Faltan campos requeridos" }, { status: 400 })
@@ -40,14 +40,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     : null
 
   let client = await prisma.client.findFirst({
-    where: { businessId: business.id, email: clientEmail },
+    where: { businessId: business.id, email: clientEmail, deletedAt: null },
   })
   if (!client) {
     client = await prisma.client.create({
-      data: { businessId: business.id, name: clientName, email: clientEmail, phone: clientPhone || null, ...(loggedUser ? { userId: loggedUser.id } : {}) },
+      data: { businessId: business.id, name: clientName, email: clientEmail, phone: clientPhone || null, rut: clientRut || null, ...(loggedUser ? { userId: loggedUser.id } : {}) },
     })
-  } else if (loggedUser && !client.userId) {
-    client = await prisma.client.update({ where: { id: client.id }, data: { userId: loggedUser.id } })
+  } else {
+    const updates: Record<string, unknown> = {}
+    if (loggedUser && !client.userId) updates.userId = loggedUser.id
+    if (clientRut && !client.rut) updates.rut = clientRut
+    if (Object.keys(updates).length > 0)
+      client = await prisma.client.update({ where: { id: client.id }, data: updates })
   }
 
   const court = await prisma.court.findUnique({

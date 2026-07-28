@@ -16,20 +16,11 @@ export async function GET(req: Request, { params }: Params) {
 
   if (!business) return NextResponse.json({ exists: !!user })
 
-  // First: look in this business
-  let client = await prisma.client.findFirst({
+  // Only look in this business — no cross-business data sharing
+  const client = await prisma.client.findFirst({
     where: { businessId: business.id, email, deletedAt: null },
     select: { name: true, lastName: true, phone: true, rut: true },
   })
-
-  // Fallback: look in any other business on the platform
-  if (!client) {
-    client = await prisma.client.findFirst({
-      where: { email, deletedAt: null, NOT: { businessId: business.id } },
-      select: { name: true, lastName: true, phone: true, rut: true },
-      orderBy: { updatedAt: "desc" },
-    })
-  }
 
   return NextResponse.json({
     exists: !!user,

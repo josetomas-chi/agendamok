@@ -29,7 +29,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const session = await auth()
   const loggedUserId = session?.user?.id ?? null
 
-  let client = await prisma.client.findFirst({ where: { businessId: business.id, email: clientEmail } })
+  let client = await prisma.client.findFirst({ where: { businessId: business.id, email: clientEmail, deletedAt: null } })
   if (client) {
     client = await prisma.client.update({
       where: { id: client.id },

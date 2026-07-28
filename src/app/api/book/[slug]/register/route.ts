@@ -6,7 +6,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const { slug } = await params
   const { name, email, password } = await req.json()
 
-  if (!name || !email || !password || password.length < 6) {
+  if (!name || !email || !password || password.length < 8) {
     return NextResponse.json({ error: "Datos inválidos" }, { status: 400 })
   }
 

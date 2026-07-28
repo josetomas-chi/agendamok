@@ -505,7 +505,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
       })
       const d = await r.json()
       if (!r.ok) { alert(d.error || "Error al iniciar pago"); setSubmitting(false); return }
-      if (createAccount && password.length >= 6) {
+      if (createAccount && password.length >= 8) {
         await fetch(`/api/book/${slug}/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -528,6 +528,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
         clientName: form.name,
         clientEmail: form.email,
         clientPhone: form.phone || undefined,
+        clientRut: rut || undefined,
         notes: form.notes || undefined,
         price: selectedSlot.price,
       }),
@@ -537,13 +538,6 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
       alert(d.error || "Error al confirmar")
       setSubmitting(false)
       return
-    }
-    if (createAccount && password.length >= 6) {
-      await fetch(`/api/book/${slug}/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: form.name, email: form.email, password }),
-      })
     }
 
     // Pass confirmed booking to profile via sessionStorage so it shows immediately
@@ -563,6 +557,18 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
     }))
 
     setSubmitting(false)
+    if (createAccount && password.length >= 8) {
+      const regR = await fetch(`/api/book/${slug}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: form.name, email: form.email, password }),
+      })
+      if (regR.ok) {
+        // Account created — redirect to login so session is established before profile
+        window.location.href = `/login?callbackUrl=/profile`
+        return
+      }
+    }
     window.location.href = "/profile"
   }
 
@@ -991,7 +997,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
               </div>
             )}
 
-            <button onClick={handleConfirm} disabled={submitting || !form.name || !form.email || (!emailExists && createAccount && password.length > 0 && password.length < 6)}
+            <button onClick={handleConfirm} disabled={submitting || !form.name || !form.email || (!emailExists && createAccount && password.length > 0 && password.length < 8)}
               className="w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
               style={{ background: SPORTS_ACCENT, color: SPORTS_BG }}>
               {submitting
@@ -1190,14 +1196,18 @@ function ServiceBookingFlow({ business, slug, initialClient }: { business: Busin
         if (payData.url) { window.location.href = payData.url; return }
       }
     }
-    if (createAccount && password.length >= 6) {
-      await fetch(`/api/book/${slug}/register`, {
+    setSubmitting(false)
+    if (createAccount && password.length >= 8) {
+      const regR = await fetch(`/api/book/${slug}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: form.name, email: form.email, password }),
       })
+      if (regR.ok) {
+        window.location.href = `/login?callbackUrl=/profile`
+        return
+      }
     }
-    setSubmitting(false)
     window.location.href = "/profile"
   }
 
