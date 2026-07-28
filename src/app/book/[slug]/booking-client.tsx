@@ -753,7 +753,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                   <p className="text-sm font-bold text-white">Ya tienes cuenta</p>
                   <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>Tu reserva quedará asociada a tu perfil automáticamente</p>
                 </div>
-                <a href="/login?callbackUrl=/profile" className="text-xs font-bold flex-shrink-0" style={{ color: SPORTS_ACCENT }}>Ingresar →</a>
+                <a href={`/login?callbackUrl=/book/${slug}`} className="text-xs font-bold flex-shrink-0" style={{ color: SPORTS_ACCENT }}>Ingresar →</a>
               </div>
             ) : (
             <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${createAccount ? SPORTS_ACCENT + "50" : SPORTS_BORDER}`, background: createAccount ? "rgba(56,189,248,0.05)" : SPORTS_CARD }}>
@@ -1445,7 +1445,7 @@ function ServiceBookingFlow({ business, slug, initialClient }: { business: Busin
                   <p className="text-sm font-bold" style={{ color: TEXT }}>Ya tienes cuenta</p>
                   <p className="text-xs mt-0.5" style={{ color: MUTED }}>Tu reserva quedará asociada a tu perfil automáticamente</p>
                 </div>
-                <a href="/login?callbackUrl=/profile" className="text-xs font-bold flex-shrink-0" style={{ color: brand }}>Ingresar →</a>
+                <a href={`/login?callbackUrl=/book/${slug}`} className="text-xs font-bold flex-shrink-0" style={{ color: brand }}>Ingresar →</a>
               </div>
             ) : (
               <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${createAccount ? brand + "50" : BORDER}`, background: createAccount ? brand + "08" : CARD }}>
