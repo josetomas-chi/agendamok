@@ -6,7 +6,7 @@ import { format, isToday, isTomorrow, differenceInDays } from "date-fns"
 import { es } from "date-fns/locale"
 import {
   User, Camera, Calendar, Trophy, LogOut, Clock,
-  Loader2, Medal, Star, Zap, Gift, X, AlertCircle,
+  Loader2, Medal, Star, Zap, Gift, X, AlertCircle, CreditCard, ArrowLeft,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 
@@ -30,6 +30,7 @@ type ProfileData = {
   }[]
   upcomingCourtBookings: {
     id: string; startTime: string; endTime: string; price: number; status: string; paidOnline: boolean
+    paidAmount: number
     court: { name: string; sport: string | null; color: string }
     business: { name: string; slug: string; cancellationHoursNotice: number | null }
   }[]
@@ -108,23 +109,36 @@ export default function ProfileContent() {
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [cancelError, setCancelError] = useState<string | null>(null)
   const [cancelledIds, setCancelledIds] = useState<Set<string>>(new Set())
+  const [confirmCancel, setConfirmCancel] = useState<{
+    type: "court" | "appt"; id: string; paidAmount: number; paidOnline: boolean; name: string
+  } | null>(null)
+  const [cancelSuccess, setCancelSuccess] = useState<{ message: string } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  async function handleCancel(type: "court" | "appt", id: string) {
+  async function handleCancel(type: "court" | "appt", id: string, refundChoice: "refund" | "credit") {
     setCancellingId(id)
     setCancelError(null)
     const res = await fetch("/api/profile/cancel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, id }),
+      body: JSON.stringify({ type, id, refundChoice }),
     })
     const json = await res.json()
     if (!res.ok) {
       setCancelError(json.error ?? "Error al cancelar")
     } else {
       setCancelledIds(prev => new Set([...prev, id]))
+      const amount = json.amount ?? 0
+      if (json.refundResult === "refunded" && amount > 0) {
+        setCancelSuccess({ message: `Reserva cancelada. Se reembolsarán $${amount.toLocaleString("es-CL")} a tu método de pago original.` })
+      } else if (json.refundResult === "credited" && amount > 0) {
+        setCancelSuccess({ message: `Reserva cancelada. Se abonaron $${amount.toLocaleString("es-CL")} a tu cuenta para una próxima reserva.` })
+      } else {
+        setCancelSuccess({ message: "Reserva cancelada exitosamente." })
+      }
     }
     setCancellingId(null)
+    setConfirmCancel(null)
   }
 
   function canCancel(startTime: string, hoursNotice: number | null): { allowed: boolean; reason?: string } {
@@ -412,7 +426,13 @@ export default function ProfileContent() {
                         )}
                       </div>
                       <button
-                        onClick={() => allowed && !isCancelling && handleCancel(b.type, b.id)}
+                        onClick={() => {
+                          if (!allowed || isCancelling) return
+                          const name = b.type === "court" ? b.court.name : b.service.name
+                          const paidAmount = b.type === "court" ? (Number(b.paidAmount) ?? 0) : 0
+                          const paidOnline = b.type === "court" ? (b.paidOnline ?? false) : false
+                          setConfirmCancel({ type: b.type, id: b.id, paidAmount, paidOnline, name })
+                        }}
                         disabled={!allowed || isCancelling}
                         title={!allowed ? reason : "Cancelar reserva"}
                         className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all flex-shrink-0"
@@ -420,7 +440,7 @@ export default function ProfileContent() {
                           ? { background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)", cursor: "pointer" }
                           : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.06)", cursor: "not-allowed" }
                         }>
-                        {isCancelling
+                        {isCancelling && cancellingId === b.id
                           ? <Loader2 className="w-3 h-3 animate-spin" />
                           : <X className="w-3 h-3" />}
                         Cancelar
@@ -553,6 +573,119 @@ export default function ProfileContent() {
           </p>
         </div>
       </div>
+
+      {/* ── Cancel confirm modal ── */}
+      {confirmCancel && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-4 sm:pb-0"
+          style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
+          onClick={() => setConfirmCancel(null)}>
+          <div className="w-full max-w-sm rounded-3xl p-6 space-y-5"
+            style={{ background: CARD, border: `1px solid ${BORDER}` }}
+            onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(239,68,68,0.12)" }}>
+                <X className="w-5 h-5" style={{ color: "#f87171" }} />
+              </div>
+              <div>
+                <p className="font-black text-sm" style={{ color: TEXT }}>Cancelar reserva</p>
+                <p className="text-xs mt-0.5" style={{ color: MUTED }}>{confirmCancel.name}</p>
+              </div>
+            </div>
+
+            {/* Refund options — only when there's a paid amount */}
+            {confirmCancel.paidAmount > 0 ? (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold" style={{ color: MUTED }}>
+                  Monto pagado: <span className="font-black" style={{ color: TEXT }}>
+                    ${confirmCancel.paidAmount.toLocaleString("es-CL")}
+                  </span> — ¿cómo quieres recuperarlo?
+                </p>
+
+                {/* Refund to original method */}
+                {confirmCancel.paidOnline && (
+                  <button
+                    onClick={() => handleCancel(confirmCancel.type, confirmCancel.id, "refund")}
+                    disabled={!!cancellingId}
+                    className="w-full flex items-center gap-3 p-4 rounded-2xl text-left transition-all"
+                    style={{ background: "rgba(56,189,248,0.08)", border: `1px solid ${BORDER}` }}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: "rgba(56,189,248,0.15)" }}>
+                      {cancellingId === confirmCancel.id
+                        ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: ACCENT }} />
+                        : <CreditCard className="w-4 h-4" style={{ color: ACCENT }} />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold" style={{ color: TEXT }}>Reembolso automático</p>
+                      <p className="text-[11px]" style={{ color: MUTED }}>De vuelta a tu método de pago original</p>
+                    </div>
+                  </button>
+                )}
+
+                {/* Credit to account */}
+                <button
+                  onClick={() => handleCancel(confirmCancel.type, confirmCancel.id, "credit")}
+                  disabled={!!cancellingId}
+                  className="w-full flex items-center gap-3 p-4 rounded-2xl text-left transition-all"
+                  style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)" }}>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: "rgba(34,197,94,0.12)" }}>
+                    {cancellingId === confirmCancel.id
+                      ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#22c55e" }} />
+                      : <Gift className="w-4 h-4" style={{ color: "#22c55e" }} />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold" style={{ color: TEXT }}>Abonar a mi cuenta</p>
+                    <p className="text-[11px]" style={{ color: MUTED }}>Crédito para tu próxima reserva</p>
+                  </div>
+                </button>
+              </div>
+            ) : (
+              /* No payment — just confirm cancellation */
+              <div className="space-y-3">
+                <p className="text-sm" style={{ color: MUTED }}>¿Confirmas la cancelación de esta reserva?</p>
+                <button
+                  onClick={() => handleCancel(confirmCancel.type, confirmCancel.id, "refund")}
+                  disabled={!!cancellingId}
+                  className="w-full h-12 rounded-2xl font-black text-sm flex items-center justify-center gap-2"
+                  style={{ background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}>
+                  {cancellingId ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                  Confirmar cancelación
+                </button>
+              </div>
+            )}
+
+            {cancelError && (
+              <p className="text-xs px-3 py-2 rounded-xl" style={{ background: "rgba(239,68,68,0.1)", color: "#f87171" }}>
+                {cancelError}
+              </p>
+            )}
+
+            <button onClick={() => { setConfirmCancel(null); setCancelError(null) }}
+              className="w-full flex items-center justify-center gap-1.5 text-xs py-2"
+              style={{ color: MUTED }}>
+              <ArrowLeft className="w-3.5 h-3.5" />Volver
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Success toast ── */}
+      {cancelSuccess && (
+        <div className="fixed bottom-6 left-0 right-0 flex justify-center px-4 z-50">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl max-w-sm w-full"
+            style={{ background: "#0f2a3f", border: `1px solid rgba(34,197,94,0.4)` }}>
+            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: "rgba(34,197,94,0.15)" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <p className="text-xs font-semibold flex-1" style={{ color: TEXT }}>{cancelSuccess.message}</p>
+            <button onClick={() => setCancelSuccess(null)}><X className="w-4 h-4" style={{ color: MUTED }} /></button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

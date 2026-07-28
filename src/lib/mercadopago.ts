@@ -90,3 +90,21 @@ export async function getMpPayment(paymentId: string, accessToken: string) {
   if (!res.ok) throw new Error("MP payment fetch failed")
   return res.json()
 }
+
+export async function refundMpPayment(paymentId: string, accessToken: string, amount?: number) {
+  const body: Record<string, number> = {}
+  if (amount !== undefined) body.amount = amount
+  const res = await fetch(`${MP_API}/v1/payments/${paymentId}/refunds`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`MP refund failed: ${err}`)
+  }
+  return res.json()
+}

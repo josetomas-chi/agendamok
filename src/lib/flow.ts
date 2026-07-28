@@ -197,3 +197,15 @@ export function verifyBusinessWebhook(
   const { s, ...rest } = params
   return signWith(rest, secretKey) === s
 }
+
+export async function businessRefundPayment(
+  apiKey: string,
+  secretKey: string,
+  token: string,
+  amount: number
+): Promise<{ status: number; message?: string }> {
+  return businessFlowRequest(apiKey, secretKey, "/payment/refunds", {
+    token,
+    amount: String(Math.round(amount)),
+  })
+}

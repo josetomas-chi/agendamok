@@ -60,7 +60,7 @@ export async function GET() {
   const upcomingCourtBookings = await prisma.courtBooking.findMany({
     where: { clientId: { in: clientIds }, deletedAt: null, startTime: { gt: now }, status: { in: ["CONFIRMED"] } },
     select: {
-      id: true, startTime: true, endTime: true, price: true, status: true, paidOnline: true,
+      id: true, startTime: true, endTime: true, price: true, paidAmount: true, status: true, paidOnline: true,
       court: { select: { name: true, sport: true, color: true } },
       business: { select: { name: true, slug: true, cancellationHoursNotice: true } },
     },
