@@ -7,7 +7,7 @@ import { es } from "date-fns/locale"
 import {
   User, Camera, Calendar, Trophy, LogOut, Clock,
   Loader2, Medal, Star, Zap, Gift, X, AlertCircle, CreditCard, ArrowLeft,
-  Building2, Award, List, ChevronRight, MapPin,
+  Building2, Award, List, ChevronRight, MapPin, Plus,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { parseISO } from "date-fns"
@@ -159,7 +159,16 @@ export default function ProfileContent() {
     type: "court" | "appt"; id: string; paidAmount: number; paidOnline: boolean; name: string
   } | null>(null)
   const [cancelSuccess, setCancelSuccess] = useState<{ message: string } | null>(null)
+  const [showBookPicker, setShowBookPicker] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  function handleNewBooking(businesses: BusinessBenefit[]) {
+    if (businesses.length === 1) {
+      window.location.href = `/book/${businesses[0].businessSlug}`
+    } else {
+      setShowBookPicker(true)
+    }
+  }
 
   async function handleCancel(type: "court" | "appt", id: string, refundChoice: "refund" | "credit") {
     setCancellingId(id)
@@ -411,6 +420,22 @@ export default function ProfileContent() {
           })}
         </nav>
 
+        {/* Nueva reserva button */}
+        <div style={{ padding: "0 12px 16px" }}>
+          <button
+            onClick={() => handleNewBooking(businessBenefits)}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              width: "100%", padding: "11px 16px", borderRadius: 10,
+              background: ACCENT, color: "#0d1b2a",
+              fontSize: 13, fontWeight: 800, cursor: "pointer", border: "none",
+              boxShadow: "0 2px 12px rgba(56,189,248,0.3)",
+            }}>
+            <Plus style={{ width: 15, height: 15 }} />
+            Nueva reserva
+          </button>
+        </div>
+
         {/* Logout */}
         <div style={{ padding: "16px 24px", borderTop: `1px solid ${SB_BD}` }}>
           <button onClick={() => signOut({ callbackUrl: "/login" })}
@@ -430,10 +455,23 @@ export default function ProfileContent() {
             <span style={{ color: LTXT, fontSize: 13, fontWeight: 900, letterSpacing: "0.05em" }}>
               Agenda<span style={{ color: ACCENT }}>Mok</span>
             </span>
-            <button onClick={() => signOut({ callbackUrl: "/login" })}
-              style={{ display: "flex", alignItems: "center", gap: 6, color: LMUTED, fontSize: 12, background: "transparent", border: "none", cursor: "pointer" }}>
-              <LogOut style={{ width: 13, height: 13 }} />Salir
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <button
+                onClick={() => handleNewBooking(businessBenefits)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  padding: "6px 12px", borderRadius: 8,
+                  background: ACCENT, color: "#0d1b2a",
+                  fontSize: 12, fontWeight: 800, cursor: "pointer", border: "none",
+                }}>
+                <Plus style={{ width: 13, height: 13 }} />
+                Reservar
+              </button>
+              <button onClick={() => signOut({ callbackUrl: "/login" })}
+                style={{ display: "flex", alignItems: "center", gap: 6, color: LMUTED, fontSize: 12, background: "transparent", border: "none", cursor: "pointer" }}>
+                <LogOut style={{ width: 13, height: 13 }} />Salir
+              </button>
+            </div>
           </div>
 
           <div style={{ padding: "14px 16px 16px", display: "flex", alignItems: "center", gap: 14 }}>
@@ -571,7 +609,23 @@ export default function ProfileContent() {
           {/* ── TAB: Próximas reservas ─────────────────────────────────────── */}
           {tab === "upcoming" && (
             <section>
-              <SectionHeading>Próximas reservas</SectionHeading>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <h2 style={{ fontSize: 11, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: MUTED }}>
+                  Próximas reservas
+                </h2>
+                <button
+                  onClick={() => handleNewBooking(businessBenefits)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5,
+                    padding: "5px 12px", borderRadius: 8,
+                    background: SB, color: ACCENT,
+                    fontSize: 11, fontWeight: 700, cursor: "pointer",
+                    border: `1px solid rgba(56,189,248,0.25)`,
+                  }}>
+                  <Plus style={{ width: 12, height: 12 }} />
+                  Nueva reserva
+                </button>
+              </div>
 
               {cancelError && (
                 <div style={{
@@ -1414,6 +1468,69 @@ export default function ProfileContent() {
               }}>
               <ArrowLeft style={{ width: 13, height: 13 }} />Volver
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Business picker modal ──────────────────────────────────────────── */}
+      {showBookPicker && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 50,
+          display: "flex", alignItems: "flex-end", justifyContent: "center",
+          padding: "0 16px 16px",
+          background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
+        }} onClick={() => setShowBookPicker(false)}>
+          <div style={{
+            width: "100%", maxWidth: 400, borderRadius: 24, overflow: "hidden",
+            background: WHITE, boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+          }} onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
+            <div style={{
+              background: SB, padding: "20px 20px 18px",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+            }}>
+              <div>
+                <p style={{ fontSize: 15, fontWeight: 800, color: LTXT }}>¿Dónde quieres reservar?</p>
+                <p style={{ fontSize: 11, color: LMUTED, marginTop: 3 }}>Selecciona el club</p>
+              </div>
+              <button onClick={() => setShowBookPicker(false)}
+                style={{ background: "transparent", border: "none", cursor: "pointer", color: LMUTED }}>
+                <X style={{ width: 18, height: 18 }} />
+              </button>
+            </div>
+
+            {/* Club list */}
+            <div style={{ padding: "12px 16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+              {businessBenefits.map(b => (
+                <button
+                  key={b.businessId}
+                  onClick={() => { setShowBookPicker(false); window.location.href = `/book/${b.businessSlug}` }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 14,
+                    padding: "14px 16px", borderRadius: 14,
+                    background: "#f8fafc", border: `1px solid ${BD}`,
+                    cursor: "pointer", textAlign: "left", width: "100%",
+                    transition: "border-color 0.15s",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = ACCENT)}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = BD)}
+                >
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                    background: SB,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <Building2 style={{ width: 18, height: 18, color: ACCENT }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: TXT }}>{b.businessName}</p>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>agendamok.cl/book/{b.businessSlug}</p>
+                  </div>
+                  <ChevronRight style={{ width: 16, height: 16, color: MUTED, flexShrink: 0 }} />
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
