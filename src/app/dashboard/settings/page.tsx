@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle, CheckCircle2, AlertCircle, Loader2, Gift, CalendarX2, ImagePlus, X, Users, UserPlus, Mail } from "lucide-react"
 
-type Business = { id: string; name: string; slug: string; category: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean; notifConfirmation: boolean; notifReminder24h: boolean; notifReminder1h: boolean; notifNewBooking: boolean; notifCancellation: boolean }
+type Business = { id: string; name: string; slug: string; category: string; sports: string[]; businessType: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean; notifConfirmation: boolean; notifReminder24h: boolean; notifReminder1h: boolean; notifNewBooking: boolean; notifCancellation: boolean }
 type PaymentSettings = { onlinePaymentsEnabled: boolean; hasCredentials: boolean; mpConnected: boolean; mpPublicKey?: string }
 type Subscription = { plan: string; status: string; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean; flowCustomerId: string | null; trialEndsAt: string | null; isCourtesy: boolean }
 
@@ -21,6 +21,7 @@ function SettingsContent() {
   const [business, setBusiness] = useState<Business | null>(null)
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [form, setForm] = useState({ name: "", slug: "", category: "", description: "", website: "", phone: "", address: "", city: "", timezone: "", currency: "" })
+  const [sports, setSports] = useState<string[]>([])
   const [clinicalEnabled, setClinicalEnabled] = useState(false)
   const [cancellationHours, setCancellationHours] = useState<string>("")
   const [dailySummary, setDailySummary] = useState(false)
@@ -119,6 +120,7 @@ function SettingsContent() {
       setBusiness(biz.business)
       setSubscription(biz.subscription || null)
       setForm({ name: biz.business.name, slug: biz.business.slug || "", category: biz.business.category || "", description: biz.business.description || "", website: biz.business.website || "", phone: biz.business.phone || "", address: biz.business.address || "", city: biz.business.city || "", timezone: biz.business.timezone, currency: biz.business.currency })
+      setSports(biz.business.sports || [])
       setClinicalEnabled(biz.business.clinicalRecordEnabled ?? false)
       setCancellationHours(biz.business.cancellationHoursNotice?.toString() ?? "")
       setDailySummary(biz.business.dailySummaryEnabled ?? false)
@@ -332,7 +334,7 @@ function SettingsContent() {
     setSaving(true)
     const r = await fetch(`/api/businesses/${business.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, sports }),
     })
     if (r.ok) toast.success("Cambios guardados")
     else toast.error("Error al guardar")
@@ -474,6 +476,24 @@ function SettingsContent() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 space-y-1.5"><Label>Nombre del negocio</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
                 <div className="col-span-2 space-y-1.5"><Label>Rubro / categoría</Label><Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="Ej: Salud y medicina, Peluquería, etc." /></div>
+                {business?.businessType === "SPORTS_CLUB" && (
+                  <div className="col-span-2 space-y-2">
+                    <Label>Deportes que ofrece el club</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {["Pádel","Tenis","Fútbol","Básquetbol","Volleyball","Squash","Natación","Rugby","Multideporte","Otro"].map(s => {
+                        const active = sports.includes(s)
+                        return (
+                          <button key={s} type="button"
+                            onClick={() => setSports(prev => active ? prev.filter(x => x !== s) : [...prev, s])}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${active ? "bg-sky-500/15 border-sky-400/50 text-sky-400" : "bg-muted/40 border-border text-muted-foreground hover:border-sky-400/30"}`}>
+                            {active && "✓ "}{s}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Selecciona todos los deportes disponibles en tu club.</p>
+                  </div>
+                )}
                 <div className="col-span-2 space-y-1.5">
                   <Label>URL de reservas</Label>
                   <div className="flex items-center rounded-md border border-input overflow-hidden">

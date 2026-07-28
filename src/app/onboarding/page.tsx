@@ -48,7 +48,7 @@ function OnboardingContent() {
 
   const [businessType, setBusinessType] = useState<"GENERAL" | "SPORTS_CLUB" | "">("")
   const [selectedPlan, setSelectedPlan] = useState<"STARTER" | "NEGOCIO" | "PRO" | "SPORTS">("STARTER")
-  const [form, setForm] = useState({ businessName: "", category: "", slug: "" })
+  const [form, setForm] = useState({ businessName: "", category: "", sports: [] as string[], slug: "" })
 
   // If a plan was pre-selected from the landing page, skip step 0
   useEffect(() => {
@@ -76,7 +76,13 @@ function OnboardingContent() {
       const res = await fetch("/api/businesses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, plan: selectedPlan, businessType }),
+        body: JSON.stringify({
+        ...form,
+        // For sports clubs, use first sport as category fallback
+        category: isSports ? (form.sports[0] || "Multideporte") : form.category,
+        plan: selectedPlan,
+        businessType,
+      }),
       })
       const d = await res.json()
       if (res.status === 409 && d.error === "already_exists") {
@@ -253,31 +259,49 @@ function OnboardingContent() {
         {step === 2 && (
           <div className={cardCls}>
             <div>
-              <h2 className="text-xl font-semibold text-white">{isSports ? "¿Cuál es el deporte principal?" : "¿Qué tipo de negocio es?"}</h2>
-              <p className="text-sm text-white/40 mt-1">Usamos esto para personalizar tu experiencia.</p>
+              <h2 className="text-xl font-semibold text-white">
+                {isSports ? "¿Qué deportes ofrece tu club?" : "¿Qué tipo de negocio es?"}
+              </h2>
+              <p className="text-sm text-white/40 mt-1">
+                {isSports ? "Selecciona uno o más deportes." : "Usamos esto para personalizar tu experiencia."}
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setForm(f => ({ ...f, category: cat }))}
-                  className={`p-3 rounded-xl border text-sm text-left transition-all ${
-                    form.category === cat
-                      ? "border-sky-400/60 bg-sky-500/10 text-sky-300"
-                      : "border-white/10 bg-white/[0.03] text-white/60 hover:border-white/20 hover:text-white"
-                  }`}
-                >
-                  {form.category === cat && <Check className="w-3 h-3 inline mr-1.5 text-sky-400" />}
-                  {cat}
-                </button>
-              ))}
+              {categories.map(cat => {
+                const selected = isSports ? form.sports.includes(cat) : form.category === cat
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => {
+                      if (isSports) {
+                        setForm(f => ({
+                          ...f,
+                          sports: f.sports.includes(cat)
+                            ? f.sports.filter(s => s !== cat)
+                            : [...f.sports, cat],
+                        }))
+                      } else {
+                        setForm(f => ({ ...f, category: cat }))
+                      }
+                    }}
+                    className={`p-3 rounded-xl border text-sm text-left transition-all ${
+                      selected
+                        ? "border-sky-400/60 bg-sky-500/10 text-sky-300"
+                        : "border-white/10 bg-white/[0.03] text-white/60 hover:border-white/20 hover:text-white"
+                    }`}
+                  >
+                    {selected && <Check className="w-3 h-3 inline mr-1.5 text-sky-400" />}
+                    {cat}
+                  </button>
+                )
+              })}
             </div>
             <div className="flex gap-3">
               <button className="flex-1 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/20 transition-colors text-sm font-medium"
                 onClick={() => setStep(1)}>Atrás</button>
               <button
                 className="flex-1 py-3 rounded-xl bg-sky-500 hover:bg-sky-400 transition-colors font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                disabled={!form.category || loading}
+                disabled={(isSports ? form.sports.length === 0 : !form.category) || loading}
                 onClick={handleFinish}
               >
                 {loading ? "Creando..." : <><span>Continuar</span><ArrowRight className="w-4 h-4" /></>}

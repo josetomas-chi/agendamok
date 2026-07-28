@@ -222,6 +222,7 @@ model Business {
   name         String
   slug         String    @unique
   category     String
+  sports       String[]  @default([])
   businessType String    @default("GENERAL")
   description String?   @db.Text
   logo        String?
