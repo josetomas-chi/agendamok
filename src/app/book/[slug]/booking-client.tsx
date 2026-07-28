@@ -84,6 +84,15 @@ export default function BookingClient({ slug }: { slug: string }) {
 type RutCheckStatus = "OPEN" | "APPROVED" | "PENDING" | "REJECTED" | "NOT_FOUND" | null
 type RutCheckResult = { allowed: boolean; status: RutCheckStatus; name?: string }
 
+function formatRut(value: string) {
+  const clean = value.replace(/[^0-9kK]/g, "").toUpperCase()
+  if (clean.length === 0) return ""
+  const dv = clean.slice(-1)
+  const body = clean.slice(0, -1)
+  if (body.length === 0) return dv
+  return `${body.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${dv}`
+}
+
 function RutGate({ business, slug }: { business: Business; slug: string }) {
   const [rut, setRut] = useState("")
   const [checking, setChecking] = useState(false)
@@ -164,8 +173,8 @@ function RutGate({ business, slug }: { business: Business; slug: string }) {
             <div>
               <label className="text-xs font-bold uppercase tracking-wide mb-1.5 block" style={{ color: "rgba(255,255,255,0.4)" }}>RUT</label>
               <input
-                value={rut} onChange={e => { setRut(e.target.value); setResult(null) }}
-                placeholder="12345678-9"
+                value={rut} onChange={e => { setRut(formatRut(e.target.value)); setResult(null) }}
+                placeholder="12.345.678-9"
                 className="w-full h-11 rounded-xl px-4 text-sm text-white outline-none"
                 style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
                 disabled={checking}
