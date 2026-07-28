@@ -56,6 +56,21 @@ export default function BookingClient({ slug }: { slug: string }) {
   useEffect(() => {
     if (!business) return
 
+    // Fast path: user came from profile — data is already known, skip all API calls
+    const hint = sessionStorage.getItem("booking_user_hint")
+    if (hint) {
+      try {
+        const h = JSON.parse(hint)
+        if (h.businessSlug === slug && h.email) {
+          sessionStorage.removeItem("booking_user_hint")
+          setAutoClient({ name: h.name || "", email: h.email, phone: h.phone || "", rut: h.rut || "" })
+          setAutoChecked(true)
+          return
+        }
+      } catch {}
+      sessionStorage.removeItem("booking_user_hint")
+    }
+
     if (business.accessMode === "CLOSED") {
       // Priority 1: sessionStorage RUT (returning from login redirect)
       const saved = sessionStorage.getItem(COURT_SESSION_KEY(slug))
@@ -104,12 +119,16 @@ export default function BookingClient({ slug }: { slug: string }) {
     // Open businesses: pre-fill from session email (including RUT if found)
     fetch("/api/auth/session")
       .then(r => r.ok ? r.json() : null)
-      .then(async session => {
+      .then(session => {
         const email = session?.user?.email
         if (!email) { setAutoChecked(true); return }
-        const d = await fetch(`/api/book/${slug}/check-email?email=${encodeURIComponent(email)}`).then(r => r.json())
-        setAutoClient({ name: d.name || session.user.name || "", email, phone: d.phone || "", rut: d.rut || "" })
-        setAutoChecked(true)
+        fetch(`/api/book/${slug}/check-email?email=${encodeURIComponent(email)}`)
+          .then(r => r.json())
+          .then(d => {
+            setAutoClient({ name: d.name || session.user.name || "", email, phone: d.phone || "", rut: d.rut || "" })
+          })
+          .catch(() => {})
+          .finally(() => setAutoChecked(true))
       })
       .catch(() => setAutoChecked(true))
   }, [business, slug])

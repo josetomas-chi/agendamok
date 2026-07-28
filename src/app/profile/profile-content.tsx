@@ -191,9 +191,21 @@ export default function ProfileContent() {
   }
   const fileRef = useRef<HTMLInputElement>(null)
 
+  function navigateToBooking(slug: string) {
+    if (!data) return
+    sessionStorage.setItem("booking_user_hint", JSON.stringify({
+      name: data.user.name || "",
+      email: data.user.email || "",
+      phone: data.user.phone || "",
+      rut: data.user.rut || "",
+      businessSlug: slug,
+    }))
+    router.push(`/book/${slug}`)
+  }
+
   function handleNewBooking(businesses: BusinessBenefit[]) {
     if (businesses.length === 1) {
-      window.location.href = `/book/${businesses[0].businessSlug}`
+      navigateToBooking(businesses[0].businessSlug)
     } else {
       setShowBookPicker(true)
     }
@@ -1740,7 +1752,7 @@ export default function ProfileContent() {
               {businessBenefits.map(b => (
                 <button
                   key={b.businessId}
-                  onClick={() => { setShowBookPicker(false); window.location.href = `/book/${b.businessSlug}` }}
+                  onClick={() => { setShowBookPicker(false); navigateToBooking(b.businessSlug) }}
                   style={{
                     display: "flex", alignItems: "center", gap: 14,
                     padding: "14px 16px", borderRadius: 14,
