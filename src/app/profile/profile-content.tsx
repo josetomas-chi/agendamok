@@ -7,9 +7,10 @@ import { es } from "date-fns/locale"
 import {
   User, Camera, Calendar, Trophy, LogOut, Clock,
   Loader2, Medal, Star, Zap, Gift, X, AlertCircle, CreditCard, ArrowLeft,
-  Building2, Award, List, ChevronRight,
+  Building2, Award, List, ChevronRight, MapPin,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
+import { parseISO } from "date-fns"
 
 type BusinessBenefit = {
   businessId: string; businessName: string; businessSlug: string; businessLogo: string | null
@@ -133,11 +134,23 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   )
 }
 
+type PendingBooking = {
+  slug: string; businessName: string
+  courtId: string; courtName: string; courtColor: string; sport: string | null
+  slot: { time: string; price: number; paymentPlayers: number }
+  date: string; duration: number
+  form: { name: string; email: string; phone: string; notes: string }
+  rut?: string; courtPayMethod: "local" | "online"; price: number
+}
+
 export default function ProfileContent() {
   const router = useRouter()
   const [data, setData]           = useState<ProfileData | null>(null)
   const [loading, setLoading]     = useState(true)
   const [tab, setTab]             = useState<Tab>("upcoming")
+  const [pendingBooking, setPendingBooking]       = useState<PendingBooking | null>(null)
+  const [pendingConfirming, setPendingConfirming] = useState(false)
+  const [pendingError, setPendingError]           = useState<string | null>(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [cancellingId, setCancellingId]     = useState<string | null>(null)
   const [cancelError, setCancelError]       = useState<string | null>(null)
@@ -195,6 +208,68 @@ export default function ProfileContent() {
       .catch(() => router.push("/login?callbackUrl=/profile"))
       .finally(() => setLoading(false))
   }, [router])
+
+  // Detect pending booking from sessionStorage (coming from booking page after login)
+  useEffect(() => {
+    const saved = sessionStorage.getItem("booking_pending")
+    if (saved) {
+      try { setPendingBooking(JSON.parse(saved)) } catch {}
+    }
+  }, [])
+
+  async function confirmPendingBooking() {
+    if (!pendingBooking || !data) return
+    setPendingConfirming(true)
+    setPendingError(null)
+    try {
+      const res = await fetch(`/api/book/${pendingBooking.slug}/courts/book`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courtId: pendingBooking.courtId,
+          date: pendingBooking.date,
+          time: pendingBooking.slot.time,
+          duration: pendingBooking.duration,
+          clientName: data.user.name || pendingBooking.form.name,
+          clientEmail: data.user.email || pendingBooking.form.email,
+          clientPhone: data.user.phone || pendingBooking.form.phone || undefined,
+          notes: pendingBooking.form.notes || undefined,
+          price: pendingBooking.slot.price,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setPendingError(json.error || "Error al confirmar"); setPendingConfirming(false); return }
+
+      // Online payment redirect
+      if (pendingBooking.courtPayMethod === "online" && pendingBooking.price > 0) {
+        const payRes = await fetch(`/api/book/${pendingBooking.slug}/courts/pay`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            courtId: pendingBooking.courtId,
+            date: pendingBooking.date,
+            time: pendingBooking.slot.time,
+            duration: pendingBooking.duration,
+            clientName: data.user.name || pendingBooking.form.name,
+            clientEmail: data.user.email || pendingBooking.form.email,
+            price: pendingBooking.slot.price,
+            paymentPlayers: pendingBooking.slot.paymentPlayers,
+          }),
+        })
+        if (payRes.ok) {
+          const payData = await payRes.json()
+          if (payData.url) { sessionStorage.removeItem("booking_pending"); window.location.href = payData.url; return }
+        }
+      }
+
+      sessionStorage.removeItem("booking_pending")
+      setPendingBooking(null)
+      setCancelSuccess({ message: `¡Reserva confirmada! ${pendingBooking.courtName} · ${format(parseISO(pendingBooking.date), "d 'de' MMMM", { locale: es })} · ${pendingBooking.slot.time}` })
+      // Reload profile to show new upcoming booking
+      fetch("/api/profile").then(r => r.ok ? r.json() : null).then(d => { if (d) setData(d) })
+    } catch { setPendingError("Error de conexión. Intenta de nuevo.") }
+    setPendingConfirming(false)
+  }
 
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -408,6 +483,87 @@ export default function ProfileContent() {
             })}
           </div>
         </div>
+
+        {/* ── Pending booking banner ─────────────────────────────────────── */}
+        {pendingBooking && (
+          <div style={{
+            margin: "16px 20px 0",
+            borderRadius: 16, overflow: "hidden",
+            border: `1px solid ${GOLD_BD}`,
+            maxWidth: 720,
+          }}>
+            {/* Header */}
+            <div style={{
+              background: NAVY_C, padding: "14px 16px",
+              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: pendingBooking.courtColor, flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 800, color: LTXT, lineHeight: 1.2 }}>Reserva pendiente de confirmar</p>
+                  <p style={{ fontSize: 11, color: LMUTED, marginTop: 2 }}>{pendingBooking.businessName}</p>
+                </div>
+              </div>
+              <button onClick={() => { setPendingBooking(null); sessionStorage.removeItem("booking_pending") }}
+                style={{ background: "transparent", border: "none", cursor: "pointer", flexShrink: 0, color: LMUTED }}>
+                <X style={{ width: 16, height: 16 }} />
+              </button>
+            </div>
+
+            {/* Details */}
+            <div style={{ background: WHITE, padding: "14px 16px" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 16, fontSize: 13, color: TXT, marginBottom: 14 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 700 }}>
+                  🎾 {pendingBooking.courtName}
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <Calendar style={{ width: 13, height: 13, color: MUTED }} />
+                  {format(parseISO(pendingBooking.date), "EEEE d 'de' MMMM", { locale: es })}
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <Clock style={{ width: 13, height: 13, color: MUTED }} />
+                  {pendingBooking.slot.time} · {pendingBooking.duration} min
+                </span>
+                {pendingBooking.price > 0 && (
+                  <span style={{ fontWeight: 800, color: GOLD }}>
+                    ${pendingBooking.price.toLocaleString("es-CL")}
+                  </span>
+                )}
+              </div>
+
+              {pendingError && (
+                <p style={{ fontSize: 12, color: "#dc2626", marginBottom: 10, display: "flex", alignItems: "center", gap: 5 }}>
+                  <AlertCircle style={{ width: 13, height: 13 }} />{pendingError}
+                </p>
+              )}
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={confirmPendingBooking} disabled={pendingConfirming}
+                  style={{
+                    flex: 1, padding: "11px 16px", borderRadius: 10, fontSize: 13, fontWeight: 800,
+                    background: SB, color: ACCENT, border: `1px solid rgba(56,189,248,0.3)`,
+                    cursor: pendingConfirming ? "wait" : "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    opacity: pendingConfirming ? 0.7 : 1,
+                  }}>
+                  {pendingConfirming
+                    ? <><Loader2 style={{ width: 14, height: 14 }} className="animate-spin" />Confirmando...</>
+                    : pendingBooking.courtPayMethod === "online" && pendingBooking.price > 0
+                      ? `Pagar $${pendingBooking.price.toLocaleString("es-CL")} →`
+                      : "Confirmar reserva →"}
+                </button>
+                <button onClick={() => { setPendingBooking(null); sessionStorage.removeItem("booking_pending") }}
+                  style={{
+                    padding: "11px 16px", borderRadius: 10, fontSize: 12,
+                    background: "transparent", color: MUTED, border: `1px solid ${BD}`,
+                    cursor: "pointer",
+                  }}>
+                  Descartar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Page body */}
         <div style={{ padding: "24px 20px", maxWidth: 720, width: "100%" }}>

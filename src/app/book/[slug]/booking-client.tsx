@@ -835,23 +835,37 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
 
             {/* Account creation / already registered */}
             {emailExists ? (
-              <div className="rounded-2xl px-4 py-3.5 flex items-center gap-3" style={{ background: "rgba(56,189,248,0.06)", border: `1px solid ${SPORTS_ACCENT}40` }}>
-                <Check className="w-4 h-4 flex-shrink-0" style={{ color: SPORTS_ACCENT }} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-white">Ya tienes cuenta</p>
-                  <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>Tu reserva quedará asociada a tu perfil automáticamente</p>
+              <div className="rounded-2xl px-4 py-3.5 space-y-3" style={{ background: "rgba(56,189,248,0.06)", border: `1px solid ${SPORTS_ACCENT}40` }}>
+                <div className="flex items-center gap-3">
+                  <Check className="w-4 h-4 flex-shrink-0" style={{ color: SPORTS_ACCENT }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white">Ya tienes cuenta</p>
+                    <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>Ingresa para confirmar la reserva desde tu perfil</p>
+                  </div>
                 </div>
                 <button
                   onClick={() => {
-                    sessionStorage.setItem(COURT_SESSION_KEY(slug), JSON.stringify({
-                      date: selectedDate, sports: selectedSports, duration,
-                      courtId: selectedCourt?.id, slot: selectedSlot,
-                      form, rut, emailExists,
-                      autoConfirm: true,
+                    sessionStorage.setItem("booking_pending", JSON.stringify({
+                      slug,
+                      businessName: business.name,
+                      courtId: selectedCourt?.id,
+                      courtName: selectedCourt?.name,
+                      courtColor: selectedCourt?.color,
+                      sport: selectedCourt?.sport,
+                      slot: selectedSlot,
+                      date: selectedDate,
+                      duration,
+                      form,
+                      rut,
+                      courtPayMethod,
+                      price: selectedSlot?.price ?? 0,
                     }))
-                    window.location.href = `/login?callbackUrl=/book/${slug}`
+                    window.location.href = `/login?callbackUrl=/profile`
                   }}
-                  className="text-xs font-bold flex-shrink-0" style={{ color: SPORTS_ACCENT }}>Ingresar →</button>
+                  className="w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                  style={{ background: SPORTS_ACCENT, color: SPORTS_BG }}>
+                  Ingresar y confirmar →
+                </button>
               </div>
             ) : (
             <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${createAccount ? SPORTS_ACCENT + "50" : SPORTS_BORDER}`, background: createAccount ? "rgba(56,189,248,0.05)" : SPORTS_CARD }}>
