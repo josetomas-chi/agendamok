@@ -212,6 +212,19 @@ export default function ProfileContent() {
   }
 
   useEffect(() => {
+    // Remember-me check: if user chose not to persist session and this is a new browser session, sign out
+    const remember = localStorage.getItem("agendamok_remember")
+    const alive = sessionStorage.getItem("agendamok_alive")
+    if (remember === "0" && !alive) {
+      // New browser session without remember-me → sign out silently
+      fetch("/api/auth/signout", { method: "POST" }).catch(() => {})
+      router.push("/login?callbackUrl=/profile")
+      setLoading(false)
+      return
+    }
+    // Mark session as alive for this browser session
+    sessionStorage.setItem("agendamok_alive", "1")
+
     fetch("/api/auth/session")
       .then(r => r.ok ? r.json() : null)
       .then(session => {

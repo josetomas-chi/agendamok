@@ -5,14 +5,18 @@ import Link from "next/link"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Check } from "lucide-react"
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true)
 
   useEffect(() => {
+    // Restore preference from localStorage
+    const saved = localStorage.getItem("agendamok_remember")
+    if (saved === "0") setRememberMe(false)
     if (searchParams.get("registered") === "1") {
       toast.success("¡Cuenta creada! Ingresa con tus datos")
     }
@@ -39,6 +43,10 @@ function LoginForm() {
       setLoading(false)
       return
     }
+
+    // Save remember-me preference and mark session as alive
+    localStorage.setItem("agendamok_remember", rememberMe ? "1" : "0")
+    sessionStorage.setItem("agendamok_alive", "1")
 
     const sessionRes = await fetch("/api/auth/session")
     const session = await sessionRes.json()
@@ -83,6 +91,24 @@ function LoginForm() {
           className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-sky-400/60 focus:bg-white/15 transition-all text-sm"
         />
       </div>
+      {/* Remember me */}
+      <button
+        type="button"
+        onClick={() => setRememberMe(v => !v)}
+        className="flex items-center gap-2.5 w-full py-1 group"
+      >
+        <div className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center transition-all border ${
+          rememberMe
+            ? "bg-sky-500 border-sky-500"
+            : "bg-white/5 border-white/20"
+        }`}>
+          {rememberMe && <Check className="w-3 h-3 text-white" />}
+        </div>
+        <span className="text-sm text-white/60 group-hover:text-white/80 transition-colors text-left">
+          Mantener sesión abierta en este dispositivo
+        </span>
+      </button>
+
       <button
         type="submit"
         disabled={loading}
