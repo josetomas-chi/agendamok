@@ -7,7 +7,6 @@ import {
   Check, ChevronLeft, ChevronRight, Clock, MapPin, Calendar, User,
   Loader2, Download, Share2, Search, Phone, Star, ChevronDown, X
 } from "lucide-react"
-import { useSession } from "next-auth/react"
 import { ChatWidget } from "@/components/booking/chat-widget"
 
 type Category = { id: string; name: string; order: number }
@@ -39,7 +38,6 @@ type CourtStep = "home" | "court" | "datetime" | "form" | "confirmed"
 type PayMethod = "online" | "local" | "mp"
 
 export default function BookingClient({ slug }: { slug: string }) {
-  const { data: session, status: sessionStatus } = useSession()
   const [business, setBusiness] = useState<Business | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -54,24 +52,29 @@ export default function BookingClient({ slug }: { slug: string }) {
       .finally(() => setLoading(false))
   }, [slug])
 
-  // Auto-skip RutGate for logged-in users
+  // Auto-skip RutGate for logged-in users (no SessionProvider needed)
   useEffect(() => {
-    if (sessionStatus === "loading" || !business) return
-    if (!session?.user?.email) { setAutoChecked(true); return }
-    fetch(`/api/book/${slug}/check-email?email=${encodeURIComponent(session.user.email)}`)
-      .then(r => r.json())
-      .then(d => {
-        setAutoClient({
-          name: d.name || session.user.name || "",
-          email: session.user.email!,
-          phone: d.phone || "",
-        })
+    if (!business) return
+    fetch("/api/auth/session")
+      .then(r => r.ok ? r.json() : null)
+      .then(session => {
+        const email = session?.user?.email
+        if (!email) { setAutoChecked(true); return }
+        return fetch(`/api/book/${slug}/check-email?email=${encodeURIComponent(email)}`)
+          .then(r => r.json())
+          .then(d => {
+            setAutoClient({
+              name: d.name || session.user.name || "",
+              email,
+              phone: d.phone || "",
+            })
+          })
+          .finally(() => setAutoChecked(true))
       })
-      .catch(() => {})
-      .finally(() => setAutoChecked(true))
-  }, [session, sessionStatus, business, slug])
+      .catch(() => setAutoChecked(true))
+  }, [business, slug])
 
-  if (loading || sessionStatus === "loading" || (session && !autoChecked)) return (
+  if (loading || !autoChecked) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: "#0f0f11" }}>
       <div className="flex flex-col items-center gap-3">
         <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#38bdf8" }} />
