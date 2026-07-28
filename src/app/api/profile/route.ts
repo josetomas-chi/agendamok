@@ -174,7 +174,7 @@ export async function GET() {
   const now2 = new Date()
   const availableTournaments = await prisma.tournament.findMany({
     where: {
-      status: { in: ["UPCOMING", "ACTIVE"] },
+      status: { in: ["OPEN", "IN_PROGRESS"] },
       id: joinedTournamentIds.length > 0 ? { notIn: joinedTournamentIds } : undefined,
       OR: [
         { registrationDeadline: null },

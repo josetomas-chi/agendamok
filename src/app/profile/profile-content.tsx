@@ -572,10 +572,10 @@ export default function ProfileContent() {
               VOLLEYBALL: "🏐", BASEBALL: "⚾", FUTSAL: "⚽", SQUASH: "🏸",
             }
             const statusMap: Record<string, { label: string; bg: string; color: string }> = {
-              ACTIVE:    { label: "En curso",    bg: "rgba(56,189,248,0.1)",  color: ACCENT    },
-              UPCOMING:  { label: "Por iniciar", bg: "rgba(56,189,248,0.08)", color: ACCENT    },
-              FINISHED:  { label: "Finalizado",  bg: "rgba(100,116,139,0.1)", color: MUTED     },
-              CANCELLED: { label: "Cancelado",   bg: "rgba(220,38,38,0.1)",   color: "#dc2626" },
+              IN_PROGRESS: { label: "En curso",               bg: "rgba(56,189,248,0.1)",  color: ACCENT },
+              OPEN:        { label: "Inscripciones abiertas", bg: "rgba(56,189,248,0.08)", color: ACCENT },
+              DRAFT:       { label: "Borrador",               bg: "rgba(100,116,139,0.1)", color: MUTED  },
+              FINISHED:    { label: "Finalizado",              bg: "rgba(100,116,139,0.1)", color: MUTED  },
             }
             const ptLabel: Record<string, string> = {
               INDIVIDUAL: "Individual", PAIR: "Dobles", TEAM: "Equipos",
@@ -814,7 +814,7 @@ export default function ProfileContent() {
                           fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 100, flexShrink: 0,
                           background: "rgba(56,189,248,0.1)", color: ACCENT,
                         }}>
-                          {t.tournament.status === "ACTIVE" ? "En curso" : "Por iniciar"}
+                          {t.tournament.status === "IN_PROGRESS" ? "En curso" : "Inscripciones abiertas"}
                         </span>
                       </div>
                     ))}
