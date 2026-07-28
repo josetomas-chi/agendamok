@@ -496,15 +496,24 @@ function InscriptionForm({ tournament, tournamentId }: { tournament: Tournament;
 
       {type === "PAIR" && (
         <>
-          {[["Jugador 1",[["Nombre completo *","text",p1Name,setP1Name,"Ej: Juan Pérez"],["RUT *","text",p1Rut,(v:string)=>setP1Rut(formatRut(v)),"12.345.678-9"],["Email *","email",p1Email,setP1Email,"juan@email.com"],["WhatsApp *","tel",p1Phone,setP1Phone,"+56 9 1234 5678"]]],
-             ["Jugador 2",[["Nombre","text",p2Name,setP2Name,"Ej: María García"],["Email","email",p2Email,setP2Email,"maria@email.com"]]],
-          ] as [string,[string,string,string,(v:string)=>void,string][]][]).map(([title, fields]) => (
+          {([
+            { title: "Jugador 1", fields: [
+              { label: "Nombre completo *", t: "text",  val: p1Name,  set: setP1Name,  ph: "Ej: Juan Pérez" },
+              { label: "RUT *",             t: "text",  val: p1Rut,   set: (v: string) => setP1Rut(formatRut(v)), ph: "12.345.678-9" },
+              { label: "Email *",           t: "email", val: p1Email, set: setP1Email, ph: "juan@email.com" },
+              { label: "WhatsApp *",        t: "tel",   val: p1Phone, set: setP1Phone, ph: "+56 9 1234 5678" },
+            ]},
+            { title: "Jugador 2", fields: [
+              { label: "Nombre", t: "text",  val: p2Name,  set: setP2Name,  ph: "Ej: María García" },
+              { label: "Email",  t: "email", val: p2Email, set: setP2Email, ph: "maria@email.com" },
+            ]},
+          ]).map(({ title, fields }) => (
             <div key={title} className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${BORDER2}` }}>
               <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: ACCENT }}>{title}</p>
-              {(fields as [string,string,string,(v:string)=>void,string][]).map(([label,type,val,set,ph]) => (
+              {fields.map(({ label, t, val, set, ph }) => (
                 <div key={label}>
                   <label className={labelCls} style={{ color: MUTED }}>{label}</label>
-                  <input type={type} value={val} onChange={e => set(e.target.value)} placeholder={ph}
+                  <input type={t} value={val} onChange={e => set(e.target.value)} placeholder={ph}
                     className={inputCls} style={inputStyle} />
                 </div>
               ))}
