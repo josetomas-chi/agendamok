@@ -47,9 +47,7 @@ export async function GET() {
   const activeMemberships = clients.flatMap(c => c.memberships)
 
   // Per-business loyalty summary (only businesses with some data)
-  const businessBenefits = clients
-    .filter(c => c.loyaltyPoints > 0 || c.creditBalance > 0 || c.segment !== "NEW" || c.memberships.length > 0)
-    .map(c => {
+  const businessBenefits = clients.map(c => {
       const discounts = (c.business.segmentDiscounts ?? {}) as Record<string, number>
       const segmentDiscount = discounts[c.segment] ?? 0
       const vipThreshold = c.business.loyaltyVipThreshold ?? 500
