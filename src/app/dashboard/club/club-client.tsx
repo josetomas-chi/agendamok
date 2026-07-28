@@ -73,6 +73,7 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
   const [newBookingOpen, setNewBookingOpen] = useState(false)
   const [preselect, setPreselect] = useState<{ courtId: string; date: string; startTime: string; endTime: string } | null>(null)
   const [detailBooking, setDetailBooking] = useState<Booking | null>(null)
+  const [pendingVouchers, setPendingVouchers] = useState<{ id: string; startTime: string; price: number; paidAmount: number; client: { name: string } | null; court: { name: string } }[]>([])
 
   // Week cache: key = "YYYY-Www", value = bookings for that week
   const weekCacheRef = useRef<Map<string, Booking[]>>(new Map())
@@ -115,7 +116,13 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
   }, [loadWeekForDate])
 
   useEffect(() => {
-    if (businessId) loadWeekForDate(businessId, new Date())
+    if (businessId) {
+      loadWeekForDate(businessId, new Date())
+      fetch(`/api/businesses/${businessId}/court-bookings/pending-vouchers`)
+        .then(r => r.ok ? r.json() : { pending: [] })
+        .then(d => setPendingVouchers(d.pending || []))
+        .catch(() => {})
+    }
   }, [businessId, loadWeekForDate])
 
   useEffect(() => {
@@ -281,6 +288,35 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
         </div>
       </div>
 
+      {/* Banner vouchers pendientes */}
+      {pendingVouchers.length > 0 && (
+        <div className="rounded-xl px-4 py-3 flex items-start gap-3"
+          style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.4)" }}>
+          <span className="text-lg leading-none mt-0.5">🏦</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold" style={{ color: "#92400e" }}>
+              {pendingVouchers.length === 1
+                ? "1 comprobante de transferencia pendiente de aprobación"
+                : `${pendingVouchers.length} comprobantes de transferencia pendientes de aprobación`}
+            </p>
+            <div className="mt-1.5 flex flex-wrap gap-2">
+              {pendingVouchers.map(v => (
+                <button
+                  key={v.id}
+                  onClick={() => {
+                    const b = allBookings.find(b => b.id === v.id)
+                    if (b) { setDetailBooking(b); setTab("calendario"); setSelectedDate(new Date(v.startTime)) }
+                  }}
+                  className="text-xs px-2.5 py-1 rounded-lg font-semibold transition-colors"
+                  style={{ background: "rgba(251,191,36,0.2)", color: "#92400e", border: "1px solid rgba(251,191,36,0.4)" }}>
+                  {v.client?.name || "Sin nombre"} — {v.court.name} {utcDate(v.startTime, "d MMM HH:mm")}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {tab === "resumen" && (
         <>
           {/* Stats */}
@@ -372,6 +408,10 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
           onSaved={() => {
             setDetailBooking(null)
             refreshCurrent(businessId, selectedDate)
+            fetch(`/api/businesses/${businessId}/court-bookings/pending-vouchers`)
+              .then(r => r.ok ? r.json() : { pending: [] })
+              .then(d => setPendingVouchers(d.pending || []))
+              .catch(() => {})
           }}
         />
       )}
@@ -776,6 +816,9 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                               )}
                               {b.status === "COMPLETED" && (
                                 <span className="text-[9px] font-black leading-none" style={{ color: "#15803d" }}>✓</span>
+                              )}
+                              {b.transferVoucher && Number(b.paidAmount) < Number(b.price) && (
+                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "#f59e0b" }} title="Comprobante pendiente" />
                               )}
                             </div>
                           </div>
