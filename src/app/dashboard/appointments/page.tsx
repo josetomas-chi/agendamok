@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { Plus, Search, Clock, FileText, ExternalLink, Loader2 } from "lucide-react"
+import { Plus, Search, Clock, FileText, ExternalLink, Loader2, AlertCircle } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -17,7 +17,7 @@ type Appointment = {
   id: string; startTime: string; endTime: string; status: string; notes: string | null; price?: number | null
   service: { name: string; color: string; duration: number; price: number }
   staff: { id: string; color: string; user: { name: string | null } }
-  client: { id: string; name: string; lastName?: string | null; email: string | null; phone: string | null }
+  client: { id: string; name: string; lastName?: string | null; email: string | null; phone: string | null; rut: string | null }
   payment: { id: string; amount: number; status: string; method: string } | null
 }
 type Service = { id: string; name: string; duration: number; price: number; color: string }
@@ -45,6 +45,9 @@ export default function AppointmentsPage() {
   const [form, setForm] = useState(DEFAULT_FORM)
   const [saving, setSaving] = useState(false)
   const [emitting, setEmitting] = useState(false)
+  const [rutPending, setRutPending] = useState<{ apptId: string; clientId: string; clientName: string; targetStatus: string } | null>(null)
+  const [rutInput, setRutInput] = useState("")
+  const [savingRut, setSavingRut] = useState(false)
   const [services, setServices] = useState<Service[]>([])
   const [staff, setStaff] = useState<Staff[]>([])
   const [clients, setClients] = useState<Client[]>([])
@@ -115,7 +118,20 @@ export default function AppointmentsPage() {
     setSaving(false)
   }
 
+  function formatRut(value: string) {
+    const clean = value.replace(/[^0-9kK]/g, "").toUpperCase()
+    if (clean.length === 0) return ""
+    const dv = clean.slice(-1)
+    const body = clean.slice(0, -1)
+    if (body.length === 0) return dv
+    return `${body.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${dv}`
+  }
+
   async function updateStatus(id: string, status: string) {
+    if (status === "COMPLETED" && selected?.client && !selected.client.rut) {
+      setRutPending({ apptId: id, clientId: selected.client.id, clientName: selected.client.name, targetStatus: status })
+      return
+    }
     await fetch(`/api/businesses/${businessId}/appointments/${id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -123,6 +139,23 @@ export default function AppointmentsPage() {
     toast.success("Estado actualizado")
     setSelected(null)
     loadAppts(businessId, statusFilter)
+  }
+
+  async function saveRutAndContinue() {
+    if (!rutPending || !rutInput.trim()) return
+    setSavingRut(true)
+    await fetch(`/api/businesses/${businessId}/clients/${rutPending.clientId}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rut: rutInput.trim() }),
+    })
+    await fetch(`/api/businesses/${businessId}/appointments/${rutPending.apptId}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: rutPending.targetStatus }),
+    })
+    toast.success("RUT guardado y estado actualizado")
+    setRutPending(null); setRutInput(""); setSelected(null)
+    loadAppts(businessId, statusFilter)
+    setSavingRut(false)
   }
 
   async function emitBoleta() {
@@ -302,6 +335,36 @@ export default function AppointmentsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modal RUT requerido */}
+      {rutPending && (
+        <Dialog open onOpenChange={() => { setRutPending(null); setRutInput("") }}>
+          <DialogContent className="max-w-xs">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-400" /> RUT requerido
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                El cliente <strong className="text-white">{rutPending.clientName}</strong> no tiene RUT registrado. Agrégalo para continuar.
+              </p>
+              <Input
+                value={rutInput}
+                onChange={e => setRutInput(formatRut(e.target.value))}
+                placeholder="12.345.678-9"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button className="flex-1" onClick={saveRutAndContinue} disabled={savingRut || !rutInput.trim()}>
+                  {savingRut ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar y continuar"}
+                </Button>
+                <Button variant="outline" onClick={() => { setRutPending(null); setRutInput("") }}>Cancelar</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Detail modal */}
       {selected && (

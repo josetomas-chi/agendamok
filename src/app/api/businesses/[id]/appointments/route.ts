@@ -44,7 +44,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     include: {
       service: { select: { name: true, color: true, duration: true, price: true } },
       staff: { select: { id: true, color: true, user: { select: { name: true, image: true } } } },
-      client: { select: { id: true, name: true, lastName: true, email: true, phone: true, segment: true } },
+      client: { select: { id: true, name: true, lastName: true, email: true, phone: true, rut: true, segment: true } },
       payment: { select: { amount: true, status: true, method: true } },
     },
     orderBy: { startTime: "desc" },
@@ -220,7 +220,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       include: {
         service: { select: { name: true, color: true } },
         staff: { select: { id: true, color: true, user: { select: { name: true, image: true } } } },
-        client: { select: { name: true, lastName: true, email: true, phone: true } },
+        client: { select: { id: true, name: true, lastName: true, email: true, phone: true, rut: true } },
       },
     })
 

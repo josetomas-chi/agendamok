@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "sonner"
-import { CreditCard, Banknote, Smartphone, DollarSign, CheckCircle2, FileText, ExternalLink, Loader2, TrendingUp, CalendarDays } from "lucide-react"
+import { CreditCard, Banknote, Smartphone, DollarSign, CheckCircle2, FileText, ExternalLink, Loader2, TrendingUp, CalendarDays, AlertCircle } from "lucide-react"
 import { format, startOfMonth, endOfMonth } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -16,7 +16,7 @@ type Appointment = {
   id: string; startTime: string; status: string; price?: number | null
   service: { name: string; price: number; color: string }
   staff: { user: { name: string | null } }
-  client: { name: string }
+  client: { id: string; name: string; rut: string | null }
   payment: { amount: number; status: string; method: string } | null
 }
 
@@ -186,6 +186,9 @@ function ServicesPaymentsView({ businessId, hasBsale }: { businessId: string; ha
   const [saving, setSaving] = useState(false)
   const [lastPaymentId, setLastPaymentId] = useState<string | null>(null)
   const [emitting, setEmitting] = useState(false)
+  const [rutPending, setRutPending] = useState<{ clientId: string; clientName: string; appt: Appointment } | null>(null)
+  const [rutInput, setRutInput] = useState("")
+  const [savingRut, setSavingRut] = useState(false)
 
   useEffect(() => { load() }, [])
 
@@ -196,6 +199,35 @@ function ServicesPaymentsView({ businessId, hasBsale }: { businessId: string; ha
     const d = await r.json()
     setAppointments(d.appointments || [])
     setLoading(false)
+  }
+
+  function formatRut(value: string) {
+    const clean = value.replace(/[^0-9kK]/g, "").toUpperCase()
+    if (clean.length === 0) return ""
+    const dv = clean.slice(-1)
+    const body = clean.slice(0, -1)
+    if (body.length === 0) return dv
+    return `${body.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${dv}`
+  }
+
+  function handleCobrar(a: Appointment) {
+    if (!a.client.rut) {
+      setRutPending({ clientId: a.client.id, clientName: a.client.name, appt: a })
+    } else {
+      setSelected(a); setMethod("CASH")
+    }
+  }
+
+  async function saveRutAndProceed() {
+    if (!rutPending || !rutInput.trim()) return
+    setSavingRut(true)
+    await fetch(`/api/businesses/${businessId}/clients/${rutPending.clientId}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rut: rutInput.trim() }),
+    })
+    setSavingRut(false)
+    setRutPending(null); setRutInput("")
+    setSelected(rutPending.appt); setMethod("CASH")
   }
 
   async function registerPayment() {
@@ -276,13 +308,45 @@ function ServicesPaymentsView({ businessId, hasBsale }: { businessId: string; ha
                     {a.payment.status === "PAID" ? METHOD_LABELS[a.payment.method] : "Pendiente"}
                   </span>
                 ) : (
-                  <Button size="sm" className="h-7 text-xs mt-1" onClick={() => { setSelected(a); setMethod("CASH") }}>Cobrar</Button>
+                  <Button size="sm" className="h-7 text-xs mt-1" onClick={() => handleCobrar(a)}>Cobrar</Button>
                 )}
               </div>
             </div>
           ))}
         </CardContent>
       </Card>
+      {/* Modal RUT requerido */}
+      {rutPending && (
+        <Dialog open onOpenChange={() => { setRutPending(null); setRutInput("") }}>
+          <DialogContent className="max-w-xs">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-400" /> RUT requerido
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                El cliente <strong className="text-white">{rutPending.clientName}</strong> no tiene RUT registrado. Agrégalo para continuar con el cobro.
+              </p>
+              <input
+                value={rutInput}
+                onChange={e => setRutInput(formatRut(e.target.value))}
+                placeholder="12.345.678-9"
+                autoFocus
+                className="w-full h-10 rounded-xl px-3 text-sm outline-none"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "white" }}
+              />
+              <div className="flex gap-2">
+                <Button className="flex-1" onClick={saveRutAndProceed} disabled={savingRut || !rutInput.trim()}>
+                  {savingRut ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar y cobrar"}
+                </Button>
+                <Button variant="outline" onClick={() => { setRutPending(null); setRutInput("") }}>Cancelar</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
       {selected && (
         <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
           <DialogContent className="max-w-sm">
