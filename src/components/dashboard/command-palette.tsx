@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { Command } from "cmdk"
 import {
@@ -49,7 +50,7 @@ export function CommandPalette() {
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh]"
       onClick={() => setOpen(false)}
@@ -108,6 +109,7 @@ export function CommandPalette() {
           <span><kbd className="bg-white/5 px-1 rounded">Esc</kbd> cerrar</span>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
