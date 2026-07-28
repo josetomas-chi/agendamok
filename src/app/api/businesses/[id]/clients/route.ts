@@ -66,7 +66,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       if (existing) return NextResponse.json({ error: "Ya existe un cliente con ese RUT" }, { status: 409 })
     }
 
-    const client = await prisma.client.create({ data: { ...data, businessId: id } })
+    // Auto-link to user account if email matches a registered user
+    let userId: string | undefined
+    if (data.email) {
+      const matchedUser = await prisma.user.findUnique({ where: { email: data.email }, select: { id: true } })
+      if (matchedUser) userId = matchedUser.id
+    }
+
+    const client = await prisma.client.create({ data: { ...data, businessId: id, ...(userId ? { userId } : {}) } })
 
     // If business is closed-access and client has RUT, auto-approve in access list
     if (data.rut) {
