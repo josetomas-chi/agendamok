@@ -43,6 +43,7 @@ export default function BookingClient({ slug }: { slug: string }) {
   const [notFound, setNotFound] = useState(false)
   const [autoClient, setAutoClient] = useState<{ name: string; email: string; phone: string; rut?: string } | null>(null)
   const [autoChecked, setAutoChecked] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   useEffect(() => {
     fetch(`/api/book/${slug}`)
@@ -62,6 +63,7 @@ export default function BookingClient({ slug }: { slug: string }) {
         if (!email) { setAutoChecked(true); return }
 
         if (business.accessMode === "CLOSED") {
+          setIsLoggedIn(true)
           // For closed businesses, check if user has APPROVED access by email
           const d = await fetch(`/api/businesses/${business.id}/access-list/check?email=${encodeURIComponent(email)}`).then(r => r.json())
           if (d.allowed) {
@@ -97,10 +99,33 @@ export default function BookingClient({ slug }: { slug: string }) {
   )
 
   if (business.accessMode === "CLOSED") {
-    // If user is logged in and has APPROVED access in this business, skip the gate
     if (autoClient) {
       if (business.businessType === "SPORTS_CLUB") return <CourtBookingFlow business={business} slug={slug} initialClient={autoClient} />
       return <ServiceBookingFlow business={business} slug={slug} initialClient={autoClient} />
+    }
+    if (isLoggedIn) {
+      // Logged in but no approved access — show clear message
+      return (
+        <div className="min-h-screen flex items-center justify-center px-6" style={{ background: "#0f0f11" }}>
+          <div className="text-center max-w-sm space-y-4">
+            {business.logo && (
+              <img src={business.logo} alt={business.name} className="w-16 h-16 rounded-2xl object-cover mx-auto mb-2" />
+            )}
+            <h1 className="text-white font-bold text-lg">{business.name}</h1>
+            <div className="rounded-2xl p-5 space-y-2" style={{ background: "#1c1c20", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <p className="text-sm font-semibold" style={{ color: "#f59e0b" }}>Acceso no autorizado</p>
+              <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+                Tu cuenta no tiene autorización para reservar en este negocio. Contacta al administrador para solicitar acceso.
+              </p>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="text-sm underline" style={{ color: "rgba(255,255,255,0.3)" }}>
+              Intentar con otro RUT
+            </button>
+          </div>
+        </div>
+      )
     }
     return <RutGate business={business} slug={slug} />
   }
