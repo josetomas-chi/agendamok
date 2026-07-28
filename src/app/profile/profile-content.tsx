@@ -8,7 +8,7 @@ import {
   User, Camera, Calendar, Trophy, LogOut, Clock,
   Loader2, Medal, Star, CreditCard, Zap, Gift, CheckCircle2,
 } from "lucide-react"
-import { signOut, useSession } from "next-auth/react"
+import { signOut } from "next-auth/react"
 
 type ProfileData = {
   user: { id: string; name: string | null; email: string | null; image: string | null; phone: string | null; rut: string | null }
@@ -95,7 +95,6 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export default function ProfileContent() {
-  const { data: session, status } = useSession()
   const router = useRouter()
   const [data, setData] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -103,13 +102,17 @@ export default function ProfileContent() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (status === "unauthenticated") { router.push("/login?callbackUrl=/profile"); return }
-    if (status !== "authenticated") return
-    fetch("/api/profile")
+    fetch("/api/auth/session")
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setData(d) })
+      .then(session => {
+        if (!session?.user) { router.push("/login?callbackUrl=/profile"); return }
+        return fetch("/api/profile")
+          .then(r => r.ok ? r.json() : null)
+          .then(d => { if (d) setData(d) })
+      })
+      .catch(() => router.push("/login?callbackUrl=/profile"))
       .finally(() => setLoading(false))
-  }, [status, router])
+  }, [router])
 
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -127,7 +130,7 @@ export default function ProfileContent() {
     }
   }
 
-  if (loading || status === "loading") return (
+  if (loading) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: BG }}>
       <Loader2 className="w-7 h-7 animate-spin" style={{ color: ACCENT }} />
     </div>
