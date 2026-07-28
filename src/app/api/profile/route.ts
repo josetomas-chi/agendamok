@@ -15,7 +15,21 @@ export async function GET() {
   })
   if (!user) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
 
-  // All client records for this user
+  // Auto-link orphan client records that match by email but have no userId
+  if (userEmail) {
+    const orphans = await prisma.client.findMany({
+      where: { email: userEmail, userId: null, deletedAt: null },
+      select: { id: true },
+    })
+    if (orphans.length > 0) {
+      await prisma.client.updateMany({
+        where: { id: { in: orphans.map(o => o.id) } },
+        data: { userId },
+      })
+    }
+  }
+
+  // All client records for this user (including just-linked ones)
   const clients = await prisma.client.findMany({
     where: { userId, deletedAt: null },
     select: {
