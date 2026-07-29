@@ -44,7 +44,7 @@ export async function POST(req: Request, { params }: Params) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
-  const { courtId, clientId, dayOfWeek, startHour, startMinute, durationMinutes, rangeStart, rangeEnd, notes } =
+  const { courtId, clientId, coachId, dayOfWeek, startHour, startMinute, durationMinutes, rangeStart, rangeEnd, notes } =
     await req.json()
 
   if (!courtId || dayOfWeek === undefined || startHour === undefined || !rangeStart || !rangeEnd) {
@@ -152,6 +152,7 @@ export async function POST(req: Request, { params }: Params) {
         businessId: id,
         courtId,
         clientId: clientId || null,
+        coachId: coachId || null,
         recurringGroupId: g.id,
         startTime: s.start,
         endTime: s.end,
