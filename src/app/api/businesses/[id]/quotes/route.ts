@@ -49,11 +49,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       validUntil: validUntil ? new Date(validUntil) : null,
       status: "DRAFT",
       items: {
-        create: items.map((item: { description: string; quantity: number; unitPrice: number; serviceId?: string }) => ({
+        create: items.map((item: { description: string; quantity: number; unitPrice: number; serviceId?: string; courtId?: string }) => ({
           description: item.description,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           serviceId: item.serviceId || null,
+          courtId: item.courtId || null,
         })),
       },
     },

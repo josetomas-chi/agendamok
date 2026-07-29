@@ -13,7 +13,12 @@ export async function GET(_: Request, { params }: Params) {
     where: { id: quoteId, businessId: id, deletedAt: null },
     include: {
       client: { select: { id: true, name: true, email: true, phone: true } },
-      items: { include: { service: { select: { name: true, color: true } } } },
+      items: {
+        include: {
+          service: { select: { name: true, color: true } },
+          court: { select: { name: true, color: true, sport: true } },
+        },
+      },
       business: { select: { name: true, phone: true, address: true, city: true, currency: true } },
     },
   })
@@ -34,12 +39,13 @@ export async function PATCH(req: Request, { params }: Params) {
   if (items !== undefined) {
     await prisma.quoteItem.deleteMany({ where: { quoteId } })
     await prisma.quoteItem.createMany({
-      data: items.map((item: { description: string; quantity: number; unitPrice: number; serviceId?: string }) => ({
+      data: items.map((item: { description: string; quantity: number; unitPrice: number; serviceId?: string; courtId?: string }) => ({
         quoteId,
         description: item.description,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         serviceId: item.serviceId || null,
+        courtId: item.courtId || null,
       })),
     })
   }

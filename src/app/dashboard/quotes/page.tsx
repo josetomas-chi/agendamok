@@ -21,6 +21,7 @@ type QuoteItem = {
   quantity: number
   unitPrice: number
   serviceId?: string
+  courtId?: string
 }
 
 type Quote = {
@@ -37,6 +38,7 @@ type Quote = {
 
 type Client = { id: string; name: string }
 type Service = { id: string; name: string; price: number; duration: number }
+type Court = { id: string; name: string; color: string; sport: string }
 
 const STATUS_LABELS: Record<Quote["status"], string> = {
   DRAFT: "Borrador", SENT: "Enviado", ACCEPTED: "Aceptado", REJECTED: "Rechazado", EXPIRED: "Vencido",
@@ -57,11 +59,13 @@ function calcTotal(items: QuoteItem[], discount: number) {
 const EMPTY_ITEM: QuoteItem = { description: "", quantity: 1, unitPrice: 0 }
 
 export default function QuotesPage() {
-  const { businessId } = useBusiness()
+  const { businessId, businessType } = useBusiness()
+  const isSportsClub = businessType === "SPORTS_CLUB"
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [loading, setLoading] = useState(true)
   const [clients, setClients] = useState<Client[]>([])
   const [services, setServices] = useState<Service[]>([])
+  const [courts, setCourts] = useState<Court[]>([])
 
   const [selected, setSelected] = useState<Quote | null>(null)
   const [open, setOpen] = useState(false)
@@ -85,14 +89,19 @@ export default function QuotesPage() {
   useEffect(() => {
     if (!businessId) return
     load(businessId)
-    Promise.all([
+    const fetches: Promise<Response>[] = [
       fetch(`/api/businesses/${businessId}/clients`),
       fetch(`/api/businesses/${businessId}/services`),
-    ]).then(([cr, sr]) => Promise.all([cr.json(), sr.json()])).then(([cd, sd]) => {
-      setClients(cd.clients || [])
-      setServices(sd.services || [])
-    })
-  }, [load])
+    ]
+    if (isSportsClub) fetches.push(fetch(`/api/businesses/${businessId}/courts`))
+    Promise.all(fetches)
+      .then(rs => Promise.all(rs.map(r => r.json())))
+      .then(([cd, sd, crd]) => {
+        setClients(cd.clients || [])
+        setServices(sd.services || [])
+        if (crd) setCourts(crd.courts || [])
+      })
+  }, [load, isSportsClub])
 
   function openNew() {
     setEditing(null)
@@ -187,7 +196,17 @@ export default function QuotesPage() {
     if (!svc) return
     setForm(f => {
       const items = [...f.items]
-      items[idx] = { ...items[idx], serviceId, description: svc.name, unitPrice: svc.price }
+      items[idx] = { ...items[idx], serviceId, courtId: undefined, description: svc.name, unitPrice: svc.price }
+      return { ...f, items }
+    })
+  }
+
+  function fillFromCourt(idx: number, courtId: string) {
+    const court = courts.find(c => c.id === courtId)
+    if (!court) return
+    setForm(f => {
+      const items = [...f.items]
+      items[idx] = { ...items[idx], courtId, serviceId: undefined, description: court.name }
       return { ...f, items }
     })
   }
@@ -324,8 +343,9 @@ export default function QuotesPage() {
         <QuoteFormDialog
           open={open} onOpenChange={setOpen} editing={editing}
           form={form} setForm={setForm} saving={saving} onSave={handleSave}
-          clients={clients} services={services}
-          addItem={addItem} updateItem={updateItem} removeItem={removeItem} fillFromService={fillFromService}
+          clients={clients} services={services} courts={courts} isSportsClub={isSportsClub}
+          addItem={addItem} updateItem={updateItem} removeItem={removeItem}
+          fillFromService={fillFromService} fillFromCourt={fillFromCourt}
         />
       </div>
     )
@@ -419,8 +439,9 @@ export default function QuotesPage() {
       <QuoteFormDialog
         open={open} onOpenChange={setOpen} editing={editing}
         form={form} setForm={setForm} saving={saving} onSave={handleSave}
-        clients={clients} services={services}
-        addItem={addItem} updateItem={updateItem} removeItem={removeItem} fillFromService={fillFromService}
+        clients={clients} services={services} courts={courts} isSportsClub={isSportsClub}
+        addItem={addItem} updateItem={updateItem} removeItem={removeItem}
+        fillFromService={fillFromService} fillFromCourt={fillFromCourt}
       />
     </div>
   )
@@ -435,7 +456,7 @@ type FormState = {
 
 function QuoteFormDialog({
   open, onOpenChange, editing, form, setForm, saving, onSave,
-  clients, services, addItem, updateItem, removeItem, fillFromService,
+  clients, services, courts, isSportsClub, addItem, updateItem, removeItem, fillFromService, fillFromCourt,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
@@ -446,10 +467,13 @@ function QuoteFormDialog({
   onSave: () => void
   clients: Client[]
   services: Service[]
+  courts: Court[]
+  isSportsClub: boolean
   addItem: () => void
   updateItem: (idx: number, field: keyof QuoteItem, value: string | number) => void
   removeItem: (idx: number) => void
   fillFromService: (idx: number, serviceId: string) => void
+  fillFromCourt: (idx: number, courtId: string) => void
 }) {
   const subtotal = form.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0)
   const total = subtotal - (subtotal * form.discount) / 100
@@ -503,7 +527,7 @@ function QuoteFormDialog({
             </div>
             <div className="grid grid-cols-12 gap-1.5 text-[11px] text-white/25 px-1">
               <span className="col-span-5">Descripción</span>
-              <span className="col-span-3">Servicio</span>
+              <span className="col-span-3">{isSportsClub ? "Cancha" : "Servicio"} (opcional)</span>
               <span className="col-span-1 text-right">Cant.</span>
               <span className="col-span-2 text-right">Precio</span>
               <span className="col-span-1" />
@@ -516,13 +540,27 @@ function QuoteFormDialog({
                     className="w-full h-9 rounded-xl border border-white/[0.08] bg-white/[0.05] px-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-sky-500/60 transition-colors" />
                 </div>
                 <div className="col-span-3 relative">
-                  <select value={item.serviceId || ""} onChange={e => fillFromService(idx, e.target.value)}
-                    className="w-full h-9 rounded-xl border border-white/[0.08] bg-white/[0.05] px-2 pr-7 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 transition-colors"
-                    style={{ colorScheme: "dark" }}>
-                    <option value="" style={{ backgroundColor: "#28282c" }}>—</option>
-                    {services.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#28282c" }}>{s.name}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-2 top-2.5 w-3.5 h-3.5 text-white/30 pointer-events-none" />
+                  {isSportsClub ? (
+                    <>
+                      <select value={item.courtId || ""} onChange={e => fillFromCourt(idx, e.target.value)}
+                        className="w-full h-9 rounded-xl border border-white/[0.08] bg-white/[0.05] px-2 pr-7 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 transition-colors"
+                        style={{ colorScheme: "dark" }}>
+                        <option value="" style={{ backgroundColor: "#28282c" }}>—</option>
+                        {courts.map(c => <option key={c.id} value={c.id} style={{ backgroundColor: "#28282c" }}>{c.name}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-2 top-2.5 w-3.5 h-3.5 text-white/30 pointer-events-none" />
+                    </>
+                  ) : (
+                    <>
+                      <select value={item.serviceId || ""} onChange={e => fillFromService(idx, e.target.value)}
+                        className="w-full h-9 rounded-xl border border-white/[0.08] bg-white/[0.05] px-2 pr-7 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 transition-colors"
+                        style={{ colorScheme: "dark" }}>
+                        <option value="" style={{ backgroundColor: "#28282c" }}>—</option>
+                        {services.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#28282c" }}>{s.name}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-2 top-2.5 w-3.5 h-3.5 text-white/30 pointer-events-none" />
+                    </>
+                  )}
                 </div>
                 <div className="col-span-1">
                   <input type="number" min={1} value={item.quantity} onFocus={e => e.target.select()}

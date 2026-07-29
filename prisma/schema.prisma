@@ -905,9 +905,11 @@ model QuoteItem {
   quantity    Int     @default(1)
   unitPrice   Float
   serviceId   String?
+  courtId     String?
 
   quote   Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   service Service? @relation(fields: [serviceId], references: [id])
+  court   Court?   @relation(fields: [courtId], references: [id])
 
   @@map("quote_items")
 }
@@ -962,6 +964,7 @@ model Court {
   pricingRules      CourtPricingRule[]
   bookings          CourtBooking[]
   recurringGroups   RecurringBookingGroup[]
+  quoteItems        QuoteItem[]
 
   @@index([businessId])
   @@map("courts")
