@@ -1447,7 +1447,7 @@ export default function ProfileContent() {
                             {segLabel[b.segment] ?? b.segment}
                           </span>
                         </div>
-                        <div style={{ padding: "12px 16px", display: "flex", gap: 20, fontSize: 12 }}>
+                        <div style={{ padding: "12px 16px 0", display: "flex", gap: 20, fontSize: 12 }}>
                           {b.loyaltyEnabled && (
                             <div>
                               <p style={{ color: MUTED, fontSize: 10 }}>Puntos</p>
@@ -1466,6 +1466,20 @@ export default function ProfileContent() {
                               <p style={{ color: ACCENT, fontWeight: 800, fontSize: 18 }}>{b.segmentDiscount}%</p>
                             </div>
                           )}
+                        </div>
+                        <div style={{ padding: "10px 16px 14px" }}>
+                          <button
+                            onClick={() => navigateToBooking(b.businessSlug)}
+                            style={{
+                              width: "100%", padding: "9px 0", borderRadius: 10,
+                              background: SB, color: ACCENT,
+                              fontSize: 13, fontWeight: 700, cursor: "pointer",
+                              border: `1px solid rgba(56,189,248,0.25)`,
+                              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                            }}>
+                            <Plus style={{ width: 14, height: 14 }} />
+                            Reservar en {b.businessName.split(" ")[0]}
+                          </button>
                         </div>
                       </div>
                     )
