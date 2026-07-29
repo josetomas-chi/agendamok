@@ -11,6 +11,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
       id: true, name: true, category: true, description: true, logo: true, phone: true,
       address: true, city: true, onlinePaymentsEnabled: true, mpConnected: true, primaryColor: true,
       coverImage: true, coverImagePositionY: true, businessType: true, chatBotEnabled: true, accessMode: true,
+      bankName: true, bankAccountHolder: true, bankAccountType: true, bankAccountNumber: true, bankRut: true, bankEmail: true,
       clubSettings: { select: { bookingWindowDays: true } },
       courts: {
         where: { isActive: true },

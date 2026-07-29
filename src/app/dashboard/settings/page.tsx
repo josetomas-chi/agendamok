@@ -65,6 +65,10 @@ function SettingsContent() {
   const [savingPay, setSavingPay] = useState(false)
   const [showPaySecret, setShowPaySecret] = useState(false)
 
+  // Bank / transfer details
+  const [bankForm, setBankForm] = useState({ bankName: "", bankAccountHolder: "", bankAccountType: "", bankAccountNumber: "", bankRut: "", bankEmail: "" })
+  const [savingBank, setSavingBank] = useState(false)
+
   // Bsale / Facturación
   const [bsaleKey, setBsaleKey] = useState("")
   const [bsaleAuto, setBsaleAuto] = useState(false)
@@ -162,6 +166,14 @@ function SettingsContent() {
       const waR = await fetch(`/api/businesses/${bid}/whatsapp-usage`)
       if (waR.ok) setWaUsage(await waR.json())
       setWaStatus(biz.business.waAddonStatus ?? "INACTIVE")
+      setBankForm({
+        bankName:          biz.business.bankName          ?? "",
+        bankAccountHolder: biz.business.bankAccountHolder ?? "",
+        bankAccountType:   biz.business.bankAccountType   ?? "",
+        bankAccountNumber: biz.business.bankAccountNumber ?? "",
+        bankRut:           biz.business.bankRut           ?? "",
+        bankEmail:         biz.business.bankEmail         ?? "",
+      })
       // Load Bsale settings
       const br = await fetch(`/api/businesses/${bid}/bsale-settings`)
       if (br.ok) {
@@ -276,6 +288,25 @@ function SettingsContent() {
       toast.error("Error al guardar")
     }
     setSavingPay(false)
+  }
+
+  async function saveBankSettings() {
+    if (!business) return
+    setSavingBank(true)
+    const r = await fetch(`/api/businesses/${business.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bankName:          bankForm.bankName          || null,
+        bankAccountHolder: bankForm.bankAccountHolder || null,
+        bankAccountType:   bankForm.bankAccountType   || null,
+        bankAccountNumber: bankForm.bankAccountNumber || null,
+        bankRut:           bankForm.bankRut           || null,
+        bankEmail:         bankForm.bankEmail         || null,
+      }),
+    })
+    if (r.ok) toast.success("Datos bancarios guardados")
+    else toast.error("Error al guardar")
+    setSavingBank(false)
   }
 
   async function saveBsaleSettings() {
@@ -1192,6 +1223,55 @@ function SettingsContent() {
                   <p>Guarda las credenciales y activa el interruptor <strong className="text-foreground/60">Cobros online</strong> al inicio de esta sección. Tus clientes verán la opción de pagar al reservar y el dinero llegará directo a tu cuenta Flow.</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Datos bancarios para transferencia */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                🏦 Datos para transferencia bancaria
+              </CardTitle>
+              <CardDescription>
+                Cuando un cliente elige pagar por transferencia, estos datos aparecen en la pantalla de confirmación para que pueda copiarlos fácilmente.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Nombre / Razón social</label>
+                  <Input placeholder="Ej: Club de Pádel Los Pinos SpA" value={bankForm.bankAccountHolder}
+                    onChange={e => setBankForm(f => ({ ...f, bankAccountHolder: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">RUT</label>
+                  <Input placeholder="Ej: 76.123.456-7" value={bankForm.bankRut}
+                    onChange={e => setBankForm(f => ({ ...f, bankRut: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Banco</label>
+                  <Input placeholder="Ej: Banco Santander" value={bankForm.bankName}
+                    onChange={e => setBankForm(f => ({ ...f, bankName: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Tipo de cuenta</label>
+                  <Input placeholder="Ej: Cuenta Corriente" value={bankForm.bankAccountType}
+                    onChange={e => setBankForm(f => ({ ...f, bankAccountType: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">N° de cuenta</label>
+                  <Input placeholder="Ej: 012345678" value={bankForm.bankAccountNumber}
+                    onChange={e => setBankForm(f => ({ ...f, bankAccountNumber: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Email de notificación</label>
+                  <Input placeholder="Ej: pagos@miclub.cl" value={bankForm.bankEmail}
+                    onChange={e => setBankForm(f => ({ ...f, bankEmail: e.target.value }))} />
+                </div>
+              </div>
+              <Button onClick={saveBankSettings} disabled={savingBank} className="w-full sm:w-auto">
+                {savingBank ? "Guardando..." : "Guardar datos bancarios"}
+              </Button>
             </CardContent>
           </Card>
 

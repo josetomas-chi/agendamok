@@ -28,6 +28,8 @@ type Business = {
   businessType: string
   chatBotEnabled: boolean
   accessMode: string
+  bankName: string | null; bankAccountHolder: string | null; bankAccountType: string | null
+  bankAccountNumber: string | null; bankRut: string | null; bankEmail: string | null
   clubSettings: { bookingWindowDays: number } | null
   courts: Court[]
   services: Service[]; staff: Staff[]
@@ -36,6 +38,76 @@ type Business = {
 type Step = "home" | "staff" | "datetime" | "form" | "confirmed"
 type CourtStep = "home" | "court" | "datetime" | "form" | "confirmed"
 type PayMethod = "online" | "local" | "mp"
+
+// ── Bank details card with copy buttons ───────────────────────────────────
+function BankDetails({
+  bankName, bankAccountHolder, bankAccountType, bankAccountNumber, bankRut, bankEmail, price, accent, cardBg, border,
+}: {
+  bankName: string | null; bankAccountHolder: string | null; bankAccountType: string | null
+  bankAccountNumber: string | null; bankRut: string | null; bankEmail: string | null
+  price: number; accent: string; cardBg: string; border: string
+}) {
+  const [copied, setCopied] = useState<string | null>(null)
+
+  function copy(value: string, key: string) {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(key)
+      setTimeout(() => setCopied(null), 1800)
+    })
+  }
+
+  const rows: { label: string; value: string; key: string }[] = [
+    bankAccountHolder   ? { label: "Nombre",       value: bankAccountHolder,   key: "holder" } : null,
+    bankRut             ? { label: "RUT",           value: bankRut,             key: "rut"    } : null,
+    bankName            ? { label: "Banco",         value: bankName,            key: "bank"   } : null,
+    bankAccountType     ? { label: "Tipo cuenta",   value: bankAccountType,     key: "type"   } : null,
+    bankAccountNumber   ? { label: "N° de cuenta",  value: bankAccountNumber,   key: "number" } : null,
+    bankEmail           ? { label: "Email",          value: bankEmail,           key: "email"  } : null,
+    price > 0           ? { label: "Monto",          value: `$${price.toLocaleString("es-CL")}`, key: "amount" } : null,
+  ].filter(Boolean) as { label: string; value: string; key: string }[]
+
+  return (
+    <div style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${border}`, background: "rgba(0,0,0,0.2)" }}>
+      {rows.map((row, i) => (
+        <div key={row.key}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "10px 14px",
+            borderBottom: i < rows.length - 1 ? `1px solid ${border}` : "none",
+            gap: 8,
+          }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 1 }}>{row.label}</p>
+            <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", wordBreak: "break-all" }}>{row.value}</p>
+          </div>
+          <button
+            onClick={() => copy(row.value, row.key)}
+            style={{
+              flexShrink: 0, padding: "5px 10px", borderRadius: 6, border: `1px solid ${border}`,
+              background: copied === row.key ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.06)",
+              color: copied === row.key ? "#22c55e" : accent,
+              fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.2s", whiteSpace: "nowrap",
+            }}>
+            {copied === row.key ? "✓ Copiado" : "Copiar"}
+          </button>
+        </div>
+      ))}
+      {/* Copy all button */}
+      <button
+        onClick={() => {
+          const text = rows.map(r => `${r.label}: ${r.value}`).join("\n")
+          copy(text, "all")
+        }}
+        style={{
+          width: "100%", padding: "10px 14px", background: "rgba(56,189,248,0.08)",
+          color: accent, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "none",
+          borderTop: `1px solid ${border}`, textAlign: "center", transition: "all 0.2s",
+        }}>
+        {copied === "all" ? "✓ Datos copiados" : "📋 Copiar todos los datos"}
+      </button>
+    </div>
+  )
+}
 
 export default function BookingClient({ slug }: { slug: string }) {
   const [business, setBusiness] = useState<Business | null>(null)
@@ -1042,8 +1114,25 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
           {/* Pago por transferencia */}
           {allowTransfer && confirmedBookingId && (
             <div className="w-full rounded-2xl p-5 space-y-3 text-left" style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}` }}>
-              <p className="text-sm font-bold text-white flex items-center gap-2">🏦 Adjunta tu comprobante de transferencia</p>
-              <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>El club validará el pago una vez recibido el comprobante.</p>
+              <p className="text-sm font-bold text-white flex items-center gap-2">🏦 Pago por transferencia bancaria</p>
+
+              {/* Datos bancarios copiables */}
+              {(business.bankAccountNumber || business.bankAccountHolder) && (
+                <BankDetails
+                  bankName={business.bankName}
+                  bankAccountHolder={business.bankAccountHolder}
+                  bankAccountType={business.bankAccountType}
+                  bankAccountNumber={business.bankAccountNumber}
+                  bankRut={business.bankRut}
+                  bankEmail={business.bankEmail}
+                  price={selectedSlot?.price ?? 0}
+                  accent={SPORTS_ACCENT}
+                  cardBg={SPORTS_CARD}
+                  border={SPORTS_BORDER}
+                />
+              )}
+
+              <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>Una vez realizada la transferencia, adjunta el comprobante abajo. El club lo validará.</p>
               {voucherUploaded ? (
                 <div className="flex items-center gap-2 py-2 px-3 rounded-xl" style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)" }}>
                   <Check className="w-4 h-4" style={{ color: "#22c55e" }} />

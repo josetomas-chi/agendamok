@@ -248,6 +248,12 @@ model Business {
   bsaleAutoInvoice            Boolean   @default(false)
   bsaleDocType                InvoiceDocType @default(BOLETA)
   cancellationHoursNotice     Int?
+  bankName                    String?
+  bankAccountHolder           String?
+  bankAccountType             String?
+  bankAccountNumber           String?
+  bankRut                     String?
+  bankEmail                   String?
   loyaltyEnabled              Boolean   @default(true)
   loyaltyPointsPerVisit       Int       @default(10)
   loyaltyVipThreshold         Int       @default(500)
