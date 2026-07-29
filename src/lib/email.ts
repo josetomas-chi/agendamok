@@ -1052,3 +1052,44 @@ export async function sendCancellationRefundEmail({
     `),
   }).catch(() => {})
 }
+
+export async function sendAdminNotification({
+  recipients, subject, message, businessName,
+}: {
+  recipients: { name: string; email: string }[]
+  subject: string
+  message: string
+  businessName: string
+}) {
+  if (!process.env.RESEND_API_KEY) return { sent: 0, failed: 0 }
+
+  const valid = recipients.filter(r => r.email?.includes("@"))
+  if (!valid.length) return { sent: 0, failed: 0 }
+
+  const htmlMessage = message
+    .split(/\n\n+/)
+    .map(para => `<p class="subtitle" style="margin:0 0 14px;white-space:pre-wrap">${para.replace(/\n/g, "<br/>")}</p>`)
+    .join("")
+
+  let sent = 0, failed = 0
+  for (const r of valid) {
+    try {
+      await resend.emails.send({
+        from: FROM,
+        to: r.email,
+        subject,
+        html: base(`
+          <h1>${subject}</h1>
+          <p class="subtitle">Hola <strong style="color:#fff">${r.name}</strong>,</p>
+          ${htmlMessage}
+          <hr class="divider"/>
+          <p class="subtitle" style="font-size:12px;margin:0">Mensaje enviado por <strong style="color:#fff">${businessName}</strong> a través de AgendaMok.</p>
+        `),
+      })
+      sent++
+    } catch {
+      failed++
+    }
+  }
+  return { sent, failed }
+}

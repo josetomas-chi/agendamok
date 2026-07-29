@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { useBusiness } from "@/contexts/business-context"
 import { toast } from "sonner"
-import { Plus, X, ChevronLeft, ChevronRight, Users, BookOpen, CreditCard, Pencil, Trash2, UserPlus, UserMinus, Link2, Image } from "lucide-react"
+import { Plus, X, ChevronLeft, ChevronRight, Users, BookOpen, CreditCard, Pencil, Trash2, UserPlus, UserMinus, Link2, Image, Bell } from "lucide-react"
+import { NotifyModal } from "@/components/notify-modal"
 import { format, addDays, subDays, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -258,6 +259,7 @@ function AttendanceTab({ businessId, groups }: { businessId: string; groups: Gro
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [attendance, setAttendance] = useState<Record<string, boolean>>({})
+  const [notifyOpen, setNotifyOpen] = useState(false)
 
   const loadClass = useCallback(async (groupId: string, date: Date) => {
     setLoading(true)
@@ -356,11 +358,20 @@ function AttendanceTab({ businessId, groups }: { businessId: string; groups: Gro
                 <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "rgba(13,27,42,0.5)" }}>
                   Asistencia — {activeEnrollments.length} alumnos
                 </p>
-                <button onClick={saveAttendance} disabled={saving}
-                  className="px-3 h-7 rounded-lg text-xs font-bold disabled:opacity-40"
-                  style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.35)", color: "#15803d" }}>
-                  {saving ? "Guardando…" : "Guardar"}
-                </button>
+                <div className="flex items-center gap-2">
+                  {activeEnrollments.some(e => e.client.email) && (
+                    <button onClick={() => setNotifyOpen(true)}
+                      className="flex items-center gap-1 px-2.5 h-7 rounded-lg text-xs font-bold"
+                      style={{ background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)", color: "#0ea5e9" }}>
+                      <Bell className="w-3 h-3" /> Notificar
+                    </button>
+                  )}
+                  <button onClick={saveAttendance} disabled={saving}
+                    className="px-3 h-7 rounded-lg text-xs font-bold disabled:opacity-40"
+                    style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.35)", color: "#15803d" }}>
+                    {saving ? "Guardando…" : "Guardar"}
+                  </button>
+                </div>
               </div>
               {activeEnrollments.length === 0 && (
                 <p className="p-6 text-sm text-center" style={{ color: "rgba(13,27,42,0.4)" }}>Sin alumnos inscritos en este grupo</p>
@@ -400,6 +411,20 @@ function AttendanceTab({ businessId, groups }: { businessId: string; groups: Gro
       {!selectedGroup && groups.length > 0 && (
         <p className="text-center text-sm py-8" style={{ color: "rgba(13,27,42,0.4)" }}>Selecciona un grupo para registrar asistencia</p>
       )}
+
+      {notifyOpen && selectedGroup && (() => {
+        const recipients = activeEnrollments
+          .filter(e => e.client.email)
+          .map(e => ({ name: e.client.name, email: e.client.email! }))
+        return (
+          <NotifyModal
+            businessId={businessId}
+            recipients={recipients}
+            contextLabel={`${recipients.length} alumno${recipients.length !== 1 ? "s" : ""} — ${selectedGroup.name}`}
+            onClose={() => setNotifyOpen(false)}
+          />
+        )
+      })()}
     </div>
   )
 }

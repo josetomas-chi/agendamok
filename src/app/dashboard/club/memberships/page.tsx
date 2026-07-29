@@ -1,7 +1,8 @@
 "use client"
 import React, { useState, useEffect, useCallback } from "react"
 import { useBusiness } from "@/contexts/business-context"
-import { Plus, Users, X, ChevronDown } from "lucide-react"
+import { Plus, Users, X, ChevronDown, Bell } from "lucide-react"
+import { NotifyModal } from "@/components/notify-modal"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
@@ -32,6 +33,7 @@ export default function MembershipsPage() {
   const [loading, setLoading] = useState(true)
   const [planOpen, setPlanOpen] = useState(false)
   const [memberOpen, setMemberOpen] = useState(false)
+  const [notifyOpen, setNotifyOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null)
   const [saving, setSaving] = useState(false)
   const [planForm, setPlanForm] = useState({ name: "", description: "", price: 0, durationDays: 30 })
@@ -145,7 +147,16 @@ export default function MembershipsPage() {
 
       {/* Active memberships */}
       <div>
-        <p className="text-xs font-semibold text-white/40 uppercase tracking-wide mb-3">Socios</p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-semibold text-white/40 uppercase tracking-wide">Socios</p>
+          {memberships.some(m => m.client.email) && (
+            <button onClick={() => setNotifyOpen(true)}
+              className="flex items-center gap-1.5 px-3 h-7 rounded-lg text-xs font-semibold transition-colors"
+              style={{ background: "rgba(56,189,248,0.1)", border: "1px solid rgba(56,189,248,0.2)", color: "#38bdf8" }}>
+              <Bell className="w-3 h-3" /> Notificar socios
+            </button>
+          )}
+        </div>
         {memberships.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center text-white/30 text-sm">
             No hay membresías asignadas
@@ -172,6 +183,19 @@ export default function MembershipsPage() {
           </div>
         )}
       </div>
+
+      {notifyOpen && businessId && (() => {
+        const active = memberships.filter(m => m.status === "ACTIVE" && m.client.email)
+        const recipients = active.map(m => ({ name: m.client.name, email: m.client.email! }))
+        return (
+          <NotifyModal
+            businessId={businessId}
+            recipients={recipients}
+            contextLabel={`${recipients.length} socio${recipients.length !== 1 ? "s" : ""} activo${recipients.length !== 1 ? "s" : ""}`}
+            onClose={() => setNotifyOpen(false)}
+          />
+        )
+      })()}
 
       {/* Plan modal */}
       <Dialog open={planOpen} onOpenChange={setPlanOpen}>
