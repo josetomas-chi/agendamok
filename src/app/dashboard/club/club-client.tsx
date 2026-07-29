@@ -899,8 +899,16 @@ function ClientCombobox({ clients, value, onSelect }: {
     document.addEventListener("mousedown", onClick)
     return () => document.removeEventListener("mousedown", onClick)
   }, [])
-  const filtered = query.trim().length > 0 ? clients.filter(c => c.name.toLowerCase().includes(query.toLowerCase())) : clients
-  const exactMatch = clients.find(c => c.name.toLowerCase() === query.toLowerCase())
+  const q = query.trim().toLowerCase()
+  const filtered = q.length > 0
+    ? clients.filter(c =>
+        c.name.toLowerCase().includes(q) ||
+        (c.email ?? "").toLowerCase().includes(q) ||
+        (c.phone ?? "").replace(/\s/g, "").includes(q.replace(/\s/g, "")) ||
+        (c.rut ?? "").replace(/[.\-]/g, "").includes(q.replace(/[.\-]/g, ""))
+      )
+    : clients
+  const exactMatch = clients.find(c => c.name.toLowerCase() === q)
 
   function startCreating() {
     setOpen(false)
