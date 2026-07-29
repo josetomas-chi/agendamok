@@ -3,6 +3,18 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { nanoid } from "nanoid"
 
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+  const { id } = await params
+
+  const giftCards = await prisma.giftCard.findMany({
+    where: { businessId: id },
+    orderBy: { createdAt: "desc" },
+  })
+  return NextResponse.json({ giftCards })
+}
+
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })

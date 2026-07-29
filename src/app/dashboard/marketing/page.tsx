@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect } from "react"
 import { useBusiness } from "@/contexts/business-context"
@@ -12,14 +12,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Megaphone, Gift, Tag, Zap, Plus, Send } from "lucide-react"
+import { Megaphone, Gift, Tag, Zap, Plus, Send, ExternalLink, AlertCircle } from "lucide-react"
+import Link from "next/link"
+
+type GiftCard = { id: string; code: string; amount: number; balance: number; isActive: boolean; expiresAt: string | null; createdAt: string }
+type Campaign = { id: string; name: string; subject: string; segment: string | null; sentAt: string | null; recipientCount: number; createdAt: string }
+type LoyaltySettings = { loyaltyEnabled: boolean; loyaltyPointsPerVisit: number; loyaltyVipThreshold: number; segmentDiscounts: Record<string, number> }
 
 export default function MarketingPage() {
   const { businessId } = useBusiness()
   const [campaignOpen, setCampaignOpen] = useState(false)
   const [discountOpen, setDiscountOpen] = useState(false)
   const [giftOpen, setGiftOpen] = useState(false)
+
   const [discounts, setDiscounts] = useState<{ id: string; code: string; type: string; value: number; usedCount: number; maxUses: number | null; isActive: boolean }[]>([])
+  const [giftCards, setGiftCards] = useState<GiftCard[]>([])
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [loyalty, setLoyalty] = useState<LoyaltySettings | null>(null)
+
   const [campaign, setCampaign] = useState<{ name: string; subject: string; body: string; segment: string }>({ name: "", subject: "", body: "", segment: "" })
   const [discount, setDiscount] = useState({ code: "", type: "PERCENTAGE", value: 10, maxUses: "", expiresAt: "" })
   const [gift, setGift] = useState({ amount: "", expiresAt: "" })
@@ -27,13 +37,28 @@ export default function MarketingPage() {
 
   useEffect(() => {
     if (!businessId) return
-    loadDiscounts(businessId)
+    loadAll(businessId)
   }, [businessId])
 
-  async function loadDiscounts(bid: string) {
-    const r = await fetch(`/api/businesses/${bid}/discounts`)
-    const d = await r.json()
-    setDiscounts(d.discounts || [])
+  async function loadAll(bid: string) {
+    const [discR, giftR, campR, bizR] = await Promise.all([
+      fetch(`/api/businesses/${bid}/discounts`),
+      fetch(`/api/businesses/${bid}/gift-cards`),
+      fetch(`/api/businesses/${bid}/campaigns`),
+      fetch(`/api/businesses/${bid}`),
+    ])
+    if (discR.ok) setDiscounts((await discR.json()).discounts || [])
+    if (giftR.ok) setGiftCards((await giftR.json()).giftCards || [])
+    if (campR.ok) setCampaigns((await campR.json()).campaigns || [])
+    if (bizR.ok) {
+      const biz = (await bizR.json()).business
+      setLoyalty({
+        loyaltyEnabled: biz.loyaltyEnabled ?? true,
+        loyaltyPointsPerVisit: biz.loyaltyPointsPerVisit ?? 10,
+        loyaltyVipThreshold: biz.loyaltyVipThreshold ?? 500,
+        segmentDiscounts: (biz.segmentDiscounts ?? {}) as Record<string, number>,
+      })
+    }
   }
 
   async function sendCampaign() {
@@ -42,8 +67,15 @@ export default function MarketingPage() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(campaign),
     })
-    if (r.ok) { toast.success("Campaña creada correctamente"); setCampaignOpen(false); setCampaign({ name: "", subject: "", body: "", segment: "" }) }
-    else toast.error("Error al crear campaña")
+    const data = await r.json()
+    if (r.ok) {
+      toast.success(`Campaña enviada a ${data.sent} cliente${data.sent !== 1 ? "s" : ""}${data.failed > 0 ? ` (${data.failed} fallidos)` : ""}`)
+      setCampaignOpen(false)
+      setCampaign({ name: "", subject: "", body: "", segment: "" })
+      setCampaigns(prev => [data.campaign, ...prev])
+    } else {
+      toast.error(data.error || "Error al enviar campaña")
+    }
     setSaving(false)
   }
 
@@ -53,7 +85,7 @@ export default function MarketingPage() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...discount, value: Number(discount.value), maxUses: discount.maxUses ? Number(discount.maxUses) : null }),
     })
-    if (r.ok) { toast.success("Código creado"); setDiscountOpen(false); loadDiscounts(businessId) }
+    if (r.ok) { toast.success("Código creado"); setDiscountOpen(false); loadAll(businessId) }
     else { const d = await r.json(); toast.error(d.error || "Error") }
     setSaving(false)
   }
@@ -64,10 +96,19 @@ export default function MarketingPage() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ amount: Number(gift.amount), expiresAt: gift.expiresAt || null }),
     })
-    if (r.ok) { const d = await r.json(); toast.success(`Gift card creada: ${d.giftCard.code}`); setGiftOpen(false) }
-    else toast.error("Error")
+    if (r.ok) {
+      const d = await r.json()
+      toast.success(`Gift card creada: ${d.giftCard.code}`)
+      setGiftOpen(false)
+      setGift({ amount: "", expiresAt: "" })
+      setGiftCards(prev => [d.giftCard, ...prev])
+    } else {
+      toast.error("Error al crear gift card")
+    }
     setSaving(false)
   }
+
+  const SEGMENT_LABELS: Record<string, string> = { VIP: "VIP", FREQUENT: "Frecuentes", AT_RISK: "En riesgo", NEW: "Nuevos", REGULAR: "Regulares", INFLUENCER: "Influencers" }
 
   return (
     <div className="space-y-6">
@@ -105,6 +146,30 @@ export default function MarketingPage() {
               </Card>
             ))}
           </div>
+
+          {campaigns.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Enviadas</p>
+              <div className="bg-white rounded-xl border overflow-hidden">
+                {campaigns.map((c, i) => (
+                  <div key={c.id} className={`flex items-center gap-3 px-4 py-3 ${i !== campaigns.length - 1 ? "border-b" : ""}`}>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{c.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{c.subject}</p>
+                    </div>
+                    {c.segment && <Badge variant="outline" className="text-xs shrink-0">{SEGMENT_LABELS[c.segment] ?? c.segment}</Badge>}
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-semibold">{c.recipientCount}</p>
+                      <p className="text-xs text-muted-foreground">enviados</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground shrink-0 hidden sm:block">
+                      {c.sentAt ? new Date(c.sentAt).toLocaleDateString("es-CL") : "—"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* Discounts */}
@@ -140,33 +205,98 @@ export default function MarketingPage() {
             <p className="text-sm text-muted-foreground">Crea gift cards para vender o regalar</p>
             <Button onClick={() => setGiftOpen(true)} className="gap-2"><Plus className="w-4 h-4" />Nueva gift card</Button>
           </div>
-          <div className="text-center py-16 text-muted-foreground">
-            <Gift className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Crea tu primera gift card</p>
-          </div>
+          {giftCards.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <Gift className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">Crea tu primera gift card</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border overflow-hidden">
+              {giftCards.map((g, i) => {
+                const pct = g.amount > 0 ? Math.round((Number(g.balance) / Number(g.amount)) * 100) : 0
+                return (
+                  <div key={g.id} className={`flex items-center gap-4 px-4 py-3 ${i !== giftCards.length - 1 ? "border-b" : ""}`}>
+                    <code className="bg-muted px-2 py-1 rounded text-sm font-mono font-bold shrink-0">{g.code}</code>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold">${Number(g.balance).toLocaleString("es-CL")}</p>
+                        <span className="text-xs text-muted-foreground">de ${Number(g.amount).toLocaleString("es-CL")}</span>
+                      </div>
+                      <div className="h-1.5 mt-1 rounded-full bg-muted overflow-hidden w-28">
+                        <div className="h-full rounded-full bg-sky-400" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                    {g.expiresAt && (
+                      <p className="text-xs text-muted-foreground shrink-0 hidden sm:block">
+                        Vence {new Date(g.expiresAt).toLocaleDateString("es-CL")}
+                      </p>
+                    )}
+                    <Badge variant={g.isActive ? "default" : "secondary"}>{g.isActive ? "Activa" : "Inactiva"}</Badge>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </TabsContent>
 
         {/* Loyalty */}
         <TabsContent value="loyalty" className="pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sistema de puntos</CardTitle>
-              <CardDescription>Tus clientes acumulan puntos con cada visita y los canjean por descuentos</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          {loyalty === null ? null : !loyalty.loyaltyEnabled ? (
+            <Card className="border-orange-400/20 bg-orange-500/5">
+              <CardContent className="pt-5 pb-4 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-orange-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold">Fidelización desactivada</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    El programa de puntos está apagado. Los clientes no ven ni acumulan puntos.
+                  </p>
+                  <Link href="/dashboard/settings?tab=loyalty">
+                    <Button size="sm" variant="outline" className="mt-3 gap-1.5 text-xs">
+                      <ExternalLink className="w-3 h-3" />Activar en Configuración
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-muted/30 rounded-xl">
-                  <p className="text-xs text-muted-foreground mb-1">Puntos por $1 gastado</p>
-                  <p className="text-2xl font-bold">1</p>
+                  <p className="text-xs text-muted-foreground mb-1">Puntos por turno completado</p>
+                  <p className="text-2xl font-bold">{loyalty.loyaltyPointsPerVisit}</p>
                 </div>
                 <div className="p-4 bg-muted/30 rounded-xl">
-                  <p className="text-xs text-muted-foreground mb-1">Puntos para $100 descuento</p>
-                  <p className="text-2xl font-bold">100</p>
+                  <p className="text-xs text-muted-foreground mb-1">Puntos para VIP automático</p>
+                  <p className="text-2xl font-bold">{loyalty.loyaltyVipThreshold}</p>
                 </div>
               </div>
-              <Button variant="outline" className="w-full">Configurar programa de puntos</Button>
-            </CardContent>
-          </Card>
+
+              {Object.entries(loyalty.segmentDiscounts).some(([, v]) => v > 0) && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Descuentos por segmento</CardTitle>
+                    <CardDescription className="text-xs">Se muestran en el perfil del cliente. No se aplican automáticamente al booking.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {Object.entries(loyalty.segmentDiscounts)
+                      .filter(([, v]) => v > 0)
+                      .map(([seg, val]) => (
+                        <div key={seg} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{SEGMENT_LABELS[seg] ?? seg}</span>
+                          <Badge variant="secondary">{val}% descuento</Badge>
+                        </div>
+                      ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              <Link href="/dashboard/settings?tab=loyalty">
+                <Button variant="outline" className="w-full gap-2">
+                  <ExternalLink className="w-4 h-4" />Configurar programa de puntos
+                </Button>
+              </Link>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -190,9 +320,11 @@ export default function MarketingPage() {
               </Select>
             </div>
             <div className="space-y-1.5"><Label>Asunto del email</Label><Input value={campaign.subject} onChange={e => setCampaign(c => ({ ...c, subject: e.target.value }))} /></div>
-            <div className="space-y-1.5"><Label>Mensaje</Label><Textarea value={campaign.body} onChange={e => setCampaign(c => ({ ...c, body: e.target.value }))} rows={4} /></div>
+            <div className="space-y-1.5"><Label>Mensaje</Label><Textarea value={campaign.body} onChange={e => setCampaign(c => ({ ...c, body: e.target.value }))} rows={5} placeholder="Escribe aquí el contenido del email..." /></div>
             <div className="flex gap-2 pt-1">
-              <Button className="flex-1 gap-2" onClick={sendCampaign} disabled={saving || !campaign.name || !campaign.subject}><Send className="w-4 h-4" />{saving ? "Creando..." : "Crear campaña"}</Button>
+              <Button className="flex-1 gap-2" onClick={sendCampaign} disabled={saving || !campaign.name || !campaign.subject || !campaign.body}>
+                <Send className="w-4 h-4" />{saving ? "Enviando..." : "Enviar campaña"}
+              </Button>
               <Button variant="outline" onClick={() => setCampaignOpen(false)}>Cancelar</Button>
             </div>
           </div>
@@ -247,4 +379,3 @@ export default function MarketingPage() {
     </div>
   )
 }
-

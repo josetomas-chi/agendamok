@@ -14,6 +14,7 @@ import { parseISO } from "date-fns"
 
 type BusinessBenefit = {
   businessId: string; businessName: string; businessSlug: string; businessLogo: string | null
+  loyaltyEnabled: boolean
   loyaltyPoints: number; creditBalance: number; segment: string
   segmentDiscount: number; pointsPerVisit: number; vipThreshold: number; ptsToNext: number
   allowTransfer: boolean
@@ -1442,17 +1443,19 @@ export default function ProfileContent() {
                           </span>
                         </div>
                         <div style={{ padding: "12px 16px", display: "flex", gap: 20, fontSize: 12 }}>
-                          <div>
-                            <p style={{ color: MUTED, fontSize: 10 }}>Puntos</p>
-                            <p style={{ color: "#d97706", fontWeight: 800, fontSize: 18 }}>{b.loyaltyPoints}</p>
-                          </div>
+                          {b.loyaltyEnabled && (
+                            <div>
+                              <p style={{ color: MUTED, fontSize: 10 }}>Puntos</p>
+                              <p style={{ color: "#d97706", fontWeight: 800, fontSize: 18 }}>{b.loyaltyPoints}</p>
+                            </div>
+                          )}
                           <div>
                             <p style={{ color: MUTED, fontSize: 10 }}>Crédito</p>
                             <p style={{ color: "#16a34a", fontWeight: 800, fontSize: 18 }}>
                               ${(b.creditBalance / 100).toLocaleString("es-CL")}
                             </p>
                           </div>
-                          {b.segmentDiscount > 0 && (
+                          {b.loyaltyEnabled && b.segmentDiscount > 0 && (
                             <div>
                               <p style={{ color: MUTED, fontSize: 10 }}>Descuento</p>
                               <p style={{ color: ACCENT, fontWeight: 800, fontSize: 18 }}>{b.segmentDiscount}%</p>
@@ -1471,7 +1474,7 @@ export default function ProfileContent() {
           {tab === "loyalty" && (
             <section>
               <SectionHeading>Puntos por negocio</SectionHeading>
-              {businessBenefits.length === 0 ? (
+              {businessBenefits.filter(b => b.loyaltyEnabled).length === 0 ? (
                 <div style={{
                   background: WHITE, border: `1px solid ${BD}`, borderRadius: 12,
                   padding: "40px 24px", textAlign: "center",
@@ -1481,7 +1484,7 @@ export default function ProfileContent() {
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {businessBenefits.map(b => {
+                  {businessBenefits.filter(b => b.loyaltyEnabled).map(b => {
                     const segLabel: Record<string, string> = { VIP: "VIP", FREQUENT: "Frecuente", REGULAR: "Regular", NEW: "Nuevo", AT_RISK: "Recuperar", INFLUENCER: "Influencer" }
                     const isVip = b.segment === "VIP"
                     const progress = b.vipThreshold > 0 ? Math.min(100, Math.round((b.loyaltyPoints / b.vipThreshold) * 100)) : 0

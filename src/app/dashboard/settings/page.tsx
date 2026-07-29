@@ -75,6 +75,7 @@ function SettingsContent() {
   const [showBsaleKey, setShowBsaleKey] = useState(false)
 
   // Loyalty / fidelización
+  const [loyaltyEnabled, setLoyaltyEnabled] = useState(true)
   const [loyaltyPoints, setLoyaltyPoints] = useState("10")
   const [loyaltyThreshold, setLoyaltyThreshold] = useState("500")
   const [segmentDiscounts, setSegmentDiscounts] = useState<Record<string, string>>({ VIP: "", INFLUENCER: "", FREQUENT: "", REGULAR: "", AT_RISK: "", NEW: "" })
@@ -150,6 +151,7 @@ function SettingsContent() {
         setPaySettings(pd)
       }
       // Load loyalty settings
+      setLoyaltyEnabled(biz.business.loyaltyEnabled ?? true)
       setLoyaltyPoints(String(biz.business.loyaltyPointsPerVisit ?? 10))
       setLoyaltyThreshold(String(biz.business.loyaltyVipThreshold ?? 500))
       if (biz.business.segmentDiscounts) {
@@ -245,6 +247,7 @@ function SettingsContent() {
     await fetch(`/api/businesses/${business.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        loyaltyEnabled,
         loyaltyPointsPerVisit: Math.max(0, Number(loyaltyPoints) || 0),
         loyaltyVipThreshold: Math.max(1, Number(loyaltyThreshold) || 500),
         segmentDiscounts: discounts,
@@ -1576,6 +1579,38 @@ function SettingsContent() {
 
         {/* Fidelización */}
         {activeTab === "loyalty" && <div className="pt-4 space-y-4">
+          {/* Toggle principal */}
+          <Card>
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold">Programa de fidelización</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {loyaltyEnabled
+                      ? "Activo — los clientes acumulan puntos y ven sus beneficios en su perfil"
+                      : "Inactivo — no se acumulan puntos ni se muestran beneficios a los clientes"}
+                  </p>
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!business) return
+                    const next = !loyaltyEnabled
+                    setLoyaltyEnabled(next)
+                    await fetch(`/api/businesses/${business.id}`, {
+                      method: "PATCH", headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ loyaltyEnabled: next }),
+                    })
+                    toast.success(next ? "Fidelización activada" : "Fidelización desactivada")
+                  }}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${loyaltyEnabled ? "bg-sky-500" : "bg-muted-foreground/30"}`}
+                >
+                  <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ${loyaltyEnabled ? "translate-x-5" : "translate-x-0"}`} />
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {loyaltyEnabled && <>
           {/* Puntos de fidelización */}
           <Card>
             <CardHeader className="pb-3">
@@ -1655,6 +1690,7 @@ function SettingsContent() {
             {savingLoyalty && <Loader2 className="w-4 h-4 animate-spin" />}
             Guardar configuración
           </button>
+          </>}
         </div>}
 
         {activeTab === "holidays" && <div className="pt-4 space-y-4">

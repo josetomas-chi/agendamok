@@ -55,7 +55,7 @@ export async function GET() {
       business: {
         select: {
           name: true, slug: true, businessType: true,
-          loyaltyPointsPerVisit: true, loyaltyVipThreshold: true, segmentDiscounts: true,
+          loyaltyEnabled: true, loyaltyPointsPerVisit: true, loyaltyVipThreshold: true, segmentDiscounts: true,
         },
       },
       memberships: {
@@ -89,6 +89,7 @@ export async function GET() {
         businessName: c.business.name,
         businessSlug: c.business.slug,
         businessLogo: null,
+        loyaltyEnabled: c.business.loyaltyEnabled ?? true,
         loyaltyPoints: c.loyaltyPoints,
         creditBalance: c.creditBalance,
         segment: c.segment,
