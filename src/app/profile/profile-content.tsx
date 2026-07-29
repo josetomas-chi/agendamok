@@ -492,7 +492,7 @@ export default function ProfileContent() {
 
       {/* ─── SIDEBAR (desktop only) ────────────────────────────────────────── */}
       <aside style={{
-        width: 240, background: SB, display: "flex", flexDirection: "column",
+        width: 240, background: SB, flexDirection: "column",
         flexShrink: 0, position: "sticky", top: 0, height: "100vh", overflowY: "auto",
       }} className="hidden lg:flex">
 
