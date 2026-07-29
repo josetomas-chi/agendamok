@@ -32,17 +32,31 @@ export async function POST(req: Request, { params }: Params) {
   if (!email?.trim()) return NextResponse.json({ error: "Email requerido" }, { status: 400 })
   if (!rut?.trim()) return NextResponse.json({ error: "RUT requerido" }, { status: 400 })
 
-  // Check RUT not already registered in this tournament
+  // Check RUT not already registered (ignore CANCELLED and expired PENDING_PAYMENT older than 2h)
   const normalizedRut = rut.trim().replace(/\./g, "").toUpperCase()
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000)
   const existingRut = await prisma.tournamentParticipant.findFirst({
-    where: { tournamentId, rut: normalizedRut },
+    where: {
+      tournamentId,
+      rut: normalizedRut,
+      NOT: [
+        { status: "CANCELLED" },
+        { status: "PENDING_PAYMENT", createdAt: { lt: twoHoursAgo } },
+      ],
+    },
   })
   if (existingRut) return NextResponse.json({ error: "Este RUT ya está inscrito en el torneo" }, { status: 400 })
 
-  // Check global capacity
+  // Check global capacity (count REGISTERED + recent PENDING_PAYMENT to avoid overselling)
   if (tournament.maxParticipants) {
     const count = await prisma.tournamentParticipant.count({
-      where: { tournamentId, status: "REGISTERED" },
+      where: {
+        tournamentId,
+        OR: [
+          { status: "REGISTERED" },
+          { status: "PENDING_PAYMENT", createdAt: { gte: twoHoursAgo } },
+        ],
+      },
     })
     if (count >= tournament.maxParticipants) {
       return NextResponse.json({ error: "El torneo está lleno" }, { status: 400 })
@@ -55,7 +69,14 @@ export async function POST(req: Request, { params }: Params) {
     if (cat && cat.groupCount && cat.groupSize) {
       const catMax = cat.groupCount * cat.groupSize
       const catCount = await prisma.tournamentParticipant.count({
-        where: { tournamentId, categoryId, status: "REGISTERED" },
+        where: {
+          tournamentId,
+          categoryId,
+          OR: [
+            { status: "REGISTERED" },
+            { status: "PENDING_PAYMENT", createdAt: { gte: twoHoursAgo } },
+          ],
+        },
       })
       if (catCount >= catMax) {
         return NextResponse.json({ error: `La categoría ${cat.name} está llena` }, { status: 400 })
@@ -110,6 +131,7 @@ export async function POST(req: Request, { params }: Params) {
       startDate: tournament.startDate ? new Date(tournament.startDate).toLocaleDateString("es-CL") : "",
       category: cat?.name ?? null,
       entryFee: tournament.entryFee ? Number(tournament.entryFee) : null,
+      paymentPending: hasEntryFee && !paymentEnabled,
     }).catch(() => {})
     return NextResponse.json({ participant, requiresPayment: false })
   }

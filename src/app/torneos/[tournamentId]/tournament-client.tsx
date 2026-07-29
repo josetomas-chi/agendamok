@@ -24,6 +24,7 @@ const FORMAT_LABELS: Record<string,string> = {
   ELIMINATION: "Eliminación directa",
   ROUND_ROBIN: "Liga",
   GROUP_STAGE: "Fase de grupos",
+  LADDER: "Escalerilla",
 }
 const TYPE_LABELS: Record<string,string> = {
   INDIVIDUAL: "Individual", PAIR: "Parejas", TEAM: "Equipos",
@@ -67,6 +68,7 @@ type Tournament = {
 type StandingRow = {
   id: string; name: string; players: unknown; seed: number | null
   played: number; wins: number; losses: number; setsW: number; setsL: number; gamesW: number; gamesL: number; pts: number
+  ladderPosition?: number | null
 }
 type MatchParticipant = { id: string; name: string; players: unknown } | null
 type Match = {
@@ -597,6 +599,53 @@ function InscriptionForm({ tournament, tournamentId }: { tournament: Tournament;
   )
 }
 
+// ── Ladder table ─────────────────────────────────────────────────────
+function LadderTable({ rows, participantType }: { rows: StandingRow[]; participantType: string }) {
+  const sorted = [...rows].sort((a, b) => (a.ladderPosition ?? 999) - (b.ladderPosition ?? 999))
+  if (sorted.length === 0) return (
+    <div className="text-center py-16">
+      <Trophy className="w-10 h-10 mx-auto mb-3 opacity-10" style={{ color: TEXT }} />
+      <p className="text-sm" style={{ color: MUTED }}>Sin participantes aún</p>
+    </div>
+  )
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+      {sorted.map((r, i) => {
+        const pos = r.ladderPosition ?? i + 1
+        const isFirst = pos === 1
+        return (
+          <div key={r.id} className="flex items-center gap-3 px-3 py-3"
+            style={{ borderBottom: i < sorted.length - 1 ? `1px solid ${BORDER2}` : undefined, background: isFirst ? "rgba(56,189,248,0.04)" : undefined }}>
+            <div className="w-8 flex-shrink-0 flex items-center justify-center">
+              {pos <= 3 ? (
+                <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black"
+                  style={{
+                    background: pos===1?"rgba(250,204,21,0.2)":pos===2?"rgba(148,163,184,0.15)":"rgba(205,127,50,0.15)",
+                    color:      pos===1?"#facc15":pos===2?"#94a3b8":"#cd7f32",
+                  }}>
+                  {pos}
+                </span>
+              ) : (
+                <span className="text-[11px] font-bold text-center w-full" style={{ color: FAINT }}>{pos}</span>
+              )}
+            </div>
+            <Avatar name={pName(r, participantType)} size={26} />
+            <p className="text-sm font-semibold flex-1 truncate" style={{ color: TEXT }}>
+              {pName(r, participantType)}
+            </p>
+            {r.played > 0 && (
+              <div className="flex gap-3 flex-shrink-0">
+                <span className="text-xs font-bold" style={{ color: "#22c55e" }}>{r.wins}G</span>
+                <span className="text-xs font-medium" style={{ color: "#f87171" }}>{r.losses}P</span>
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Main page ────────────────────────────────────────────────────────
 type Tab = "ranking" | "partidos" | "info"
 
@@ -727,7 +776,10 @@ export default function TournamentPublicPage() {
       {/* ── Content ── */}
       <div className="max-w-2xl mx-auto px-4 py-6">
 
-        {tab === "ranking" && <StandingsTable rows={standings} participantType={participantType} />}
+        {tab === "ranking" && tournament.format === "LADDER"
+          ? <LadderTable rows={standings} participantType={participantType} />
+          : tab === "ranking" && <StandingsTable rows={standings} participantType={participantType} />
+        }
 
         {tab === "partidos" && <MatchesList matches={matches} participantType={participantType} />}
 

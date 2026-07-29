@@ -38,7 +38,7 @@ export async function GET(_: Request, { params }: Params) {
 
   const tournament = await prisma.tournament.findFirst({
     where: { OR: [{ id: tournamentId }, { slug: tournamentId }] },
-    select: { id: true, status: true, participantType: true },
+    select: { id: true, status: true, participantType: true, format: true },
   })
   if (!tournament) return NextResponse.json({ error: "No encontrado" }, { status: 404 })
   if (tournament.status === "DRAFT") return NextResponse.json({ error: "No disponible" }, { status: 404 })
@@ -46,7 +46,7 @@ export async function GET(_: Request, { params }: Params) {
   const [participants, matches] = await Promise.all([
     prisma.tournamentParticipant.findMany({
       where: { tournamentId: tournament.id, status: "REGISTERED" },
-      select: { id: true, name: true, players: true, group: true, categoryId: true, seed: true },
+      select: { id: true, name: true, players: true, group: true, categoryId: true, seed: true, ladderPosition: true },
       orderBy: { createdAt: "asc" },
     }),
     prisma.tournamentMatch.findMany({
@@ -64,9 +64,11 @@ export async function GET(_: Request, { params }: Params) {
     }),
   ])
 
-  const standings = participants
-    .map(p => ({ ...p, ...calcStats(p.id, matches) }))
-    .sort((a, b) => b.pts - a.pts || b.wins - a.wins || b.setsW - a.setsW || b.gamesW - a.gamesW)
+  type WithStats = typeof participants[number] & ReturnType<typeof calcStats>
+  const withStats: WithStats[] = participants.map(p => ({ ...p, ...calcStats(p.id, matches) }))
+  const standings = tournament.format === "LADDER"
+    ? withStats.sort((a, b) => (a.ladderPosition ?? 999) - (b.ladderPosition ?? 999))
+    : withStats.sort((a, b) => b.pts - a.pts || b.wins - a.wins || b.setsW - a.setsW || b.gamesW - a.gamesW)
 
   return NextResponse.json({ standings, matches, participantType: tournament.participantType })
 }

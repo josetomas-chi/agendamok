@@ -583,7 +583,7 @@ export async function sendInvoiceEmail({
 }
 
 export async function sendTournamentRegistrationConfirmation({
-  players, tournamentName, businessName, startDate, category, entryFee,
+  players, tournamentName, businessName, startDate, category, entryFee, paymentPending = false,
 }: {
   players: { name: string; email: string }[]
   tournamentName: string
@@ -591,6 +591,7 @@ export async function sendTournamentRegistrationConfirmation({
   startDate: string
   category?: string | null
   entryFee?: number | null
+  paymentPending?: boolean
 }) {
   if (!process.env.RESEND_API_KEY) return
 
@@ -598,7 +599,9 @@ export async function sendTournamentRegistrationConfirmation({
   if (!validPlayers.length) return
 
   const feeRow = entryFee
-    ? `<div class="row"><span class="label">Inscripción</span><span class="value">${entryFee.toLocaleString("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 })}</span></div>`
+    ? paymentPending
+      ? `<div class="row"><span class="label">Inscripción</span><span class="value" style="color:#facc15">${entryFee.toLocaleString("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 })} — Pago pendiente</span></div>`
+      : `<div class="row"><span class="label">Inscripción</span><span class="value">${entryFee.toLocaleString("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 })}</span></div>`
     : `<div class="row"><span class="label">Inscripción</span><span class="value" style="color:#4ade80">Gratuita</span></div>`
 
   const categoryRow = category
@@ -609,14 +612,20 @@ export async function sendTournamentRegistrationConfirmation({
     ? `<div class="row"><span class="label">Pareja / Equipo</span><span class="value">${validPlayers.map(p => p.name).join(" &amp; ")}</span></div>`
     : `<div class="row"><span class="label">Jugador</span><span class="value">${validPlayers[0].name}</span></div>`
 
+  const subject = paymentPending ? `Pre-inscripción recibida — ${tournamentName}` : `¡Inscripción confirmada! ${tournamentName}`
+  const headline = paymentPending ? "Pre-inscripción recibida 📋" : "¡Inscripción confirmada! 🏆"
+  const subtitle = paymentPending
+    ? `Hola <strong style="color:#fff">${validPlayers[0].name}</strong>, recibimos tu solicitud de inscripción en <strong style="color:#C9A84C">${tournamentName}</strong>. El organizador coordinará el pago contigo directamente.`
+    : `Hola <strong style="color:#fff">${validPlayers[0].name}</strong>, tu inscripción en <strong style="color:#C9A84C">${tournamentName}</strong> ha sido registrada exitosamente.`
+
   for (const player of validPlayers) {
     await resend.emails.send({
       from: FROM,
       to: player.email,
-      subject: `¡Inscripción confirmada! ${tournamentName}`,
+      subject,
       html: base(`
-        <h1>¡Inscripción confirmada! 🏆</h1>
-        <p class="subtitle">Hola <strong style="color:#fff">${player.name}</strong>, tu inscripción en <strong style="color:#C9A84C">${tournamentName}</strong> ha sido registrada exitosamente.</p>
+        <h1>${headline}</h1>
+        <p class="subtitle">${subtitle}</p>
         <div class="box">
           <div class="row"><span class="label">Torneo</span><span class="value">${tournamentName}</span></div>
           <div class="row"><span class="label">Organiza</span><span class="value">${businessName}</span></div>
@@ -625,19 +634,20 @@ export async function sendTournamentRegistrationConfirmation({
           ${categoryRow}
           ${feeRow}
         </div>
-        <p class="subtitle" style="font-size:13px;margin-top:8px">Recibirás más información sobre horarios y canchas a medida que se acerque la fecha del torneo. ¡Mucho éxito!</p>
+        <p class="subtitle" style="font-size:13px;margin-top:8px">${paymentPending ? "Una vez confirmado el pago, tu inscripción quedará activa. ¡Mucho éxito!" : "Recibirás más información sobre horarios y canchas a medida que se acerque la fecha del torneo. ¡Mucho éxito!"}</p>
       `),
     })
   }
 }
 
 export async function sendTournamentElimination({
-  loser, winner, tournamentName, round,
+  loser, winner, tournamentName, round, isFinal = false,
 }: {
   loser: { name: string; email: string; players?: { name: string; email?: string }[] }
   winner: { name: string }
   tournamentName: string
   round: number
+  isFinal?: boolean
 }) {
   if (!process.env.RESEND_API_KEY) return
 
@@ -653,20 +663,61 @@ export async function sendTournamentElimination({
   const validRecipients = recipients.filter(r => r.email?.includes("@"))
   if (!validRecipients.length) return
 
+  const roundLabel = isFinal ? "la Final" : `la Ronda ${round}`
+  const subject = isFinal ? `Subcampeón — ${tournamentName}` : `Hasta la próxima — ${tournamentName}`
+
   for (const recipient of validRecipients) {
     resend.emails.send({
       from: FROM,
       to: recipient.email,
-      subject: `Hasta la próxima — ${tournamentName}`,
+      subject,
       html: base(`
         <h1>¡Gracias por competir, ${recipient.name}!</h1>
-        <p class="subtitle">Tu participación en <strong style="color:#fff">${tournamentName}</strong> llegó hasta la <strong style="color:#C9A84C">Ronda ${round}</strong>. Fue una gran batalla contra <strong style="color:#fff">${winner.name}</strong>.</p>
+        <p class="subtitle">Tu participación en <strong style="color:#fff">${tournamentName}</strong> llegó hasta <strong style="color:#C9A84C">${roundLabel}</strong>. Fue una gran batalla contra <strong style="color:#fff">${winner.name}</strong>.</p>
         <div class="box">
           <div class="row"><span class="label">Torneo</span><span class="value">${tournamentName}</span></div>
-          <div class="row"><span class="label">Ronda eliminado</span><span class="value">Ronda ${round}</span></div>
+          <div class="row"><span class="label">${isFinal ? "Resultado" : "Ronda eliminado"}</span><span class="value">${isFinal ? "Subcampeón 🥈" : `Ronda ${round}`}</span></div>
           <div class="row"><span class="label">Ganador del partido</span><span class="value">${winner.name}</span></div>
         </div>
-        <p class="subtitle" style="font-size:13px;margin-top:8px">Esto no termina aquí — te esperamos en el próximo torneo. ¡Sigue entrenando y vuelve con todo! 💪</p>
+        <p class="subtitle" style="font-size:13px;margin-top:8px">${isFinal ? "Llegaste a la final — eso es un logro enorme. ¡Sigue entrenando y vuelve con todo!" : "Esto no termina aquí — te esperamos en el próximo torneo. ¡Sigue entrenando y vuelve con todo!"} 💪</p>
+      `),
+    }).catch(() => {})
+  }
+}
+
+export async function sendTournamentChampion({
+  champion, tournamentName,
+}: {
+  champion: { name: string; email: string; players?: { name: string; email?: string }[] }
+  tournamentName: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+
+  const recipients: { name: string; email: string }[] = [{ name: champion.name, email: champion.email }]
+  if (Array.isArray(champion.players)) {
+    for (const p of champion.players) {
+      if (p.email && p.email !== champion.email && p.email.includes("@")) {
+        recipients.push({ name: p.name, email: p.email })
+      }
+    }
+  }
+
+  const validRecipients = recipients.filter(r => r.email?.includes("@"))
+  if (!validRecipients.length) return
+
+  for (const recipient of validRecipients) {
+    resend.emails.send({
+      from: FROM,
+      to: recipient.email,
+      subject: `¡Campeón! 🏆 — ${tournamentName}`,
+      html: base(`
+        <h1>¡Campeón, ${recipient.name}! 🏆</h1>
+        <p class="subtitle">¡Felicitaciones! Ganaste el torneo <strong style="color:#C9A84C">${tournamentName}</strong>. Un logro increíble que mereces celebrar.</p>
+        <div class="box">
+          <div class="row"><span class="label">Torneo</span><span class="value">${tournamentName}</span></div>
+          <div class="row"><span class="label">Resultado</span><span class="value" style="color:#C9A84C;font-weight:700">🥇 Campeón</span></div>
+        </div>
+        <p class="subtitle" style="font-size:13px;margin-top:8px">¡Eres el campeón! Gracias por participar y por darlo todo en cada partido. Nos vemos en el próximo torneo.</p>
       `),
     }).catch(() => {})
   }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendTournamentMatchAdvance, sendTournamentElimination } from "@/lib/email"
+import { sendTournamentMatchAdvance, sendTournamentElimination, sendTournamentChampion } from "@/lib/email"
 
 type Params = { params: Promise<{ id: string; tournamentId: string; matchId: string }> }
 
@@ -24,16 +24,25 @@ export async function PATCH(req: Request, { params }: Params) {
       ...(courtId !== undefined && { courtId: courtId || null }),
       ...(courtNumber !== undefined && { courtNumber: courtNumber ? Number(courtNumber) : null }),
     },
-    include: { participant1: true, participant2: true, winner: true },
+    include: { participant1: true, participant2: true, winner: { select: { id: true, name: true, email: true, players: true } } },
   })
 
-  // If elimination format and winner set: advance winner to next round
-  if (winnerId && match.status === "FINISHED") {
+  // If elimination-style match with winner: advance and notify
+  const isEliminationStyle =
+    winnerId &&
+    match.status === "FINISHED" &&
+    (match.stage === "KNOCKOUT" || true) // always check format below
+  if (isEliminationStyle) {
     const tournament = await prisma.tournament.findUnique({
       where: { id: tournamentId },
       select: { format: true, name: true },
     })
-    if (tournament?.format === "ELIMINATION") {
+    const isElimFormat = tournament?.format === "ELIMINATION"
+    const isKnockoutStage = match.stage === "KNOCKOUT"
+
+    if (isElimFormat || isKnockoutStage) {
+      const loserParticipant = match.participant1?.id === winnerId ? match.participant2 : match.participant1
+
       const nextRound = match.round + 1
       const nextMatchNumber = Math.ceil(match.matchNumber / 2)
       const isSlot1 = match.matchNumber % 2 === 1
@@ -42,16 +51,17 @@ export async function PATCH(req: Request, { params }: Params) {
         where: { tournamentId, round: nextRound, matchNumber: nextMatchNumber },
         include: { participant1: true, participant2: true },
       })
+
       if (nextMatch) {
+        // Not the final — advance winner to next match
         const updated = await prisma.tournamentMatch.update({
           where: { id: nextMatch.id },
           data: isSlot1 ? { participant1Id: winnerId } : { participant2Id: winnerId },
           include: { participant1: true, participant2: true },
         })
 
-        // Send elimination email to loser
-        const loserParticipant = match.participant1?.id === winnerId ? match.participant2 : match.participant1
-        if (loserParticipant && match.winner) {
+        // Notify loser
+        if (loserParticipant && match.winner && tournament) {
           const loserPlayers = Array.isArray(loserParticipant.players)
             ? (loserParticipant.players as { name: string; email?: string }[])
             : []
@@ -63,10 +73,10 @@ export async function PATCH(req: Request, { params }: Params) {
           }).catch(() => {})
         }
 
-        // Send advance email if both rivals are now known
+        // Notify winner if next opponent is already known
         const p1 = updated.participant1
         const p2 = updated.participant2
-        if (p1 && p2 && match.winner) {
+        if (p1 && p2 && match.winner && tournament) {
           const winnerParticipant = match.winner
           const opponentParticipant = winnerParticipant.id === p1.id ? p2 : p1
           const winnerPlayers = Array.isArray(winnerParticipant.players)
@@ -79,6 +89,29 @@ export async function PATCH(req: Request, { params }: Params) {
             round: nextRound,
             scheduledTime: updated.scheduledTime?.toISOString() ?? null,
             courtNumber: updated.courtNumber ?? null,
+          }).catch(() => {})
+        }
+      } else {
+        // No next match — this was the final: notify champion and runner-up
+        if (match.winner && tournament) {
+          const winnerPlayers = Array.isArray(match.winner.players)
+            ? (match.winner.players as { name: string; email?: string }[])
+            : []
+          sendTournamentChampion({
+            champion: { name: match.winner.name, email: match.winner.email, players: winnerPlayers },
+            tournamentName: tournament.name,
+          }).catch(() => {})
+        }
+        if (loserParticipant && match.winner && tournament) {
+          const loserPlayers = Array.isArray(loserParticipant.players)
+            ? (loserParticipant.players as { name: string; email?: string }[])
+            : []
+          sendTournamentElimination({
+            loser: { name: loserParticipant.name, email: loserParticipant.email, players: loserPlayers },
+            winner: { name: match.winner.name },
+            tournamentName: tournament.name,
+            round: match.round,
+            isFinal: true,
           }).catch(() => {})
         }
       }
