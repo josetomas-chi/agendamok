@@ -279,6 +279,7 @@ export default function NewBookingModal({
   const [classCourtId, setClassCourtId] = useState(preselect?.courtId || courts[0]?.id || "")
   const [classRecurring, setClassRecurring] = useState(false)
   const [classRangeEnd, setClassRangeEnd] = useState("")
+  const [classDays, setClassDays] = useState<number[]>([])
 
   function handleSetBookingType(type: BookingType) {
     setBookingType(type)
@@ -299,12 +300,21 @@ export default function NewBookingModal({
   const activeCourts = allCourts.filter(c => c.isActive !== false)
   const selectedDayOfWeek = form.date ? new Date(form.date + "T00:00:00Z").getUTCDay() : -1
 
-  // Inicializar multiDays con el día de la fecha cuando cambia
+  // Inicializar multiDays y classDays con el día de la fecha cuando cambia
   useEffect(() => {
     if (selectedDayOfWeek >= 0) {
       setMultiDays(prev => prev.length === 0 ? [selectedDayOfWeek] : prev)
+      setClassDays(prev => prev.length === 0 ? [selectedDayOfWeek] : prev)
     }
   }, [selectedDayOfWeek])
+
+  function toggleClassDay(day: number) {
+    setClassDays(prev =>
+      prev.includes(day)
+        ? prev.length > 1 ? prev.filter(d => d !== day) : prev
+        : [...prev, day].sort((a, b) => a - b)
+    )
+  }
 
   function toggleMultiDay(day: number) {
     setMultiDays(prev =>
@@ -353,7 +363,10 @@ export default function NewBookingModal({
   const multiTotalPrice = multiSlots.reduce((sum, s) => sum + calcPrice(multiRefCourt, s.startTime, s.endTime, form.date), 0) * Math.max(1, multiCourtIds.length)
 
   // ── Recurrencia ───────────────────────────────────────────────────────────
-  const classSessionCount = classRecurring ? countOccurrences(form.date, classRangeEnd, selectedDayOfWeek) : 0
+  const effectiveClassDays = classDays.length > 0 ? classDays : [selectedDayOfWeek]
+  const classSessionCount = classRecurring
+    ? effectiveClassDays.reduce((sum, day) => sum + countOccurrences(form.date, classRangeEnd, day), 0)
+    : 0
   // Total de semanas sumando cada día seleccionado
   const multiSessionCount = multiRangeEnd
     ? multiDays.reduce((sum, day) => sum + countOccurrences(form.date, multiRangeEnd, day), 0)
@@ -424,24 +437,29 @@ export default function NewBookingModal({
           const [endHour, endMinute] = effectiveEndTime.split(":").map(Number)
           const durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute)
           if (durationMinutes <= 0) { toast.error("El horario de fin debe ser posterior al de inicio"); setSaving(false); return }
-          const r = await fetch(`/api/businesses/${businessId}/recurring-bookings`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              courtId: classCourtId, clientId, coachId: selectedCoachId,
-              dayOfWeek: selectedDayOfWeek, startHour, startMinute, durationMinutes,
-              rangeStart: form.date, rangeEnd: classRangeEnd, notes: form.notes || null,
-            }),
-          })
-          const d = await r.json()
-          if (r.ok) {
-            const msg = [`${d.created} clase${d.created !== 1 ? "s" : ""} creada${d.created !== 1 ? "s" : ""}`]
-            if (d.skipped?.length) msg.push(`${d.skipped.length} omitida${d.skipped.length !== 1 ? "s" : ""} por feriado`)
-            if (d.conflicts?.length) msg.push(`${d.conflicts.length} con conflicto`)
+
+          const days = effectiveClassDays
+          let totalCreated = 0, totalConflicts = 0
+          for (const day of days) {
+            const r = await fetch(`/api/businesses/${businessId}/recurring-bookings`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                courtId: classCourtId, clientId, coachId: selectedCoachId,
+                dayOfWeek: day, startHour, startMinute, durationMinutes,
+                rangeStart: form.date, rangeEnd: classRangeEnd, notes: form.notes || null,
+              }),
+            })
+            const d = await r.json()
+            if (r.ok) { totalCreated += d.created ?? 0; totalConflicts += d.conflicts?.length ?? 0 }
+          }
+          if (totalCreated > 0) {
+            const msg = [`${totalCreated} clase${totalCreated !== 1 ? "s" : ""} creada${totalCreated !== 1 ? "s" : ""}`]
+            if (totalConflicts > 0) msg.push(`${totalConflicts} con conflicto`)
             toast.success(msg.join(" · "))
             onSaved()
           } else {
-            toast.error(d.error || "Error al crear clases recurrentes")
+            toast.error("No se pudieron crear clases — verifica disponibilidad")
           }
         } else {
           const resolvedEnd = fixedSlots.length > 0 ? getSlotEnd(form.startTime) : form.endTime
@@ -999,15 +1017,28 @@ export default function NewBookingModal({
 
             {classRecurring && (
               <div className="rounded-xl p-3.5 space-y-3" style={{ border: `1px solid rgba(201,168,76,0.25)`, background: "rgba(201,168,76,0.04)" }}>
-                <div className="flex gap-1">
-                  {DAYS_SHORT.map((d, i) => (
-                    <div key={d} className="flex-1 h-7 rounded-lg flex items-center justify-center text-[9px] font-bold"
-                      style={i === selectedDayOfWeek
-                        ? { background: GOLD, color: "#fff" }
-                        : { background: "rgba(13,27,42,0.06)", color: "rgba(13,27,42,0.3)" }}>
-                      {d}
-                    </div>
-                  ))}
+                {/* Días interactivos */}
+                <div>
+                  <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Días</p>
+                  <div className="flex gap-1">
+                    {DAYS_SHORT.map((d, i) => {
+                      const isSelected = classDays.includes(i)
+                      return (
+                        <button key={d} type="button" onClick={() => toggleClassDay(i)}
+                          className="flex-1 h-8 rounded-md flex items-center justify-center text-[10px] font-bold transition-all"
+                          style={isSelected
+                            ? { background: NAVY, color: "#fff" }
+                            : { background: "rgba(13,27,42,0.05)", color: "rgba(13,27,42,0.35)", border: "1px solid rgba(13,27,42,0.08)" }}>
+                          {d}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {classDays.length > 1 && (
+                    <p className="text-[10px] mt-1 font-semibold" style={{ color: GOLD }}>
+                      {classDays.map(d => DAYS_ES[d]).join(" · ")}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha de término</p>
@@ -1019,7 +1050,7 @@ export default function NewBookingModal({
                   <div className="flex items-center justify-between text-xs rounded-lg px-3 py-2"
                     style={{ background: "rgba(201,168,76,0.1)", color: "#8a6520" }}>
                     <span>Se crearán</span>
-                    <span className="font-black">{classSessionCount} clases</span>
+                    <span className="font-black">{classSessionCount} clase{classSessionCount !== 1 ? "s" : ""}</span>
                   </div>
                 )}
               </div>
