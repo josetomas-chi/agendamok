@@ -55,6 +55,7 @@ export async function GET() {
       business: {
         select: {
           name: true, slug: true, businessType: true,
+          coverImage: true, primaryColor: true,
           loyaltyEnabled: true, loyaltyPointsPerVisit: true, loyaltyVipThreshold: true, segmentDiscounts: true,
         },
       },
@@ -88,7 +89,8 @@ export async function GET() {
         businessId: c.businessId,
         businessName: c.business.name,
         businessSlug: c.business.slug,
-        businessLogo: null,
+        businessCover: c.business.coverImage ?? null,
+        businessColor: c.business.primaryColor ?? "#38bdf8",
         loyaltyEnabled: c.business.loyaltyEnabled ?? true,
         loyaltyPoints: c.loyaltyPoints,
         creditBalance: c.creditBalance,

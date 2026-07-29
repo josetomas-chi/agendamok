@@ -13,7 +13,8 @@ import { signOut } from "next-auth/react"
 import { parseISO } from "date-fns"
 
 type BusinessBenefit = {
-  businessId: string; businessName: string; businessSlug: string; businessLogo: string | null
+  businessId: string; businessName: string; businessSlug: string
+  businessCover: string | null; businessColor: string
   loyaltyEnabled: boolean
   loyaltyPoints: number; creditBalance: number; segment: string
   segmentDiscount: number; pointsPerVisit: number; vipThreshold: number; ptsToNext: number
@@ -1767,11 +1768,20 @@ export default function ProfileContent() {
                   onMouseLeave={e => (e.currentTarget.style.borderColor = BD)}
                 >
                   <div style={{
-                    width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-                    background: SB,
+                    width: 44, height: 44, borderRadius: 12, flexShrink: 0, overflow: "hidden",
+                    background: b.businessCover ? "transparent" : (b.businessColor + "18"),
+                    border: `1.5px solid ${b.businessColor}30`,
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
-                    <Building2 style={{ width: 18, height: 18, color: ACCENT }} />
+                    {b.businessCover ? (
+                      <img
+                        src={b.businessCover}
+                        alt={b.businessName}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <Building2 style={{ width: 20, height: 20, color: b.businessColor }} />
+                    )}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 14, fontWeight: 700, color: TXT }}>{b.businessName}</p>
