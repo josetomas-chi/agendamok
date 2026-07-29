@@ -355,7 +355,7 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold" style={{ color: "#0d1b2a" }}>{b.court.name}{b.court.sport ? ` · ${b.court.sport}` : ""}</p>
                       <p className="text-xs mt-0.5" style={{ color: "rgba(13,27,42,0.4)" }}>
-                        {b.client?.name || "Sin cliente"}{b.coach ? ` · ${b.coach.name}` : ""}
+                        {b.client ? [b.client.name, b.client.lastName].filter(Boolean).join(" ") : "Sin cliente"}{b.coach ? ` · ${b.coach.name}` : ""}
                       </p>
                     </div>
                     <div className="text-right">
@@ -824,7 +824,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                           </div>
                           {/* Fila 2: nombre cliente */}
                           <p className="text-[11px] font-black leading-tight truncate mt-0.5" style={{ color: "#0d1b2a" }}>
-                            {b.client?.name || "Sin cliente"}
+                            {b.client ? [b.client.name, b.client.lastName].filter(Boolean).join(" ") : "Sin cliente"}
                           </p>
                           {/* Fila 3: coach (si hay) */}
                           {b.coach && (
@@ -1286,7 +1286,7 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                 <div className="flex items-center justify-between">
                   <span className="text-xs uppercase tracking-wide font-semibold" style={{ color: "rgba(13,27,42,0.4)" }}>Cliente</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold" style={{ color: NAVY }}>{viewClient?.name || "Sin cliente"}</span>
+                    <span className="text-sm font-semibold" style={{ color: NAVY }}>{viewClient ? [viewClient.name, viewClient.lastName].filter(Boolean).join(" ") : "Sin cliente"}</span>
                     {viewClient?.phone && (() => {
                       const phone = viewClient.phone.replace(/\D/g, "")
                       const wa = phone.startsWith("56") ? phone : `56${phone}`
