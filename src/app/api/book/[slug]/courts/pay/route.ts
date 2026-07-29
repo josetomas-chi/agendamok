@@ -6,7 +6,7 @@ import { sendCourtBookingConfirmation } from "@/lib/email"
 
 type Params = { params: Promise<{ slug: string }> }
 
-const PENDING_EXPIRY_MS = 30 * 60 * 1000
+const PENDING_EXPIRY_MS = 15 * 60 * 1000
 
 const DAY_NAMES = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]
 

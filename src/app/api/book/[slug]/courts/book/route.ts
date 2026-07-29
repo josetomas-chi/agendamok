@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth"
 import { addMinutes, parseISO } from "date-fns"
 import { sendCourtBookingConfirmation } from "@/lib/email"
 
-const PENDING_EXPIRY_MS = 30 * 60 * 1000
+const PENDING_EXPIRY_MS = 15 * 60 * 1000
 
 const DAY_NAMES = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]
 
