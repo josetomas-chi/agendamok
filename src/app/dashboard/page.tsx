@@ -10,28 +10,44 @@ export default async function DashboardPage() {
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
 
-  const business = await prisma.business.findUnique({
-    where: { ownerId: session.user.id },
-    include: {
-      services: { where: { deletedAt: null, isActive: true }, select: { id: true, name: true, duration: true } },
-      staff: {
-        where: { deletedAt: null },
-        include: {
-          user: { select: { name: true, image: true } },
-          schedules: { where: { isWorking: true }, select: { id: true }, take: 1 },
-        },
-      },
-      clients: { where: { deletedAt: null }, select: { id: true, name: true } },
-      locations: { where: { deletedAt: null, isActive: true }, select: { id: true, name: true } },
-      _count: {
-        select: {
-          appointments: { where: { deletedAt: null, status: "CONFIRMED" } },
-          clients: { where: { deletedAt: null } },
-          staff: { where: { deletedAt: null } },
-        },
+  const businessSelect = {
+    services: { where: { deletedAt: null, isActive: true }, select: { id: true, name: true, duration: true } },
+    staff: {
+      where: { deletedAt: null },
+      include: {
+        user: { select: { name: true, image: true } },
+        schedules: { where: { isWorking: true }, select: { id: true }, take: 1 },
       },
     },
+    clients: { where: { deletedAt: null }, select: { id: true, name: true } },
+    locations: { where: { deletedAt: null, isActive: true }, select: { id: true, name: true } },
+    _count: {
+      select: {
+        appointments: { where: { deletedAt: null, status: "CONFIRMED" } },
+        clients: { where: { deletedAt: null } },
+        staff: { where: { deletedAt: null } },
+      },
+    },
+  } as const
+
+  let business = await prisma.business.findUnique({
+    where: { ownerId: session.user.id },
+    include: businessSelect,
   })
+
+  // Recepcionista / miembro — buscar por BusinessMember
+  if (!business) {
+    const member = await prisma.businessMember.findFirst({
+      where: { userId: session.user.id, acceptedAt: { not: null } },
+      select: { businessId: true },
+    })
+    if (member) {
+      business = await prisma.business.findUnique({
+        where: { id: member.businessId },
+        include: businessSelect,
+      })
+    }
+  }
 
   if (!business) redirect("/onboarding")
   if (business.businessType === "SPORTS_CLUB") redirect("/dashboard/club")
