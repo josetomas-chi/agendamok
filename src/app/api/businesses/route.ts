@@ -6,11 +6,22 @@ import { z } from "zod"
 export async function GET() {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json([], { status: 401 })
-  const businesses = await prisma.business.findMany({
+
+  // Owner
+  const owned = await prisma.business.findMany({
     where: { ownerId: session.user.id, deletedAt: null },
     select: { id: true, name: true, slug: true },
   })
-  return NextResponse.json(businesses)
+  if (owned.length > 0) return NextResponse.json(owned)
+
+  // Miembro (recepcionista / admin invitado)
+  const member = await prisma.businessMember.findFirst({
+    where: { userId: session.user.id, acceptedAt: { not: null } },
+    include: { business: { select: { id: true, name: true, slug: true } } },
+  })
+  if (member) return NextResponse.json([member.business])
+
+  return NextResponse.json([])
 }
 
 const schema = z.object({
