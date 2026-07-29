@@ -38,7 +38,8 @@ type Quote = {
 
 type Client = { id: string; name: string }
 type Service = { id: string; name: string; price: number; duration: number }
-type Court = { id: string; name: string; color: string; sport: string }
+type PricingRule = { id: string; name: string; price: number; fixedSlots: string[]; days: number[] }
+type Court = { id: string; name: string; color: string; sport: string; pricingRules: PricingRule[] }
 
 const STATUS_LABELS: Record<Quote["status"], string> = {
   DRAFT: "Borrador", SENT: "Enviado", ACCEPTED: "Aceptado", REJECTED: "Rechazado", EXPIRED: "Vencido",
@@ -105,7 +106,7 @@ export default function QuotesPage() {
 
   function openNew() {
     setEditing(null)
-    setForm({ clientId: "", notes: "", discount: 0, validUntil: "", items: [{ ...EMPTY_ITEM }] })
+    setForm({ clientId: "", notes: "", discount: 0, validUntil: "", items: isSportsClub ? [] : [{ ...EMPTY_ITEM }] })
     setOpen(true)
   }
 
@@ -123,8 +124,8 @@ export default function QuotesPage() {
   }
 
   async function handleSave() {
-    const validItems = form.items.filter(i => i.description.trim())
-    if (validItems.length === 0) { toast.error("Agrega al menos un ítem"); return }
+    const validItems = form.items.filter(i => i.description.trim() || i.courtId)
+    if (validItems.length === 0) { toast.error("Agrega al menos un ítem o instalación"); return }
     setSaving(true)
     const url = editing
       ? `/api/businesses/${businessId}/quotes/${editing.id}`
@@ -201,12 +202,26 @@ export default function QuotesPage() {
     })
   }
 
-  function fillFromCourt(idx: number, courtId: string) {
-    const court = courts.find(c => c.id === courtId)
-    if (!court) return
+  function addCourtItem(court: Court) {
+    const rule = court.pricingRules[0]
+    const price = rule ? Number(rule.price) : 0
+    const duration = rule?.fixedSlots?.[0] ? `${rule.fixedSlots[0]} min` : ""
+    const desc = duration ? `${court.name} · ${duration}` : court.name
+    setForm(f => ({
+      ...f,
+      items: [...f.items.filter(i => i.description.trim() || i.courtId), {
+        description: desc,
+        quantity: 1,
+        unitPrice: price,
+        courtId: court.id,
+      }],
+    }))
+  }
+
+  function updateCourtItem(idx: number, field: keyof QuoteItem, value: string | number) {
     setForm(f => {
       const items = [...f.items]
-      items[idx] = { ...items[idx], courtId, serviceId: undefined, description: court.name }
+      items[idx] = { ...items[idx], [field]: value }
       return { ...f, items }
     })
   }
@@ -345,7 +360,7 @@ export default function QuotesPage() {
           form={form} setForm={setForm} saving={saving} onSave={handleSave}
           clients={clients} services={services} courts={courts} isSportsClub={isSportsClub}
           addItem={addItem} updateItem={updateItem} removeItem={removeItem}
-          fillFromService={fillFromService} fillFromCourt={fillFromCourt}
+          fillFromService={fillFromService} addCourtItem={addCourtItem} updateCourtItem={updateCourtItem}
         />
       </div>
     )
@@ -441,7 +456,7 @@ export default function QuotesPage() {
         form={form} setForm={setForm} saving={saving} onSave={handleSave}
         clients={clients} services={services} courts={courts} isSportsClub={isSportsClub}
         addItem={addItem} updateItem={updateItem} removeItem={removeItem}
-        fillFromService={fillFromService} fillFromCourt={fillFromCourt}
+        fillFromService={fillFromService} addCourtItem={addCourtItem} updateCourtItem={updateCourtItem}
       />
     </div>
   )
@@ -454,9 +469,125 @@ type FormState = {
   items: QuoteItem[]
 }
 
+function CourtItemRow({
+  item, idx, court, updateCourtItem, removeItem,
+}: {
+  item: QuoteItem
+  idx: number
+  court: Court
+  updateCourtItem: (idx: number, field: keyof QuoteItem, value: string | number) => void
+  removeItem: (idx: number) => void
+}) {
+  const rules = court.pricingRules ?? []
+  const selectedRule = rules.find(r => item.description.includes(r.name)) ?? rules[0]
+
+  function applyRule(ruleId: string) {
+    const rule = rules.find(r => r.id === ruleId)
+    if (!rule) return
+    const duration = rule.fixedSlots?.[0] ? `${rule.fixedSlots[0]} min` : ""
+    const desc = duration ? `${court.name} · ${rule.name} · ${duration}` : `${court.name} · ${rule.name}`
+    updateCourtItem(idx, "description", desc)
+    updateCourtItem(idx, "unitPrice", Number(rule.price))
+  }
+
+  function applySlot(slot: string) {
+    const base = item.description.replace(/·\s*\d+ min.*$/, "").trim()
+    updateCourtItem(idx, "description", `${base} · ${slot} min`)
+  }
+
+  const subtotal = item.quantity * item.unitPrice
+
+  return (
+    <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] overflow-hidden">
+      {/* Court header */}
+      <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-white/[0.06]"
+        style={{ borderLeft: `3px solid ${court.color}` }}>
+        <span className="text-sm font-semibold text-white flex-1">{court.name}</span>
+        <span className="text-[10px] text-white/30 uppercase tracking-wide">{court.sport}</span>
+        <button onClick={() => removeItem(idx)} className="text-white/20 hover:text-red-400 transition-colors ml-1">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <div className="p-3 space-y-2.5">
+        {/* Pricing rule selector */}
+        {rules.length > 0 && (
+          <div className="space-y-1">
+            <label className="text-[10px] text-white/35 uppercase tracking-wide font-medium">Tarifa</label>
+            <div className="flex flex-wrap gap-1.5">
+              {rules.map(rule => {
+                const isActive = selectedRule?.id === rule.id
+                return (
+                  <button key={rule.id} type="button" onClick={() => applyRule(rule.id)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                    style={isActive
+                      ? { background: court.color, color: "#0d1b2a" }
+                      : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    {rule.name} — ${Number(rule.price).toLocaleString("es-CL")}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Duration slots */}
+        {selectedRule?.fixedSlots?.length > 0 && (
+          <div className="space-y-1">
+            <label className="text-[10px] text-white/35 uppercase tracking-wide font-medium">Duración</label>
+            <div className="flex gap-1.5 flex-wrap">
+              {selectedRule.fixedSlots.map(slot => {
+                const isActive = item.description.includes(`${slot} min`)
+                return (
+                  <button key={slot} type="button" onClick={() => applySlot(slot)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                    style={isActive
+                      ? { background: "rgba(56,189,248,0.15)", color: "#38bdf8", border: "1px solid rgba(56,189,248,0.3)" }
+                      : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.4)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    {slot} min
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Description (editable) */}
+        <input value={item.description} onChange={e => updateCourtItem(idx, "description", e.target.value)}
+          placeholder="Descripción..."
+          className="w-full h-8 rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 text-xs text-white/70 placeholder:text-white/20 focus:outline-none focus:border-sky-500/50 transition-colors" />
+
+        {/* Sessions + price + subtotal */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-1">
+            <label className="text-[10px] text-white/35 whitespace-nowrap">Sesiones</label>
+            <input type="number" min={1} value={item.quantity} onFocus={e => e.target.select()}
+              onChange={e => updateCourtItem(idx, "quantity", parseInt(e.target.value) || 1)}
+              className="w-16 h-8 rounded-lg border border-white/[0.08] bg-white/[0.05] px-2 text-sm text-white text-center focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+          </div>
+          <div className="flex items-center gap-2 flex-1">
+            <label className="text-[10px] text-white/35 whitespace-nowrap">Precio unit.</label>
+            <div className="relative flex-1">
+              <span className="absolute left-2.5 top-1.5 text-xs text-white/30">$</span>
+              <input type="number" min={0} value={item.unitPrice} onFocus={e => e.target.select()}
+                onChange={e => updateCourtItem(idx, "unitPrice", parseFloat(e.target.value) || 0)}
+                className="w-full h-8 rounded-lg border border-white/[0.08] bg-white/[0.05] pl-6 pr-2 text-sm text-white text-right focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+            </div>
+          </div>
+          <div className="text-right flex-shrink-0 min-w-[80px]">
+            <p className="text-[10px] text-white/30">Subtotal</p>
+            <p className="text-sm font-semibold text-white">${subtotal.toLocaleString("es-CL")}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function QuoteFormDialog({
   open, onOpenChange, editing, form, setForm, saving, onSave,
-  clients, services, courts, isSportsClub, addItem, updateItem, removeItem, fillFromService, fillFromCourt,
+  clients, services, courts, isSportsClub,
+  addItem, updateItem, removeItem, fillFromService, addCourtItem, updateCourtItem,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
@@ -473,16 +604,21 @@ function QuoteFormDialog({
   updateItem: (idx: number, field: keyof QuoteItem, value: string | number) => void
   removeItem: (idx: number) => void
   fillFromService: (idx: number, serviceId: string) => void
-  fillFromCourt: (idx: number, courtId: string) => void
+  addCourtItem: (court: Court) => void
+  updateCourtItem: (idx: number, field: keyof QuoteItem, value: string | number) => void
 }) {
   const subtotal = form.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0)
   const total = subtotal - (subtotal * form.discount) / 100
 
+  const courtItems = form.items.map((item, idx) => ({ item, idx })).filter(({ item }) => item.courtId)
+  const freeItems = form.items.map((item, idx) => ({ item, idx })).filter(({ item }) => !item.courtId)
+  const activeCourts = courts.filter(c => !form.items.find(i => i.courtId === c.id))
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden border-white/[0.08]">
+      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden border-white/[0.08]">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-4">
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/[0.06]">
           <div>
             <h2 className="text-[15px] font-semibold text-white">
               {editing ? `Presupuesto #${String(editing.number).padStart(4, "0")}` : "Nuevo presupuesto"}
@@ -494,110 +630,136 @@ function QuoteFormDialog({
           </button>
         </div>
 
-        <div className="px-5 pb-5 space-y-3 max-h-[80vh] overflow-y-auto">
+        <div className="px-5 pb-5 space-y-4 max-h-[82vh] overflow-y-auto pt-4">
           {/* Cliente + Válido hasta */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Cliente</label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">Cliente</label>
               <div className="relative">
                 <select value={form.clientId} onChange={e => setForm(f => ({ ...f, clientId: e.target.value }))}
-                  className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 transition-colors"
+                  className="w-full h-10 rounded-xl border border-white/[0.08] bg-white/[0.05] px-3 pr-9 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 transition-colors"
                   style={{ colorScheme: "dark" }}>
                   <option value="" style={{ backgroundColor: "#28282c" }}>Sin cliente</option>
                   {clients.map(c => <option key={c.id} value={c.id} style={{ backgroundColor: "#28282c" }}>{c.name}</option>)}
                 </select>
-                <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-white/30 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-white/30 pointer-events-none" />
               </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Válido hasta</label>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">Válido hasta</label>
               <input type="date" value={form.validUntil} onChange={e => setForm(f => ({ ...f, validUntil: e.target.value }))}
-                className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white focus:outline-none focus:border-sky-500/60 transition-colors"
+                className="w-full h-10 rounded-xl border border-white/[0.08] bg-white/[0.05] px-3 text-sm text-white focus:outline-none focus:border-sky-500/60 transition-colors"
                 style={{ colorScheme: "dark" }} />
             </div>
           </div>
 
-          {/* Ítems */}
+          {/* ── SPORTS CLUB: court picker + court items ─────────────────── */}
+          {isSportsClub && (
+            <div className="space-y-3">
+              <label className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">Instalaciones</label>
+
+              {/* Court buttons — only show courts not yet added */}
+              {activeCourts.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {activeCourts.map(court => (
+                    <button key={court.id} type="button" onClick={() => addCourtItem(court)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-90 active:scale-95"
+                      style={{ background: `${court.color}18`, border: `1px solid ${court.color}40`, color: court.color }}>
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: court.color }} />
+                      {court.name}
+                      <Plus className="w-3.5 h-3.5 opacity-60" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Court items */}
+              {courtItems.length > 0 && (
+                <div className="space-y-2">
+                  {courtItems.map(({ item, idx }) => {
+                    const court = courts.find(c => c.id === item.courtId)
+                    if (!court) return null
+                    return (
+                      <CourtItemRow key={idx} item={item} idx={idx} court={court}
+                        updateCourtItem={updateCourtItem} removeItem={removeItem} />
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Ítems adicionales / regulares ───────────────────────────── */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Ítems *</label>
+              <label className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">
+                {isSportsClub ? "Ítems adicionales" : "Ítems"}
+              </label>
               <button onClick={addItem} className="flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 transition-colors">
                 <Plus className="w-3.5 h-3.5" /> Agregar ítem
               </button>
             </div>
-            <div className="grid grid-cols-12 gap-1.5 text-[11px] text-white/25 px-1">
-              <span className="col-span-5">Descripción</span>
-              <span className="col-span-3">{isSportsClub ? "Cancha" : "Servicio"} (opcional)</span>
-              <span className="col-span-1 text-right">Cant.</span>
-              <span className="col-span-2 text-right">Precio</span>
-              <span className="col-span-1" />
-            </div>
-            {form.items.map((item, idx) => (
-              <div key={idx} className="grid grid-cols-12 gap-1.5 items-center">
-                <div className="col-span-5">
-                  <input value={item.description} onChange={e => updateItem(idx, "description", e.target.value)}
-                    placeholder="Descripción..."
-                    className="w-full h-9 rounded-xl border border-white/[0.08] bg-white/[0.05] px-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-sky-500/60 transition-colors" />
-                </div>
-                <div className="col-span-3 relative">
-                  {isSportsClub ? (
-                    <>
-                      <select value={item.courtId || ""} onChange={e => fillFromCourt(idx, e.target.value)}
-                        className="w-full h-9 rounded-xl border border-white/[0.08] bg-white/[0.05] px-2 pr-7 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 transition-colors"
-                        style={{ colorScheme: "dark" }}>
-                        <option value="" style={{ backgroundColor: "#28282c" }}>—</option>
-                        {courts.map(c => <option key={c.id} value={c.id} style={{ backgroundColor: "#28282c" }}>{c.name}</option>)}
-                      </select>
-                      <ChevronDown className="absolute right-2 top-2.5 w-3.5 h-3.5 text-white/30 pointer-events-none" />
-                    </>
-                  ) : (
-                    <>
+
+            {(!isSportsClub ? form.items.map((item, idx) => ({ item, idx })) : freeItems).map(({ item, idx }) => (
+              <div key={idx} className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 space-y-2">
+                <input value={item.description} onChange={e => updateItem(idx, "description", e.target.value)}
+                  placeholder="Descripción del ítem..."
+                  className="w-full h-9 rounded-lg border border-white/[0.06] bg-white/[0.05] px-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-sky-500/60 transition-colors" />
+                <div className="flex gap-2 items-center">
+                  {!isSportsClub && (
+                    <div className="relative flex-1">
                       <select value={item.serviceId || ""} onChange={e => fillFromService(idx, e.target.value)}
-                        className="w-full h-9 rounded-xl border border-white/[0.08] bg-white/[0.05] px-2 pr-7 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 transition-colors"
+                        className="w-full h-8 rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 pr-8 text-xs text-white appearance-none focus:outline-none focus:border-sky-500/60"
                         style={{ colorScheme: "dark" }}>
-                        <option value="" style={{ backgroundColor: "#28282c" }}>—</option>
+                        <option value="" style={{ backgroundColor: "#28282c" }}>Servicio (opcional)</option>
                         {services.map(s => <option key={s.id} value={s.id} style={{ backgroundColor: "#28282c" }}>{s.name}</option>)}
                       </select>
-                      <ChevronDown className="absolute right-2 top-2.5 w-3.5 h-3.5 text-white/30 pointer-events-none" />
-                    </>
+                      <ChevronDown className="absolute right-2 top-2 w-3.5 h-3.5 text-white/30 pointer-events-none" />
+                    </div>
                   )}
-                </div>
-                <div className="col-span-1">
-                  <input type="number" min={1} value={item.quantity} onFocus={e => e.target.select()}
-                    onChange={e => updateItem(idx, "quantity", parseInt(e.target.value) || 1)}
-                    className="w-full h-9 rounded-xl border border-white/[0.08] bg-white/[0.05] px-2 text-sm text-white text-right focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
-                </div>
-                <div className="col-span-2">
-                  <input type="number" min={0} value={item.unitPrice} onFocus={e => e.target.select()}
-                    onChange={e => updateItem(idx, "unitPrice", parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                    className="w-full h-9 rounded-xl border border-white/[0.08] bg-white/[0.05] px-2 text-sm text-white text-right focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
-                </div>
-                <div className="col-span-1 flex justify-end">
-                  {form.items.length > 1 && (
-                    <button onClick={() => removeItem(idx)} className="text-white/20 hover:text-red-400 transition-colors">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-[10px] text-white/30 whitespace-nowrap">Cant.</label>
+                    <input type="number" min={1} value={item.quantity} onFocus={e => e.target.select()}
+                      onChange={e => updateItem(idx, "quantity", parseInt(e.target.value) || 1)}
+                      className="w-14 h-8 rounded-lg border border-white/[0.08] bg-white/[0.05] px-2 text-sm text-white text-center focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-1">
+                    <label className="text-[10px] text-white/30 whitespace-nowrap">$ unit.</label>
+                    <input type="number" min={0} value={item.unitPrice} onFocus={e => e.target.select()}
+                      onChange={e => updateItem(idx, "unitPrice", parseFloat(e.target.value) || 0)}
+                      className="w-full h-8 rounded-lg border border-white/[0.08] bg-white/[0.05] px-2 text-sm text-white text-right focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                  </div>
+                  <span className="text-xs font-semibold text-white/60 min-w-[64px] text-right">
+                    ${(item.quantity * item.unitPrice).toLocaleString("es-CL")}
+                  </span>
+                  <button onClick={() => removeItem(idx)} className="text-white/20 hover:text-red-400 transition-colors flex-shrink-0">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
+
+            {isSportsClub && freeItems.length === 0 && (
+              <button onClick={addItem}
+                className="w-full h-9 rounded-xl border border-dashed border-white/10 text-white/25 text-xs hover:border-white/20 hover:text-white/40 transition-colors flex items-center justify-center gap-1.5">
+                <Plus className="w-3.5 h-3.5" /> Catering, equipos, transporte…
+              </button>
+            )}
           </div>
 
           {/* Descuento + Notas */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Descuento (%)</label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">Descuento (%)</label>
               <input type="number" min={0} max={100} value={form.discount} onFocus={e => e.target.select()}
                 onChange={e => setForm(f => ({ ...f, discount: parseFloat(e.target.value) || 0 }))}
-                placeholder="0"
-                className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                className="w-full h-10 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-white/50 uppercase tracking-wide">Notas internas</label>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">Notas</label>
               <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                 placeholder="Opcional..."
-                className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-sky-500/60 transition-colors" />
+                className="w-full h-10 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-sky-500/60 transition-colors" />
             </div>
           </div>
 
@@ -612,7 +774,7 @@ function QuoteFormDialog({
                 <span>−${(subtotal * form.discount / 100).toLocaleString("es-CL")}</span>
               </div>
             )}
-            <div className="flex justify-between font-semibold pt-1.5 border-t border-white/[0.08]">
+            <div className="flex justify-between font-bold text-base pt-1.5 border-t border-white/[0.08]">
               <span>Total</span>
               <span className="text-sky-300">${total.toLocaleString("es-CL")}</span>
             </div>
