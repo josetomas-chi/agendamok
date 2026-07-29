@@ -588,23 +588,10 @@ export default function ProfileContent() {
             <span style={{ color: LTXT, fontSize: 13, fontWeight: 900, letterSpacing: "0.05em" }}>
               Agenda<span style={{ color: ACCENT }}>Mok</span>
             </span>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <button
-                onClick={() => handleNewBooking(businessBenefits)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 5,
-                  padding: "6px 12px", borderRadius: 8,
-                  background: ACCENT, color: "#0d1b2a",
-                  fontSize: 12, fontWeight: 800, cursor: "pointer", border: "none",
-                }}>
-                <Plus style={{ width: 13, height: 13 }} />
-                Reservar
-              </button>
-              <button onClick={() => signOut({ callbackUrl: "/login" })}
-                style={{ display: "flex", alignItems: "center", gap: 6, color: LMUTED, fontSize: 12, background: "transparent", border: "none", cursor: "pointer" }}>
-                <LogOut style={{ width: 13, height: 13 }} />Salir
-              </button>
-            </div>
+            <button onClick={() => signOut({ callbackUrl: "/login" })}
+              style={{ display: "flex", alignItems: "center", gap: 5, color: LMUTED, fontSize: 12, background: "transparent", border: "none", cursor: "pointer" }}>
+              <LogOut style={{ width: 13, height: 13 }} />Salir
+            </button>
           </div>
 
           <div style={{ padding: "14px 16px 16px", display: "flex", alignItems: "center", gap: 14 }}>
@@ -856,45 +843,66 @@ export default function ProfileContent() {
                     const hoursNotice = b.business.cancellationHoursNotice ?? null
                     const { allowed, reason } = canCancel(b.startTime, hoursNotice)
                     const isCancelling = cancellingId === b.id
-                    const dotColor = b.type === "court" ? b.court.color : b.service.color
+                    const accentColor = b.type === "court" ? b.court.color : b.service.color
+                    const label = dateLabel(b.startTime)
+                    const isToday = label === "Hoy"
+                    const isTomorrow = label === "Mañana"
+                    const badgeBg = isToday ? "rgba(34,197,94,0.15)" : isTomorrow ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.07)"
+                    const badgeColor = isToday ? "#4ade80" : isTomorrow ? "#fbbf24" : "rgba(255,255,255,0.45)"
+                    const badgeBorder = isToday ? "rgba(34,197,94,0.3)" : isTomorrow ? "rgba(251,191,36,0.25)" : "rgba(255,255,255,0.1)"
+                    const name = b.type === "court" ? b.court.name : b.service.name
+                    const endTime = format(new Date(b.endTime), "HH:mm")
 
                     return (
                       <div key={b.id} style={{
-                        background: NAVY_C, border: `1px solid ${GOLD_BD}`,
-                        borderRadius: 14, padding: "14px 16px",
+                        borderRadius: 16, overflow: "hidden",
+                        background: "linear-gradient(135deg, #131f2e 0%, #0f1a28 100%)",
+                        border: "1px solid rgba(255,255,255,0.07)",
+                        boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
                       }}>
-                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
-                            <p style={{ color: LTXT, fontSize: 14, fontWeight: 700 }} className="truncate">
-                              {b.type === "court" ? b.court.name : b.service.name}
-                            </p>
-                          </div>
-                          <span style={{
-                            fontSize: 11, fontWeight: 700, flexShrink: 0,
-                            padding: "2px 10px", borderRadius: 100,
-                            background: GOLD_BG, color: GOLD,
-                            border: `1px solid rgba(201,146,43,0.3)`,
-                          }}>
-                            {dateLabel(b.startTime)}
-                          </span>
-                        </div>
+                        {/* Colored top strip */}
+                        <div style={{ height: 3, background: accentColor, opacity: 0.85 }} />
 
-                        <div style={{ display: "flex", gap: 16, marginTop: 6, fontSize: 11, color: LMUTED, alignItems: "center" }}>
-                          <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                            <Clock style={{ width: 11, height: 11 }} />
-                            {format(new Date(b.startTime), "HH:mm")}
-                          </span>
-                          <span>{b.business.name}</span>
-                          {b.type === "appt" && b.staff?.user.name && <span>{b.staff.user.name}</span>}
-                          {b.type === "court" && b.price > 0 && (
-                            <span style={{ marginLeft: "auto", color: GOLD, fontWeight: 700 }}>
-                              ${Number(b.price).toLocaleString("es-CL")}
+                        <div style={{ padding: "14px 16px 0" }}>
+                          {/* Header: name + date badge */}
+                          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                            <div style={{ minWidth: 0 }}>
+                              <p style={{ color: "#fff", fontSize: 15, fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.01em" }} className="truncate">
+                                {name}
+                              </p>
+                              <p style={{ color: "rgba(255,255,255,0.38)", fontSize: 11, marginTop: 3 }}>
+                                {b.business.name}
+                                {b.type === "appt" && b.staff?.user.name && ` · ${b.staff.user.name}`}
+                              </p>
+                            </div>
+                            <span style={{
+                              flexShrink: 0, fontSize: 11, fontWeight: 700,
+                              padding: "3px 10px", borderRadius: 100,
+                              background: badgeBg, color: badgeColor,
+                              border: `1px solid ${badgeBorder}`,
+                              letterSpacing: "0.01em",
+                            }}>
+                              {label}
                             </span>
-                          )}
+                          </div>
+
+                          {/* Time + Price */}
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.45)", fontSize: 12 }}>
+                              <Clock style={{ width: 12, height: 12 }} />
+                              <span style={{ fontWeight: 600 }}>
+                                {format(new Date(b.startTime), "HH:mm")} – {endTime} hrs
+                              </span>
+                            </div>
+                            {b.type === "court" && Number(b.price) > 0 && (
+                              <span style={{ fontSize: 16, fontWeight: 900, color: accentColor, letterSpacing: "-0.02em" }}>
+                                ${Number(b.price).toLocaleString("es-CL")}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
-                        {/* Transfer voucher section (court bookings only) */}
+                        {/* Transfer voucher section */}
                         {b.type === "court" && (() => {
                           const biz = businessBenefits.find(bz => bz.businessSlug === b.business.slug)
                           const canTransfer = biz?.allowTransfer ?? false
@@ -903,23 +911,21 @@ export default function ProfileContent() {
                           const isPaid = paid >= price && price > 0
                           const hasVoucher = !!(b.transferVoucher || inlineVoucherUrls[b.id])
                           const isUploading = inlineVoucherUploading === b.id
-
                           if (!canTransfer && !hasVoucher) return null
-
                           return (
-                            <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid rgba(255,255,255,0.06)` }}>
+                            <div style={{ margin: "12px 16px 0", paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
                               {isPaid ? (
-                                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#4ade80", fontWeight: 700 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "#4ade80" }}>
                                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                  Pago confirmado por el club
+                                  Pago confirmado
                                 </div>
                               ) : hasVoucher ? (
-                                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "rgba(251,191,36,0.9)", fontWeight: 600 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#fbbf24", fontWeight: 600 }}>
                                   <Clock style={{ width: 11, height: 11 }} />
-                                  Comprobante enviado · esperando confirmación del club
+                                  Comprobante enviado · pendiente de confirmación
                                 </div>
                               ) : (
-                                <label style={{ cursor: isUploading ? "wait" : "pointer", display: "block" }}>
+                                <label style={{ cursor: isUploading ? "wait" : "pointer" }}>
                                   <input type="file" accept="image/*" className="hidden" disabled={isUploading}
                                     onChange={e => {
                                       const file = e.target.files?.[0]
@@ -928,14 +934,14 @@ export default function ProfileContent() {
                                   <div style={{
                                     display: "inline-flex", alignItems: "center", gap: 6,
                                     fontSize: 11, fontWeight: 700,
-                                    padding: "5px 12px", borderRadius: 8,
-                                    background: "rgba(56,189,248,0.12)", color: ACCENT,
+                                    padding: "6px 12px", borderRadius: 8,
+                                    background: "rgba(56,189,248,0.1)", color: ACCENT,
                                     border: "1px solid rgba(56,189,248,0.2)",
                                     opacity: isUploading ? 0.6 : 1,
                                   }}>
                                     {isUploading
-                                      ? <><Loader2 style={{ width: 11, height: 11 }} className="animate-spin" />Subiendo...</>
-                                      : <>🏦 Subir comprobante de pago</>}
+                                      ? <><Loader2 style={{ width: 11, height: 11 }} className="animate-spin" />Subiendo…</>
+                                      : <>📎 Subir comprobante</>}
                                   </div>
                                 </label>
                               )}
@@ -943,10 +949,11 @@ export default function ProfileContent() {
                           )
                         })()}
 
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, gap: 8 }}>
+                        {/* Footer: cancel reason + button */}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px 14px", gap: 8, marginTop: 4 }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             {!allowed && reason && (
-                              <p style={{ fontSize: 10, color: "rgba(248,113,113,0.7)", display: "flex", alignItems: "center", gap: 3 }}>
+                              <p style={{ fontSize: 10, color: "rgba(248,113,113,0.6)", display: "flex", alignItems: "center", gap: 3 }}>
                                 <AlertCircle style={{ width: 10, height: 10 }} />{reason}
                               </p>
                             )}
@@ -954,22 +961,19 @@ export default function ProfileContent() {
                           <button
                             onClick={() => {
                               if (!allowed || isCancelling) return
-                              const name = b.type === "court" ? b.court.name : b.service.name
                               const paidAmount = b.type === "court" ? (Number(b.paidAmount) ?? 0) : 0
                               const paidOnline = b.type === "court" ? (b.paidOnline ?? false) : false
                               setConfirmCancel({ type: b.type, id: b.id, paidAmount, paidOnline, name })
                             }}
                             disabled={!allowed || isCancelling}
-                            style={allowed ? {
-                              display: "flex", alignItems: "center", gap: 5,
-                              fontSize: 11, fontWeight: 700, padding: "6px 12px", borderRadius: 8,
-                              background: "rgba(220,38,38,0.15)", color: "#f87171",
-                              border: "1px solid rgba(220,38,38,0.25)", cursor: "pointer", flexShrink: 0,
-                            } : {
-                              display: "flex", alignItems: "center", gap: 5,
-                              fontSize: 11, fontWeight: 700, padding: "6px 12px", borderRadius: 8,
-                              background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.2)",
-                              border: "1px solid rgba(255,255,255,0.07)", cursor: "not-allowed", flexShrink: 0,
+                            style={{
+                              display: "flex", alignItems: "center", gap: 4,
+                              fontSize: 11, fontWeight: 600, padding: "5px 10px", borderRadius: 7,
+                              background: "transparent",
+                              color: allowed ? "rgba(248,113,113,0.7)" : "rgba(255,255,255,0.15)",
+                              border: `1px solid ${allowed ? "rgba(248,113,113,0.2)" : "rgba(255,255,255,0.07)"}`,
+                              cursor: allowed ? "pointer" : "not-allowed", flexShrink: 0,
+                              transition: "all 0.15s",
                             }}>
                             {isCancelling
                               ? <Loader2 style={{ width: 11, height: 11 }} className="animate-spin" />
