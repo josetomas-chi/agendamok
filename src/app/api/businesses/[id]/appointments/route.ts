@@ -156,16 +156,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     let clientId = data.clientId
     if (!clientId && data.clientName) {
-      const client = await prisma.client.upsert({
-        where: { id: "nonexistent" },
-        update: {},
-        create: {
-          businessId: id,
-          name: data.clientName,
-          email: data.clientEmail,
-          phone: data.clientPhone,
-        },
-      })
+      let client = data.clientEmail
+        ? await prisma.client.findFirst({ where: { businessId: id, email: data.clientEmail, deletedAt: null } })
+        : null
+      if (client) {
+        // Update name/phone if changed
+        const updates: Record<string, unknown> = {}
+        if (data.clientPhone && !client.phone) updates.phone = data.clientPhone
+        if (Object.keys(updates).length > 0)
+          client = await prisma.client.update({ where: { id: client.id }, data: updates })
+      } else {
+        client = await prisma.client.create({
+          data: { businessId: id, name: data.clientName, email: data.clientEmail, phone: data.clientPhone },
+        })
+      }
       clientId = client.id
     }
 

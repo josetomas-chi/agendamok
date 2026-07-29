@@ -3,6 +3,30 @@ import { prisma } from "@/lib/prisma"
 import { getMpPayment } from "@/lib/mercadopago"
 import { sendBookingConfirmation, sendNewBookingAlert, sendCourtBookingConfirmation } from "@/lib/email"
 import { utcToChileLocal } from "@/lib/timezone"
+import crypto from "crypto"
+
+function verifyMpSignature(req: NextRequest, dataId: string | undefined): boolean {
+  const secret = process.env.MP_WEBHOOK_SECRET
+  if (!secret) return true // skip verification if secret not configured yet
+
+  const signature = req.headers.get("x-signature")
+  const requestId = req.headers.get("x-request-id") ?? ""
+  if (!signature) return false
+
+  const parts = Object.fromEntries(signature.split(",").map((p) => p.split("=")))
+  const ts = parts.ts
+  const v1 = parts.v1
+  if (!ts || !v1) return false
+
+  const manifest = `id:${dataId ?? ""};request-id:${requestId};ts:${ts}`
+  const expected = crypto.createHmac("sha256", secret).update(manifest).digest("hex")
+
+  try {
+    return crypto.timingSafeEqual(Buffer.from(v1, "hex"), Buffer.from(expected, "hex"))
+  } catch {
+    return false
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,6 +38,10 @@ export async function POST(req: NextRequest) {
 
     const paymentId = body.data?.id || body.id
     if (!paymentId) return NextResponse.json({ ok: true })
+
+    if (!verifyMpSignature(req, String(paymentId))) {
+      return NextResponse.json({ error: "Firma inválida" }, { status: 401 })
+    }
 
     const platformToken = process.env.MP_ACCESS_TOKEN
     if (!platformToken) return NextResponse.json({ ok: true })

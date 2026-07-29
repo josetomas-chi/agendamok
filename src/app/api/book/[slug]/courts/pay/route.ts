@@ -51,6 +51,7 @@ export async function POST(req: Request, { params }: Params) {
     select: {
       id: true, name: true,
       flowApiKey: true, flowSecretKey: true, onlinePaymentsEnabled: true,
+      clubSettings: { select: { bookingWindowDays: true } },
     },
   })
   if (!business) return NextResponse.json({ error: "Negocio no encontrado" }, { status: 404 })
@@ -74,6 +75,12 @@ export async function POST(req: Request, { params }: Params) {
 
   if (startTime <= new Date()) {
     return NextResponse.json({ error: "No se puede reservar en el pasado" }, { status: 400 })
+  }
+  const windowDays = business.clubSettings?.bookingWindowDays ?? 30
+  const maxDate = new Date()
+  maxDate.setDate(maxDate.getDate() + windowDays)
+  if (startTime > maxDate) {
+    return NextResponse.json({ error: `Solo se puede reservar con hasta ${windowDays} días de anticipación` }, { status: 400 })
   }
 
   // Load court and validate it belongs to this business

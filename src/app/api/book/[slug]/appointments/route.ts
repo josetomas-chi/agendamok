@@ -11,7 +11,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   const business = await prisma.business.findUnique({
     where: { slug, isActive: true, deletedAt: null },
-    select: { id: true, name: true, owner: { select: { name: true, email: true } } },
+    select: {
+      id: true, name: true,
+      owner: { select: { name: true, email: true } },
+      clubSettings: { select: { bookingWindowDays: true } },
+    },
   })
   if (!business) return NextResponse.json({ error: "No encontrado" }, { status: 404 })
 
@@ -20,6 +24,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   if (!serviceId || !staffId || !startTime || !clientName || !clientEmail) {
     return NextResponse.json({ error: "Campos requeridos: serviceId, staffId, startTime, clientName, clientEmail" }, { status: 400 })
+  }
+
+  const start = new Date(startTime)
+  if (start <= new Date()) {
+    return NextResponse.json({ error: "No se puede reservar en el pasado" }, { status: 400 })
+  }
+  const windowDays = business.clubSettings?.bookingWindowDays ?? 30
+  const maxDate = new Date()
+  maxDate.setDate(maxDate.getDate() + windowDays)
+  if (start > maxDate) {
+    return NextResponse.json({ error: `Solo se puede reservar con hasta ${windowDays} días de anticipación` }, { status: 400 })
   }
 
   const service = await prisma.service.findFirst({ where: { id: serviceId, businessId: business.id } })
@@ -41,7 +56,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     })
   }
 
-  const start = new Date(startTime)
   const end = addMinutes(start, Number(service.duration))
 
   // Check no overlap

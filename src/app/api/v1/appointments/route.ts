@@ -65,6 +65,9 @@ export async function POST(req: Request) {
   }
 
   const start = new Date(startTime)
+  if (start <= new Date()) {
+    return NextResponse.json({ error: "No se puede crear un turno en el pasado" }, { status: 400 })
+  }
   const end = addMinutes(start, Number(service.duration))
 
   const staffConflict = await prisma.appointment.findFirst({
