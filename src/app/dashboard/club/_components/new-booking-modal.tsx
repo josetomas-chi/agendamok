@@ -233,7 +233,7 @@ function countOccurrences(startDate: string, endDate: string, dayOfWeek: number)
 
 const BOOKING_TYPES: { key: BookingType; label: string; desc: string }[] = [
   { key: "simple",    label: "Reserva común",    desc: "Cancha libre sin instructor" },
-  { key: "recurring", label: "Reserva múltiple", desc: "Repite semanalmente" },
+  { key: "recurring", label: "Reserva múltiple", desc: "Varias canchas u horarios" },
   { key: "class",     label: "Clase particular", desc: "Con entrenador asignado" },
 ]
 
@@ -249,39 +249,12 @@ export default function NewBookingModal({
 }) {
   const [bookingType, setBookingType] = useState<BookingType>("simple")
 
-  // Multi-court selection (for simple type)
-  const [selectedCourtIds, setSelectedCourtIds] = useState<string[]>(
-    preselect?.courtId ? [preselect.courtId] : (courts[0]?.id ? [courts[0].id] : [])
-  )
-
-  // Multi-slot state (for simple type: first slot + extras)
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([
-    { id: "1", startTime: preselect?.startTime || "09:00", endTime: preselect?.endTime || "10:00" }
-  ])
-
-  // Class recurring
-  const [classRecurring, setClassRecurring] = useState(false)
-  const [classRangeEnd, setClassRangeEnd] = useState("")
-
-  function handleSetBookingType(type: BookingType) {
-    setBookingType(type)
-    if (type === "class") {
-      setTimeSlots(prev => {
-        const first = prev[0]
-        const [sh, sm] = first.startTime.split(":").map(Number)
-        const endMins = sh * 60 + sm + 60
-        const endH = Math.min(Math.floor(endMins / 60), 23)
-        const endM = endMins % 60
-        return [{ ...first, endTime: `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}` }]
-      })
-    }
-    if (type !== "simple") {
-      setTimeSlots(prev => [prev[0]])
-    }
-  }
-
+  // ── Estado común ──────────────────────────────────────────────────────────
   const [form, setForm] = useState({
+    courtId: preselect?.courtId || courts[0]?.id || "",
     date: preselect?.date || new Date().toISOString().slice(0, 10),
+    startTime: preselect?.startTime || "09:00",
+    endTime: preselect?.endTime || "10:00",
     notes: "",
   })
   const [selectedClient, setSelectedClient] = useState<{ id: string; name: string; email?: string; phone?: string; creditBalance?: number } | null>(null)
@@ -290,11 +263,31 @@ export default function NewBookingModal({
   const [coaches, setCoaches] = useState<Coach[]>([])
   const [saving, setSaving] = useState(false)
   const [allCourts, setAllCourts] = useState<Court[]>(courts)
-  const [rangeEnd, setRangeEnd] = useState("")
 
-  // For recurring (multi-court type), use single court dropdown
-  const [recurringCourtId, setRecurringCourtId] = useState(preselect?.courtId || courts[0]?.id || "")
+  // ── Estado Reserva múltiple ───────────────────────────────────────────────
+  const [multiCourtIds, setMultiCourtIds] = useState<string[]>(
+    preselect?.courtId ? [preselect.courtId] : (courts[0]?.id ? [courts[0].id] : [])
+  )
+  const [multiSlots, setMultiSlots] = useState<TimeSlot[]>([
+    { id: "1", startTime: preselect?.startTime || "09:00", endTime: preselect?.endTime || "10:00" }
+  ])
+  const [multiRangeEnd, setMultiRangeEnd] = useState("")
+
+  // ── Estado Clase particular ────────────────────────────────────────────────
   const [classCourtId, setClassCourtId] = useState(preselect?.courtId || courts[0]?.id || "")
+  const [classRecurring, setClassRecurring] = useState(false)
+  const [classRangeEnd, setClassRangeEnd] = useState("")
+
+  function handleSetBookingType(type: BookingType) {
+    setBookingType(type)
+    if (type === "class") {
+      const [sh, sm] = form.startTime.split(":").map(Number)
+      const endMins = sh * 60 + sm + 60
+      const endH = Math.min(Math.floor(endMins / 60), 23)
+      const endM = endMins % 60
+      setForm(f => ({ ...f, endTime: `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}` }))
+    }
+  }
 
   useEffect(() => {
     fetch(`/api/businesses/${businessId}/courts`).then(r => r.json()).then(d => setAllCourts(d.courts || []))
@@ -304,83 +297,75 @@ export default function NewBookingModal({
   const activeCourts = allCourts.filter(c => c.isActive !== false)
   const selectedDayOfWeek = form.date ? new Date(form.date + "T00:00:00Z").getUTCDay() : -1
 
-  // For recurring/class: single court
-  const recurringCourt = allCourts.find(c => c.id === recurringCourtId)
-  const classCourt = allCourts.find(c => c.id === classCourtId)
+  // ── Fixed slots para Reserva común ───────────────────────────────────────
+  const selectedCourt = allCourts.find(c => c.id === form.courtId)
   const selectedCoach = coaches.find(c => c.id === selectedCoachId)
+  const classCourt = allCourts.find(c => c.id === classCourtId)
 
-  const sessionCount = bookingType === "recurring"
-    ? countOccurrences(form.date, rangeEnd, selectedDayOfWeek)
-    : classRecurring
-    ? countOccurrences(form.date, classRangeEnd, selectedDayOfWeek)
+  const activeRuleWithSlots = selectedCourt?.pricingRules?.find(rule =>
+    (rule.fixedSlots?.length ?? 0) > 0 &&
+    rule.days.includes(selectedDayOfWeek) &&
+    (!form.startTime || (form.startTime >= rule.startTime && form.startTime < rule.endTime))
+  )
+  const fixedSlots: string[] = activeRuleWithSlots?.fixedSlots ?? []
+
+  function getSlotEnd(startStr: string): string {
+    const idx = fixedSlots.indexOf(startStr)
+    if (idx >= 0 && idx < fixedSlots.length - 1) return fixedSlots[idx + 1]
+    return activeRuleWithSlots?.endTime ?? ""
+  }
+
+  // Auto-set endTime when fixed slots are active
+  useEffect(() => {
+    if (!fixedSlots.length || !form.startTime) return
+    const correct = getSlotEnd(form.startTime)
+    if (correct && form.endTime !== correct) setForm(f => ({ ...f, endTime: correct }))
+  }, [form.courtId, form.date, form.startTime, fixedSlots.join(",")])
+
+  const effectiveEndTime = fixedSlots.length > 0 && form.startTime ? getSlotEnd(form.startTime) : form.endTime
+
+  // ── Precios ───────────────────────────────────────────────────────────────
+  const simplePrice = bookingType === "simple"
+    ? calcPrice(selectedCourt, form.startTime, effectiveEndTime, form.date)
+    : bookingType === "class"
+    ? calcClassPrice(selectedCoach, form.startTime, effectiveEndTime, form.date)
     : 0
 
-  // Fixed slots logic (based on primary court for simple, or respective court for class/recurring)
-  function getFixedSlotsForCourt(courtId: string): string[] {
-    const court = allCourts.find(c => c.id === courtId)
-    if (!court) return []
-    const rule = court.pricingRules?.find(r =>
-      (r.fixedSlots?.length ?? 0) > 0 &&
-      r.days.includes(selectedDayOfWeek)
-    )
-    return rule?.fixedSlots ?? []
-  }
+  // Para Reserva múltiple: precio referencial (primer court × todos los slots)
+  const multiRefCourt = allCourts.find(c => c.id === multiCourtIds[0])
+  const multiTotalPrice = multiSlots.reduce((sum, s) => sum + calcPrice(multiRefCourt, s.startTime, s.endTime, form.date), 0) * Math.max(1, multiCourtIds.length)
 
-  function getSlotEnd(courtId: string, startStr: string): string {
-    const slots = getFixedSlotsForCourt(courtId)
-    const idx = slots.indexOf(startStr)
-    if (idx >= 0 && idx < slots.length - 1) return slots[idx + 1]
-    const court = allCourts.find(c => c.id === courtId)
-    const rule = court?.pricingRules?.find(r => (r.fixedSlots?.length ?? 0) > 0 && r.days.includes(selectedDayOfWeek))
-    return rule?.endTime ?? ""
-  }
+  // ── Recurrencia ───────────────────────────────────────────────────────────
+  const classSessionCount = classRecurring ? countOccurrences(form.date, classRangeEnd, selectedDayOfWeek) : 0
+  const multiSessionCount = multiRangeEnd ? countOccurrences(form.date, multiRangeEnd, selectedDayOfWeek) : 0
 
-  // Primary court for simple mode (first selected, for fixed slots)
-  const primaryCourtId = selectedCourtIds[0] ?? ""
-  const primaryCourt = allCourts.find(c => c.id === primaryCourtId)
-  const primaryFixedSlots = getFixedSlotsForCourt(primaryCourtId)
-
-  // Price calculation for simple mode (per slot, first selected court for reference)
-  function slotPrice(slot: TimeSlot): number {
-    if (bookingType === "class") {
-      return calcClassPrice(selectedCoach, slot.startTime, slot.endTime, form.date)
-    }
-    return calcPrice(primaryCourt, slot.startTime, slot.endTime, form.date)
-  }
-
-  const totalPrice = bookingType !== "recurring"
-    ? timeSlots.reduce((sum, s) => sum + slotPrice(s), 0) * (bookingType === "simple" ? Math.max(1, selectedCourtIds.length) : 1)
-    : 0
-
-  // Slot helpers
-  function addSlot() {
-    const last = timeSlots[timeSlots.length - 1]
+  // ── Helpers multi-slot ────────────────────────────────────────────────────
+  function addMultiSlot() {
+    const last = multiSlots[multiSlots.length - 1]
     const [eh, em] = last.endTime.split(":").map(Number)
-    const newStart = last.endTime
     const newEndMins = eh * 60 + em + 60
-    const newEnd = `${String(Math.min(Math.floor(newEndMins / 60), 23)).padStart(2, "0")}:${String(newEndMins % 60).padStart(2, "0")}`
-    setTimeSlots(prev => [...prev, { id: String(Date.now()), startTime: newStart, endTime: newEnd }])
+    setMultiSlots(prev => [...prev, {
+      id: String(Date.now()),
+      startTime: last.endTime,
+      endTime: `${String(Math.min(Math.floor(newEndMins / 60), 23)).padStart(2, "0")}:${String(newEndMins % 60).padStart(2, "0")}`,
+    }])
   }
 
-  function removeSlot(id: string) {
-    setTimeSlots(prev => prev.filter(s => s.id !== id))
+  function removeMultiSlot(id: string) {
+    setMultiSlots(prev => prev.filter(s => s.id !== id))
   }
 
-  function updateSlot(id: string, field: "startTime" | "endTime", value: string) {
-    setTimeSlots(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s))
+  function updateMultiSlot(id: string, field: "startTime" | "endTime", value: string) {
+    setMultiSlots(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s))
   }
 
-  // Court multi-select helpers
-  function toggleCourt(courtId: string) {
-    setSelectedCourtIds(prev =>
+  function toggleMultiCourt(courtId: string) {
+    setMultiCourtIds(prev =>
       prev.includes(courtId) ? prev.filter(id => id !== courtId) : [...prev, courtId]
     )
   }
 
-  function selectAllCourts() {
-    setSelectedCourtIds(activeCourts.map(c => c.id))
-  }
-
+  // ── Resolve client ────────────────────────────────────────────────────────
   async function resolveClientId(): Promise<string | null> {
     if (!selectedClient) return null
     if (selectedClient.id) return selectedClient.id
@@ -393,120 +378,160 @@ export default function NewBookingModal({
     return null
   }
 
+  // ── Guardar ───────────────────────────────────────────────────────────────
   async function handleSave() {
     if (!form.date) { toast.error("Selecciona una fecha"); return }
-    if (bookingType === "simple" && selectedCourtIds.length === 0) {
-      toast.error("Selecciona al menos una cancha"); return
+
+    if (bookingType === "simple") {
+      if (!form.courtId) { toast.error("Selecciona una cancha"); return }
     }
-    if (bookingType === "recurring" && (!recurringCourtId || !rangeEnd)) {
-      toast.error("Selecciona cancha y fecha de término"); return
+    if (bookingType === "recurring") {
+      if (multiCourtIds.length === 0) { toast.error("Selecciona al menos una cancha"); return }
     }
-    if (bookingType === "class" && !selectedCoachId) {
-      toast.error("Selecciona un entrenador"); return
-    }
-    if (bookingType === "class" && classRecurring && !classRangeEnd) {
-      toast.error("Selecciona una fecha de término para la recurrencia"); return
+    if (bookingType === "class") {
+      if (!selectedCoachId) { toast.error("Selecciona un entrenador"); return }
+      if (classRecurring && !classRangeEnd) { toast.error("Selecciona una fecha de término para la recurrencia"); return }
     }
 
     setSaving(true)
     try {
       const clientId = await resolveClientId()
 
-      if (bookingType === "recurring") {
-        const [startHour, startMinute] = timeSlots[0].startTime.split(":").map(Number)
-        const [endHour, endMinute] = timeSlots[0].endTime.split(":").map(Number)
-        const durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute)
-        if (durationMinutes <= 0) { toast.error("El horario de fin debe ser posterior al de inicio"); setSaving(false); return }
-
-        const r = await fetch(`/api/businesses/${businessId}/recurring-bookings`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            courtId: recurringCourtId, clientId,
-            dayOfWeek: selectedDayOfWeek, startHour, startMinute, durationMinutes,
-            rangeStart: form.date, rangeEnd, notes: form.notes || null,
-          }),
-        })
-        const d = await r.json()
-        if (r.ok) {
-          const msg = [`${d.created} sesión${d.created !== 1 ? "es" : ""} creada${d.created !== 1 ? "s" : ""}`]
-          if (d.skipped?.length) msg.push(`${d.skipped.length} omitida${d.skipped.length !== 1 ? "s" : ""} por feriado`)
-          if (d.conflicts?.length) msg.push(`${d.conflicts.length} con conflicto`)
-          toast.success(msg.join(" · "))
-          onSaved()
+      // ── Clase particular ──────────────────────────────────────────────────
+      if (bookingType === "class") {
+        if (classRecurring) {
+          const [startHour, startMinute] = form.startTime.split(":").map(Number)
+          const [endHour, endMinute] = effectiveEndTime.split(":").map(Number)
+          const durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute)
+          if (durationMinutes <= 0) { toast.error("El horario de fin debe ser posterior al de inicio"); setSaving(false); return }
+          const r = await fetch(`/api/businesses/${businessId}/recurring-bookings`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              courtId: classCourtId, clientId, coachId: selectedCoachId,
+              dayOfWeek: selectedDayOfWeek, startHour, startMinute, durationMinutes,
+              rangeStart: form.date, rangeEnd: classRangeEnd, notes: form.notes || null,
+            }),
+          })
+          const d = await r.json()
+          if (r.ok) {
+            const msg = [`${d.created} clase${d.created !== 1 ? "s" : ""} creada${d.created !== 1 ? "s" : ""}`]
+            if (d.skipped?.length) msg.push(`${d.skipped.length} omitida${d.skipped.length !== 1 ? "s" : ""} por feriado`)
+            if (d.conflicts?.length) msg.push(`${d.conflicts.length} con conflicto`)
+            toast.success(msg.join(" · "))
+            onSaved()
+          } else {
+            toast.error(d.error || "Error al crear clases recurrentes")
+          }
         } else {
-          toast.error(d.error || "Error al crear reservas recurrentes")
+          const resolvedEnd = fixedSlots.length > 0 ? getSlotEnd(form.startTime) : form.endTime
+          const r = await fetch(`/api/businesses/${businessId}/court-bookings`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              courtId: classCourtId, clientId, coachId: selectedCoachId,
+              startTime: `${form.date}T${form.startTime}:00`,
+              endTime: `${form.date}T${resolvedEnd}:00`,
+              notes: form.notes || null,
+            }),
+          })
+          if (r.ok) {
+            toast.success("Clase particular creada")
+            onSaved()
+          } else {
+            const d = await r.json(); toast.error(d.error || "Error al crear")
+          }
         }
         return
       }
 
-      if (bookingType === "class" && classRecurring) {
-        const [startHour, startMinute] = timeSlots[0].startTime.split(":").map(Number)
-        const [endHour, endMinute] = timeSlots[0].endTime.split(":").map(Number)
-        const durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute)
-        if (durationMinutes <= 0) { toast.error("El horario de fin debe ser posterior al de inicio"); setSaving(false); return }
-
-        const r = await fetch(`/api/businesses/${businessId}/recurring-bookings`, {
+      // ── Reserva común ─────────────────────────────────────────────────────
+      if (bookingType === "simple") {
+        const resolvedEnd = fixedSlots.length > 0 && form.startTime ? getSlotEnd(form.startTime) : form.endTime
+        const r = await fetch(`/api/businesses/${businessId}/court-bookings`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            courtId: classCourtId, clientId, coachId: selectedCoachId,
-            dayOfWeek: selectedDayOfWeek, startHour, startMinute, durationMinutes,
-            rangeStart: form.date, rangeEnd: classRangeEnd, notes: form.notes || null,
+            courtId: form.courtId, clientId,
+            startTime: `${form.date}T${form.startTime}:00`,
+            endTime: `${form.date}T${resolvedEnd}:00`,
+            notes: form.notes || null,
           }),
         })
-        const d = await r.json()
         if (r.ok) {
-          const msg = [`${d.created} clase${d.created !== 1 ? "s" : ""} creada${d.created !== 1 ? "s" : ""}`]
-          if (d.skipped?.length) msg.push(`${d.skipped.length} omitida${d.skipped.length !== 1 ? "s" : ""} por feriado`)
-          if (d.conflicts?.length) msg.push(`${d.conflicts.length} con conflicto`)
-          toast.success(msg.join(" · "))
+          if (useCredit && clientId && selectedClient?.creditBalance && selectedClient.creditBalance > 0) {
+            const deduct = Math.min(selectedClient.creditBalance, simplePrice)
+            await fetch(`/api/businesses/${businessId}/clients/${clientId}/credit`, {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ amount: deduct }),
+            })
+            toast.success(`Reserva creada — $${deduct.toLocaleString("es-CL")} descontados del crédito`)
+          } else {
+            toast.success("Reserva creada")
+          }
           onSaved()
         } else {
-          toast.error(d.error || "Error al crear clases recurrentes")
+          const d = await r.json(); toast.error(d.error || "Error al crear")
         }
         return
       }
 
-      // Simple or non-recurring class: create N courts × M slots
-      const courtsToBook = bookingType === "class" ? [classCourtId] : selectedCourtIds
-      const promises: Promise<Response>[] = []
-      for (const courtId of courtsToBook) {
-        for (const slot of timeSlots) {
-          const fixedSlots = getFixedSlotsForCourt(courtId)
-          const resolvedEnd = fixedSlots.length > 0 ? getSlotEnd(courtId, slot.startTime) : slot.endTime
-          promises.push(
-            fetch(`/api/businesses/${businessId}/court-bookings`, {
+      // ── Reserva múltiple ──────────────────────────────────────────────────
+      // Con recurrencia semanal: llamar recurring-bookings por cada cancha × slot
+      if (multiRangeEnd) {
+        const results: { ok: boolean; created?: number; skipped?: string[]; conflicts?: string[]; error?: string }[] = []
+        for (const courtId of multiCourtIds) {
+          for (const slot of multiSlots) {
+            const [startHour, startMinute] = slot.startTime.split(":").map(Number)
+            const [endHour, endMinute] = slot.endTime.split(":").map(Number)
+            const durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute)
+            if (durationMinutes <= 0) continue
+            const r = await fetch(`/api/businesses/${businessId}/recurring-bookings`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                courtId, clientId,
-                startTime: `${form.date}T${slot.startTime}:00`,
-                endTime: `${form.date}T${resolvedEnd}:00`,
-                notes: form.notes || null,
-                coachId: bookingType === "class" ? (selectedCoachId || null) : null,
+                courtId, clientId, dayOfWeek: selectedDayOfWeek, startHour, startMinute, durationMinutes,
+                rangeStart: form.date, rangeEnd: multiRangeEnd, notes: form.notes || null,
               }),
             })
-          )
+            const d = await r.json()
+            results.push({ ok: r.ok, ...d })
+          }
         }
+        const totalCreated = results.reduce((sum, r) => sum + (r.created ?? 0), 0)
+        const totalConflicts = results.reduce((sum, r) => sum + (r.conflicts?.length ?? 0), 0)
+        if (totalCreated > 0) {
+          const msg = [`${totalCreated} sesión${totalCreated !== 1 ? "es" : ""} creada${totalCreated !== 1 ? "s" : ""}`]
+          if (totalConflicts > 0) msg.push(`${totalConflicts} con conflicto`)
+          toast.success(msg.join(" · "))
+          onSaved()
+        } else {
+          toast.error("No se pudieron crear sesiones — verifica disponibilidad")
+        }
+        return
       }
 
+      // Sin recurrencia: N canchas × M slots como reservas únicas en paralelo
+      const promises = multiCourtIds.flatMap(courtId =>
+        multiSlots.map(slot =>
+          fetch(`/api/businesses/${businessId}/court-bookings`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              courtId, clientId,
+              startTime: `${form.date}T${slot.startTime}:00`,
+              endTime: `${form.date}T${slot.endTime}:00`,
+              notes: form.notes || null,
+            }),
+          })
+        )
+      )
       const results = await Promise.all(promises)
       const ok = results.filter(r => r.ok).length
       const failed = results.length - ok
-
-      if (ok > 0 && useCredit && clientId && selectedClient?.creditBalance && selectedClient.creditBalance > 0) {
-        const deduct = Math.min(selectedClient.creditBalance, totalPrice)
-        await fetch(`/api/businesses/${businessId}/clients/${clientId}/credit`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: deduct }),
-        })
-      }
-
       if (ok === results.length) {
-        const label = bookingType === "class" ? `Clase particular creada` : `${ok} reserva${ok !== 1 ? "s" : ""} creada${ok !== 1 ? "s" : ""}`
-        toast.success(useCredit && ok > 0 ? `${label} — crédito aplicado` : label)
+        toast.success(`${ok} reserva${ok !== 1 ? "s" : ""} creada${ok !== 1 ? "s" : ""}`)
         onSaved()
       } else if (ok > 0) {
         toast.warning(`${ok} creada${ok !== 1 ? "s" : ""}, ${failed} con conflicto`)
@@ -522,6 +547,19 @@ export default function NewBookingModal({
   const labelCls = "text-[10px] font-bold uppercase tracking-[0.12em] mb-1.5"
   const inputCls = "w-full h-10 rounded-xl px-4 text-sm font-medium"
   const inputStyle = { border: BORDER, background: "#f5f4f0", color: NAVY, outline: "none" }
+
+  // Texto del botón guardar
+  const saveLabel = (() => {
+    if (saving) return "Guardando…"
+    if (bookingType === "class") return classRecurring ? "Crear clases recurrentes" : "Crear clase particular"
+    if (bookingType === "simple") return "Confirmar reserva"
+    // recurring
+    const total = multiCourtIds.length * multiSlots.length
+    if (multiRangeEnd && multiSessionCount > 0) {
+      return `Crear ${total * multiSessionCount} sesión${total * multiSessionCount !== 1 ? "es" : ""}`
+    }
+    return total > 1 ? `Crear ${total} reservas` : "Confirmar reserva"
+  })()
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -539,6 +577,7 @@ export default function NewBookingModal({
         </div>
 
         <div className="px-5 pb-5 pt-4 space-y-3 max-h-[80vh] overflow-y-auto">
+
           {/* Tipo de reserva */}
           <div>
             <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Tipo de reserva</p>
@@ -556,174 +595,64 @@ export default function NewBookingModal({
             </div>
           </div>
 
-          {/* CANCHA — multi-select pills para "simple" */}
-          {bookingType === "simple" && (
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>
-                  Cancha{selectedCourtIds.length > 1 ? `s (${selectedCourtIds.length})` : ""}
-                </p>
-                {activeCourts.length > 1 && (
-                  <button type="button" onClick={selectAllCourts}
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-md"
-                    style={{ color: GOLD, background: "rgba(201,168,76,0.08)", border: `1px solid rgba(201,168,76,0.2)` }}>
-                    Todas
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {activeCourts.map(court => {
-                  const isSelected = selectedCourtIds.includes(court.id)
-                  const unavailable = selectedDayOfWeek >= 0 && (court.pricingRules?.length ?? 0) > 0 &&
-                    !court.pricingRules?.some(r => r.days.includes(selectedDayOfWeek))
-                  return (
-                    <button key={court.id} type="button"
-                      onClick={() => !unavailable && toggleCourt(court.id)}
-                      disabled={unavailable}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all disabled:opacity-40"
-                      style={isSelected
-                        ? { background: court.color, color: "#fff", border: `2px solid ${court.color}` }
-                        : { background: "rgba(13,27,42,0.04)", color: NAVY, border: "1.5px solid rgba(13,27,42,0.12)" }}>
-                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: isSelected ? "rgba(255,255,255,0.6)" : court.color }} />
-                      {court.name}
-                      {isSelected && <X className="w-3 h-3 ml-0.5 opacity-70" />}
-                    </button>
-                  )
-                })}
-              </div>
-              {selectedCourtIds.length === 0 && (
-                <p className="text-[10px] mt-1" style={{ color: "rgba(201,168,76,0.7)" }}>Selecciona al menos una cancha</p>
-              )}
-            </div>
-          )}
-
-          {/* CANCHA — dropdown para "recurring" */}
-          {bookingType === "recurring" && (
+          {/* ══════════════ RESERVA COMÚN ══════════════ */}
+          {bookingType === "simple" && (<>
             <div>
               <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Cancha</p>
               <div className="relative">
-                <select value={recurringCourtId} onChange={e => setRecurringCourtId(e.target.value)}
+                <select value={form.courtId} onChange={e => setForm(f => ({ ...f, courtId: e.target.value }))}
                   className={inputCls + " appearance-none pr-9"} style={inputStyle}>
                   <option value="" disabled>Seleccionar cancha</option>
-                  {activeCourts.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}{c.sport ? ` (${c.sport})` : ""}</option>
-                  ))}
+                  {activeCourts.map(c => {
+                    const unavailable = selectedDayOfWeek >= 0 && (c.pricingRules?.length ?? 0) > 0 && !c.pricingRules?.some(r => r.days.includes(selectedDayOfWeek))
+                    return <option key={c.id} value={c.id} disabled={unavailable}>{unavailable ? "🚫 " : ""}{c.name}{c.sport ? ` (${c.sport})` : ""}{unavailable ? " — sin horario este día" : ""}</option>
+                  })}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: GOLD }} />
               </div>
             </div>
-          )}
 
-          {/* Entrenador + Cancha — solo clase particular */}
-          {bookingType === "class" && (
-            <>
+            <ClientCombobox clients={clients} value={selectedClient} onSelect={setSelectedClient} />
+
+            <div>
+              <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha</p>
+              <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                className={inputCls} style={{ ...inputStyle, colorScheme: "light" } as React.CSSProperties} />
+            </div>
+
+            {fixedSlots.length > 0 ? (
               <div>
-                <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Entrenador *</p>
-                {coaches.length === 0 ? (
-                  <p className="text-xs py-2" style={{ color: "rgba(13,27,42,0.4)" }}>No hay entrenadores activos. Agrégalos en la pestaña Entrenadores.</p>
-                ) : (
-                  <div className="flex flex-col gap-1.5">
-                    {coaches.map(coach => (
-                      <button key={coach.id} type="button" onClick={() => setSelectedCoachId(coach.id)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all"
-                        style={selectedCoachId === coach.id
-                          ? { background: "rgba(201,168,76,0.1)", border: `1.5px solid ${GOLD}` }
-                          : { background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.1)" }}>
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white flex-shrink-0"
-                          style={{ background: coach.color }}>
-                          {coach.name[0]}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold truncate" style={{ color: selectedCoachId === coach.id ? "#8a6520" : NAVY }}>{coach.name}</p>
-                          <p className="text-[10px]" style={{ color: "rgba(13,27,42,0.4)" }}>
-                            {coach.paymentType === "COMMISSION" ? "Comisión" : "Arriendo cancha"}
-                          </p>
-                        </div>
-                        {selectedCoachId === coach.id && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(201,168,76,0.2)", color: GOLD }}>✓</span>
-                        )}
+                <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Horario — elige un bloque</p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {fixedSlots.map(slot => {
+                    const end = getSlotEnd(slot)
+                    const isSelected = form.startTime === slot
+                    return (
+                      <button key={slot} type="button"
+                        onClick={() => setForm(f => ({ ...f, startTime: slot, endTime: end }))}
+                        className="rounded-xl py-2.5 text-center transition-all"
+                        style={isSelected
+                          ? { background: "rgba(201,168,76,0.15)", border: `1.5px solid ${GOLD}`, color: "#8a6520" }
+                          : { background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.1)", color: NAVY }}>
+                        <p className="text-xs font-black">{slot}</p>
+                        <p className="text-[9px]" style={{ color: isSelected ? "rgba(138,101,32,0.6)" : "rgba(13,27,42,0.35)" }}>– {end}</p>
                       </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div>
-                <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Cancha</p>
-                <div className="relative">
-                  <select value={classCourtId} onChange={e => setClassCourtId(e.target.value)}
-                    className={inputCls + " appearance-none pr-9"} style={inputStyle}>
-                    <option value="" disabled>Seleccionar cancha</option>
-                    {activeCourts.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}{c.sport ? ` (${c.sport})` : ""}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: GOLD }} />
+                    )
+                  })}
                 </div>
               </div>
-            </>
-          )}
-
-          {/* Cliente */}
-          <ClientCombobox clients={clients} value={selectedClient} onSelect={setSelectedClient} />
-
-          {/* Fecha */}
-          <div>
-            <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>
-              {bookingType === "recurring" || (bookingType === "class" && classRecurring) ? "Fecha de inicio" : "Fecha"}
-            </p>
-            <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-              className={inputCls} style={{ ...inputStyle, colorScheme: "light" } as React.CSSProperties} />
-          </div>
-
-          {/* Horario — fixed slots o libre */}
-          {primaryFixedSlots.length > 0 && bookingType === "simple" ? (
-            <div>
-              <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Horario — elige un bloque</p>
-              <div className="grid grid-cols-3 gap-1.5">
-                {primaryFixedSlots.map(slot => {
-                  const end = getSlotEnd(primaryCourtId, slot)
-                  const isSelected = timeSlots.some(s => s.startTime === slot)
-                  return (
-                    <button key={slot} type="button"
-                      onClick={() => {
-                        setTimeSlots(prev => {
-                          if (prev.some(s => s.startTime === slot)) {
-                            const next = prev.filter(s => s.startTime !== slot)
-                            return next.length === 0 ? [{ id: "1", startTime: slot, endTime: end }] : next
-                          }
-                          return [...prev, { id: String(Date.now()), startTime: slot, endTime: end }]
-                        })
-                      }}
-                      className="rounded-xl py-2.5 text-center transition-all"
-                      style={isSelected
-                        ? { background: "rgba(201,168,76,0.15)", border: `1.5px solid ${GOLD}`, color: "#8a6520" }
-                        : { background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.1)", color: NAVY }}>
-                      <p className="text-xs font-black">{slot}</p>
-                      <p className="text-[9px]" style={{ color: isSelected ? "rgba(138,101,32,0.6)" : "rgba(13,27,42,0.35)" }}>– {end}</p>
-                    </button>
-                  )
-                })}
-              </div>
-              {timeSlots.length > 1 && (
-                <p className="text-[10px] mt-1.5 font-semibold" style={{ color: GOLD }}>
-                  {timeSlots.length} bloques seleccionados
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {/* Quick duration — solo para primer slot / no multi */}
-              {timeSlots.length === 1 && (
+            ) : (
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "rgba(13,27,42,0.4)" }}>Duración</span>
                   {[60, 90, 120].map(mins => {
-                    const [sh, sm] = timeSlots[0].startTime.split(":").map(Number)
+                    const [sh, sm] = form.startTime.split(":").map(Number)
                     const totalMins = sh * 60 + sm + mins
                     const calcEnd = `${String(Math.floor(totalMins / 60)).padStart(2, "0")}:${String(totalMins % 60).padStart(2, "0")}`
-                    const isActive = timeSlots[0].endTime === calcEnd
+                    const isActive = form.endTime === calcEnd
                     return (
                       <button key={mins} type="button"
-                        onClick={() => updateSlot(timeSlots[0].id, "endTime", calcEnd)}
+                        onClick={() => setForm(f => ({ ...f, endTime: calcEnd }))}
                         className="px-3 py-1 rounded-lg text-xs font-bold transition-all"
                         style={{
                           background: isActive ? "#C9A84C" : "rgba(201,168,76,0.1)",
@@ -735,68 +664,148 @@ export default function NewBookingModal({
                     )
                   })}
                 </div>
-              )}
+                <div className="grid grid-cols-2 gap-2">
+                  <TimeSelect label="Inicio" value={form.startTime} onChange={v => setForm(f => ({ ...f, startTime: v }))} />
+                  <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} minTime={form.startTime} />
+                </div>
+              </div>
+            )}
 
-              {/* Slot rows */}
+            {simplePrice > 0 && (
               <div className="space-y-2">
-                {timeSlots.map((slot, idx) => (
-                  <div key={slot.id} className="rounded-xl p-2.5 space-y-2"
-                    style={{ background: idx === 0 ? "transparent" : "rgba(13,27,42,0.03)", border: idx === 0 ? "none" : "1px solid rgba(13,27,42,0.08)" }}>
-                    {idx > 0 && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "rgba(13,27,42,0.4)" }}>
-                          Horario {idx + 1}
-                        </span>
-                        <button type="button" onClick={() => removeSlot(slot.id)}
-                          className="w-5 h-5 rounded-full flex items-center justify-center"
-                          style={{ color: "rgba(201,68,68,0.6)", background: "rgba(201,68,68,0.06)" }}>
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                <div className="rounded-xl px-4 py-2.5 flex items-center justify-between"
+                  style={{ background: "rgba(201,168,76,0.08)", border: `1px solid rgba(201,168,76,0.25)` }}>
+                  <p className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.5)" }}>Precio estimado</p>
+                  <p className="text-sm font-black" style={{ color: GOLD }}>${simplePrice.toLocaleString("es-CL")}</p>
+                </div>
+                {selectedClient?.creditBalance && selectedClient.creditBalance > 0 ? (
+                  <button type="button" onClick={() => setUseCredit(v => !v)}
+                    className="w-full rounded-xl px-4 py-2.5 flex items-center justify-between transition-all"
+                    style={{
+                      background: useCredit ? "rgba(34,197,94,0.08)" : "rgba(34,197,94,0.04)",
+                      border: `1px solid ${useCredit ? "rgba(34,197,94,0.4)" : "rgba(34,197,94,0.2)"}`,
+                    }}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
+                        style={{ background: useCredit ? "#22c55e" : "transparent", border: useCredit ? "none" : "1.5px solid rgba(34,197,94,0.5)" }}>
+                        {useCredit && <span className="text-white text-[9px] font-black">✓</span>}
                       </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-2">
-                      <TimeSelect label={idx === 0 ? "Inicio" : "Inicio"} value={slot.startTime}
-                        onChange={v => updateSlot(slot.id, "startTime", v)} />
-                      <TimeSelect label={idx === 0 ? "Fin" : "Fin"} value={slot.endTime}
-                        onChange={v => updateSlot(slot.id, "endTime", v)} minTime={slot.startTime} />
+                      <p className="text-xs font-semibold" style={{ color: "#16a34a" }}>
+                        Usar crédito — ${selectedClient.creditBalance.toLocaleString("es-CL")} disponibles
+                      </p>
                     </div>
-                    {slotPrice(slot) > 0 && (
-                      <p className="text-[10px] text-right font-bold" style={{ color: GOLD }}>
-                        ${slotPrice(slot).toLocaleString("es-CL")}
+                    {useCredit && (
+                      <p className="text-xs font-black" style={{ color: "#16a34a" }}>
+                        −${Math.min(selectedClient.creditBalance, simplePrice).toLocaleString("es-CL")}
                       </p>
                     )}
-                  </div>
-                ))}
+                  </button>
+                ) : null}
               </div>
+            )}
+          </>)}
 
-              {/* + Agregar horario — solo en modo simple */}
-              {bookingType === "simple" && (
-                <button type="button" onClick={addSlot}
-                  className="w-full h-9 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all"
-                  style={{ border: `1.5px dashed rgba(201,168,76,0.4)`, color: GOLD, background: "rgba(201,168,76,0.03)" }}>
-                  <Plus className="w-3.5 h-3.5" />
-                  Agregar horario
-                </button>
+          {/* ══════════════ RESERVA MÚLTIPLE ══════════════ */}
+          {bookingType === "recurring" && (<>
+
+            {/* Pills de canchas */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>
+                  Canchas{multiCourtIds.length > 1 ? ` (${multiCourtIds.length})` : ""}
+                </p>
+                {activeCourts.length > 1 && (
+                  <button type="button"
+                    onClick={() => setMultiCourtIds(activeCourts.map(c => c.id))}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-md"
+                    style={{ color: GOLD, background: "rgba(201,168,76,0.08)", border: `1px solid rgba(201,168,76,0.2)` }}>
+                    Todas
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {activeCourts.map(court => {
+                  const isSelected = multiCourtIds.includes(court.id)
+                  const unavailable = selectedDayOfWeek >= 0 && (court.pricingRules?.length ?? 0) > 0 &&
+                    !court.pricingRules?.some(r => r.days.includes(selectedDayOfWeek))
+                  return (
+                    <button key={court.id} type="button"
+                      onClick={() => !unavailable && toggleMultiCourt(court.id)}
+                      disabled={unavailable}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all disabled:opacity-40"
+                      style={isSelected
+                        ? { background: court.color, color: "#fff", border: `2px solid ${court.color}` }
+                        : { background: "rgba(13,27,42,0.04)", color: NAVY, border: "1.5px solid rgba(13,27,42,0.12)" }}>
+                      <span className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ background: isSelected ? "rgba(255,255,255,0.6)" : court.color }} />
+                      {court.name}
+                      {isSelected && <X className="w-3 h-3 ml-0.5 opacity-70" />}
+                    </button>
+                  )
+                })}
+              </div>
+              {multiCourtIds.length === 0 && (
+                <p className="text-[10px] mt-1" style={{ color: "rgba(201,168,76,0.7)" }}>Selecciona al menos una cancha</p>
               )}
             </div>
-          )}
 
-          {/* Panel recurrencia — tipo "recurring" */}
-          {bookingType === "recurring" && (
+            <ClientCombobox clients={clients} value={selectedClient} onSelect={setSelectedClient} />
+
+            <div>
+              <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha de inicio</p>
+              <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                className={inputCls} style={{ ...inputStyle, colorScheme: "light" } as React.CSSProperties} />
+            </div>
+
+            {/* Horarios múltiples */}
+            <div className="space-y-2">
+              <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Horarios</p>
+              {multiSlots.map((slot, idx) => (
+                <div key={slot.id} className="rounded-xl p-2.5 space-y-2"
+                  style={idx === 0
+                    ? { background: "rgba(13,27,42,0.03)", border: "1px solid rgba(13,27,42,0.08)" }
+                    : { background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)" }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: idx === 0 ? "rgba(13,27,42,0.4)" : GOLD }}>
+                      Horario {idx + 1}
+                    </span>
+                    {multiSlots.length > 1 && (
+                      <button type="button" onClick={() => removeMultiSlot(slot.id)}
+                        className="w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ color: "rgba(201,68,68,0.6)", background: "rgba(201,68,68,0.06)" }}>
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <TimeSelect label="Inicio" value={slot.startTime} onChange={v => updateMultiSlot(slot.id, "startTime", v)} />
+                    <TimeSelect label="Fin" value={slot.endTime} onChange={v => updateMultiSlot(slot.id, "endTime", v)} minTime={slot.startTime} />
+                  </div>
+                  {calcPrice(multiRefCourt, slot.startTime, slot.endTime, form.date) > 0 && (
+                    <p className="text-[10px] text-right font-bold" style={{ color: GOLD }}>
+                      ${calcPrice(multiRefCourt, slot.startTime, slot.endTime, form.date).toLocaleString("es-CL")} / cancha
+                    </p>
+                  )}
+                </div>
+              ))}
+              <button type="button" onClick={addMultiSlot}
+                className="w-full h-9 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all"
+                style={{ border: `1.5px dashed rgba(201,168,76,0.4)`, color: GOLD, background: "rgba(201,168,76,0.03)" }}>
+                <Plus className="w-3.5 h-3.5" />
+                Agregar horario
+              </button>
+            </div>
+
+            {/* Recurrencia semanal opcional */}
             <div className="rounded-xl p-3.5 space-y-3" style={{ border: `1px solid rgba(201,168,76,0.25)`, background: "rgba(201,168,76,0.04)" }}>
-              <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: GOLD }}>Repeticiones</p>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.5)" }}>Repite cada</span>
-                <span className="text-xs font-black px-2.5 py-1 rounded-lg" style={{ background: "rgba(201,168,76,0.15)", color: "#8a6520" }}>
-                  {selectedDayOfWeek >= 0 ? DAYS_ES[selectedDayOfWeek] : "—"}
-                </span>
-                <span className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.5)" }}>a las {timeSlots[0].startTime}</span>
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: GOLD }}>Repetición semanal</p>
+                <span className="text-[10px]" style={{ color: "rgba(13,27,42,0.4)" }}>opcional</span>
               </div>
-              {/* Day of week display (read-only, derived from date) */}
+              {/* Días de la semana — solo informativo, derivado de la fecha */}
               <div className="flex gap-1">
                 {DAYS_SHORT.map((d, i) => (
-                  <div key={d}
-                    className="flex-1 h-7 rounded-lg flex items-center justify-center text-[9px] font-bold"
+                  <div key={d} className="flex-1 h-7 rounded-lg flex items-center justify-center text-[9px] font-bold"
                     style={i === selectedDayOfWeek
                       ? { background: GOLD, color: "#fff" }
                       : { background: "rgba(13,27,42,0.06)", color: "rgba(13,27,42,0.3)" }}>
@@ -805,26 +814,106 @@ export default function NewBookingModal({
                 ))}
               </div>
               <div>
-                <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha de término</p>
-                <input type="date" value={rangeEnd} onChange={e => setRangeEnd(e.target.value)}
+                <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha de término (dejar vacío para reserva única)</p>
+                <input type="date" value={multiRangeEnd} onChange={e => setMultiRangeEnd(e.target.value)}
                   min={form.date}
                   className={inputCls} style={{ ...inputStyle, colorScheme: "light" } as React.CSSProperties} />
               </div>
-              {sessionCount > 0 && (
-                <div className="flex items-center justify-between text-xs rounded-lg px-3 py-2"
-                  style={{ background: "rgba(201,168,76,0.1)", color: "#8a6520" }}>
-                  <span>Se crearán</span>
-                  <span className="font-black">{sessionCount} sesiones</span>
+              {multiRangeEnd && multiSessionCount > 0 && (
+                <div className="rounded-lg px-3 py-2 space-y-1"
+                  style={{ background: "rgba(201,168,76,0.1)" }}>
+                  <div className="flex items-center justify-between text-xs" style={{ color: "#8a6520" }}>
+                    <span>{multiCourtIds.length} cancha{multiCourtIds.length !== 1 ? "s" : ""} × {multiSlots.length} horario{multiSlots.length !== 1 ? "s" : ""} × {multiSessionCount} semanas</span>
+                    <span className="font-black">{multiCourtIds.length * multiSlots.length * multiSessionCount} reservas</span>
+                  </div>
+                  {multiTotalPrice > 0 && (
+                    <p className="text-[10px] text-right font-bold" style={{ color: GOLD }}>
+                      Total estimado: ${(multiTotalPrice * multiSessionCount).toLocaleString("es-CL")}
+                    </p>
+                  )}
                 </div>
               )}
-              <p className="text-[10px] leading-relaxed" style={{ color: "rgba(13,27,42,0.4)" }}>
-                Los feriados de tipo "Cerrado" se omiten automáticamente.
-              </p>
+              {!multiRangeEnd && multiCourtIds.length * multiSlots.length > 1 && (
+                <div className="flex items-center justify-between text-xs rounded-lg px-3 py-2"
+                  style={{ background: "rgba(13,27,42,0.04)", color: "rgba(13,27,42,0.5)" }}>
+                  <span>Se crearán</span>
+                  <span className="font-black">{multiCourtIds.length * multiSlots.length} reservas en este día</span>
+                </div>
+              )}
             </div>
-          )}
 
-          {/* Toggle recurrencia — solo clase particular */}
-          {bookingType === "class" && (
+            {multiTotalPrice > 0 && !multiRangeEnd && (
+              <div className="rounded-xl px-4 py-2.5 flex items-center justify-between"
+                style={{ background: "rgba(201,168,76,0.08)", border: `1px solid rgba(201,168,76,0.25)` }}>
+                <p className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.5)" }}>Precio estimado</p>
+                <p className="text-sm font-black" style={{ color: GOLD }}>${multiTotalPrice.toLocaleString("es-CL")}</p>
+              </div>
+            )}
+          </>)}
+
+          {/* ══════════════ CLASE PARTICULAR ══════════════ */}
+          {bookingType === "class" && (<>
+            <div>
+              <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Entrenador *</p>
+              {coaches.length === 0 ? (
+                <p className="text-xs py-2" style={{ color: "rgba(13,27,42,0.4)" }}>No hay entrenadores activos. Agrégalos en la pestaña Entrenadores.</p>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  {coaches.map(coach => (
+                    <button key={coach.id} type="button" onClick={() => setSelectedCoachId(coach.id)}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all"
+                      style={selectedCoachId === coach.id
+                        ? { background: "rgba(201,168,76,0.1)", border: `1.5px solid ${GOLD}` }
+                        : { background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.1)" }}>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white flex-shrink-0"
+                        style={{ background: coach.color }}>
+                        {coach.name[0]}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate" style={{ color: selectedCoachId === coach.id ? "#8a6520" : NAVY }}>{coach.name}</p>
+                        <p className="text-[10px]" style={{ color: "rgba(13,27,42,0.4)" }}>
+                          {coach.paymentType === "COMMISSION" ? "Comisión" : "Arriendo cancha"}
+                        </p>
+                      </div>
+                      {selectedCoachId === coach.id && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(201,168,76,0.2)", color: GOLD }}>✓</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Cancha</p>
+              <div className="relative">
+                <select value={classCourtId} onChange={e => setClassCourtId(e.target.value)}
+                  className={inputCls + " appearance-none pr-9"} style={inputStyle}>
+                  <option value="" disabled>Seleccionar cancha</option>
+                  {activeCourts.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}{c.sport ? ` (${c.sport})` : ""}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: GOLD }} />
+              </div>
+            </div>
+
+            <ClientCombobox clients={clients} value={selectedClient} onSelect={setSelectedClient} />
+
+            <div>
+              <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>
+                {classRecurring ? "Fecha de inicio" : "Fecha"}
+              </p>
+              <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                className={inputCls} style={{ ...inputStyle, colorScheme: "light" } as React.CSSProperties} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <TimeSelect label="Inicio" value={form.startTime} onChange={v => setForm(f => ({ ...f, startTime: v }))} />
+              <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} minTime={form.startTime} />
+            </div>
+
+            {/* Toggle recurrencia semanal */}
             <button type="button" onClick={() => setClassRecurring(v => !v)}
               className="w-full flex items-center gap-3 rounded-xl px-4 py-3 transition-all"
               style={classRecurring
@@ -836,84 +925,52 @@ export default function NewBookingModal({
               </div>
               <div className="text-left">
                 <p className="text-xs font-bold" style={{ color: classRecurring ? "#8a6520" : NAVY }}>Repetir semanalmente</p>
-                <p className="text-[10px]" style={{ color: "rgba(13,27,42,0.4)" }}>El alumno viene todos los {selectedDayOfWeek >= 0 ? DAYS_ES[selectedDayOfWeek].toLowerCase() + "s" : "…"}</p>
+                <p className="text-[10px]" style={{ color: "rgba(13,27,42,0.4)" }}>
+                  El alumno viene todos los {selectedDayOfWeek >= 0 ? DAYS_ES[selectedDayOfWeek].toLowerCase() + "s" : "…"}
+                </p>
               </div>
             </button>
-          )}
 
-          {/* Panel recurrencia clase */}
-          {bookingType === "class" && classRecurring && (
-            <div className="rounded-xl p-3.5 space-y-3" style={{ border: `1px solid rgba(201,168,76,0.25)`, background: "rgba(201,168,76,0.04)" }}>
-              <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: GOLD }}>Repeticiones de clase</p>
-              <div className="flex gap-1">
-                {DAYS_SHORT.map((d, i) => (
-                  <div key={d}
-                    className="flex-1 h-7 rounded-lg flex items-center justify-center text-[9px] font-bold"
-                    style={i === selectedDayOfWeek
-                      ? { background: GOLD, color: "#fff" }
-                      : { background: "rgba(13,27,42,0.06)", color: "rgba(13,27,42,0.3)" }}>
-                    {d}
-                  </div>
-                ))}
-              </div>
-              <div>
-                <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha de término</p>
-                <input type="date" value={classRangeEnd} onChange={e => setClassRangeEnd(e.target.value)}
-                  min={form.date}
-                  className={inputCls} style={{ ...inputStyle, colorScheme: "light" } as React.CSSProperties} />
-              </div>
-              {sessionCount > 0 && (
-                <div className="flex items-center justify-between text-xs rounded-lg px-3 py-2"
-                  style={{ background: "rgba(201,168,76,0.1)", color: "#8a6520" }}>
-                  <span>Se crearán</span>
-                  <span className="font-black">{sessionCount} clases</span>
+            {classRecurring && (
+              <div className="rounded-xl p-3.5 space-y-3" style={{ border: `1px solid rgba(201,168,76,0.25)`, background: "rgba(201,168,76,0.04)" }}>
+                <div className="flex gap-1">
+                  {DAYS_SHORT.map((d, i) => (
+                    <div key={d} className="flex-1 h-7 rounded-lg flex items-center justify-center text-[9px] font-bold"
+                      style={i === selectedDayOfWeek
+                        ? { background: GOLD, color: "#fff" }
+                        : { background: "rgba(13,27,42,0.06)", color: "rgba(13,27,42,0.3)" }}>
+                      {d}
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
-          )}
+                <div>
+                  <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha de término</p>
+                  <input type="date" value={classRangeEnd} onChange={e => setClassRangeEnd(e.target.value)}
+                    min={form.date}
+                    className={inputCls} style={{ ...inputStyle, colorScheme: "light" } as React.CSSProperties} />
+                </div>
+                {classSessionCount > 0 && (
+                  <div className="flex items-center justify-between text-xs rounded-lg px-3 py-2"
+                    style={{ background: "rgba(201,168,76,0.1)", color: "#8a6520" }}>
+                    <span>Se crearán</span>
+                    <span className="font-black">{classSessionCount} clases</span>
+                  </div>
+                )}
+              </div>
+            )}
 
-          {/* Precio estimado + crédito */}
-          {bookingType !== "recurring" && totalPrice > 0 && (
-            <div className="space-y-2">
+            {simplePrice > 0 && (
               <div className="rounded-xl px-4 py-2.5 flex items-center justify-between"
                 style={{ background: "rgba(201,168,76,0.08)", border: `1px solid rgba(201,168,76,0.25)` }}>
-                <div>
-                  <p className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.5)" }}>Precio estimado</p>
-                  {(selectedCourtIds.length > 1 || timeSlots.length > 1) && bookingType === "simple" && (
-                    <p className="text-[10px]" style={{ color: "rgba(13,27,42,0.35)" }}>
-                      {selectedCourtIds.length} cancha{selectedCourtIds.length !== 1 ? "s" : ""} × {timeSlots.length} horario{timeSlots.length !== 1 ? "s" : ""}
-                    </p>
-                  )}
-                </div>
-                <p className="text-sm font-black" style={{ color: GOLD }}>${totalPrice.toLocaleString("es-CL")}</p>
+                <p className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.5)" }}>
+                  {classRecurring && classSessionCount > 0 ? `Precio por clase` : "Precio estimado"}
+                </p>
+                <p className="text-sm font-black" style={{ color: GOLD }}>${simplePrice.toLocaleString("es-CL")}</p>
               </div>
-              {selectedClient?.creditBalance && selectedClient.creditBalance > 0 ? (
-                <button type="button" onClick={() => setUseCredit(v => !v)}
-                  className="w-full rounded-xl px-4 py-2.5 flex items-center justify-between transition-all"
-                  style={{
-                    background: useCredit ? "rgba(34,197,94,0.08)" : "rgba(34,197,94,0.04)",
-                    border: `1px solid ${useCredit ? "rgba(34,197,94,0.4)" : "rgba(34,197,94,0.2)"}`,
-                  }}>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
-                      style={{ background: useCredit ? "#22c55e" : "transparent", border: useCredit ? "none" : "1.5px solid rgba(34,197,94,0.5)" }}>
-                      {useCredit && <span className="text-white text-[9px] font-black">✓</span>}
-                    </div>
-                    <p className="text-xs font-semibold" style={{ color: "#16a34a" }}>
-                      Usar crédito — ${selectedClient.creditBalance.toLocaleString("es-CL")} disponibles
-                    </p>
-                  </div>
-                  {useCredit && (
-                    <p className="text-xs font-black" style={{ color: "#16a34a" }}>
-                      −${Math.min(selectedClient.creditBalance, totalPrice).toLocaleString("es-CL")}
-                    </p>
-                  )}
-                </button>
-              ) : null}
-            </div>
-          )}
+            )}
+          </>)}
 
-          {/* Notas */}
+          {/* Notas — siempre visible */}
           <div>
             <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Notas</p>
             <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
@@ -924,13 +981,7 @@ export default function NewBookingModal({
           <button onClick={handleSave} disabled={saving}
             className="w-full h-11 rounded-xl text-sm font-black uppercase tracking-wide transition-all disabled:opacity-50"
             style={{ background: "rgba(201,168,76,0.15)", border: `1px solid ${GOLD}`, color: "#8a6520" }}>
-            {saving ? "Guardando…"
-              : bookingType === "recurring" ? "Crear reservas recurrentes"
-              : bookingType === "class" && classRecurring ? "Crear clases recurrentes"
-              : bookingType === "class" ? "Crear clase particular"
-              : selectedCourtIds.length > 1 || timeSlots.length > 1
-              ? `Crear ${selectedCourtIds.length * timeSlots.length} reserva${selectedCourtIds.length * timeSlots.length !== 1 ? "s" : ""}`
-              : "Confirmar reserva"}
+            {saveLabel}
           </button>
         </div>
       </DialogContent>
