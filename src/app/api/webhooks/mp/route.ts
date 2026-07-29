@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getMpPayment } from "@/lib/mercadopago"
 import { sendBookingConfirmation, sendNewBookingAlert, sendCourtBookingConfirmation } from "@/lib/email"
+import { utcToChileLocal } from "@/lib/timezone"
 
 export async function POST(req: NextRequest) {
   try {
@@ -64,8 +65,9 @@ export async function POST(req: NextRequest) {
             }),
       ])
 
-      const dateStr = appt.startTime.toLocaleDateString("es-CL")
-      const timeStr = appt.startTime.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
+      const localApptStart = utcToChileLocal(appt.startTime)
+      const dateStr = localApptStart.toLocaleDateString("es-CL")
+      const timeStr = localApptStart.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
 
       if (appt.client.email) {
         sendBookingConfirmation({
@@ -150,8 +152,9 @@ export async function POST(req: NextRequest) {
 
       const owner = booking.business.owner
       if (owner?.email) {
-        const dateStr = booking.startTime.toLocaleDateString("es-CL")
-        const timeStr = booking.startTime.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
+        const localBookingStart = utcToChileLocal(booking.startTime)
+        const dateStr = localBookingStart.toLocaleDateString("es-CL")
+        const timeStr = localBookingStart.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
         const { Resend } = await import("resend")
         const resend = new Resend(process.env.RESEND_API_KEY)
         resend.emails.send({

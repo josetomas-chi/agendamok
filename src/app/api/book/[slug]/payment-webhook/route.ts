@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { businessGetPaymentStatus, verifyBusinessWebhook } from "@/lib/flow"
 import { sendBookingConfirmation, sendNewBookingAlert, sendInvoiceEmail } from "@/lib/email"
 import { bsaleCreateDocument } from "@/lib/bsale"
+import { utcToChileLocal } from "@/lib/timezone"
 
 type Params = { params: Promise<{ slug: string }> }
 
@@ -72,8 +73,9 @@ export async function POST(req: Request, { params }: Params) {
         }),
       ])
 
-      const dateStr = appt.startTime.toLocaleDateString("es-CL")
-      const timeStr = appt.startTime.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
+      const localStart = utcToChileLocal(appt.startTime)
+      const dateStr = localStart.toLocaleDateString("es-CL")
+      const timeStr = localStart.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
 
       // Send confirmation email to client
       if (appt.client.email) {

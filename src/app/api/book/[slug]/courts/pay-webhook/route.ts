@@ -4,6 +4,7 @@ import { businessGetPaymentStatus, verifyBusinessWebhook } from "@/lib/flow"
 import { sendCourtBookingConfirmation } from "@/lib/email"
 import { bsaleCreateDocument } from "@/lib/bsale"
 import { sendInvoiceEmail } from "@/lib/email"
+import { utcToChileLocal } from "@/lib/timezone"
 
 type Params = { params: Promise<{ slug: string }> }
 
@@ -85,8 +86,9 @@ export async function POST(req: Request, { params }: Params) {
       // Owner alert email
       const owner = business.owner
       if (owner?.email) {
-        const dateStr = booking.startTime.toLocaleDateString("es-CL")
-        const timeStr = booking.startTime.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
+        const localStart = utcToChileLocal(booking.startTime)
+        const dateStr = localStart.toLocaleDateString("es-CL")
+        const timeStr = localStart.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
         const { Resend } = await import("resend")
         const resend = new Resend(process.env.RESEND_API_KEY)
         resend.emails.send({

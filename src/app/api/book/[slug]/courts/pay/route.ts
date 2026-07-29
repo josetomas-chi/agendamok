@@ -6,6 +6,43 @@ import { sendCourtBookingConfirmation } from "@/lib/email"
 
 type Params = { params: Promise<{ slug: string }> }
 
+const PENDING_EXPIRY_MS = 30 * 60 * 1000
+
+const DAY_NAMES = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]
+
+function getAuthoritativePrice(
+  pricingRules: { days: unknown; startTime: string | null; endTime: string | null; price: unknown; fixedSlots: unknown }[],
+  dateStr: string,
+  timeStr: string,
+  requestedDuration: number,
+): { price: number; error?: string } {
+  const [y, m, d] = dateStr.split("-").map(Number)
+  const dayOfWeek = DAY_NAMES[new Date(y, m - 1, d).getDay()]
+
+  const rule = pricingRules.find((r) => {
+    const days = r.days as string[]
+    if (!days.includes(dayOfWeek)) return false
+    if (r.startTime && timeStr < r.startTime) return false
+    if (r.endTime && timeStr >= r.endTime) return false
+    return true
+  })
+  if (!rule) return { price: 0, error: "No hay tarifa configurada para este horario" }
+
+  const fixedSlots = rule.fixedSlots as string[] | null
+  if (fixedSlots?.length) {
+    if (!fixedSlots.includes(timeStr)) return { price: 0, error: "Horario inválido para esta cancha" }
+    const idx = fixedSlots.indexOf(timeStr)
+    if (idx < fixedSlots.length - 1) {
+      const [nh, nm] = fixedSlots[idx + 1].split(":").map(Number)
+      const [ch, cm] = timeStr.split(":").map(Number)
+      const slotMin = (nh * 60 + nm) - (ch * 60 + cm)
+      if (requestedDuration !== slotMin) return { price: 0, error: `La duración debe ser ${slotMin} minutos` }
+    }
+  }
+
+  return { price: Number(rule.price) }
+}
+
 export async function POST(req: Request, { params }: Params) {
   const { slug } = await params
 
@@ -25,7 +62,7 @@ export async function POST(req: Request, { params }: Params) {
   const {
     courtId, date, time, duration = 60,
     clientName, clientEmail, clientPhone, notes,
-    price = 0, paymentPlayers = 1,
+    paymentPlayers = 1,
   } = body
 
   if (!courtId || !date || !time || !clientName || !clientEmail) {
@@ -35,20 +72,43 @@ export async function POST(req: Request, { params }: Params) {
   const startTime = parseISO(`${date}T${time}`)
   const endTime = addMinutes(startTime, duration)
 
-  // Check availability
+  if (startTime <= new Date()) {
+    return NextResponse.json({ error: "No se puede reservar en el pasado" }, { status: 400 })
+  }
+
+  // Load court and validate it belongs to this business
+  const court = await prisma.court.findFirst({
+    where: { id: courtId, businessId: business.id, isActive: true },
+    select: {
+      name: true, sponsorName: true, sponsorLogo: true, sponsorUrl: true,
+      pricingRules: { select: { days: true, startTime: true, endTime: true, price: true, fixedSlots: true } },
+    },
+  })
+  if (!court) return NextResponse.json({ error: "Cancha no disponible" }, { status: 404 })
+
+  // Server-side price calculation — never trust the client's price
+  const { price, error: priceError } = getAuthoritativePrice(court.pricingRules, date, time, Number(duration))
+  if (priceError) return NextResponse.json({ error: priceError }, { status: 400 })
+
+  // Check availability (treat PENDING older than 30 min as expired)
+  const expiryThreshold = new Date(Date.now() - PENDING_EXPIRY_MS)
   const conflict = await prisma.courtBooking.findFirst({
     where: {
       courtId,
-      status: { notIn: ["CANCELLED"] },
       deletedAt: null,
-      OR: [{ startTime: { lt: endTime }, endTime: { gt: startTime } }],
+      startTime: { lt: endTime },
+      endTime: { gt: startTime },
+      OR: [
+        { status: { notIn: ["CANCELLED", "PENDING"] } },
+        { status: "PENDING", createdAt: { gte: expiryThreshold } },
+      ],
     },
   })
   if (conflict) return NextResponse.json({ error: "Horario no disponible" }, { status: 409 })
 
   // Find or create client
   let client = await prisma.client.findFirst({
-    where: { businessId: business.id, email: clientEmail },
+    where: { businessId: business.id, email: clientEmail, deletedAt: null },
   })
   if (!client) {
     client = await prisma.client.create({
@@ -56,13 +116,8 @@ export async function POST(req: Request, { params }: Params) {
     })
   }
 
-  const court = await prisma.court.findUnique({
-    where: { id: courtId },
-    select: { name: true, sponsorName: true, sponsorLogo: true, sponsorUrl: true },
-  })
-
-  // Amount the client actually pays (their share)
-  const clientAmount = Math.round(Number(price) / Math.max(1, Number(paymentPlayers)))
+  // Amount each player pays (their share of the total)
+  const clientAmount = Math.round(price / Math.max(1, Number(paymentPlayers)))
 
   // Create booking in PENDING_PAYMENT status
   const booking = await prisma.courtBooking.create({
@@ -87,7 +142,7 @@ export async function POST(req: Request, { params }: Params) {
       business.flowSecretKey,
       {
         commerceOrder,
-        subject: `Cancha ${court?.name ?? ""} — ${business.name}`,
+        subject: `Cancha ${court.name} — ${business.name}`,
         amount: clientAmount,
         email: clientEmail,
         urlReturn: `${baseUrl}/book/${slug}/pay-court-return?orderId=${commerceOrder}&bookingId=${booking.id}`,

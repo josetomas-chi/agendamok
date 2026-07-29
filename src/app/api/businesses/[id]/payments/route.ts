@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendBookingConfirmation } from "@/lib/email"
+import { utcToChileLocal } from "@/lib/timezone"
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -41,8 +42,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   // Send receipt to client
   if (existingAppt.client.email) {
-    const dateStr = existingAppt.startTime.toLocaleDateString("es-CL")
-    const timeStr = existingAppt.startTime.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
+    const localApptStart = utcToChileLocal(existingAppt.startTime)
+    const dateStr = localApptStart.toLocaleDateString("es-CL")
+    const timeStr = localApptStart.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
     sendBookingConfirmation({
       clientName: existingAppt.client.name,
       clientEmail: existingAppt.client.email,

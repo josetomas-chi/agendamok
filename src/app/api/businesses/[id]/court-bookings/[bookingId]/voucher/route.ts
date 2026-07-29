@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { utcToChileLocal } from "@/lib/timezone"
 
 // Public endpoint — no auth required (client uploads after booking)
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string; bookingId: string }> }) {
@@ -47,8 +48,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // Notify owner that client uploaded a transfer voucher
   const owner = booking.business.owner
   if (owner?.email && process.env.RESEND_API_KEY) {
-    const dateStr = booking.startTime.toLocaleDateString("es-CL")
-    const timeStr = booking.startTime.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
+    const localStart = utcToChileLocal(booking.startTime)
+    const dateStr = localStart.toLocaleDateString("es-CL")
+    const timeStr = localStart.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
     const { Resend } = await import("resend")
     const resend = new Resend(process.env.RESEND_API_KEY)
     resend.emails.send({
