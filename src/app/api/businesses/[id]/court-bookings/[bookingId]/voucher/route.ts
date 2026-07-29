@@ -8,6 +8,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const booking = await prisma.courtBooking.findFirst({
     where: { id: bookingId, businessId: id, deletedAt: null },
+    include: {
+      client: true,
+      court: { select: { name: true } },
+      business: { select: { name: true, owner: { select: { name: true, email: true } } } },
+    },
   })
   if (!booking) return NextResponse.json({ error: "Reserva no encontrada" }, { status: 404 })
 
@@ -38,6 +43,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     where: { id: bookingId },
     data: { transferVoucher: data.secure_url },
   })
+
+  // Notify owner that client uploaded a transfer voucher
+  const owner = booking.business.owner
+  if (owner?.email && process.env.RESEND_API_KEY) {
+    const dateStr = booking.startTime.toLocaleDateString("es-CL")
+    const timeStr = booking.startTime.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })
+    const { Resend } = await import("resend")
+    const resend = new Resend(process.env.RESEND_API_KEY)
+    resend.emails.send({
+      from: "AgendaMok <no-reply@agendamok.cl>",
+      to: owner.email,
+      subject: `Comprobante de transferencia recibido — ${booking.client.name}`,
+      html: `<p>Hola ${owner.name ?? ""},</p><p><strong>${booking.client.name}</strong> subió un comprobante de transferencia para su reserva de <strong>${booking.court.name}</strong> el ${dateStr} a las ${timeStr} hrs.</p><p><a href="${data.secure_url}">Ver comprobante</a></p><p>Precio: $${Number(booking.price).toLocaleString("es-CL")}</p>`,
+    }).catch(() => {})
+  }
 
   return NextResponse.json({ url: data.secure_url })
 }
