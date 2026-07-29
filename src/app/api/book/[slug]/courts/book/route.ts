@@ -83,23 +83,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const { price, durationError } = getAuthoritativePrice(court.pricingRules, date, time, Number(duration))
   if (durationError) return NextResponse.json({ error: durationError }, { status: 400 })
 
-  // Check availability (treat PENDING older than 30 min as expired)
-  const expiryThreshold = new Date(Date.now() - PENDING_EXPIRY_MS)
-  const conflict = await prisma.courtBooking.findFirst({
-    where: {
-      courtId,
-      deletedAt: null,
-      startTime: { lt: endTime },
-      endTime: { gt: startTime },
-      OR: [
-        { status: { notIn: ["CANCELLED", "PENDING"] } },
-        { status: "PENDING", createdAt: { gte: expiryThreshold } },
-      ],
-    },
-  })
-  if (conflict) return NextResponse.json({ error: "Horario no disponible" }, { status: 409 })
-
-  // Find or create client
+  // Find or create client (outside transaction — not part of the critical section)
   const session = await auth()
   const loggedUser = session?.user?.id
     ? await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true } })
@@ -120,18 +104,45 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       client = await prisma.client.update({ where: { id: client.id }, data: updates })
   }
 
-  const booking = await prisma.courtBooking.create({
-    data: {
-      businessId: business.id,
-      courtId,
-      clientId: client.id,
-      startTime,
-      endTime,
-      price,
-      notes: notes || null,
-      status: "CONFIRMED",
-    },
-  })
+  // Atomic: check availability + create booking in a serializable transaction
+  // This prevents double-bookings if two requests arrive simultaneously.
+  const expiryThreshold = new Date(Date.now() - PENDING_EXPIRY_MS)
+  let booking: { id: string; startTime: Date; endTime: Date; price: number; status: string } | null = null
+  try {
+    booking = await prisma.$transaction(async (tx) => {
+      const conflict = await tx.courtBooking.findFirst({
+        where: {
+          courtId,
+          deletedAt: null,
+          startTime: { lt: endTime },
+          endTime: { gt: startTime },
+          OR: [
+            { status: { notIn: ["CANCELLED", "PENDING"] } },
+            { status: "PENDING", createdAt: { gte: expiryThreshold } },
+          ],
+        },
+      })
+      if (conflict) return null
+
+      return tx.courtBooking.create({
+        data: {
+          businessId: business.id,
+          courtId,
+          clientId: client.id,
+          startTime,
+          endTime,
+          price,
+          notes: notes || null,
+          status: "CONFIRMED",
+        },
+      })
+    }, { isolationLevel: "Serializable" })
+  } catch {
+    // Serialization failure — treat as slot taken
+    return NextResponse.json({ error: "Horario no disponible" }, { status: 409 })
+  }
+
+  if (!booking) return NextResponse.json({ error: "Horario no disponible" }, { status: 409 })
 
   // Send confirmation email (non-blocking)
   sendCourtBookingConfirmation({

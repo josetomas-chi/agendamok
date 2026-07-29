@@ -97,23 +97,7 @@ export async function POST(req: Request, { params }: Params) {
   const { price, error: priceError } = getAuthoritativePrice(court.pricingRules, date, time, Number(duration))
   if (priceError) return NextResponse.json({ error: priceError }, { status: 400 })
 
-  // Check availability (treat PENDING older than 30 min as expired)
-  const expiryThreshold = new Date(Date.now() - PENDING_EXPIRY_MS)
-  const conflict = await prisma.courtBooking.findFirst({
-    where: {
-      courtId,
-      deletedAt: null,
-      startTime: { lt: endTime },
-      endTime: { gt: startTime },
-      OR: [
-        { status: { notIn: ["CANCELLED", "PENDING"] } },
-        { status: "PENDING", createdAt: { gte: expiryThreshold } },
-      ],
-    },
-  })
-  if (conflict) return NextResponse.json({ error: "Horario no disponible" }, { status: 409 })
-
-  // Find or create client
+  // Find or create client (outside transaction — not part of the critical section)
   let client = await prisma.client.findFirst({
     where: { businessId: business.id, email: clientEmail, deletedAt: null },
   })
@@ -126,19 +110,43 @@ export async function POST(req: Request, { params }: Params) {
   // Amount each player pays (their share of the total)
   const clientAmount = Math.round(price / Math.max(1, Number(paymentPlayers)))
 
-  // Create booking in PENDING_PAYMENT status
-  const booking = await prisma.courtBooking.create({
-    data: {
-      businessId: business.id,
-      courtId,
-      clientId: client.id,
-      startTime,
-      endTime,
-      price,
-      notes: notes || null,
-      status: "PENDING",
-    },
-  })
+  // Atomic: check availability + create PENDING booking in a serializable transaction
+  const expiryThreshold = new Date(Date.now() - PENDING_EXPIRY_MS)
+  let booking: { id: string } | null = null
+  try {
+    booking = await prisma.$transaction(async (tx) => {
+      const conflict = await tx.courtBooking.findFirst({
+        where: {
+          courtId,
+          deletedAt: null,
+          startTime: { lt: endTime },
+          endTime: { gt: startTime },
+          OR: [
+            { status: { notIn: ["CANCELLED", "PENDING"] } },
+            { status: "PENDING", createdAt: { gte: expiryThreshold } },
+          ],
+        },
+      })
+      if (conflict) return null
+
+      return tx.courtBooking.create({
+        data: {
+          businessId: business.id,
+          courtId,
+          clientId: client.id,
+          startTime,
+          endTime,
+          price,
+          notes: notes || null,
+          status: "PENDING",
+        },
+      })
+    }, { isolationLevel: "Serializable" })
+  } catch {
+    return NextResponse.json({ error: "Horario no disponible" }, { status: 409 })
+  }
+
+  if (!booking) return NextResponse.json({ error: "Horario no disponible" }, { status: 409 })
 
   const baseUrl = process.env.NEXTAUTH_URL || "https://agendamok.cl"
   const commerceOrder = `court_${booking.id}_${Date.now()}`
