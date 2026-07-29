@@ -603,7 +603,7 @@ export default function ClientsPage() {
               <div className="text-center">
                 <p className="text-xl font-bold">{importResult.created} clientes importados</p>
                 {importResult.skipped > 0 && (
-                  <p className="text-sm text-muted-foreground mt-1">{importResult.skipped} omitidos por email duplicado</p>
+                  <p className="text-sm text-muted-foreground mt-1">{importResult.skipped} omitidos por RUT o email duplicado</p>
                 )}
               </div>
               <Button onClick={resetImport}>Cerrar</Button>

@@ -19,7 +19,7 @@ export async function GET() {
   // Note: Client.userId is unique per record — we link one at a time to avoid constraint errors
   const orphansByEmail = userEmail
     ? await prisma.client.findMany({
-        where: { email: userEmail, userId: null, deletedAt: null },
+        where: { email: { equals: userEmail, mode: "insensitive" }, userId: null, deletedAt: null },
         select: { id: true },
       })
     : []

@@ -19,6 +19,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
 
+  const isMember = await prisma.business.findFirst({
+    where: {
+      id,
+      OR: [
+        { ownerId: session.user.id },
+        { members: { some: { userId: session.user.id } } },
+      ],
+    },
+    select: { id: true },
+  })
+  if (!isMember) return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+
   const { searchParams } = new URL(req.url)
   const search = searchParams.get("search") || ""
   const segment = searchParams.get("segment") || ""
@@ -55,6 +67,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
 
+  const isMember = await prisma.business.findFirst({
+    where: {
+      id,
+      OR: [
+        { ownerId: session.user.id },
+        { members: { some: { userId: session.user.id } } },
+      ],
+    },
+    select: { id: true },
+  })
+  if (!isMember) return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+
   try {
     const body = await req.json()
     const data = schema.parse(body)
@@ -64,6 +88,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         where: { businessId_rut: { businessId: id, rut: data.rut } },
       })
       if (existing) return NextResponse.json({ error: "Ya existe un cliente con ese RUT" }, { status: 409 })
+    }
+
+    if (data.email) {
+      const emailConflict = await prisma.client.findFirst({
+        where: { businessId: id, email: { equals: data.email, mode: "insensitive" }, deletedAt: null },
+        select: { id: true },
+      })
+      if (emailConflict) return NextResponse.json({ error: "Ya existe un cliente con ese email" }, { status: 409 })
     }
 
     // Auto-link to user account if email matches a registered user

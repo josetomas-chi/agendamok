@@ -6,11 +6,22 @@ type Params = { params: Promise<{ id: string; clientId: string }> }
 
 // POST — add credit
 // DELETE — deduct credit (when applied to a booking)
+async function checkOwnership(businessId: string, userId: string) {
+  const biz = await prisma.business.findFirst({
+    where: { id: businessId, OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
+    select: { id: true },
+  })
+  return !!biz
+}
+
 export async function POST(req: Request, { params }: Params) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
   const { id: businessId, clientId } = await params
+  if (!(await checkOwnership(businessId, session.user.id)))
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+
   const { amount } = await req.json()
   if (!amount || amount <= 0) return NextResponse.json({ error: "Monto inválido" }, { status: 400 })
 
@@ -31,6 +42,9 @@ export async function DELETE(req: Request, { params }: Params) {
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
   const { id: businessId, clientId } = await params
+  if (!(await checkOwnership(businessId, session.user.id)))
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+
   const { amount } = await req.json()
   if (!amount || amount <= 0) return NextResponse.json({ error: "Monto inválido" }, { status: 400 })
 

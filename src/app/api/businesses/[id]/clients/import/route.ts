@@ -71,39 +71,50 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     ? new Set((await prisma.client.findMany({
         where: { businessId: id, rut: { in: ruts } },
         select: { rut: true },
-      })).map(c => c.rut!))
+      })).map((c: { rut: string | null }) => c.rut!))
     : new Set<string>()
 
+  // Case-insensitive email lookup
   const existingByEmail = emails.length > 0
     ? new Set((await prisma.client.findMany({
-        where: { businessId: id, email: { in: emails } },
+        where: { businessId: id, email: { in: emails, mode: "insensitive" } },
         select: { email: true },
-      })).map(c => c.email!.toLowerCase()))
+      })).map((c: { email: string | null }) => c.email!.toLowerCase()))
     : new Set<string>()
 
   let created = 0, skipped = 0
+  // Track seen RUTs and emails within this import batch to handle intra-CSV duplicates
+  const seenRuts = new Set<string>()
+  const seenEmails = new Set<string>()
 
   for (const row of valid) {
     const rut = row.rut || undefined
     const email = row.email?.toLowerCase() || undefined
     // RUT is the primary dedup key; email is fallback if no RUT
-    if (rut && existingByRut.has(rut)) { skipped++; continue }
-    if (!rut && email && existingByEmail.has(email)) { skipped++; continue }
+    if (rut && (existingByRut.has(rut) || seenRuts.has(rut))) { skipped++; continue }
+    if (!rut && email && (existingByEmail.has(email) || seenEmails.has(email))) { skipped++; continue }
 
     const fullName = [row.name, row.lastName].filter(Boolean).join(" ")
-    await prisma.client.create({
-      data: {
-        businessId: id,
-        name: fullName,
-        lastName: row.lastName || null,
-        rut: row.rut || null,
-        email: email || null,
-        phone: row.phone || null,
-        gender: row.gender || null,
-        notes: row.notes || null,
-      },
-    })
-    created++
+    try {
+      await prisma.client.create({
+        data: {
+          businessId: id,
+          name: fullName,
+          lastName: row.lastName || null,
+          rut: row.rut || null,
+          email: email || null,
+          phone: row.phone || null,
+          gender: row.gender || null,
+          notes: row.notes || null,
+        },
+      })
+      created++
+      if (rut) seenRuts.add(rut)
+      if (email) seenEmails.add(email)
+    } catch {
+      // Constraint violation (race condition) — count as skipped
+      skipped++
+    }
   }
 
   return NextResponse.json({ created, skipped, total: valid.length })
