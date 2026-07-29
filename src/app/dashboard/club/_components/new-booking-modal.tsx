@@ -272,6 +272,8 @@ export default function NewBookingModal({
     { id: "1", startTime: preselect?.startTime || "09:00", endTime: preselect?.endTime || "10:00" }
   ])
   const [multiRangeEnd, setMultiRangeEnd] = useState("")
+  // días de la semana seleccionados (0=dom … 6=sáb); se inicializa con el día de la fecha
+  const [multiDays, setMultiDays] = useState<number[]>([])
 
   // ── Estado Clase particular ────────────────────────────────────────────────
   const [classCourtId, setClassCourtId] = useState(preselect?.courtId || courts[0]?.id || "")
@@ -296,6 +298,21 @@ export default function NewBookingModal({
 
   const activeCourts = allCourts.filter(c => c.isActive !== false)
   const selectedDayOfWeek = form.date ? new Date(form.date + "T00:00:00Z").getUTCDay() : -1
+
+  // Inicializar multiDays con el día de la fecha cuando cambia
+  useEffect(() => {
+    if (selectedDayOfWeek >= 0) {
+      setMultiDays(prev => prev.length === 0 ? [selectedDayOfWeek] : prev)
+    }
+  }, [selectedDayOfWeek])
+
+  function toggleMultiDay(day: number) {
+    setMultiDays(prev =>
+      prev.includes(day)
+        ? prev.length > 1 ? prev.filter(d => d !== day) : prev // mínimo 1 día
+        : [...prev, day].sort((a, b) => a - b)
+    )
+  }
 
   // ── Fixed slots para Reserva común ───────────────────────────────────────
   const selectedCourt = allCourts.find(c => c.id === form.courtId)
@@ -337,7 +354,10 @@ export default function NewBookingModal({
 
   // ── Recurrencia ───────────────────────────────────────────────────────────
   const classSessionCount = classRecurring ? countOccurrences(form.date, classRangeEnd, selectedDayOfWeek) : 0
-  const multiSessionCount = multiRangeEnd ? countOccurrences(form.date, multiRangeEnd, selectedDayOfWeek) : 0
+  // Total de semanas sumando cada día seleccionado
+  const multiSessionCount = multiRangeEnd
+    ? multiDays.reduce((sum, day) => sum + countOccurrences(form.date, multiRangeEnd, day), 0)
+    : 0
 
   // ── Helpers multi-slot ────────────────────────────────────────────────────
   function addMultiSlot() {
@@ -478,25 +498,28 @@ export default function NewBookingModal({
       }
 
       // ── Reserva múltiple ──────────────────────────────────────────────────
-      // Con recurrencia semanal: llamar recurring-bookings por cada cancha × slot
+      // Con recurrencia semanal: recurring-bookings por cada día × cancha × slot
       if (multiRangeEnd) {
-        const results: { ok: boolean; created?: number; skipped?: string[]; conflicts?: string[]; error?: string }[] = []
-        for (const courtId of multiCourtIds) {
-          for (const slot of multiSlots) {
-            const [startHour, startMinute] = slot.startTime.split(":").map(Number)
-            const [endHour, endMinute] = slot.endTime.split(":").map(Number)
-            const durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute)
-            if (durationMinutes <= 0) continue
-            const r = await fetch(`/api/businesses/${businessId}/recurring-bookings`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                courtId, clientId, dayOfWeek: selectedDayOfWeek, startHour, startMinute, durationMinutes,
-                rangeStart: form.date, rangeEnd: multiRangeEnd, notes: form.notes || null,
-              }),
-            })
-            const d = await r.json()
-            results.push({ ok: r.ok, ...d })
+        const effectiveDays = multiDays.length > 0 ? multiDays : [selectedDayOfWeek]
+        const results: { ok: boolean; created?: number; conflicts?: string[] }[] = []
+        for (const day of effectiveDays) {
+          for (const courtId of multiCourtIds) {
+            for (const slot of multiSlots) {
+              const [startHour, startMinute] = slot.startTime.split(":").map(Number)
+              const [endHour, endMinute] = slot.endTime.split(":").map(Number)
+              const durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute)
+              if (durationMinutes <= 0) continue
+              const r = await fetch(`/api/businesses/${businessId}/recurring-bookings`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  courtId, clientId, dayOfWeek: day, startHour, startMinute, durationMinutes,
+                  rangeStart: form.date, rangeEnd: multiRangeEnd, notes: form.notes || null,
+                }),
+              })
+              const d = await r.json()
+              results.push({ ok: r.ok, ...d })
+            }
           }
         }
         const totalCreated = results.reduce((sum, r) => sum + (r.created ?? 0), 0)
@@ -512,18 +535,28 @@ export default function NewBookingModal({
         return
       }
 
-      // Sin recurrencia: N canchas × M slots como reservas únicas en paralelo
+      // Sin recurrencia: N canchas × M días × M slots como reservas únicas
+      function getDateForDay(fromDate: string, targetDay: number): string {
+        const d = new Date(fromDate + "T00:00:00Z")
+        const diff = (targetDay - d.getUTCDay() + 7) % 7
+        d.setUTCDate(d.getUTCDate() + diff)
+        return d.toISOString().slice(0, 10)
+      }
+      const effectiveDays = multiDays.length > 0 ? multiDays : [selectedDayOfWeek]
       const promises = multiCourtIds.flatMap(courtId =>
-        multiSlots.map(slot =>
-          fetch(`/api/businesses/${businessId}/court-bookings`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              courtId, clientId,
-              startTime: `${form.date}T${slot.startTime}:00`,
-              endTime: `${form.date}T${slot.endTime}:00`,
-              notes: form.notes || null,
-            }),
+        effectiveDays.flatMap(day =>
+          multiSlots.map(slot => {
+            const bookingDate = getDateForDay(form.date, day)
+            return fetch(`/api/businesses/${businessId}/court-bookings`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                courtId, clientId,
+                startTime: `${bookingDate}T${slot.startTime}:00`,
+                endTime: `${bookingDate}T${slot.endTime}:00`,
+                notes: form.notes || null,
+              }),
+            })
           })
         )
       )
@@ -554,11 +587,13 @@ export default function NewBookingModal({
     if (bookingType === "class") return classRecurring ? "Crear clases recurrentes" : "Crear clase particular"
     if (bookingType === "simple") return "Confirmar reserva"
     // recurring
-    const total = multiCourtIds.length * multiSlots.length
+    const days = multiDays.length || 1
+    const total = multiCourtIds.length * multiSlots.length * days
     if (multiRangeEnd && multiSessionCount > 0) {
-      return `Crear ${total * multiSessionCount} sesión${total * multiSessionCount !== 1 ? "es" : ""}`
+      const grand = multiCourtIds.length * multiSlots.length * multiSessionCount
+      return `Crear ${grand} reserva${grand !== 1 ? "s" : ""}`
     }
-    return total > 1 ? `Crear ${total} reservas` : "Confirmar reserva"
+    return total > 1 ? `Crear ${total} reserva${total !== 1 ? "s" : ""}` : "Confirmar reserva"
   })()
 
   return (
@@ -708,44 +743,50 @@ export default function NewBookingModal({
           {/* ══════════════ RESERVA MÚLTIPLE ══════════════ */}
           {bookingType === "recurring" && (<>
 
-            {/* Pills de canchas */}
+            {/* Canchas — grid compacto */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>
-                  Canchas{multiCourtIds.length > 1 ? ` (${multiCourtIds.length})` : ""}
+                  Canchas {multiCourtIds.length > 0 && <span style={{ color: GOLD }}>({multiCourtIds.length})</span>}
                 </p>
-                {activeCourts.length > 1 && (
-                  <button type="button"
-                    onClick={() => setMultiCourtIds(activeCourts.map(c => c.id))}
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-md"
+                <div className="flex gap-1.5">
+                  {multiCourtIds.length > 0 && (
+                    <button type="button" onClick={() => setMultiCourtIds([])}
+                      className="text-[10px] font-semibold px-2 py-0.5 rounded"
+                      style={{ color: "rgba(13,27,42,0.35)" }}>
+                      Ninguna
+                    </button>
+                  )}
+                  <button type="button" onClick={() => setMultiCourtIds(activeCourts.map(c => c.id))}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded"
                     style={{ color: GOLD, background: "rgba(201,168,76,0.08)", border: `1px solid rgba(201,168,76,0.2)` }}>
                     Todas
                   </button>
-                )}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="grid grid-cols-2 gap-1">
                 {activeCourts.map(court => {
                   const isSelected = multiCourtIds.includes(court.id)
-                  const unavailable = selectedDayOfWeek >= 0 && (court.pricingRules?.length ?? 0) > 0 &&
-                    !court.pricingRules?.some(r => r.days.includes(selectedDayOfWeek))
                   return (
                     <button key={court.id} type="button"
-                      onClick={() => !unavailable && toggleMultiCourt(court.id)}
-                      disabled={unavailable}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all disabled:opacity-40"
+                      onClick={() => toggleMultiCourt(court.id)}
+                      className="flex items-center gap-2.5 px-3 py-2 text-left transition-all rounded-lg"
                       style={isSelected
-                        ? { background: court.color, color: "#fff", border: `2px solid ${court.color}` }
-                        : { background: "rgba(13,27,42,0.04)", color: NAVY, border: "1.5px solid rgba(13,27,42,0.12)" }}>
-                      <span className="w-2 h-2 rounded-full flex-shrink-0"
-                        style={{ background: isSelected ? "rgba(255,255,255,0.6)" : court.color }} />
-                      {court.name}
-                      {isSelected && <X className="w-3 h-3 ml-0.5 opacity-70" />}
+                        ? { background: NAVY, borderLeft: `3px solid ${court.color}` }
+                        : { background: "rgba(13,27,42,0.04)", borderLeft: `3px solid ${court.color}`, border: `1px solid rgba(13,27,42,0.08)`, borderLeftWidth: "3px", borderLeftColor: court.color }}>
+                      <span className="text-xs font-semibold truncate flex-1"
+                        style={{ color: isSelected ? "#fff" : NAVY }}>
+                        {court.name}
+                      </span>
+                      {isSelected && (
+                        <span className="text-[9px] font-black flex-shrink-0" style={{ color: GOLD }}>✓</span>
+                      )}
                     </button>
                   )
                 })}
               </div>
               {multiCourtIds.length === 0 && (
-                <p className="text-[10px] mt-1" style={{ color: "rgba(201,168,76,0.7)" }}>Selecciona al menos una cancha</p>
+                <p className="text-[10px] mt-1.5" style={{ color: "rgba(201,168,76,0.7)" }}>Selecciona al menos una cancha</p>
               )}
             </div>
 
@@ -802,16 +843,28 @@ export default function NewBookingModal({
                 <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: GOLD }}>Repetición semanal</p>
                 <span className="text-[10px]" style={{ color: "rgba(13,27,42,0.4)" }}>opcional</span>
               </div>
-              {/* Días de la semana — solo informativo, derivado de la fecha */}
-              <div className="flex gap-1">
-                {DAYS_SHORT.map((d, i) => (
-                  <div key={d} className="flex-1 h-7 rounded-lg flex items-center justify-center text-[9px] font-bold"
-                    style={i === selectedDayOfWeek
-                      ? { background: GOLD, color: "#fff" }
-                      : { background: "rgba(13,27,42,0.06)", color: "rgba(13,27,42,0.3)" }}>
-                    {d}
-                  </div>
-                ))}
+              {/* Días de la semana — interactivos */}
+              <div>
+                <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Días</p>
+                <div className="flex gap-1">
+                  {DAYS_SHORT.map((d, i) => {
+                    const isSelected = multiDays.includes(i)
+                    return (
+                      <button key={d} type="button" onClick={() => toggleMultiDay(i)}
+                        className="flex-1 h-8 rounded-md flex items-center justify-center text-[10px] font-bold transition-all"
+                        style={isSelected
+                          ? { background: NAVY, color: "#fff" }
+                          : { background: "rgba(13,27,42,0.05)", color: "rgba(13,27,42,0.35)", border: "1px solid rgba(13,27,42,0.08)" }}>
+                        {d}
+                      </button>
+                    )
+                  })}
+                </div>
+                {multiDays.length > 1 && (
+                  <p className="text-[10px] mt-1 font-semibold" style={{ color: GOLD }}>
+                    {multiDays.map(d => DAYS_ES[d]).join(" · ")}
+                  </p>
+                )}
               </div>
               <div>
                 <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha de término (dejar vacío para reserva única)</p>
@@ -820,24 +873,37 @@ export default function NewBookingModal({
                   className={inputCls} style={{ ...inputStyle, colorScheme: "light" } as React.CSSProperties} />
               </div>
               {multiRangeEnd && multiSessionCount > 0 && (
-                <div className="rounded-lg px-3 py-2 space-y-1"
-                  style={{ background: "rgba(201,168,76,0.1)" }}>
-                  <div className="flex items-center justify-between text-xs" style={{ color: "#8a6520" }}>
-                    <span>{multiCourtIds.length} cancha{multiCourtIds.length !== 1 ? "s" : ""} × {multiSlots.length} horario{multiSlots.length !== 1 ? "s" : ""} × {multiSessionCount} semanas</span>
-                    <span className="font-black">{multiCourtIds.length * multiSlots.length * multiSessionCount} reservas</span>
+                <div className="rounded-lg px-3 py-2.5 space-y-1.5"
+                  style={{ background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.2)" }}>
+                  <div className="grid grid-cols-3 gap-1 text-center text-[10px]" style={{ color: "rgba(13,27,42,0.5)" }}>
+                    <div>
+                      <p className="font-black text-sm" style={{ color: NAVY }}>{multiDays.length || 1}</p>
+                      <p>día{(multiDays.length || 1) !== 1 ? "s" : ""}</p>
+                    </div>
+                    <div>
+                      <p className="font-black text-sm" style={{ color: NAVY }}>{multiCourtIds.length}</p>
+                      <p>cancha{multiCourtIds.length !== 1 ? "s" : ""}</p>
+                    </div>
+                    <div>
+                      <p className="font-black text-sm" style={{ color: NAVY }}>{multiSlots.length}</p>
+                      <p>horario{multiSlots.length !== 1 ? "s" : ""}</p>
+                    </div>
                   </div>
-                  {multiTotalPrice > 0 && (
-                    <p className="text-[10px] text-right font-bold" style={{ color: GOLD }}>
-                      Total estimado: ${(multiTotalPrice * multiSessionCount).toLocaleString("es-CL")}
-                    </p>
-                  )}
+                  <div className="flex items-center justify-between pt-1" style={{ borderTop: "1px solid rgba(201,168,76,0.15)" }}>
+                    <span className="text-[10px]" style={{ color: "rgba(13,27,42,0.4)" }}>Total reservas</span>
+                    <span className="text-sm font-black" style={{ color: GOLD }}>
+                      {multiCourtIds.length * multiSlots.length * multiSessionCount}
+                    </span>
+                  </div>
                 </div>
               )}
-              {!multiRangeEnd && multiCourtIds.length * multiSlots.length > 1 && (
+              {!multiRangeEnd && (multiCourtIds.length * (multiDays.length || 1) * multiSlots.length) > 1 && (
                 <div className="flex items-center justify-between text-xs rounded-lg px-3 py-2"
-                  style={{ background: "rgba(13,27,42,0.04)", color: "rgba(13,27,42,0.5)" }}>
-                  <span>Se crearán</span>
-                  <span className="font-black">{multiCourtIds.length * multiSlots.length} reservas en este día</span>
+                  style={{ background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.08)" }}>
+                  <span style={{ color: "rgba(13,27,42,0.5)" }}>Se crearán</span>
+                  <span className="font-black" style={{ color: NAVY }}>
+                    {multiCourtIds.length * (multiDays.length || 1) * multiSlots.length} reservas
+                  </span>
                 </div>
               )}
             </div>
