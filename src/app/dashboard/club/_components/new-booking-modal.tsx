@@ -55,7 +55,7 @@ function TimeSelect({ value, onChange, label, minTime }: { value: string; onChan
 }
 
 type NewClientForm = { name: string; email: string; phone: string }
-type Client = { id: string; name: string; email: string | null; phone: string | null; rut: string | null; creditBalance?: number }
+type Client = { id: string; name: string; lastName: string | null; email: string | null; phone: string | null; rut: string | null; creditBalance?: number }
 type CoachFeeRule = { days: number[]; startTime: string; endTime: string; classPrice: number }
 type Coach = { id: string; name: string; color: string; paymentType: string; feeRules: CoachFeeRule[] }
 
@@ -77,14 +77,15 @@ function ClientCombobox({ clients, value, onSelect }: {
 
   const q = query.trim().toLowerCase()
   const filtered = q.length > 0
-    ? clients.filter(c =>
-        c.name.toLowerCase().includes(q) ||
-        (c.email ?? "").toLowerCase().includes(q) ||
-        (c.phone ?? "").replace(/\s/g, "").includes(q.replace(/\s/g, "")) ||
-        (c.rut ?? "").replace(/[.\-]/g, "").includes(q.replace(/[.\-]/g, ""))
-      )
+    ? clients.filter(c => {
+        const fullName = [c.name, c.lastName].filter(Boolean).join(" ").toLowerCase()
+        return fullName.includes(q) ||
+          (c.email ?? "").toLowerCase().includes(q) ||
+          (c.phone ?? "").replace(/\s/g, "").includes(q.replace(/\s/g, "")) ||
+          (c.rut ?? "").replace(/[.\-]/g, "").includes(q.replace(/[.\-]/g, ""))
+      })
     : clients
-  const exactMatch = clients.find(c => c.name.toLowerCase() === q)
+  const exactMatch = clients.find(c => [c.name, c.lastName].filter(Boolean).join(" ").toLowerCase() === q)
 
   function startCreating() { setOpen(false); setCreating({ name: query.trim(), email: "", phone: "" }) }
   function confirmCreate() {
@@ -147,10 +148,10 @@ function ClientCombobox({ clients, value, onSelect }: {
                         {c.name[0].toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate">{c.name}</p>
-                        {(c.rut || c.email) && (
+                        <p className="truncate">{[c.name, c.lastName].filter(Boolean).join(" ")}</p>
+                        {(c.email || c.phone) && (
                           <p className="text-[10px] truncate" style={{ color: "rgba(13,27,42,0.4)" }}>
-                            {c.rut ?? c.email}
+                            {c.email ?? c.phone}
                           </p>
                         )}
                       </div>

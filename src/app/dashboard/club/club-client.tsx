@@ -19,7 +19,7 @@ function formatRut(value: string) {
 
 type PricingRule = { days: number[]; startTime: string; endTime: string; fixedSlots: string[] }
 type Court = { id: string; name: string; sport: string | null; color: string; isActive: boolean; pricingRules?: PricingRule[] }
-type Client = { id: string; name: string; email: string | null; phone: string | null; rut: string | null }
+type Client = { id: string; name: string; lastName: string | null; email: string | null; phone: string | null; rut: string | null }
 type Booking = {
   id: string; courtId: string; clientId: string | null
   startTime: string; endTime: string; price: number; status: string; notes: string | null
@@ -901,14 +901,15 @@ function ClientCombobox({ clients, value, onSelect }: {
   }, [])
   const q = query.trim().toLowerCase()
   const filtered = q.length > 0
-    ? clients.filter(c =>
-        c.name.toLowerCase().includes(q) ||
-        (c.email ?? "").toLowerCase().includes(q) ||
-        (c.phone ?? "").replace(/\s/g, "").includes(q.replace(/\s/g, "")) ||
-        (c.rut ?? "").replace(/[.\-]/g, "").includes(q.replace(/[.\-]/g, ""))
-      )
+    ? clients.filter(c => {
+        const fullName = [c.name, c.lastName].filter(Boolean).join(" ").toLowerCase()
+        return fullName.includes(q) ||
+          (c.email ?? "").toLowerCase().includes(q) ||
+          (c.phone ?? "").replace(/\s/g, "").includes(q.replace(/\s/g, "")) ||
+          (c.rut ?? "").replace(/[.\-]/g, "").includes(q.replace(/[.\-]/g, ""))
+      })
     : clients
-  const exactMatch = clients.find(c => c.name.toLowerCase() === q)
+  const exactMatch = clients.find(c => [c.name, c.lastName].filter(Boolean).join(" ").toLowerCase() === q)
 
   function startCreating() {
     setOpen(false)
@@ -969,16 +970,24 @@ function ClientCombobox({ clients, value, onSelect }: {
               </button>
               {filtered.length > 0 && (
                 <div className="max-h-36 overflow-y-auto">
-                  {filtered.map(c => (
-                    <button key={c.id} type="button"
-                      onClick={() => { onSelect({ id: c.id, name: c.name }); setQuery(c.name); setOpen(false) }}
-                      className="w-full px-4 py-2.5 text-sm text-left flex items-center gap-2" style={{ color: NAVY }}>
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style={{ background: NAVY }}>
-                        {c.name[0].toUpperCase()}
-                      </div>
-                      {c.name}
-                    </button>
-                  ))}
+                  {filtered.map(c => {
+                    const fullName = [c.name, c.lastName].filter(Boolean).join(" ")
+                    return (
+                      <button key={c.id} type="button"
+                        onClick={() => { onSelect({ id: c.id, name: c.name }); setQuery(fullName); setOpen(false) }}
+                        className="w-full px-4 py-2.5 text-sm text-left flex items-center gap-2" style={{ color: NAVY }}>
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style={{ background: NAVY }}>
+                          {c.name[0].toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate">{fullName}</p>
+                          {(c.email || c.phone) && (
+                            <p className="text-[10px] truncate" style={{ color: "rgba(13,27,42,0.4)" }}>{c.email ?? c.phone}</p>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
               )}
               {query.trim() && !exactMatch && (
