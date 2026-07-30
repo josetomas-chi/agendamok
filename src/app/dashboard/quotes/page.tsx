@@ -36,7 +36,7 @@ type Quote = {
   items: QuoteItem[]
 }
 
-type Client = { id: string; name: string }
+type Client = { id: string; name: string; lastName?: string | null }
 type Service = { id: string; name: string; price: number; duration: number }
 type PricingRule = { id: string; name: string; price: number; fixedSlots: string[]; days: number[] }
 type Court = { id: string; name: string; color: string; sport: string; pricingRules: PricingRule[] }
@@ -249,7 +249,7 @@ export default function QuotesPage() {
           </button>
           <div className="flex-1">
             <h1 className="page-title">Presupuesto #{String(selected.number).padStart(4, "0")}</h1>
-            <p className="page-subtitle">{selected.client?.name || "Sin cliente"}</p>
+            <p className="page-subtitle">{selected.client ? [selected.client.name, selected.client.lastName].filter(Boolean).join(" ") : "Sin cliente"}</p>
           </div>
           <Badge className={STATUS_COLORS[selected.status]}>{STATUS_LABELS[selected.status]}</Badge>
           {selected.client?.email && (
@@ -303,7 +303,7 @@ export default function QuotesPage() {
             {selected.client && (
               <div>
                 <p className="text-white/40 text-xs mb-1">Cliente</p>
-                <p className="font-medium">{selected.client.name}</p>
+                <p className="font-medium">{[selected.client.name, selected.client.lastName].filter(Boolean).join(" ")}</p>
                 <p className="text-white/40 text-xs">{selected.client.email}</p>
               </div>
             )}
@@ -427,7 +427,7 @@ export default function QuotesPage() {
                   <div className="flex items-center gap-3 mt-0.5">
                     {q.client && (
                       <span className="text-xs flex items-center gap-1" style={{ color: "rgba(13,27,42,0.55)" }}>
-                        <User className="w-3 h-3" />{q.client.name}
+                        <User className="w-3 h-3" />{[q.client.name, q.client.lastName].filter(Boolean).join(" ")}
                       </span>
                     )}
                     <span className="text-xs" style={{ color: "rgba(13,27,42,0.4)" }}>
@@ -658,7 +658,7 @@ function QuoteFormDialog({
                   className="w-full h-10 rounded-xl border border-white/[0.08] bg-white/[0.05] px-3 pr-9 text-sm text-white appearance-none focus:outline-none focus:border-sky-500/60 transition-colors"
                   style={{ colorScheme: "dark" }}>
                   <option value="" style={{ backgroundColor: "#28282c" }}>Sin cliente</option>
-                  {clients.map(c => <option key={c.id} value={c.id} style={{ backgroundColor: "#28282c" }}>{c.name}</option>)}
+                  {clients.map(c => <option key={c.id} value={c.id} style={{ backgroundColor: "#28282c" }}>{[c.name, c.lastName].filter(Boolean).join(" ")}</option>)}
                 </select>
                 <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-white/30 pointer-events-none" />
               </div>

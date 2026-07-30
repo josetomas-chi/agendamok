@@ -9,7 +9,7 @@ type Appt = {
   status: string
   time: string
   endTime: string
-  client: { name: string; phone: string | null; email: string | null }
+  client: { name: string; lastName?: string | null; phone: string | null; email: string | null }
   service: { name: string; duration: number; color: string }
 }
 
@@ -18,7 +18,7 @@ type CourtBooking = {
   time: string
   endTime: string
   court: { name: string; color: string; sport: string | null }
-  client: { name: string; phone: string | null } | null
+  client: { name: string; lastName?: string | null; phone: string | null } | null
 }
 
 interface Props {
@@ -100,7 +100,7 @@ export function StaffAgendaClient({ appointments, courtBookings, today, staffNam
                         <p className="text-sm text-slate-400 mt-0.5">{b.court.sport}</p>
                       )}
                       {b.client && (
-                        <p className="text-sm text-slate-300 mt-1">{b.client.name}</p>
+                        <p className="text-sm text-slate-300 mt-1">{[b.client.name, b.client.lastName].filter(Boolean).join(" ")}</p>
                       )}
                       {b.client?.phone && (
                         <a href={`tel:${b.client.phone}`} className="inline-flex items-center gap-1 text-xs text-sky-400 mt-2">
@@ -132,7 +132,7 @@ export function StaffAgendaClient({ appointments, courtBookings, today, staffNam
                     <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: appt.service.color }} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-white truncate">{appt.client.name}</span>
+                        <span className="font-semibold text-white truncate">{[appt.client.name, appt.client.lastName].filter(Boolean).join(" ")}</span>
                         <span className="text-xs text-slate-400 flex-shrink-0 flex items-center gap-1">
                           <Clock className="w-3 h-3" />{appt.time} – {appt.endTime}
                         </span>
@@ -180,7 +180,7 @@ export function StaffAgendaClient({ appointments, courtBookings, today, staffNam
                 <div key={appt.id} className="bg-[#28282c]/50 rounded-xl px-4 py-3 border border-white/5 opacity-60">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-sm font-medium text-slate-300">{appt.client.name}</span>
+                      <span className="text-sm font-medium text-slate-300">{[appt.client.name, appt.client.lastName].filter(Boolean).join(" ")}</span>
                       <span className="text-slate-600 mx-2">·</span>
                       <span className="text-sm text-slate-500">{appt.service.name}</span>
                     </div>

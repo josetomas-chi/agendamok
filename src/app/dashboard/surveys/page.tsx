@@ -15,7 +15,7 @@ type Survey = {
     startTime: string
     service: { name: string }
     staff: { id: string; color: string; user: { name: string | null } }
-    client: { name: string }
+    client: { name: string; lastName?: string | null }
   }
 }
 
@@ -138,10 +138,10 @@ export default function SurveysPage() {
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400 text-xs font-bold flex-shrink-0">
-                        {s.appointment.client.name[0].toUpperCase()}
+                        {s.appointment.client.name[0]?.toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-white">{s.appointment.client.name}</p>
+                        <p className="text-sm font-medium text-white">{[s.appointment.client.name, s.appointment.client.lastName].filter(Boolean).join(" ")}</p>
                         <p className="text-xs text-white/30">{s.appointment.service.name} · {s.appointment.staff.user.name}</p>
                       </div>
                     </div>

@@ -14,7 +14,7 @@ type StaffSummary = {
 type Record_ = {
   id: string; amount: number; isPaid: boolean; rate: number; type: string; createdAt: string
   staff: { user: { name: string | null } }
-  appointment: { startTime: string; service: { name: string }; client: { name: string } }
+  appointment: { startTime: string; service: { name: string }; client: { name: string; lastName?: string | null } }
 }
 
 export default function CommissionsPage() {
@@ -201,7 +201,7 @@ export default function CommissionsPage() {
                     {filteredRecords.map(r => (
                       <tr key={r.id} className="hover:bg-white/[0.02]">
                         <td className="px-4 py-3">
-                          <p className="font-medium text-white">{r.appointment.client.name}</p>
+                          <p className="font-medium text-white">{[r.appointment.client.name, r.appointment.client.lastName].filter(Boolean).join(" ")}</p>
                           <p className="text-xs text-white/40">
                             {r.appointment.service.name} · {format(new Date(r.appointment.startTime), "d MMM", { locale: es })}
                           </p>

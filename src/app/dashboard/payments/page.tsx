@@ -16,7 +16,7 @@ type Appointment = {
   id: string; startTime: string; status: string; price?: number | null
   service: { name: string; price: number; color: string }
   staff: { user: { name: string | null } }
-  client: { id: string; name: string; rut: string | null }
+  client: { id: string; name: string; lastName?: string | null; rut: string | null }
   payment: { amount: number; status: string; method: string } | null
 }
 
@@ -212,7 +212,7 @@ function ServicesPaymentsView({ businessId, hasBsale }: { businessId: string; ha
 
   function handleCobrar(a: Appointment) {
     if (!a.client.rut) {
-      setRutPending({ clientId: a.client.id, clientName: a.client.name, appt: a })
+      setRutPending({ clientId: a.client.id, clientName: [a.client.name, a.client.lastName].filter(Boolean).join(" "), appt: a })
     } else {
       setSelected(a); setMethod("CASH")
     }
@@ -251,7 +251,7 @@ function ServicesPaymentsView({ businessId, hasBsale }: { businessId: string; ha
     setEmitting(true)
     const r = await fetch(`/api/businesses/${businessId}/invoices`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentId: lastPaymentId, clientName: selected.client.name }),
+      body: JSON.stringify({ paymentId: lastPaymentId, clientName: [selected.client.name, selected.client.lastName].filter(Boolean).join(" ") }),
     })
     const data = await r.json()
     if (r.ok) {
@@ -298,7 +298,7 @@ function ServicesPaymentsView({ businessId, hasBsale }: { businessId: string; ha
             <div key={a.id} className={`flex items-center gap-4 px-4 py-3.5 ${i !== appointments.length - 1 ? "border-b" : ""}`}>
               <div className="w-1 h-10 rounded-full flex-shrink-0" style={{ backgroundColor: a.service.color }} />
               <div className="flex-1 min-w-0">
-                <p className="font-medium">{a.client.name}</p>
+                <p className="font-medium">{[a.client.name, a.client.lastName].filter(Boolean).join(" ")}</p>
                 <p className="text-sm text-muted-foreground">{a.service.name} • {format(new Date(a.startTime), "HH:mm")}</p>
               </div>
               <div className="text-right">
@@ -353,7 +353,7 @@ function ServicesPaymentsView({ businessId, hasBsale }: { businessId: string; ha
             <DialogHeader><DialogTitle>Registrar pago</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="bg-muted/30 rounded-lg p-4 space-y-1">
-                <p className="font-semibold">{selected.client.name}</p>
+                <p className="font-semibold">{[selected.client.name, selected.client.lastName].filter(Boolean).join(" ")}</p>
                 <p className="text-sm text-muted-foreground">{selected.service.name}</p>
                 <p className="text-2xl font-bold mt-2">${Number(selected.price ?? selected.service.price).toLocaleString("es-AR")}</p>
               </div>

@@ -16,7 +16,7 @@ type Membership = {
   client: { id: string; name: string; email: string | null }
   plan: { id: string; name: string; price: number; durationDays: number }
 }
-type Client = { id: string; name: string; email: string | null }
+type Client = { id: string; name: string; lastName?: string | null; email: string | null }
 
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE: "bg-green-500/20 text-green-400",
@@ -170,7 +170,7 @@ export default function MembershipsPage() {
                     <Users className="w-3.5 h-3.5 text-sky-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white">{m.client.name}</p>
+                    <p className="text-sm font-medium text-white">{[m.client.name, m.client.lastName].filter(Boolean).join(" ")}</p>
                     <p className="text-xs text-white/40">{m.plan.name} · vence {format(new Date(m.endDate), "d MMM yyyy", { locale: es })}</p>
                   </div>
                   <Badge className={`text-[10px] ${STATUS_COLORS[m.status]}`}>{STATUS_LABELS[m.status]}</Badge>
@@ -186,7 +186,7 @@ export default function MembershipsPage() {
 
       {notifyOpen && businessId && (() => {
         const active = memberships.filter(m => m.status === "ACTIVE" && m.client.email)
-        const recipients = active.map(m => ({ name: m.client.name, email: m.client.email! }))
+        const recipients = active.map(m => ({ name: [m.client.name, m.client.lastName].filter(Boolean).join(" "), email: m.client.email! }))
         return (
           <NotifyModal
             businessId={businessId}

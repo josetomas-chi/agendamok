@@ -17,7 +17,7 @@ const BORDER = "1px solid rgba(13,27,42,0.1)"
 function fmt(n: number) { return `$${Number(n).toLocaleString("es-CL")}` }
 
 type Coach = { id: string; name: string; color: string }
-type Client = { id: string; name: string; email: string | null; phone: string | null; rut: string | null }
+type Client = { id: string; name: string; lastName?: string | null; email: string | null; phone: string | null; rut: string | null }
 type Enrollment = { id: string; clientId: string; status: string; startDate: string; notes: string | null; createdAt?: string; client: Client }
 type Group = {
   id: string; name: string; sport: string | null; level: string | null
@@ -382,7 +382,7 @@ function AttendanceTab({ businessId, groups }: { businessId: string; groups: Gro
                   <div key={e.clientId} className="flex items-center gap-3 px-4 py-3"
                     style={{ borderTop: i > 0 ? BORDER : undefined, background: i % 2 === 0 ? "#fff" : "rgba(13,27,42,0.015)" }}>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold truncate" style={{ color: NAVY }}>{e.client.name}</p>
+                      <p className="text-sm font-bold truncate" style={{ color: NAVY }}>{[e.client.name, e.client.lastName].filter(Boolean).join(" ")}</p>
                       {e.client.rut && <p className="text-xs" style={{ color: "rgba(13,27,42,0.4)" }}>{e.client.rut}</p>}
                     </div>
                     <div className="flex gap-1.5">
@@ -415,7 +415,7 @@ function AttendanceTab({ businessId, groups }: { businessId: string; groups: Gro
       {notifyOpen && selectedGroup && (() => {
         const recipients = activeEnrollments
           .filter(e => e.client.email)
-          .map(e => ({ name: e.client.name, email: e.client.email! }))
+          .map(e => ({ name: [e.client.name, e.client.lastName].filter(Boolean).join(" "), email: e.client.email! }))
         return (
           <NotifyModal
             businessId={businessId}
@@ -565,7 +565,7 @@ function BillingTab({ businessId, groups }: { businessId: string; groups: Group[
                 <div key={e.id} className="flex items-center gap-3 px-4 py-3"
                   style={{ borderTop: i > 0 ? BORDER : undefined, background: i % 2 === 0 ? "#fff" : "rgba(13,27,42,0.015)" }}>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold truncate" style={{ color: NAVY }}>{e.client.name}</p>
+                    <p className="text-sm font-bold truncate" style={{ color: NAVY }}>{[e.client.name, e.client.lastName].filter(Boolean).join(" ")}</p>
                     <p className="text-xs" style={{ color: "rgba(13,27,42,0.4)" }}>
                       {e.client.phone ?? e.client.email ?? ""}
                     </p>
@@ -828,7 +828,7 @@ export default function SchoolPage() {
                         <div key={e.id} className="flex items-center gap-3 px-4 py-3"
                           style={{ borderTop: i > 0 ? BORDER : undefined, background: "rgba(251,191,36,0.03)" }}>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold truncate" style={{ color: NAVY }}>{e.client.name}</p>
+                            <p className="text-sm font-bold truncate" style={{ color: NAVY }}>{[e.client.name, e.client.lastName].filter(Boolean).join(" ")}</p>
                             <p className="text-xs" style={{ color: "rgba(13,27,42,0.45)" }}>
                               {[e.client.rut, e.client.phone, e.client.email].filter(Boolean).join(" · ")}
                             </p>
@@ -877,12 +877,12 @@ export default function SchoolPage() {
                     <div key={e.id} className="flex items-center gap-3 px-4 py-3"
                       style={{ borderTop: i > 0 ? BORDER : undefined, background: i % 2 === 0 ? "#fff" : "rgba(13,27,42,0.015)" }}>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold truncate" style={{ color: NAVY }}>{e.client.name}</p>
+                        <p className="text-sm font-bold truncate" style={{ color: NAVY }}>{[e.client.name, e.client.lastName].filter(Boolean).join(" ")}</p>
                         <p className="text-xs" style={{ color: "rgba(13,27,42,0.4)" }}>
                           {[e.client.rut, e.client.phone, e.client.email].filter(Boolean).join(" · ")}
                         </p>
                       </div>
-                      <button onClick={() => handleUnenroll(e.id, e.client.name)}
+                      <button onClick={() => handleUnenroll(e.id, [e.client.name, e.client.lastName].filter(Boolean).join(" "))}
                         className="flex items-center gap-1 px-2.5 h-7 rounded-lg text-[11px] font-bold"
                         style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", color: "#dc2626" }}>
                         <UserMinus className="w-3 h-3" /> Dar de baja
