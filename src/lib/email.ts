@@ -413,7 +413,7 @@ export async function sendQuoteEmail({
       <span class="value" style="min-width:90px">${fmt(i.quantity * i.unitPrice)}</span>
     </div>`).join("")
 
-  await resend.emails.send({
+  return resend.emails.send({
     from: FROM,
     to: clientEmail,
     subject: `Presupuesto #${String(quoteNumber).padStart(4, "0")} de ${businessName}`,
