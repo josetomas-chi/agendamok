@@ -5,7 +5,6 @@ import { addMinutes, parseISO } from "date-fns"
 import { sendCourtBookingConfirmation } from "@/lib/email"
 import { getCourtBookingPrice } from "@/lib/pricing"
 
-const PENDING_EXPIRY_MS = 15 * 60 * 1000
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -72,8 +71,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   // Atomic: check availability + create booking in a serializable transaction
   // This prevents double-bookings if two requests arrive simultaneously.
-  console.log("[court-book] intento:", courtId, date, time, duration, "startTime:", startTime.toISOString(), "endTime:", endTime.toISOString())
-  const expiryThreshold = new Date(Date.now() - PENDING_EXPIRY_MS)
   let booking: { id: string; startTime: Date; endTime: Date; price: number; status: string } | null = null
   try {
     booking = await prisma.$transaction(async (tx) => {
@@ -83,16 +80,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
           deletedAt: null,
           startTime: { lt: endTime },
           endTime: { gt: startTime },
-          OR: [
-            { status: { notIn: ["CANCELLED" as const, "PENDING" as const] } },
-            { status: "PENDING" as const, createdAt: { gte: expiryThreshold } },
-          ],
+          status: { not: "CANCELLED" },
         },
       })
-      if (conflict) {
-        console.log("[court-book] conflicto encontrado:", conflict.id, new Date(conflict.startTime).toISOString(), new Date(conflict.endTime).toISOString(), conflict.status)
-        return null
-      }
+      if (conflict) return null
 
       return tx.courtBooking.create({
         data: {
