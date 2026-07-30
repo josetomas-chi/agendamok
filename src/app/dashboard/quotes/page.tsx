@@ -570,9 +570,9 @@ function CourtItemRow({
               onChange={e => updateCourtItem(idx, "quantity", parseInt(e.target.value) || 1)}
               className="w-16 h-8 rounded-lg border border-white/[0.08] bg-white/[0.05] px-2 text-sm text-white text-center focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full">
             <label className="text-[10px] text-white/35 whitespace-nowrap">Precio unit.</label>
-            <div className="relative flex-1 min-w-[90px]">
+            <div className="relative w-full">
               <span className="absolute left-2.5 top-1.5 text-xs text-white/30">$</span>
               <input type="number" min={0} value={item.unitPrice} onFocus={e => e.target.select()}
                 onChange={e => updateCourtItem(idx, "unitPrice", parseFloat(e.target.value) || 0)}
