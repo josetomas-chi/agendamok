@@ -84,8 +84,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
           startTime: { lt: endTime },
           endTime: { gt: startTime },
           OR: [
-            { status: { notIn: ["CANCELLED", "PENDING"] } },
-            { status: "PENDING", createdAt: { gte: expiryThreshold } },
+            { status: { notIn: ["CANCELLED" as const, "PENDING" as const] } },
+            { status: "PENDING" as const, createdAt: { gte: expiryThreshold } },
           ],
         },
       })
