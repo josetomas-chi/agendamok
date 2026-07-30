@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendCourtBookingConfirmation } from "@/lib/email"
+import { calcCourtPrice } from "@/lib/pricing"
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -115,22 +116,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
   } else {
     // Reserva común: precio basado en tarifas de la cancha
-    for (const rule of court.pricingRules) {
-      if (rule.days.includes(dayOfWeek) && timeStr >= rule.startTime && timeStr < rule.endTime) {
-        // Fixed slots → precio por bloque; sin bloques → precio por hora
-        price = rule.fixedSlots?.length ? Number(rule.price) : Number(rule.price) * durationHours
-        break
-      }
-    }
-
-    // Aplicar recargo si el día es feriado (solo reservas sin profe)
     const holiday = await prisma.clubHoliday.findFirst({
       where: { businessId: id, date: { gte: new Date(start.toDateString()), lt: new Date(new Date(start.toDateString()).getTime() + 86400000) }, type: "SURCHARGE" },
     })
-    if (holiday && holiday.surchargeValue) {
-      if (holiday.surchargeType === "PERCENT") price = price * (1 + holiday.surchargeValue / 100)
-      else if (holiday.surchargeType === "FIXED") price = price + holiday.surchargeValue
-    }
+    price = calcCourtPrice(court.pricingRules, start, end, holiday)
   }
 
   const booking = await prisma.courtBooking.create({

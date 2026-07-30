@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { sendRecurringBookingConfirmation } from "@/lib/email"
+import { calcCourtPrice } from "@/lib/pricing"
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -12,37 +13,16 @@ type Holiday = { surchargeType: string | null; surchargeValue: number | null; ty
 
 // Calcula precio para una sesión aplicando reglas de tarifa y recargo de feriado
 async function calcPrice(
-  businessId: string,
+  _businessId: string,
   courtId: string,
   start: Date,
   end: Date,
   holiday: Holiday | null,
 ): Promise<number> {
-  void businessId
   const court = await prisma.court.findUnique({ where: { id: courtId }, include: { pricingRules: true } })
   if (!court) return 0
-
-  const dayOfWeek = start.getUTCDay()
-  const timeStr = `${String(start.getUTCHours()).padStart(2, "0")}:${String(start.getUTCMinutes()).padStart(2, "0")}`
-  const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
-
-  const rule = court.pricingRules.find(
-    (r: { days: number[]; startTime: string; endTime: string; price: unknown; fixedSlots?: string[] }) =>
-      r.days.includes(dayOfWeek) && timeStr >= r.startTime && timeStr < r.endTime,
-  )
-  // Fixed slots → precio por bloque fijo; sin bloques → precio por hora
-  let price = rule
-    ? ((rule as { fixedSlots?: string[] }).fixedSlots?.length
-        ? Number(rule.price)
-        : Number(rule.price) * durationHours)
-    : 0
-
-  if (holiday?.surchargeValue) {
-    if (holiday.surchargeType === "PERCENT") price = price * (1 + holiday.surchargeValue / 100)
-    else if (holiday.surchargeType === "FIXED") price = price + holiday.surchargeValue
-  }
-
-  return price
+  // useUTC=true porque las fechas de reservas recurrentes se construyen con UTC
+  return calcCourtPrice(court.pricingRules, start, end, holiday, true)
 }
 
 export async function POST(req: Request, { params }: Params) {
