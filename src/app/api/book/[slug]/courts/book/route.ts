@@ -6,8 +6,6 @@ import { sendCourtBookingConfirmation } from "@/lib/email"
 
 const PENDING_EXPIRY_MS = 15 * 60 * 1000
 
-const DAY_NAMES = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]
-
 function getAuthoritativePrice(
   pricingRules: { days: unknown; startTime: string | null; endTime: string | null; price: unknown; fixedSlots: unknown }[],
   dateStr: string,
@@ -15,10 +13,10 @@ function getAuthoritativePrice(
   requestedDuration: number,
 ): { price: number; durationError?: string } {
   const [y, m, d] = dateStr.split("-").map(Number)
-  const dayOfWeek = DAY_NAMES[new Date(y, m - 1, d).getDay()]
+  const dayOfWeek = new Date(y, m - 1, d).getDay() // 0=Sun … 6=Sat
 
   const rule = pricingRules.find((r) => {
-    const days = r.days as string[]
+    const days = r.days as number[]
     if (!days.includes(dayOfWeek)) return false
     if (r.startTime && timeStr < r.startTime) return false
     if (r.endTime && timeStr >= r.endTime) return false
