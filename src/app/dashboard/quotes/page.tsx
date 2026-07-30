@@ -298,66 +298,72 @@ export default function QuotesPage() {
         </div>
 
         {/* Info card */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
+        <div className="rounded-2xl p-5 space-y-4"
+          style={{ background: isSportsClub ? "#ffffff" : "rgba(255,255,255,0.03)", border: isSportsClub ? "1px solid rgba(13,27,42,0.08)" : "1px solid rgba(255,255,255,0.1)" }}>
           <div className="grid grid-cols-2 gap-4 text-sm">
             {selected.client && (
               <div>
-                <p className="text-white/40 text-xs mb-1">Cliente</p>
-                <p className="font-medium">{[selected.client.name, selected.client.lastName].filter(Boolean).join(" ")}</p>
-                <p className="text-white/40 text-xs">{selected.client.email}</p>
+                <p className="text-xs mb-1" style={{ color: isSportsClub ? "rgba(13,27,42,0.45)" : "rgba(255,255,255,0.4)" }}>Cliente</p>
+                <p className="font-medium" style={{ color: isSportsClub ? "#0d1b2a" : undefined }}>{[selected.client.name, selected.client.lastName].filter(Boolean).join(" ")}</p>
+                <p className="text-xs" style={{ color: isSportsClub ? "rgba(13,27,42,0.45)" : "rgba(255,255,255,0.4)" }}>{selected.client.email}</p>
               </div>
             )}
             <div>
-              <p className="text-white/40 text-xs mb-1">Fecha</p>
-              <p className="font-medium">{format(new Date(selected.createdAt), "d MMM yyyy", { locale: es })}</p>
+              <p className="text-xs mb-1" style={{ color: isSportsClub ? "rgba(13,27,42,0.45)" : "rgba(255,255,255,0.4)" }}>Fecha</p>
+              <p className="font-medium" style={{ color: isSportsClub ? "#0d1b2a" : undefined }}>{format(new Date(selected.createdAt), "d MMM yyyy", { locale: es })}</p>
             </div>
             {selected.validUntil && (
               <div>
-                <p className="text-white/40 text-xs mb-1">Válido hasta</p>
-                <p className="font-medium">{format(new Date(selected.validUntil), "d MMM yyyy", { locale: es })}</p>
+                <p className="text-xs mb-1" style={{ color: isSportsClub ? "rgba(13,27,42,0.45)" : "rgba(255,255,255,0.4)" }}>Válido hasta</p>
+                <p className="font-medium" style={{ color: isSportsClub ? "#0d1b2a" : undefined }}>{format(new Date(selected.validUntil), "d MMM yyyy", { locale: es })}</p>
               </div>
             )}
             {selected.notes && (
               <div className="col-span-2">
-                <p className="text-white/40 text-xs mb-1">Notas</p>
-                <p className="text-white/70 text-sm">{selected.notes}</p>
+                <p className="text-xs mb-1" style={{ color: isSportsClub ? "rgba(13,27,42,0.45)" : "rgba(255,255,255,0.4)" }}>Notas</p>
+                <p className="text-sm" style={{ color: isSportsClub ? "rgba(13,27,42,0.7)" : "rgba(255,255,255,0.7)" }}>{selected.notes}</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Items */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 text-xs text-white/40 font-medium border-b border-white/8">
+        <div className="rounded-2xl overflow-hidden"
+          style={{ border: isSportsClub ? "1px solid rgba(13,27,42,0.08)" : "1px solid rgba(255,255,255,0.1)" }}>
+          <div className="grid grid-cols-12 gap-2 px-4 py-2 text-xs font-medium"
+            style={{ color: isSportsClub ? "rgba(13,27,42,0.45)" : "rgba(255,255,255,0.4)", background: isSportsClub ? "rgba(13,27,42,0.03)" : "rgba(255,255,255,0.03)", borderBottom: isSportsClub ? "1px solid rgba(13,27,42,0.08)" : "1px solid rgba(255,255,255,0.08)" }}>
             <span className="col-span-6">Descripción</span>
             <span className="col-span-2 text-right">Cant.</span>
             <span className="col-span-2 text-right">P. unit.</span>
             <span className="col-span-2 text-right">Total</span>
           </div>
           {selected.items.map((item, i) => (
-            <div key={i} className="grid grid-cols-12 gap-2 px-4 py-3 text-sm border-b border-white/5 last:border-0">
-              <span className="col-span-6 font-medium">{item.description}</span>
-              <span className="col-span-2 text-right text-white/60">{item.quantity}</span>
-              <span className="col-span-2 text-right text-white/60">${item.unitPrice.toLocaleString("es-CL")}</span>
-              <span className="col-span-2 text-right font-medium">${(item.quantity * item.unitPrice).toLocaleString("es-CL")}</span>
+            <div key={i} className="grid grid-cols-12 gap-2 px-4 py-3 text-sm"
+              style={{ borderBottom: i < selected.items.length - 1 ? (isSportsClub ? "1px solid rgba(13,27,42,0.06)" : "1px solid rgba(255,255,255,0.05)") : undefined, background: isSportsClub ? (i % 2 === 0 ? "#ffffff" : "rgba(13,27,42,0.015)") : undefined }}>
+              <span className="col-span-6 font-medium" style={{ color: isSportsClub ? "#0d1b2a" : undefined }}>{item.description}</span>
+              <span className="col-span-2 text-right" style={{ color: isSportsClub ? "rgba(13,27,42,0.5)" : "rgba(255,255,255,0.6)" }}>{item.quantity}</span>
+              <span className="col-span-2 text-right" style={{ color: isSportsClub ? "rgba(13,27,42,0.5)" : "rgba(255,255,255,0.6)" }}>${item.unitPrice.toLocaleString("es-CL")}</span>
+              <span className="col-span-2 text-right font-medium" style={{ color: isSportsClub ? "#0d1b2a" : undefined }}>${(item.quantity * item.unitPrice).toLocaleString("es-CL")}</span>
             </div>
           ))}
 
           {/* Totals */}
-          <div className="px-4 py-3 space-y-1.5 border-t border-white/10 bg-white/[0.02]">
-            <div className="flex justify-between text-sm text-white/50">
+          <div className="px-4 py-3 space-y-1.5"
+            style={{ borderTop: isSportsClub ? "1px solid rgba(13,27,42,0.08)" : "1px solid rgba(255,255,255,0.1)", background: isSportsClub ? "rgba(13,27,42,0.02)" : "rgba(255,255,255,0.02)" }}>
+            <div className="flex justify-between text-sm" style={{ color: isSportsClub ? "rgba(13,27,42,0.55)" : "rgba(255,255,255,0.5)" }}>
               <span>Subtotal</span>
               <span>${subtotal.toLocaleString("es-CL")}</span>
             </div>
             {selected.discount > 0 && (
-              <div className="flex justify-between text-sm text-green-400">
+              <div className="flex justify-between text-sm" style={{ color: "#16a34a" }}>
                 <span>Descuento ({selected.discount}%)</span>
                 <span>−${discountAmt.toLocaleString("es-CL")}</span>
               </div>
             )}
-            <div className="flex justify-between font-semibold text-base pt-1 border-t border-white/10">
+            <div className="flex justify-between font-semibold text-base pt-1"
+              style={{ borderTop: isSportsClub ? "1px solid rgba(13,27,42,0.08)" : "1px solid rgba(255,255,255,0.1)", color: isSportsClub ? "#0d1b2a" : undefined }}>
               <span>Total</span>
-              <span className="text-sky-300">${total.toLocaleString("es-CL")}</span>
+              <span style={{ color: "#0284c7" }}>${total.toLocaleString("es-CL")}</span>
             </div>
           </div>
         </div>
