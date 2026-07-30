@@ -3,41 +3,9 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import { addMinutes, parseISO } from "date-fns"
 import { sendCourtBookingConfirmation } from "@/lib/email"
+import { getCourtBookingPrice } from "@/lib/pricing"
 
 const PENDING_EXPIRY_MS = 15 * 60 * 1000
-
-function getAuthoritativePrice(
-  pricingRules: { days: unknown; startTime: string | null; endTime: string | null; price: unknown; fixedSlots: unknown }[],
-  dateStr: string,
-  timeStr: string,
-  requestedDuration: number,
-): { price: number; durationError?: string } {
-  const [y, m, d] = dateStr.split("-").map(Number)
-  const dayOfWeek = new Date(y, m - 1, d).getDay() // 0=Sun … 6=Sat
-
-  const rule = pricingRules.find((r) => {
-    const days = r.days as number[]
-    if (!days.includes(dayOfWeek)) return false
-    if (r.startTime && timeStr < r.startTime) return false
-    if (r.endTime && timeStr >= r.endTime) return false
-    return true
-  })
-  if (!rule) return { price: 0 }
-
-  const fixedSlots = rule.fixedSlots as string[] | null
-  if (fixedSlots?.length) {
-    if (!fixedSlots.includes(timeStr)) return { price: 0, durationError: "Horario inválido para esta cancha" }
-    const idx = fixedSlots.indexOf(timeStr)
-    if (idx < fixedSlots.length - 1) {
-      const [nh, nm] = fixedSlots[idx + 1].split(":").map(Number)
-      const [ch, cm] = timeStr.split(":").map(Number)
-      const slotMin = (nh * 60 + nm) - (ch * 60 + cm)
-      if (requestedDuration !== slotMin) return { price: 0, durationError: `La duración debe ser ${slotMin} minutos` }
-    }
-  }
-
-  return { price: Number(rule.price) }
-}
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -78,7 +46,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   if (!court) return NextResponse.json({ error: "Cancha no disponible" }, { status: 404 })
 
   // Server-side price calculation
-  const { price, durationError } = getAuthoritativePrice(court.pricingRules, date, time, Number(duration))
+  const { price, error: durationError } = getCourtBookingPrice(court.pricingRules, date, time, Number(duration))
   if (durationError) return NextResponse.json({ error: durationError }, { status: 400 })
 
   // Find or create client (outside transaction — not part of the critical section)

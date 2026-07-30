@@ -6,6 +6,44 @@ type Holiday = {
 }
 
 /**
+ * Valida y retorna el precio de un bloque público de cancha.
+ * Úsalo en rutas de booking público para evitar divergencia con calcCourtPrice.
+ *
+ * - fixedSlots: valida que el timeStr esté en la lista y que la duración coincida
+ * - sin fixedSlots: precio por hora × (durationMinutes / 60)
+ */
+export function getCourtBookingPrice(
+  pricingRules: Pick<CourtPricingRule, "days" | "startTime" | "endTime" | "price" | "fixedSlots">[],
+  dateStr: string,       // "YYYY-MM-DD"
+  timeStr: string,       // "HH:MM"
+  durationMinutes: number,
+): { price: number; error?: string } {
+  const [y, m, d] = dateStr.split("-").map(Number)
+  const dayOfWeek = new Date(y, m - 1, d).getDay() // 0=Sun … 6=Sat
+
+  const rule = pricingRules.find(r =>
+    r.days.includes(dayOfWeek) && timeStr >= r.startTime && timeStr < r.endTime,
+  )
+  if (!rule) return { price: 0 }
+
+  if (rule.fixedSlots.length) {
+    if (!rule.fixedSlots.includes(timeStr))
+      return { price: 0, error: "Horario inválido para esta cancha" }
+    const idx = rule.fixedSlots.indexOf(timeStr)
+    if (idx < rule.fixedSlots.length - 1) {
+      const [nh, nm] = rule.fixedSlots[idx + 1].split(":").map(Number)
+      const [ch, cm] = timeStr.split(":").map(Number)
+      const slotMin = nh * 60 + nm - (ch * 60 + cm)
+      if (durationMinutes !== slotMin)
+        return { price: 0, error: `La duración debe ser ${slotMin} minutos` }
+    }
+    return { price: Number(rule.price) }
+  }
+
+  return { price: Number(rule.price) * (durationMinutes / 60) }
+}
+
+/**
  * Calcula el precio de una reserva de cancha según sus reglas de tarifa.
  * - Con fixedSlots: precio fijo por bloque (no depende de la duración)
  * - Sin fixedSlots: precio por hora × duración
