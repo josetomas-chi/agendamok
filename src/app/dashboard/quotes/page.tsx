@@ -205,8 +205,9 @@ export default function QuotesPage() {
   function addCourtItem(court: Court) {
     const rule = court.pricingRules[0]
     const price = rule ? Number(rule.price) : 0
-    const duration = rule?.fixedSlots?.[0] ? `${rule.fixedSlots[0]} min` : ""
-    const desc = duration ? `${court.name} · ${duration}` : court.name
+    const slots = rule?.fixedSlots ?? []
+    const blockLabel = slots.length >= 2 ? `${slots[0]} – ${slots[slots.length - 1]}` : ""
+    const desc = blockLabel ? `${court.name} · ${blockLabel}` : court.name
     setForm(f => ({
       ...f,
       items: [...f.items.filter(i => i.description.trim() || i.courtId), {
@@ -484,15 +485,17 @@ function CourtItemRow({
   function applyRule(ruleId: string) {
     const rule = rules.find(r => r.id === ruleId)
     if (!rule) return
-    const duration = rule.fixedSlots?.[0] ? `${rule.fixedSlots[0]} min` : ""
-    const desc = duration ? `${court.name} · ${rule.name} · ${duration}` : `${court.name} · ${rule.name}`
+    const slots = rule.fixedSlots ?? []
+    const blockLabel = slots.length >= 2 ? `${slots[0]} – ${slots[slots.length - 1]}` : ""
+    const desc = blockLabel ? `${court.name} · ${rule.name} · ${blockLabel}` : `${court.name} · ${rule.name}`
     updateCourtItem(idx, "description", desc)
     updateCourtItem(idx, "unitPrice", Number(rule.price))
   }
 
-  function applySlot(slot: string) {
-    const base = item.description.replace(/·\s*\d+ min.*$/, "").trim()
-    updateCourtItem(idx, "description", `${base} · ${slot} min`)
+  function applySlot(blockLabel: string) {
+    // Replace any existing block label (HH:MM – HH:MM) at end of description
+    const base = item.description.replace(/·\s*\d{2}:\d{2}\s*–\s*\d{2}:\d{2}.*$/, "").trim()
+    updateCourtItem(idx, "description", `${base} · ${blockLabel}`)
   }
 
   const subtotal = item.quantity * item.unitPrice
@@ -531,20 +534,22 @@ function CourtItemRow({
           </div>
         )}
 
-        {/* Duration slots */}
-        {selectedRule?.fixedSlots?.length > 0 && (
+        {/* Duration slots — each pair of consecutive fixedSlots is a bookable block */}
+        {(selectedRule?.fixedSlots?.length ?? 0) >= 2 && (
           <div className="space-y-1">
-            <label className="text-[10px] text-white/35 uppercase tracking-wide font-medium">Duración</label>
+            <label className="text-[10px] text-white/35 uppercase tracking-wide font-medium">Bloque horario</label>
             <div className="flex gap-1.5 flex-wrap">
-              {selectedRule.fixedSlots.map(slot => {
-                const isActive = item.description.includes(`${slot} min`)
+              {selectedRule!.fixedSlots.slice(0, -1).map((start, i) => {
+                const end = selectedRule!.fixedSlots[i + 1]
+                const label = `${start} – ${end}`
+                const isActive = item.description.includes(label)
                 return (
-                  <button key={slot} type="button" onClick={() => applySlot(slot)}
+                  <button key={label} type="button" onClick={() => applySlot(label)}
                     className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                     style={isActive
                       ? { background: "rgba(56,189,248,0.15)", color: "#38bdf8", border: "1px solid rgba(56,189,248,0.3)" }
                       : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.4)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                    {slot} min
+                    {label}
                   </button>
                 )
               })}
@@ -558,23 +563,23 @@ function CourtItemRow({
           className="w-full h-8 rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 text-xs text-white/70 placeholder:text-white/20 focus:outline-none focus:border-sky-500/50 transition-colors" />
 
         {/* Sessions + price + subtotal */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 flex-1">
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
+          <div className="flex items-center gap-2">
             <label className="text-[10px] text-white/35 whitespace-nowrap">Sesiones</label>
             <input type="number" min={1} value={item.quantity} onFocus={e => e.target.select()}
               onChange={e => updateCourtItem(idx, "quantity", parseInt(e.target.value) || 1)}
               className="w-16 h-8 rounded-lg border border-white/[0.08] bg-white/[0.05] px-2 text-sm text-white text-center focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
           </div>
-          <div className="flex items-center gap-2 flex-1">
+          <div className="flex items-center gap-2">
             <label className="text-[10px] text-white/35 whitespace-nowrap">Precio unit.</label>
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-[90px]">
               <span className="absolute left-2.5 top-1.5 text-xs text-white/30">$</span>
               <input type="number" min={0} value={item.unitPrice} onFocus={e => e.target.select()}
                 onChange={e => updateCourtItem(idx, "unitPrice", parseFloat(e.target.value) || 0)}
                 className="w-full h-8 rounded-lg border border-white/[0.08] bg-white/[0.05] pl-6 pr-2 text-sm text-white text-right focus:outline-none focus:border-sky-500/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
             </div>
           </div>
-          <div className="text-right flex-shrink-0 min-w-[80px]">
+          <div className="text-right min-w-[80px]">
             <p className="text-[10px] text-white/30">Subtotal</p>
             <p className="text-sm font-semibold text-white">${subtotal.toLocaleString("es-CL")}</p>
           </div>
