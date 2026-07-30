@@ -27,10 +27,15 @@ async function calcPrice(
   const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
 
   const rule = court.pricingRules.find(
-    (r: { days: number[]; startTime: string; endTime: string; price: unknown }) =>
+    (r: { days: number[]; startTime: string; endTime: string; price: unknown; fixedSlots?: string[] }) =>
       r.days.includes(dayOfWeek) && timeStr >= r.startTime && timeStr < r.endTime,
   )
-  let price = rule ? Number(rule.price) * durationHours : 0
+  // Fixed slots → precio por bloque fijo; sin bloques → precio por hora
+  let price = rule
+    ? ((rule as { fixedSlots?: string[] }).fixedSlots?.length
+        ? Number(rule.price)
+        : Number(rule.price) * durationHours)
+    : 0
 
   if (holiday?.surchargeValue) {
     if (holiday.surchargeType === "PERCENT") price = price * (1 + holiday.surchargeValue / 100)
