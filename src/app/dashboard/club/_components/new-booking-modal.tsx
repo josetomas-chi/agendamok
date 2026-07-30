@@ -265,6 +265,12 @@ export default function NewBookingModal({
   const [allCourts, setAllCourts] = useState<Court[]>(courts)
   const [bookedCourtIds, setBookedCourtIds] = useState<Set<string>>(new Set())
 
+  // Deporte fijo para la sesión: viene de la cancha preseleccionada (clic en calendario)
+  // Se usa como filtro permanente en reserva múltiple aunque se deseleccionen todas las canchas
+  const contextSport = preselect?.courtId
+    ? (courts.find(c => c.id === preselect.courtId)?.sport ?? null)
+    : null
+
   // ── Estado Reserva múltiple ───────────────────────────────────────────────
   const [multiCourtIds, setMultiCourtIds] = useState<string[]>(
     preselect?.courtId ? [preselect.courtId] : (courts[0]?.id ? [courts[0].id] : [])
@@ -833,7 +839,7 @@ export default function NewBookingModal({
             {/* Canchas — grid compacto, filtrado por deporte */}
             {(() => {
               const firstSelected = activeCourts.find(c => multiCourtIds.includes(c.id))
-              const activeSport = firstSelected?.sport ?? null
+              const activeSport = firstSelected?.sport ?? contextSport
               const sameSport = activeSport
                 ? activeCourts.filter(c => c.sport === activeSport)
                 : activeCourts
