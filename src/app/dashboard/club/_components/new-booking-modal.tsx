@@ -761,52 +761,70 @@ export default function NewBookingModal({
           {/* ══════════════ RESERVA MÚLTIPLE ══════════════ */}
           {bookingType === "recurring" && (<>
 
-            {/* Canchas — grid compacto */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>
-                  Canchas {multiCourtIds.length > 0 && <span style={{ color: GOLD }}>({multiCourtIds.length})</span>}
-                </p>
-                <div className="flex gap-1.5">
-                  {multiCourtIds.length > 0 && (
-                    <button type="button" onClick={() => setMultiCourtIds([])}
-                      className="text-[10px] font-semibold px-2 py-0.5 rounded"
-                      style={{ color: "rgba(13,27,42,0.35)" }}>
-                      Ninguna
-                    </button>
-                  )}
-                  <button type="button" onClick={() => setMultiCourtIds(activeCourts.map(c => c.id))}
-                    className="text-[10px] font-bold px-2 py-0.5 rounded"
-                    style={{ color: GOLD, background: "rgba(201,168,76,0.08)", border: `1px solid rgba(201,168,76,0.2)` }}>
-                    Todas
-                  </button>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-1">
-                {activeCourts.map(court => {
-                  const isSelected = multiCourtIds.includes(court.id)
-                  return (
-                    <button key={court.id} type="button"
-                      onClick={() => toggleMultiCourt(court.id)}
-                      className="flex items-center gap-2.5 px-3 py-2 text-left transition-all rounded-lg"
-                      style={isSelected
-                        ? { background: NAVY, borderLeft: `3px solid ${court.color}` }
-                        : { background: "rgba(13,27,42,0.04)", borderLeft: `3px solid ${court.color}`, border: `1px solid rgba(13,27,42,0.08)`, borderLeftWidth: "3px", borderLeftColor: court.color }}>
-                      <span className="text-xs font-semibold truncate flex-1"
-                        style={{ color: isSelected ? "#fff" : NAVY }}>
-                        {court.name}
-                      </span>
-                      {isSelected && (
-                        <span className="text-[9px] font-black flex-shrink-0" style={{ color: GOLD }}>✓</span>
+            {/* Canchas — grid compacto, filtrado por deporte */}
+            {(() => {
+              const firstSelected = activeCourts.find(c => multiCourtIds.includes(c.id))
+              const activeSport = firstSelected?.sport ?? null
+              const sameSport = activeSport
+                ? activeCourts.filter(c => c.sport === activeSport)
+                : activeCourts
+              const otherSport = activeSport
+                ? activeCourts.filter(c => c.sport !== activeSport)
+                : []
+              return (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>
+                      Canchas {multiCourtIds.length > 0 && <span style={{ color: GOLD }}>({multiCourtIds.length})</span>}
+                      {activeSport && <span className="ml-1 text-[10px]" style={{ color: "rgba(13,27,42,0.3)" }}>· {activeSport}</span>}
+                    </p>
+                    <div className="flex gap-1.5">
+                      {multiCourtIds.length > 0 && (
+                        <button type="button" onClick={() => setMultiCourtIds([])}
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded"
+                          style={{ color: "rgba(13,27,42,0.35)" }}>
+                          Ninguna
+                        </button>
                       )}
-                    </button>
-                  )
-                })}
-              </div>
-              {multiCourtIds.length === 0 && (
-                <p className="text-[10px] mt-1.5" style={{ color: "rgba(201,168,76,0.7)" }}>Selecciona al menos una cancha</p>
-              )}
-            </div>
+                      <button type="button" onClick={() => setMultiCourtIds(sameSport.map(c => c.id))}
+                        className="text-[10px] font-bold px-2 py-0.5 rounded"
+                        style={{ color: GOLD, background: "rgba(201,168,76,0.08)", border: `1px solid rgba(201,168,76,0.2)` }}>
+                        Todas
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {sameSport.map(court => {
+                      const isSelected = multiCourtIds.includes(court.id)
+                      return (
+                        <button key={court.id} type="button"
+                          onClick={() => toggleMultiCourt(court.id)}
+                          className="flex items-center gap-2.5 px-3 py-2 text-left transition-all rounded-lg"
+                          style={isSelected
+                            ? { background: NAVY, borderLeft: `3px solid ${court.color}` }
+                            : { background: "rgba(13,27,42,0.04)", borderLeft: `3px solid ${court.color}`, border: `1px solid rgba(13,27,42,0.08)`, borderLeftWidth: "3px", borderLeftColor: court.color }}>
+                          <span className="text-xs font-semibold truncate flex-1"
+                            style={{ color: isSelected ? "#fff" : NAVY }}>
+                            {court.name}
+                          </span>
+                          {isSelected && (
+                            <span className="text-[9px] font-black flex-shrink-0" style={{ color: GOLD }}>✓</span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {otherSport.length > 0 && (
+                    <p className="text-[10px] mt-1.5" style={{ color: "rgba(13,27,42,0.3)" }}>
+                      {otherSport.map(c => c.name).join(", ")} — deporte distinto, no disponibles
+                    </p>
+                  )}
+                  {multiCourtIds.length === 0 && (
+                    <p className="text-[10px] mt-1.5" style={{ color: "rgba(201,168,76,0.7)" }}>Selecciona al menos una cancha</p>
+                  )}
+                </div>
+              )
+            })()}
 
             <ClientCombobox clients={clients} value={selectedClient} onSelect={setSelectedClient} />
 
