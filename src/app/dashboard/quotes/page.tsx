@@ -46,7 +46,7 @@ const STATUS_LABELS: Record<Quote["status"], string> = {
 }
 const STATUS_COLORS: Record<Quote["status"], string> = {
   DRAFT: "bg-white/10 text-white/50",
-  SENT: "bg-sky-500/20 text-sky-300",
+  SENT: "bg-sky-500/20 text-sky-400",
   ACCEPTED: "bg-green-500/20 text-green-400",
   REJECTED: "bg-red-500/20 text-red-400",
   EXPIRED: "bg-orange-500/20 text-orange-400",
@@ -401,7 +401,7 @@ export default function QuotesPage() {
               <div
                 key={q.id}
                 onClick={() => setSelected(q)}
-                className="group flex items-center gap-4 px-5 py-4 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] transition-all cursor-pointer"
+                className="panel group flex items-center gap-4 px-5 py-4 rounded-xl hover:opacity-80 transition-all cursor-pointer"
               >
                 <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
                   <Hash className="w-4 h-4 text-white/30" />

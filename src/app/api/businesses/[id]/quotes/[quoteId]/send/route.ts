@@ -22,15 +22,25 @@ export async function POST(_: Request, { params }: Params) {
   if (!quote) return NextResponse.json({ error: "No encontrado" }, { status: 404 })
   if (!quote.client?.email) return NextResponse.json({ error: "El cliente no tiene email registrado" }, { status: 400 })
 
+  if (!process.env.RESEND_API_KEY) {
+    return NextResponse.json({ error: "Email no configurado (RESEND_API_KEY faltante)" }, { status: 503 })
+  }
+
   await sendQuoteEmail({
     clientEmail: quote.client.email,
     clientName: quote.client.name,
     businessName: quote.business.name,
     quoteNumber: quote.number,
     validUntil: quote.validUntil?.toISOString() ?? null,
-    items: quote.items.map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice })),
+    items: quote.items.map(i => ({ description: i.description, quantity: Number(i.quantity), unitPrice: Number(i.unitPrice) })),
     discount: quote.discount,
     notes: quote.notes,
+  })
+
+  // Marcar como enviado
+  await prisma.quote.update({
+    where: { id: quoteId },
+    data: { status: "SENT" },
   })
 
   return NextResponse.json({ ok: true })
