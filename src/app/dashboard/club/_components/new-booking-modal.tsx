@@ -315,6 +315,26 @@ export default function NewBookingModal({
     }
   }, [selectedDayOfWeek])
 
+  // Limpiar días seleccionados que no estén cubiertos por las canchas seleccionadas
+  useEffect(() => {
+    const selectedCourts = activeCourts.filter(c => multiCourtIds.includes(c.id))
+    if (selectedCourts.length === 0) return
+    const availableDays = selectedCourts.reduce((acc, court) => {
+      if (!court.pricingRules?.length) { for (let d = 0; d < 7; d++) acc.add(d) }
+      else court.pricingRules.forEach(r => r.days.forEach(d => acc.add(d)))
+      return acc
+    }, new Set<number>())
+    setMultiDays(prev => {
+      const filtered = prev.filter(d => availableDays.has(d))
+      if (filtered.length === 0) {
+        // Mantener al menos el primer día disponible
+        const first = [0,1,2,3,4,5,6].find(d => availableDays.has(d))
+        return first !== undefined ? [first] : prev
+      }
+      return filtered.length === prev.length ? prev : filtered
+    })
+  }, [multiCourtIds.join(",")])
+
   // Consultar reservas existentes para detectar canchas ocupadas en los slots seleccionados
   useEffect(() => {
     if (!form.date || bookingType !== "recurring") { setBookedCourtIds(new Set()); return }
@@ -1037,29 +1057,51 @@ export default function NewBookingModal({
                 <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: GOLD }}>Repetición semanal</p>
                 <span className="text-[10px]" style={{ color: "rgba(13,27,42,0.4)" }}>opcional</span>
               </div>
-              {/* Días de la semana — interactivos */}
-              <div>
-                <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Días</p>
-                <div className="flex gap-1">
-                  {DAYS_SHORT.map((d, i) => {
-                    const isSelected = multiDays.includes(i)
-                    return (
-                      <button key={d} type="button" onClick={() => toggleMultiDay(i)}
-                        className="flex-1 h-8 rounded-md flex items-center justify-center text-[10px] font-bold transition-all"
-                        style={isSelected
-                          ? { background: NAVY, color: "#fff" }
-                          : { background: "rgba(13,27,42,0.05)", color: "rgba(13,27,42,0.35)", border: "1px solid rgba(13,27,42,0.08)" }}>
-                        {d}
-                      </button>
-                    )
-                  })}
-                </div>
-                {multiDays.length > 1 && (
-                  <p className="text-[10px] mt-1 font-semibold" style={{ color: GOLD }}>
-                    {multiDays.map(d => DAYS_ES[d]).join(" · ")}
-                  </p>
-                )}
-              </div>
+              {/* Días de la semana — filtrados por las reglas de las canchas seleccionadas */}
+              {(() => {
+                // Unión de días disponibles entre todas las canchas seleccionadas
+                const selectedCourts = activeCourts.filter(c => multiCourtIds.includes(c.id))
+                const availableDays: Set<number> = selectedCourts.length > 0
+                  ? selectedCourts.reduce((acc, court) => {
+                      if (!court.pricingRules?.length) {
+                        // Sin reglas: todos los días disponibles
+                        for (let d = 0; d < 7; d++) acc.add(d)
+                      } else {
+                        court.pricingRules.forEach(r => r.days.forEach(d => acc.add(d)))
+                      }
+                      return acc
+                    }, new Set<number>())
+                  : new Set<number>([0,1,2,3,4,5,6]) // sin canchas seleccionadas: mostrar todos
+                return (
+                  <div>
+                    <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Días</p>
+                    <div className="flex gap-1">
+                      {DAYS_SHORT.map((d, i) => {
+                        const isSelected = multiDays.includes(i)
+                        const isAvailable = availableDays.has(i)
+                        return (
+                          <button key={d} type="button"
+                            disabled={!isAvailable}
+                            onClick={() => isAvailable && toggleMultiDay(i)}
+                            className="flex-1 h-8 rounded-md flex items-center justify-center text-[10px] font-bold transition-all"
+                            style={!isAvailable
+                              ? { background: "rgba(13,27,42,0.02)", color: "rgba(13,27,42,0.15)", border: "1px solid rgba(13,27,42,0.04)", cursor: "not-allowed" }
+                              : isSelected
+                                ? { background: NAVY, color: "#fff" }
+                                : { background: "rgba(13,27,42,0.05)", color: "rgba(13,27,42,0.35)", border: "1px solid rgba(13,27,42,0.08)" }}>
+                            {d}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {multiDays.length > 1 && (
+                      <p className="text-[10px] mt-1 font-semibold" style={{ color: GOLD }}>
+                        {multiDays.map(d => DAYS_ES[d]).join(" · ")}
+                      </p>
+                    )}
+                  </div>
+                )
+              })()}
               <div>
                 <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha de término (dejar vacío para reserva única)</p>
                 <input type="date" value={multiRangeEnd} onChange={e => setMultiRangeEnd(e.target.value)}
