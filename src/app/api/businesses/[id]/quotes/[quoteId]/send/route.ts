@@ -26,18 +26,22 @@ export async function POST(_: Request, { params }: Params) {
     return NextResponse.json({ error: "Email no configurado (RESEND_API_KEY faltante)" }, { status: 503 })
   }
 
-  await sendQuoteEmail({
-    clientEmail: quote.client.email,
-    clientName: quote.client.name,
-    businessName: quote.business.name,
-    quoteNumber: quote.number,
-    validUntil: quote.validUntil?.toISOString() ?? null,
-    items: quote.items.map(i => ({ description: i.description, quantity: Number(i.quantity), unitPrice: Number(i.unitPrice) })),
-    discount: quote.discount,
-    notes: quote.notes,
-  })
+  try {
+    await sendQuoteEmail({
+      clientEmail: quote.client.email,
+      clientName: quote.client.name,
+      businessName: quote.business.name,
+      quoteNumber: quote.number,
+      validUntil: quote.validUntil?.toISOString() ?? null,
+      items: quote.items.map(i => ({ description: i.description, quantity: Number(i.quantity), unitPrice: Number(i.unitPrice) })),
+      discount: quote.discount,
+      notes: quote.notes,
+    })
+  } catch (err) {
+    console.error("[send-quote] Resend error:", err)
+    return NextResponse.json({ error: "Error al enviar el email. Intenta nuevamente." }, { status: 502 })
+  }
 
-  // Marcar como enviado
   await prisma.quote.update({
     where: { id: quoteId },
     data: { status: "SENT" },
