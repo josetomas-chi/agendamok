@@ -263,6 +263,7 @@ export default function NewBookingModal({
   const [coaches, setCoaches] = useState<Coach[]>([])
   const [saving, setSaving] = useState(false)
   const [allCourts, setAllCourts] = useState<Court[]>(courts)
+  const [bookedCourtIds, setBookedCourtIds] = useState<Set<string>>(new Set())
 
   // ── Estado Reserva múltiple ───────────────────────────────────────────────
   const [multiCourtIds, setMultiCourtIds] = useState<string[]>(
@@ -307,6 +308,33 @@ export default function NewBookingModal({
       setClassDays(prev => prev.length === 0 ? [selectedDayOfWeek] : prev)
     }
   }, [selectedDayOfWeek])
+
+  // Consultar reservas existentes para detectar canchas ocupadas en los slots seleccionados
+  useEffect(() => {
+    if (!form.date || bookingType !== "recurring") { setBookedCourtIds(new Set()); return }
+    const slots = multiSlots.filter(s => s.startTime && s.endTime)
+    if (slots.length === 0) { setBookedCourtIds(new Set()); return }
+    const from = `${form.date}T00:00:00.000Z`
+    const to   = `${form.date}T23:59:59.999Z`
+    fetch(`/api/businesses/${businessId}/court-bookings?from=${from}&to=${to}`)
+      .then(r => r.json())
+      .then(d => {
+        const bookings: { courtId: string; startTime: string; endTime: string }[] = d.bookings || []
+        const busy = new Set<string>()
+        for (const slot of slots) {
+          const slotStart = new Date(`${form.date}T${slot.startTime}:00`)
+          const slotEnd   = new Date(`${form.date}T${slot.endTime}:00`)
+          for (const b of bookings) {
+            const bStart = new Date(b.startTime)
+            const bEnd   = new Date(b.endTime)
+            if (bStart < slotEnd && bEnd > slotStart) busy.add(b.courtId)
+          }
+        }
+        setBookedCourtIds(busy)
+        // Deseleccionar canchas que quedaron ocupadas
+        setMultiCourtIds(prev => prev.filter(id => !busy.has(id)))
+      })
+  }, [form.date, multiSlots, bookingType, businessId])
 
   function toggleClassDay(day: number) {
     setClassDays(prev =>
@@ -771,6 +799,12 @@ export default function NewBookingModal({
               const otherSport = activeSport
                 ? activeCourts.filter(c => c.sport !== activeSport)
                 : []
+              // Canchas sin horario configurado para el día seleccionado
+              const isUnavailableDay = (court: Court) =>
+                selectedDayOfWeek >= 0 &&
+                (court.pricingRules?.length ?? 0) > 0 &&
+                !court.pricingRules?.some(r => r.days.includes(selectedDayOfWeek))
+              const isBlocked = (court: Court) => bookedCourtIds.has(court.id) || isUnavailableDay(court)
               return (
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
@@ -786,7 +820,8 @@ export default function NewBookingModal({
                           Ninguna
                         </button>
                       )}
-                      <button type="button" onClick={() => setMultiCourtIds(sameSport.map(c => c.id))}
+                      <button type="button"
+                        onClick={() => setMultiCourtIds(sameSport.filter(c => !isBlocked(c)).map(c => c.id))}
                         className="text-[10px] font-bold px-2 py-0.5 rounded"
                         style={{ color: GOLD, background: "rgba(201,168,76,0.08)", border: `1px solid rgba(201,168,76,0.2)` }}>
                         Todas
@@ -796,18 +831,29 @@ export default function NewBookingModal({
                   <div className="grid grid-cols-2 gap-1">
                     {sameSport.map(court => {
                       const isSelected = multiCourtIds.includes(court.id)
+                      const blocked = isBlocked(court)
+                      const isBooked = bookedCourtIds.has(court.id)
+                      const isNoDay  = isUnavailableDay(court)
                       return (
                         <button key={court.id} type="button"
-                          onClick={() => toggleMultiCourt(court.id)}
+                          disabled={blocked}
+                          onClick={() => !blocked && toggleMultiCourt(court.id)}
                           className="flex items-center gap-2.5 px-3 py-2 text-left transition-all rounded-lg"
-                          style={isSelected
-                            ? { background: NAVY, borderLeft: `3px solid ${court.color}` }
-                            : { background: "rgba(13,27,42,0.04)", borderLeft: `3px solid ${court.color}`, border: `1px solid rgba(13,27,42,0.08)`, borderLeftWidth: "3px", borderLeftColor: court.color }}>
+                          style={blocked
+                            ? { background: "rgba(13,27,42,0.02)", borderLeft: `3px solid rgba(13,27,42,0.1)`, border: "1px solid rgba(13,27,42,0.05)", borderLeftWidth: "3px", borderLeftColor: "rgba(13,27,42,0.1)", opacity: 0.45, cursor: "not-allowed" }
+                            : isSelected
+                              ? { background: NAVY, borderLeft: `3px solid ${court.color}` }
+                              : { background: "rgba(13,27,42,0.04)", borderLeft: `3px solid ${court.color}`, border: `1px solid rgba(13,27,42,0.08)`, borderLeftWidth: "3px", borderLeftColor: court.color }}>
                           <span className="text-xs font-semibold truncate flex-1"
-                            style={{ color: isSelected ? "#fff" : NAVY }}>
+                            style={{ color: blocked ? "rgba(13,27,42,0.3)" : isSelected ? "#fff" : NAVY }}>
                             {court.name}
                           </span>
-                          {isSelected && (
+                          {blocked && (
+                            <span className="text-[9px] flex-shrink-0" style={{ color: "rgba(13,27,42,0.3)" }}>
+                              {isBooked ? "ocupada" : isNoDay ? "sin horario" : ""}
+                            </span>
+                          )}
+                          {!blocked && isSelected && (
                             <span className="text-[9px] font-black flex-shrink-0" style={{ color: GOLD }}>✓</span>
                           )}
                         </button>
@@ -816,7 +862,7 @@ export default function NewBookingModal({
                   </div>
                   {otherSport.length > 0 && (
                     <p className="text-[10px] mt-1.5" style={{ color: "rgba(13,27,42,0.3)" }}>
-                      {otherSport.map(c => c.name).join(", ")} — deporte distinto, no disponibles
+                      {otherSport.map(c => c.name).join(", ")} — deporte distinto
                     </p>
                   )}
                   {multiCourtIds.length === 0 && (
