@@ -51,6 +51,13 @@ const STATUS_COLORS: Record<Quote["status"], string> = {
   REJECTED: "bg-red-500/20 text-red-400",
   EXPIRED: "bg-orange-500/20 text-orange-400",
 }
+const STATUS_INLINE: Record<Quote["status"], React.CSSProperties> = {
+  DRAFT:    { background: "rgba(13,27,42,0.07)", color: "rgba(13,27,42,0.5)" },
+  SENT:     { background: "rgba(2,132,199,0.12)", color: "#0284c7" },
+  ACCEPTED: { background: "rgba(22,163,74,0.12)", color: "#16a34a" },
+  REJECTED: { background: "rgba(220,38,38,0.12)", color: "#dc2626" },
+  EXPIRED:  { background: "rgba(234,88,12,0.12)", color: "#ea580c" },
+}
 
 function calcTotal(items: QuoteItem[], discount: number) {
   const subtotal = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0)
@@ -401,47 +408,53 @@ export default function QuotesPage() {
               <div
                 key={q.id}
                 onClick={() => setSelected(q)}
-                className="panel group flex items-center gap-4 px-5 py-4 rounded-xl hover:opacity-80 transition-all cursor-pointer"
+                className="group flex items-center gap-4 px-5 py-4 rounded-xl cursor-pointer transition-all"
+                style={{ background: "#ffffff", border: "1px solid rgba(13,27,42,0.08)", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
+                onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)")}
+                onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.05)")}
               >
-                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                  <Hash className="w-4 h-4 text-white/30" />
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: "rgba(13,27,42,0.05)" }}>
+                  <Hash className="w-4 h-4" style={{ color: "rgba(13,27,42,0.3)" }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm">#{String(q.number).padStart(4, "0")}</span>
-                    <Badge className={`text-[10px] px-1.5 py-0 ${STATUS_COLORS[q.status]}`}>
+                    <span className="font-bold text-sm" style={{ color: "#0d1b2a" }}>#{String(q.number).padStart(4, "0")}</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={STATUS_INLINE[q.status]}>
                       {STATUS_LABELS[q.status]}
-                    </Badge>
+                    </span>
                   </div>
                   <div className="flex items-center gap-3 mt-0.5">
                     {q.client && (
-                      <span className="text-xs text-white/40 flex items-center gap-1">
+                      <span className="text-xs flex items-center gap-1" style={{ color: "rgba(13,27,42,0.55)" }}>
                         <User className="w-3 h-3" />{q.client.name}
                       </span>
                     )}
-                    <span className="text-xs text-white/30">
+                    <span className="text-xs" style={{ color: "rgba(13,27,42,0.4)" }}>
                       {format(new Date(q.createdAt), "d MMM yyyy", { locale: es })}
                     </span>
-                    <span className="text-xs text-white/30">
+                    <span className="text-xs" style={{ color: "rgba(13,27,42,0.4)" }}>
                       {q.items.length} ítem{q.items.length !== 1 ? "s" : ""}
                     </span>
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="font-semibold text-sky-300">${total.toLocaleString("es-CL")}</p>
+                  <p className="font-bold" style={{ color: "#0284c7" }}>${total.toLocaleString("es-CL")}</p>
                   {q.discount > 0 && (
-                    <p className="text-xs text-green-400 flex items-center gap-0.5 justify-end">
+                    <p className="text-xs flex items-center gap-0.5 justify-end" style={{ color: "#16a34a" }}>
                       <Percent className="w-3 h-3" />{q.discount}% desc.
                     </p>
                   )}
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={e => openEdit(q, e)}
-                    className="p-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white/40 transition-colors">
+                    className="p-1.5 rounded-lg transition-colors"
+                    style={{ background: "rgba(13,27,42,0.05)", color: "rgba(13,27,42,0.4)" }}>
                     <Pencil className="w-3 h-3" />
                   </button>
                   <button onClick={e => handleDelete(q.id, e)}
-                    className="p-1.5 rounded-lg bg-white/10 hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors">
+                    className="p-1.5 rounded-lg transition-colors"
+                    style={{ background: "rgba(13,27,42,0.05)", color: "rgba(13,27,42,0.4)" }}>
                     <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
