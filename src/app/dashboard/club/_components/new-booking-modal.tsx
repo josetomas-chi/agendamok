@@ -370,6 +370,47 @@ export default function NewBookingModal({
     return activeRuleWithSlots?.endTime ?? ""
   }
 
+  // ── Fixed slots para Reserva múltiple ────────────────────────────────────
+  const firstMultiCourt = allCourts.find(c => c.id === multiCourtIds[0])
+  const multiActiveRule = firstMultiCourt?.pricingRules?.find(
+    rule => (rule.fixedSlots?.length ?? 0) > 0 && rule.days.includes(selectedDayOfWeek)
+  )
+  const multiFixedSlots: string[] = multiActiveRule?.fixedSlots ?? []
+
+  function getMultiSlotEnd(startStr: string): string {
+    const idx = multiFixedSlots.indexOf(startStr)
+    if (idx >= 0 && idx < multiFixedSlots.length - 1) return multiFixedSlots[idx + 1]
+    return multiActiveRule?.endTime ?? ""
+  }
+
+  // Toggle a fixed block in multiSlots
+  function toggleFixedBlock(start: string) {
+    const end = getMultiSlotEnd(start)
+    if (!end) return
+    setMultiSlots(prev => {
+      const exists = prev.find(s => s.startTime === start && s.endTime === end)
+      if (exists) {
+        const remaining = prev.filter(s => !(s.startTime === start && s.endTime === end))
+        return remaining.length > 0 ? remaining : prev // keep at least 1
+      }
+      return [...prev, { id: `${start}-${end}`, startTime: start, endTime: end }]
+    })
+  }
+
+  // When multiFixedSlots become available and current multiSlots don't match, reset to first block
+  useEffect(() => {
+    if (!multiFixedSlots.length) return
+    const allValid = multiSlots.every(s => {
+      const expected = getMultiSlotEnd(s.startTime)
+      return expected && s.endTime === expected && multiFixedSlots.includes(s.startTime)
+    })
+    if (!allValid) {
+      const firstEnd = multiFixedSlots.length >= 2 ? multiFixedSlots[1] : ""
+      if (firstEnd) setMultiSlots([{ id: "1", startTime: multiFixedSlots[0], endTime: firstEnd }])
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [multiFixedSlots.join(","), multiCourtIds[0], form.date])
+
   // Auto-set endTime when fixed slots are active
   useEffect(() => {
     if (!fixedSlots.length || !form.startTime) return
@@ -883,40 +924,79 @@ export default function NewBookingModal({
             {/* Horarios múltiples */}
             <div className="space-y-2">
               <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Horarios</p>
-              {multiSlots.map((slot, idx) => (
-                <div key={slot.id} className="rounded-xl p-2.5 space-y-2"
-                  style={idx === 0
-                    ? { background: "rgba(13,27,42,0.03)", border: "1px solid rgba(13,27,42,0.08)" }
-                    : { background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)" }}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: idx === 0 ? "rgba(13,27,42,0.4)" : GOLD }}>
-                      Horario {idx + 1}
-                    </span>
-                    {multiSlots.length > 1 && (
-                      <button type="button" onClick={() => removeMultiSlot(slot.id)}
-                        className="w-5 h-5 rounded-full flex items-center justify-center"
-                        style={{ color: "rgba(201,68,68,0.6)", background: "rgba(201,68,68,0.06)" }}>
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    )}
+
+              {multiFixedSlots.length >= 2 ? (
+                /* Bloques fijos — igual que reserva común */
+                <div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {multiFixedSlots.slice(0, -1).map((start, i) => {
+                      const end = multiFixedSlots[i + 1]
+                      const isSelected = multiSlots.some(s => s.startTime === start && s.endTime === end)
+                      const price = calcPrice(firstMultiCourt, start, end, form.date)
+                      return (
+                        <button key={start} type="button" onClick={() => toggleFixedBlock(start)}
+                          className="rounded-xl py-2.5 px-2 flex flex-col items-center gap-0.5 transition-all"
+                          style={isSelected
+                            ? { background: NAVY, border: `1.5px solid ${GOLD}` }
+                            : { background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.08)" }}>
+                          <span className="text-[11px] font-black" style={{ color: isSelected ? "#fff" : NAVY }}>
+                            {start}
+                          </span>
+                          <span className="text-[9px]" style={{ color: isSelected ? "rgba(255,255,255,0.5)" : "rgba(13,27,42,0.35)" }}>
+                            {end}
+                          </span>
+                          {price > 0 && (
+                            <span className="text-[9px] font-bold mt-0.5" style={{ color: GOLD }}>
+                              ${price.toLocaleString("es-CL")}
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <TimeSelect label="Inicio" value={slot.startTime} onChange={v => updateMultiSlot(slot.id, "startTime", v)} />
-                    <TimeSelect label="Fin" value={slot.endTime} onChange={v => updateMultiSlot(slot.id, "endTime", v)} minTime={slot.startTime} />
-                  </div>
-                  {calcPrice(multiRefCourt, slot.startTime, slot.endTime, form.date) > 0 && (
-                    <p className="text-[10px] text-right font-bold" style={{ color: GOLD }}>
-                      ${calcPrice(multiRefCourt, slot.startTime, slot.endTime, form.date).toLocaleString("es-CL")} / cancha
-                    </p>
+                  {multiSlots.length === 0 && (
+                    <p className="text-[10px] mt-1.5" style={{ color: "rgba(201,168,76,0.7)" }}>Selecciona al menos un bloque</p>
                   )}
                 </div>
-              ))}
-              <button type="button" onClick={addMultiSlot}
-                className="w-full h-9 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all"
-                style={{ border: `1.5px dashed rgba(201,168,76,0.4)`, color: GOLD, background: "rgba(201,168,76,0.03)" }}>
-                <Plus className="w-3.5 h-3.5" />
-                Agregar horario
-              </button>
+              ) : (
+                /* Sin bloques fijos — selector libre */
+                <>
+                  {multiSlots.map((slot, idx) => (
+                    <div key={slot.id} className="rounded-xl p-2.5 space-y-2"
+                      style={idx === 0
+                        ? { background: "rgba(13,27,42,0.03)", border: "1px solid rgba(13,27,42,0.08)" }
+                        : { background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)" }}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: idx === 0 ? "rgba(13,27,42,0.4)" : GOLD }}>
+                          Horario {idx + 1}
+                        </span>
+                        {multiSlots.length > 1 && (
+                          <button type="button" onClick={() => removeMultiSlot(slot.id)}
+                            className="w-5 h-5 rounded-full flex items-center justify-center"
+                            style={{ color: "rgba(201,68,68,0.6)", background: "rgba(201,68,68,0.06)" }}>
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <TimeSelect label="Inicio" value={slot.startTime} onChange={v => updateMultiSlot(slot.id, "startTime", v)} />
+                        <TimeSelect label="Fin" value={slot.endTime} onChange={v => updateMultiSlot(slot.id, "endTime", v)} minTime={slot.startTime} />
+                      </div>
+                      {calcPrice(multiRefCourt, slot.startTime, slot.endTime, form.date) > 0 && (
+                        <p className="text-[10px] text-right font-bold" style={{ color: GOLD }}>
+                          ${calcPrice(multiRefCourt, slot.startTime, slot.endTime, form.date).toLocaleString("es-CL")} / cancha
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                  <button type="button" onClick={addMultiSlot}
+                    className="w-full h-9 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all"
+                    style={{ border: `1.5px dashed rgba(201,168,76,0.4)`, color: GOLD, background: "rgba(201,168,76,0.03)" }}>
+                    <Plus className="w-3.5 h-3.5" />
+                    Agregar horario
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Recurrencia semanal opcional */}
