@@ -128,12 +128,13 @@ model User {
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
 
-  accounts        Account[]
-  sessions        Session[]
-  businessOwner   Business?      @relation("BusinessOwner")
-  staffProfile    StaffMember?
-  clientProfiles  Client[]
-  businessMembers BusinessMember[]
+  accounts          Account[]
+  sessions          Session[]
+  businessOwner     Business?        @relation("BusinessOwner")
+  staffProfile      StaffMember?
+  clientProfiles    Client[]
+  businessMembers   BusinessMember[]
+  pushSubscriptions PushSubscription[]
 
   @@index([email])
   @@map("users")
@@ -588,6 +589,7 @@ model Client {
   schoolEnrollments      SchoolEnrollment[]
   schoolAttendance       SchoolAttendance[]
   walletTransactions     WalletTransaction[]
+  pushSubscriptions      PushSubscription[]
 
   @@unique([businessId, rut])
   @@index([businessId, email])
@@ -1459,4 +1461,22 @@ enum WalletTransactionType {
   TOPUP
   DEBIT
   ADJUSTMENT
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String?
+  clientId  String?
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client Client? @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([clientId])
+  @@map("push_subscriptions")
 }

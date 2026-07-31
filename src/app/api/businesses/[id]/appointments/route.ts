@@ -6,6 +6,7 @@ import { addMinutes, format } from "date-fns"
 import { es } from "date-fns/locale"
 import { after } from "next/server"
 import { sendBookingConfirmation, sendStaffBookingAlert } from "@/lib/email"
+import { sendPushToUser } from "@/lib/push"
 import { utcToChileLocal } from "@/lib/timezone"
 
 const schema = z.object({
@@ -247,7 +248,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // Send emails after response
     const business = await prisma.business.findUnique({
       where: { id },
-      select: { name: true, owner: { select: { email: true } } },
+      select: { name: true, ownerId: true, owner: { select: { email: true } } },
     })
     const staffUser = await prisma.staffMember.findUnique({
       where: { id: data.staffId },
@@ -282,6 +283,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           date: dateStr,
           time: timeStr,
           duration: service.duration,
+        }) : Promise.resolve(),
+        business?.ownerId ? sendPushToUser(business.ownerId, {
+          title: `Nueva reserva — ${business.name}`,
+          body: `${appointment.client?.name || "Cliente"} · ${appointment.service.name} · ${dateStr} ${timeStr}`,
+          url: "/dashboard",
         }) : Promise.resolve(),
       ])
     })

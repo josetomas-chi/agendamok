@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth"
 import { addMinutes, format } from "date-fns"
 import { es } from "date-fns/locale"
 import { sendBookingConfirmation, sendNewBookingAlert, sendStaffBookingAlert } from "@/lib/email"
+import { sendPushToUser } from "@/lib/push"
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -12,7 +13,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const business = await prisma.business.findUnique({
     where: { slug, isActive: true, deletedAt: null },
     select: {
-      id: true, name: true,
+      id: true, name: true, ownerId: true,
       owner: { select: { name: true, email: true } },
       clubSettings: { select: { bookingWindowDays: true } },
     },
@@ -147,6 +148,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         date: dateStr,
         time: timeStr,
         duration: Number(service.duration),
+      }) : Promise.resolve(),
+      // Push al dueño del negocio
+      business.ownerId ? sendPushToUser(business.ownerId, {
+        title: `Nueva reserva — ${business.name}`,
+        body: `${clientName} · ${service.name} · ${dateStr} ${timeStr}`,
+        url: "/dashboard",
       }) : Promise.resolve(),
     ])
     results.forEach((r, i) => {
