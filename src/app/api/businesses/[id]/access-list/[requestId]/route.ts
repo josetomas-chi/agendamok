@@ -54,6 +54,7 @@ export async function PATCH(req: Request, { params }: Params) {
               email: entry.email ?? undefined,
               phone: entry.phone ?? undefined,
               rut: entry.rut ?? undefined,
+              allowTransfer: true,
             },
           })
         }

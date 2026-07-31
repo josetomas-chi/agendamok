@@ -27,7 +27,7 @@ export async function POST(req: Request) {
       if (byEmail) {
         await prisma.client.update({ where: { id: byEmail.id }, data: { userId: user.id } })
       } else {
-        await prisma.client.create({ data: { businessId, userId: user.id, name, email } })
+        await prisma.client.create({ data: { businessId, userId: user.id, name, email, allowTransfer: true } })
       }
     }
   }

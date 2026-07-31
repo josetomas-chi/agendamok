@@ -46,6 +46,7 @@ export async function POST() {
           email: req.email,
           phone: req.phone ?? undefined,
           rut: req.rut ?? undefined,
+          allowTransfer: true,
         },
       })
       created++
