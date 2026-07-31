@@ -14,7 +14,7 @@ type User = {
   role: string
   password: string | null
   createdAt: string
-  businessOwner: { name: string } | null
+  businessOwner: { name: string }[]
 }
 
 const roleColor: Record<string, string> = {
@@ -125,7 +125,7 @@ export default function AdminUsersPage() {
                     {roleLabel[u.role] || u.role}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-white/50">{u.businessOwner?.name || "—"}</td>
+                <td className="px-4 py-3 text-white/50">{u.businessOwner?.map(b => b.name).join(", ") || "—"}</td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${u.password ? "bg-emerald-500/15 text-emerald-400 border-emerald-400/30" : "bg-amber-400/10 text-amber-400 border-amber-400/20"}`}>
                     {u.password ? "Activo" : "Pendiente"}

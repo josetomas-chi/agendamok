@@ -12,7 +12,7 @@ export async function POST() {
     include: { businessOwner: { include: { subscription: true } } },
   })
 
-  const sub = user?.businessOwner?.subscription
+  const sub = user?.businessOwner?.[0]?.subscription
   if (!sub?.flowSubscriptionId) {
     return NextResponse.json({ error: "No hay suscripción activa" }, { status: 400 })
   }

@@ -15,9 +15,9 @@ export async function POST(req: Request) {
     where: { id: session.user.id },
     include: { businessOwner: { select: { id: true, name: true } } },
   })
-  if (!user?.businessOwner) return NextResponse.json({ error: "Sin negocio" }, { status: 400 })
+  if (!user?.businessOwner?.[0]) return NextResponse.json({ error: "Sin negocio" }, { status: 400 })
 
-  const business = user.businessOwner
+  const business = user.businessOwner[0]
   const commerceOrder = `wa-topup-${business.id}-${Date.now()}`
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"
 

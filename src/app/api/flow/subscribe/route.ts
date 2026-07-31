@@ -18,9 +18,9 @@ export async function POST(req: Request) {
       include: { businessOwner: { include: { subscription: true } } },
     })
 
-    if (!user?.businessOwner) return NextResponse.json({ error: "No tienes un negocio" }, { status: 400 })
+    if (!user?.businessOwner?.[0]) return NextResponse.json({ error: "No tienes un negocio" }, { status: 400 })
 
-    const business = user.businessOwner
+    const business = user.businessOwner[0]
     const subscription = business.subscription
 
     let flowCustomerId = subscription?.flowCustomerId

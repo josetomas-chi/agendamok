@@ -130,7 +130,7 @@ model User {
 
   accounts          Account[]
   sessions          Session[]
-  businessOwner     Business?        @relation("BusinessOwner")
+  businessOwner     Business[]       @relation("BusinessOwner")
   staffProfile      StaffMember?
   clientProfiles    Client[]
   businessMembers   BusinessMember[]
@@ -219,7 +219,7 @@ model VerificationToken {
 
 model Business {
   id           String    @id @default(cuid())
-  ownerId      String    @unique
+  ownerId      String
   name         String
   slug         String    @unique
   category     String
