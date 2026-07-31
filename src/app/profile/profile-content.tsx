@@ -672,6 +672,25 @@ export default function ProfileContent() {
                 </span>
               )}
             </div>
+            {/* Billetera — por negocio */}
+            {data && data.businessBenefits.length > 0 && (
+              <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", flexShrink: 0 }}>
+                {data.businessBenefits.map(b => (
+                  <div key={b.businessId} style={{ textAlign: "right" }}>
+                    <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1 }}>
+                      {b.businessName}
+                    </p>
+                    <p style={{ color: b.creditBalance > 0 ? "#4ade80" : "rgba(255,255,255,0.4)", fontWeight: 900, fontSize: 18, lineHeight: 1.1 }}>
+                      ${(b.creditBalance / 100).toLocaleString("es-CL")}
+                    </p>
+                    <a href={`/wallet/${b.businessSlug}`}
+                      style={{ fontSize: 10, color: ACCENT, fontWeight: 700, textDecoration: "none" }}>
+                      + Recargar
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Mobile tab bar */}
