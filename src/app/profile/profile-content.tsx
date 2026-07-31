@@ -164,7 +164,7 @@ export default function ProfileContent() {
   const [cancelError, setCancelError]       = useState<string | null>(null)
   const [cancelledIds, setCancelledIds]     = useState<Set<string>>(new Set())
   const [confirmCancel, setConfirmCancel]   = useState<{
-    type: "court" | "appt"; id: string; paidAmount: number; paidOnline: boolean; name: string
+    type: "court" | "appt"; id: string; paidAmount: number; paidOnline: boolean; hasVoucher: boolean; name: string
   } | null>(null)
   const [cancelSuccess, setCancelSuccess] = useState<{ message: string } | null>(null)
   const [showBookPicker, setShowBookPicker] = useState(false)
@@ -1125,7 +1125,8 @@ export default function ProfileContent() {
                               if (!allowed || isCancelling) return
                               const paidAmount = b.type === "court" ? (Number(b.paidAmount) ?? 0) : 0
                               const paidOnline = b.type === "court" ? (b.paidOnline ?? false) : false
-                              setConfirmCancel({ type: b.type, id: b.id, paidAmount, paidOnline, name })
+                              const hasVoucher = b.type === "court" ? !!b.transferVoucher : false
+                              setConfirmCancel({ type: b.type, id: b.id, paidAmount, paidOnline, hasVoucher, name })
                             }}
                             disabled={!allowed || isCancelling}
                             style={{
@@ -1818,10 +1819,12 @@ export default function ProfileContent() {
               </div>
             </div>
 
-            {confirmCancel.paidAmount > 0 ? (
+            {(confirmCancel.paidAmount > 0 || confirmCancel.hasVoucher) ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <p style={{ fontSize: 12, color: MUTED, marginBottom: 4 }}>
-                  Monto pagado: <strong style={{ color: TXT }}>${confirmCancel.paidAmount.toLocaleString("es-CL")}</strong> — ¿cómo quieres recuperarlo?
+                  {confirmCancel.paidAmount > 0
+                    ? <>Monto pagado: <strong style={{ color: TXT }}>${confirmCancel.paidAmount.toLocaleString("es-CL")}</strong> — ¿cómo quieres recuperarlo?</>
+                    : "Tienes un comprobante de transferencia enviado. Si el pago fue acreditado, ¿cómo quieres recuperarlo?"}
                 </p>
 
                 {confirmCancel.paidOnline && (
