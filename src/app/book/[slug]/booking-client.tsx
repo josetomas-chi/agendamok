@@ -996,7 +996,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
             </div>
 
             {/* Account creation / already registered */}
-            {emailExists ? (
+            {!isLoggedIn && emailExists ? (
               <div className="rounded-2xl px-4 py-3.5 space-y-3" style={{ background: "rgba(56,189,248,0.06)", border: `1px solid ${SPORTS_ACCENT}40` }}>
                 <div className="flex items-center gap-3">
                   <Check className="w-4 h-4 flex-shrink-0" style={{ color: SPORTS_ACCENT }} />
@@ -1747,7 +1747,7 @@ function ServiceBookingFlow({ business, slug, initialClient }: { business: Busin
             </div>
 
             {/* Account creation / already registered */}
-            {emailExists ? (
+            {!isLoggedIn && emailExists ? (
               <div className="rounded-2xl px-4 py-3.5 flex items-center gap-3" style={{ background: brand + "10", border: `1px solid ${brand}40` }}>
                 <Check className="w-4 h-4 flex-shrink-0" style={{ color: brand }} />
                 <div className="flex-1 min-w-0">
