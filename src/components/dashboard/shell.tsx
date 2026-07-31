@@ -7,8 +7,11 @@ import { CommandPalette } from "@/components/dashboard/command-palette"
 import { BottomNav } from "@/components/dashboard/bottom-nav"
 import { type PermissionMap } from "@/lib/permissions"
 
+type BusinessOption = { id: string; name: string; logo: string | null; businessType: string }
+
 export function DashboardShell({
   children, businessId, businessName, businessLogo, businessType, memberRole, permissionOverrides,
+  allBusinesses, activeBusinessId,
 }: {
   children: React.ReactNode
   businessId: string
@@ -17,6 +20,8 @@ export function DashboardShell({
   businessType: string
   memberRole?: "ADMIN" | "RECEPTIONIST"
   permissionOverrides?: PermissionMap
+  allBusinesses?: BusinessOption[]
+  activeBusinessId?: string
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const isSports = businessType === "SPORTS_CLUB"
@@ -46,6 +51,8 @@ export function DashboardShell({
           businessId={businessId}
           businessName={businessName}
           businessLogo={businessLogo}
+          allBusinesses={allBusinesses}
+          activeBusinessId={activeBusinessId}
         />
         <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
           <div className="p-4 md:p-6 page-enter">{children}</div>
