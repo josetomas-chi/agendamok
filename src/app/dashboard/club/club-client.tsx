@@ -83,6 +83,7 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
     const key = weekKey(date)
     if (!forceReload && weekCacheRef.current.has(key)) {
       setAllBookings(weekCacheRef.current.get(key)!)
+      setLoading(false)
       return
     }
     const from = startOfWeek(date, { weekStartsOn: 1 }).toISOString()
@@ -105,8 +106,8 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
       setCourts(((cData as { courts?: Court[] }).courts || []).filter((c: Court) => c.isActive))
       setClients((clData as { clients?: Client[] }).clients || [])
       setMembersCount(((mData as { memberships?: { status: string }[] }).memberships || []).filter((m: { status: string }) => m.status === "ACTIVE").length)
-      setLoading(false)
     }
+    setLoading(false)
   }, [])
 
   const refreshCurrent = useCallback((bid: string, date: Date) => {
