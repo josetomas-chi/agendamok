@@ -72,8 +72,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   const staffRecord = await prisma.staffMember.findUnique({
     where: { id: staffId }, select: { user: { select: { name: true, email: true } } },
-  }).catch(() => null)
-  const staffMember = { name: staffRecord?.user.name ?? "", email: staffRecord?.user.email ?? null }
+  }).catch((e) => { console.error("[book/appointments] staffRecord query error:", e); return null })
+  const staffMember = { name: staffRecord?.user?.name ?? "", email: staffRecord?.user?.email ?? null }
+  console.log("[book/appointments] staffMember resolved:", { name: staffMember.name, email: staffMember.email })
 
   const appointment = await prisma.appointment.create({
     data: {
