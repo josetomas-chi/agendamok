@@ -1,17 +1,23 @@
 import webpush from "web-push"
 import { prisma } from "@/lib/prisma"
 
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL!,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-)
-
 type PushPayload = {
   title: string
   body: string
   url?: string
   icon?: string
+}
+
+function getWebPush() {
+  if (!process.env.VAPID_EMAIL || !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+    return null
+  }
+  webpush.setVapidDetails(
+    process.env.VAPID_EMAIL,
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  )
+  return webpush
 }
 
 export async function sendPushToUser(userId: string, payload: PushPayload) {
@@ -28,15 +34,17 @@ async function sendToSubscriptions(
   subs: { id: string; endpoint: string; p256dh: string; auth: string }[],
   payload: PushPayload
 ) {
+  const wp = getWebPush()
+  if (!wp || subs.length === 0) return []
+
   const results = await Promise.allSettled(
     subs.map((sub) =>
-      webpush
+      wp
         .sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           JSON.stringify({ ...payload, icon: payload.icon || "/icon-192.png" })
         )
         .catch(async (err) => {
-          // Remove expired/invalid subscriptions (410 Gone)
           if (err.statusCode === 410 || err.statusCode === 404) {
             await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {})
           }
