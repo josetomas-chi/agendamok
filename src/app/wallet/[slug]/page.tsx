@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
-import { Wallet, CreditCard, ArrowRight, Building2, CheckCircle2, Copy } from "lucide-react"
+import { Wallet, CreditCard, ArrowRight, Building2, CheckCircle2, Copy, ChevronLeft } from "lucide-react"
 
 type BusinessInfo = {
   name: string
@@ -80,6 +80,9 @@ export default function WalletTopupPage() {
   if (transferInfo) return (
     <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-md w-full shadow-sm border border-gray-100 overflow-hidden">
+        <a href="/profile" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors px-4 pt-4 pb-0">
+          <ChevronLeft className="w-3.5 h-3.5" />Volver al perfil
+        </a>
         <div className="px-6 py-8 text-center" style={{ background: `linear-gradient(135deg, ${accent}cc, ${accent})` }}>
           <CheckCircle2 className="w-12 h-12 text-white mx-auto mb-3" />
           <h1 className="text-xl font-bold text-white">Solicitud registrada</h1>
@@ -114,6 +117,9 @@ export default function WalletTopupPage() {
   return (
     <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-md w-full shadow-sm border border-gray-100 overflow-hidden">
+        <a href="/profile" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors px-4 pt-4 pb-0">
+          <ChevronLeft className="w-3.5 h-3.5" />Volver al perfil
+        </a>
         {/* Header */}
         <div className="px-6 py-8 text-center" style={{ background: `linear-gradient(135deg, ${accent}cc, ${accent})` }}>
           <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-3">
