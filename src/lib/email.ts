@@ -887,6 +887,26 @@ export async function sendWhatsAppUsageWarning({
   }).catch(() => {})
 }
 
+export async function sendAccessRequestReceived({
+  clientName, clientEmail, businessName, activateUrl,
+}: {
+  clientName: string; clientEmail: string; businessName: string; activateUrl: string
+}) {
+  if (!process.env.RESEND_API_KEY) return
+  await resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `Solicitud recibida — ${businessName}`,
+    html: base(`
+      <h1>Solicitud recibida</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu solicitud de acceso a <strong style="color:#38bdf8">${businessName}</strong> fue recibida y está siendo revisada.</p>
+      <p class="subtitle">Mientras tanto, crea tu contraseña para que puedas reservar en cuanto seas aprobado:</p>
+      <a href="${activateUrl}" class="btn">Crear mi contraseña →</a>
+      <p style="margin-top:20px;font-size:12px;color:rgba(255,255,255,0.25)">Este link expira en 7 días.</p>
+    `),
+  }).catch(() => {})
+}
+
 export async function sendAccessApproved({
   clientName, clientEmail, businessName, bookingUrl,
 }: {
