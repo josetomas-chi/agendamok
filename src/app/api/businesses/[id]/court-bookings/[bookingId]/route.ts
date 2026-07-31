@@ -169,10 +169,11 @@ export async function PATCH(req: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(_: Request, { params }: Params) {
+export async function DELETE(req: Request, { params }: Params) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id, bookingId } = await params
+  const silent = new URL(req.url).searchParams.get("silent") === "1"
 
   const booking = await prisma.courtBooking.update({
     where: { id: bookingId, businessId: id },
@@ -183,7 +184,7 @@ export async function DELETE(_: Request, { params }: Params) {
     },
   })
 
-  if (booking.client?.email) {
+  if (!silent && booking.client?.email) {
     const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
     sendCourtBookingCancellation({
       clientName: booking.client.name,

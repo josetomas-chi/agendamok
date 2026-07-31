@@ -26,9 +26,8 @@ export async function POST(_: Request, { params }: Params) {
     return NextResponse.json({ error: "Email no configurado (RESEND_API_KEY faltante)" }, { status: 503 })
   }
 
-  console.log("[send-quote] Enviando a:", quote.client.email)
   try {
-    const result = await sendQuoteEmail({
+    await sendQuoteEmail({
       clientEmail: quote.client.email,
       clientName: quote.client.name,
       businessName: quote.business.name,
@@ -38,7 +37,6 @@ export async function POST(_: Request, { params }: Params) {
       discount: quote.discount,
       notes: quote.notes,
     })
-    console.log("[send-quote] Resend result:", JSON.stringify(result))
   } catch (err) {
     console.error("[send-quote] Resend error:", err)
     return NextResponse.json({ error: "Error al enviar el email. Intenta nuevamente." }, { status: 502 })

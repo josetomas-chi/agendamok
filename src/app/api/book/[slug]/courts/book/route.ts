@@ -63,7 +63,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     })
   } else {
     const updates: Record<string, unknown> = {}
-    if (loggedUser && !client.userId) updates.userId = loggedUser.id
+    if (loggedUser && client.userId !== loggedUser.id) updates.userId = loggedUser.id
     if (clientRut && !client.rut) updates.rut = clientRut
     if (Object.keys(updates).length > 0)
       client = await prisma.client.update({ where: { id: client.id }, data: updates })

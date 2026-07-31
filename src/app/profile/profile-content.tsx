@@ -43,6 +43,11 @@ type ProfileData = {
   upcomingCourtBookings: {
     id: string; startTime: string; endTime: string; price: number; status: string; paidOnline: boolean
     paidAmount: number; transferVoucher: string | null
+    recurringGroupId: string | null
+    recurringGroup: {
+      dayOfWeek: number; startHour: number; startMinute: number; durationMinutes: number
+      rangeStart: string; rangeEnd: string
+    } | null
     court: { name: string; sport: string | null; color: string }
     business: { name: string; slug: string; cancellationHoursNotice: number | null }
   }[]
@@ -172,6 +177,8 @@ export default function ProfileContent() {
   // Per-booking inline voucher upload state
   const [inlineVoucherUploading, setInlineVoucherUploading] = useState<string | null>(null)
   const [inlineVoucherUrls, setInlineVoucherUrls] = useState<Record<string, string>>({})
+  const [cancelRecurringModal, setCancelRecurringModal] = useState<{ recurringGroupId: string; courtName: string } | null>(null)
+  const [cancellingRecurring, setCancellingRecurring] = useState(false)
 
   async function uploadInlineVoucher(bookingId: string, businessId: string, file: File) {
     setInlineVoucherUploading(bookingId)
@@ -191,6 +198,30 @@ export default function ProfileContent() {
       } : d)
     }
   }
+  async function handleCancelRecurringSeries(recurringGroupId: string) {
+    setCancellingRecurring(true)
+    try {
+      const r = await fetch("/api/profile/cancel-recurring", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recurringGroupId, scope: "future" }),
+      })
+      if (r.ok) {
+        setCancelRecurringModal(null)
+        setCancelledIds(prev => {
+          const next = new Set(prev)
+          data?.upcomingCourtBookings.filter(b => b.recurringGroupId === recurringGroupId).forEach(b => next.add(b.id))
+          return next
+        })
+        setTimeout(() => {
+          fetch("/api/profile").then(res => res.ok ? res.json() : null).then(fresh => { if (fresh) setData(fresh) })
+        }, 800)
+      }
+    } finally {
+      setCancellingRecurring(false)
+    }
+  }
+
   const fileRef = useRef<HTMLInputElement>(null)
 
   function navigateToBooking(slug: string) {
@@ -317,10 +348,17 @@ export default function ProfileContent() {
           price: b.price ?? 0,
         })
       }
-      // Background sync after short delay
+      // Background sync after short delay — merge to keep any optimistic bookings
       setTimeout(() => {
-        fetch("/api/profile").then(r => r.ok ? r.json() : null).then(d => { if (d) setData(d) })
-      }, 800)
+        fetch("/api/profile").then(r => r.ok ? r.json() : null).then(fresh => {
+          if (fresh) setData(prev => {
+            if (!prev) return fresh
+            const serverIds = new Set(fresh.upcomingCourtBookings.map((b: { id: string }) => b.id))
+            const optimistic = prev.upcomingCourtBookings.filter(b => !serverIds.has(b.id))
+            return { ...fresh, upcomingCourtBookings: [...fresh.upcomingCourtBookings, ...optimistic] }
+          })
+        })
+      }, 2000)
     } catch {}
   }, [])
 
@@ -405,10 +443,17 @@ export default function ProfileContent() {
         })
       }
 
-      // Background refresh to sync server state
+      // Background refresh to sync server state — merge to keep any optimistic bookings
       setTimeout(() => {
-        fetch("/api/profile").then(r => r.ok ? r.json() : null).then(d => { if (d) setData(d) })
-      }, 800)
+        fetch("/api/profile").then(r => r.ok ? r.json() : null).then(fresh => {
+          if (fresh) setData(prev => {
+            if (!prev) return fresh
+            const serverIds = new Set(fresh.upcomingCourtBookings.map((b: { id: string }) => b.id))
+            const optimistic = prev.upcomingCourtBookings.filter(b => !serverIds.has(b.id))
+            return { ...fresh, upcomingCourtBookings: [...fresh.upcomingCourtBookings, ...optimistic] }
+          })
+        })
+      }, 2000)
     } catch { setPendingError("Error de conexión. Intenta de nuevo.") }
     setPendingConfirming(false)
   }
@@ -449,9 +494,26 @@ export default function ProfileContent() {
   const wins   = recentMatches.filter(m => m.result === "W").length
   const losses = recentMatches.filter(m => m.result === "L").length
 
+  // Group recurring court bookings: one card per recurring series
+  const recurringMap = new Map<string, typeof upcomingCourtBookings>()
+  const nonRecurringCourt: typeof upcomingCourtBookings = []
+  for (const b of upcomingCourtBookings) {
+    if (b.recurringGroupId) {
+      const arr = recurringMap.get(b.recurringGroupId) ?? []
+      arr.push(b)
+      recurringMap.set(b.recurringGroupId, arr)
+    } else {
+      nonRecurringCourt.push(b)
+    }
+  }
+  const recurringCards = Array.from(recurringMap.values()).map(bookings => ({
+    ...bookings[0], _isRecurringCard: true as const,
+  }))
+
   const allUpcoming = [
-    ...upcomingAppointments.map(a => ({ ...a, type: "appt" as const, date: a.startTime })),
-    ...upcomingCourtBookings.map(b => ({ ...b, type: "court" as const, date: b.startTime })),
+    ...upcomingAppointments.map(a => ({ ...a, type: "appt" as const, date: a.startTime, _isRecurringCard: false as const })),
+    ...nonRecurringCourt.map(b => ({ ...b, type: "court" as const, date: b.startTime, _isRecurringCard: false as const })),
+    ...recurringCards.map(b => ({ ...b, type: "court" as const, date: b.startTime })),
   ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
   const allHistory = [
@@ -840,17 +902,98 @@ export default function ProfileContent() {
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {allUpcoming.filter(b => !cancelledIds.has(b.id)).map(b => {
+                    const accentColor = b.type === "court" ? b.court.color : b.service.color
+                    const name = b.type === "court" ? b.court.name : b.service.name
+
+                    // ── Recurring card ──────────────────────────────────────────
+                    if (b._isRecurringCard && b.type === "court" && b.recurringGroup) {
+                      const rg = b.recurringGroup
+                      const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
+                      const dayName = DAY_NAMES[rg.dayOfWeek]
+                      const sh = String(rg.startHour).padStart(2, "0")
+                      const sm = String(rg.startMinute).padStart(2, "0")
+                      const endMin = rg.startHour * 60 + rg.startMinute + rg.durationMinutes
+                      const eh = String(Math.floor(endMin / 60)).padStart(2, "0")
+                      const em = String(endMin % 60).padStart(2, "0")
+                      const nextLabel = dateLabel(b.startTime)
+                      const nextIsToday = nextLabel === "Hoy"
+                      const nextIsTomorrow = nextLabel === "Mañana"
+                      const nextBadgeBg = nextIsToday ? "rgba(34,197,94,0.15)" : nextIsTomorrow ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.07)"
+                      const nextBadgeColor = nextIsToday ? "#4ade80" : nextIsTomorrow ? "#fbbf24" : "rgba(255,255,255,0.45)"
+                      const nextBadgeBorder = nextIsToday ? "rgba(34,197,94,0.3)" : nextIsTomorrow ? "rgba(251,191,36,0.25)" : "rgba(255,255,255,0.1)"
+                      const rangeStart = format(new Date(rg.rangeStart), "d MMM yyyy", { locale: es })
+                      const rangeEnd = format(new Date(rg.rangeEnd), "d MMM yyyy", { locale: es })
+                      return (
+                        <div key={`rec-${b.recurringGroupId}`} style={{
+                          borderRadius: 16, overflow: "hidden",
+                          background: "linear-gradient(135deg, #131f2e 0%, #0f1a28 100%)",
+                          border: "1px solid rgba(255,255,255,0.07)",
+                          boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+                        }}>
+                          <div style={{ height: 3, background: accentColor, opacity: 0.85 }} />
+                          <div style={{ padding: "14px 16px 14px" }}>
+                            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                  <p style={{ color: "#fff", fontSize: 15, fontWeight: 800, lineHeight: 1.2 }}>{name}</p>
+                                  <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 100, background: "rgba(56,189,248,0.12)", color: ACCENT, border: "1px solid rgba(56,189,248,0.2)", letterSpacing: "0.05em" }}>↺ RECURRENTE</span>
+                                </div>
+                                <p style={{ color: "rgba(255,255,255,0.38)", fontSize: 11, marginTop: 3 }}>{b.business.name}</p>
+                              </div>
+                              <span style={{
+                                flexShrink: 0, fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 100,
+                                background: nextBadgeBg, color: nextBadgeColor, border: `1px solid ${nextBadgeBorder}`, letterSpacing: "0.01em",
+                              }}>{nextLabel}</span>
+                            </div>
+                            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 5 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.55)", fontSize: 12 }}>
+                                <span style={{ fontSize: 13 }}>↺</span>
+                                <span style={{ fontWeight: 600 }}>Todos los {dayName}s</span>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.45)", fontSize: 12 }}>
+                                <Clock style={{ width: 12, height: 12 }} />
+                                <span style={{ fontWeight: 600 }}>{sh}:{sm} – {eh}:{em} hrs</span>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.35)", fontSize: 11 }}>
+                                <Calendar style={{ width: 11, height: 11 }} />
+                                <span>{rangeStart} → {rangeEnd}</span>
+                              </div>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                              {Number(b.price) > 0 && (
+                                <span style={{ fontSize: 14, fontWeight: 800, color: accentColor }}>
+                                  ${Number(b.price).toLocaleString("es-CL")}/sesión
+                                </span>
+                              )}
+                              <div style={{ marginLeft: "auto" }}>
+                                <button
+                                  onClick={() => setCancelRecurringModal({ recurringGroupId: b.recurringGroupId!, courtName: name })}
+                                  style={{
+                                    display: "flex", alignItems: "center", gap: 4,
+                                    fontSize: 11, fontWeight: 600, padding: "5px 10px", borderRadius: 7,
+                                    background: "transparent", color: "rgba(248,113,113,0.7)",
+                                    border: "1px solid rgba(248,113,113,0.2)", cursor: "pointer",
+                                  }}>
+                                  <X style={{ width: 11, height: 11 }} />
+                                  Cancelar serie
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    }
+
+                    // ── Individual card ─────────────────────────────────────────
                     const hoursNotice = b.business.cancellationHoursNotice ?? null
                     const { allowed, reason } = canCancel(b.startTime, hoursNotice)
                     const isCancelling = cancellingId === b.id
-                    const accentColor = b.type === "court" ? b.court.color : b.service.color
                     const label = dateLabel(b.startTime)
                     const isToday = label === "Hoy"
                     const isTomorrow = label === "Mañana"
                     const badgeBg = isToday ? "rgba(34,197,94,0.15)" : isTomorrow ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.07)"
                     const badgeColor = isToday ? "#4ade80" : isTomorrow ? "#fbbf24" : "rgba(255,255,255,0.45)"
                     const badgeBorder = isToday ? "rgba(34,197,94,0.3)" : isTomorrow ? "rgba(251,191,36,0.25)" : "rgba(255,255,255,0.1)"
-                    const name = b.type === "court" ? b.court.name : b.service.name
                     const endTime = format(new Date(b.endTime), "HH:mm")
 
                     return (
@@ -1736,6 +1879,48 @@ export default function ProfileContent() {
                 background: "transparent", border: "none", cursor: "pointer",
               }}>
               <ArrowLeft style={{ width: 13, height: 13 }} />Volver
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Cancel recurring series modal ─────────────────────────────────── */}
+      {cancelRecurringModal && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 50,
+          display: "flex", alignItems: "flex-end", justifyContent: "center",
+          padding: "0 16px 16px",
+          background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
+        }} onClick={() => { if (!cancellingRecurring) setCancelRecurringModal(null) }}>
+          <div style={{
+            width: "100%", maxWidth: 420, borderRadius: 20,
+            background: "#1a1a1e", border: "1px solid rgba(255,255,255,0.1)",
+            padding: "24px 20px 20px",
+          }} onClick={e => e.stopPropagation()}>
+            <p style={{ color: "#fff", fontSize: 16, fontWeight: 800, marginBottom: 6 }}>
+              Cancelar reservas recurrentes
+            </p>
+            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 20 }}>
+              ¿Cancelar todas las sesiones futuras de <strong style={{ color: "rgba(255,255,255,0.8)" }}>{cancelRecurringModal.courtName}</strong>?
+            </p>
+            <button
+              onClick={() => handleCancelRecurringSeries(cancelRecurringModal.recurringGroupId)}
+              disabled={cancellingRecurring}
+              style={{
+                width: "100%", padding: "13px", borderRadius: 12, fontSize: 14, fontWeight: 700,
+                background: "rgba(239,68,68,0.15)", color: "#f87171",
+                border: "1px solid rgba(239,68,68,0.3)", cursor: cancellingRecurring ? "wait" : "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              }}>
+              {cancellingRecurring ? <Loader2 style={{ width: 16, height: 16 }} className="animate-spin" /> : <X style={{ width: 16, height: 16 }} />}
+              Cancelar sesiones futuras
+            </button>
+            <button onClick={() => setCancelRecurringModal(null)} disabled={cancellingRecurring}
+              style={{
+                width: "100%", marginTop: 10, fontSize: 13, color: "rgba(255,255,255,0.4)",
+                background: "transparent", border: "none", cursor: "pointer",
+              }}>
+              Volver
             </button>
           </div>
         </div>

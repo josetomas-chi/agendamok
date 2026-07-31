@@ -1182,8 +1182,9 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
   async function handleCancelSelected() {
     if (cancelSelectedIds.length === 0) return
     setCancelling(true)
+    // Use ?silent=1 to suppress individual emails — bulk cancel should not send one email per session
     await Promise.all(cancelSelectedIds.map(id =>
-      fetch(`/api/businesses/${businessId}/court-bookings/${id}`, { method: "DELETE" })
+      fetch(`/api/businesses/${businessId}/court-bookings/${id}?silent=1`, { method: "DELETE" })
     ))
     setCancelling(false)
     toast.success(`${cancelSelectedIds.length} sesión${cancelSelectedIds.length !== 1 ? "es" : ""} cancelada${cancelSelectedIds.length !== 1 ? "s" : ""}`)

@@ -15,11 +15,12 @@ export async function GET() {
   })
   if (!user) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
 
-  // Auto-link orphan client records (userId=null) that match by email or RUT
-  // Note: Client.userId is unique per record — we link one at a time to avoid constraint errors
-  const orphansByEmail = userEmail
+  // Auto-link client records that match by email or RUT but aren't yet linked to this user.
+  // This includes both orphans (userId=null) AND clients linked to a different account
+  // with the same email (e.g. superadmin account vs demo account sharing the same email).
+  const unlinkledByEmail = userEmail
     ? await prisma.client.findMany({
-        where: { email: { equals: userEmail, mode: "insensitive" }, userId: null, deletedAt: null },
+        where: { email: { equals: userEmail, mode: "insensitive" }, NOT: { userId }, deletedAt: null },
         select: { id: true },
       })
     : []
@@ -29,19 +30,19 @@ export async function GET() {
     select: { rut: true },
   })
   const knownRut = linkedRut?.rut ?? null
-  const orphansByRut = knownRut
+  const unlinkedByRut = knownRut
     ? await prisma.client.findMany({
-        where: { rut: knownRut, userId: null, deletedAt: null },
+        where: { rut: knownRut, NOT: { userId }, deletedAt: null },
         select: { id: true },
       })
     : []
 
-  const allOrphanIds = [...new Set([...orphansByEmail, ...orphansByRut].map(o => o.id))]
-  for (const id of allOrphanIds) {
+  const allUnlinkedIds = [...new Set([...unlinkledByEmail, ...unlinkedByRut].map(o => o.id))]
+  for (const id of allUnlinkedIds) {
     try {
       await prisma.client.update({ where: { id }, data: { userId } })
     } catch {
-      // Unique constraint violation — another record already has this userId, skip
+      // skip on error
     }
   }
 
@@ -120,17 +121,19 @@ export async function GET() {
 
   // Upcoming court bookings
   const upcomingCourtBookings = await prisma.courtBooking.findMany({
-    where: { clientId: { in: clientIds }, deletedAt: null, startTime: { gt: now }, status: { in: ["CONFIRMED"] } },
+    where: { clientId: { in: clientIds }, deletedAt: null, startTime: { gt: now }, status: "CONFIRMED" },
     select: {
       id: true, startTime: true, endTime: true, price: true, paidAmount: true, status: true, paidOnline: true,
-      transferVoucher: true,
+      transferVoucher: true, recurringGroupId: true,
+      recurringGroup: {
+        select: { dayOfWeek: true, startHour: true, startMinute: true, durationMinutes: true, rangeStart: true, rangeEnd: true },
+      },
       court: { select: { name: true, sport: true, color: true } },
       business: { select: { name: true, slug: true, cancellationHoursNotice: true } },
     },
     orderBy: { startTime: "asc" },
-    take: 5,
+    take: 20,
   })
-
   // Past appointments (history)
   const appointments = await prisma.appointment.findMany({
     where: { clientId: { in: clientIds }, deletedAt: null, startTime: { lte: now } },
