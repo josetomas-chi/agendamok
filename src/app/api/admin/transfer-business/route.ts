@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(req: Request) {
   const session = await auth()
-  if (!session?.user?.email !== false && session?.user?.email !== "josetomas@bullpadel.cl") {
+  if (!session?.user?.email) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   }
 
@@ -34,6 +34,6 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     ok: true,
-    message: `Transferido: ${business.name} → ${user.name} (${user.id})`,
+    message: `Transferido: ${business.name} → ${user.name}`,
   })
 }
