@@ -1,0 +1,45 @@
+import type { MetadataRoute } from "next"
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "AgendaMok",
+    short_name: "AgendaMok",
+    description: "Reservas online para tu negocio",
+    start_url: "/dashboard",
+    scope: "/",
+    display: "standalone",
+    background_color: "#1a1a1e",
+    theme_color: "#0ea5e9",
+    orientation: "portrait-primary",
+    lang: "es",
+    categories: ["business", "productivity"],
+    icons: [
+      { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+      { src: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcuts: [
+      {
+        name: "Mi agenda",
+        short_name: "Agenda",
+        url: "/staff/agenda",
+        description: "Ver turnos de hoy",
+        icons: [{ src: "/icon-192.png", sizes: "192x192" }],
+      },
+      {
+        name: "Dashboard",
+        short_name: "Panel",
+        url: "/dashboard",
+        description: "Panel de administración",
+        icons: [{ src: "/icon-192.png", sizes: "192x192" }],
+      },
+      {
+        name: "Clientes",
+        short_name: "Clientes",
+        url: "/dashboard/clients",
+        description: "Ver clientes",
+        icons: [{ src: "/icon-192.png", sizes: "192x192" }],
+      },
+    ],
+  }
+}
