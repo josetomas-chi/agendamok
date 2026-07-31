@@ -283,6 +283,37 @@ export async function sendNewBookingAlert({
   })
 }
 
+export async function sendStaffBookingAlert({
+  staffEmail, staffName, businessName,
+  clientName, clientEmail, clientPhone,
+  serviceName, date, time, duration,
+}: {
+  staffEmail: string; staffName: string; businessName: string
+  clientName: string; clientEmail: string; clientPhone?: string
+  serviceName: string; date: string; time: string; duration: number
+}) {
+  if (!process.env.RESEND_API_KEY) return
+
+  await resend.emails.send({
+    from: FROM,
+    to: staffEmail,
+    subject: `Nueva reserva — ${clientName} · ${serviceName}`,
+    html: base(`
+      <h1>Tienes una nueva reserva 📅</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${staffName}</strong>, <strong style="color:#38bdf8">${clientName}</strong> acaba de reservar contigo en <strong style="color:#fff">${businessName}</strong>.</p>
+      <div class="box">
+        <div class="row"><span class="label">Cliente</span><span class="value">${clientName}</span></div>
+        <div class="row"><span class="label">Email</span><span class="value">${clientEmail}</span></div>
+        ${clientPhone ? `<div class="row"><span class="label">Teléfono</span><span class="value">${clientPhone}</span></div>` : ""}
+        <div class="row"><span class="label">Servicio</span><span class="value">${serviceName}</span></div>
+        <div class="row"><span class="label">Fecha</span><span class="value">${date}</span></div>
+        <div class="row"><span class="label">Hora</span><span class="value">${time} hrs · ${duration} min</span></div>
+      </div>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://agendamok.cl"}/dashboard/appointments" class="btn">Ver en el dashboard →</a>
+    `),
+  })
+}
+
 export async function sendCancellationAlert({
   ownerEmail, ownerName, businessName,
   clientName, serviceName, date, time,

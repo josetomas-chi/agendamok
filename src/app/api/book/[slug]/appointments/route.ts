@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import { addMinutes, format } from "date-fns"
 import { es } from "date-fns/locale"
-import { sendBookingConfirmation, sendNewBookingAlert } from "@/lib/email"
+import { sendBookingConfirmation, sendNewBookingAlert, sendStaffBookingAlert } from "@/lib/email"
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -71,9 +71,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   if (conflict) return NextResponse.json({ error: "Ese horario ya no está disponible" }, { status: 409 })
 
   const staffRecord = await prisma.staffMember.findUnique({
-    where: { id: staffId }, select: { user: { select: { name: true } } },
+    where: { id: staffId }, select: { user: { select: { name: true, email: true } } },
   }).catch(() => null)
-  const staffMember = { name: staffRecord?.user.name ?? "" }
+  const staffMember = { name: staffRecord?.user.name ?? "", email: staffRecord?.user.email ?? null }
 
   const appointment = await prisma.appointment.create({
     data: {
@@ -118,6 +118,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         staffName,
         date: dateStr,
         time: timeStr,
+      }) : Promise.resolve(),
+      staffMember.email && staffMember.email !== business.owner?.email ? sendStaffBookingAlert({
+        staffEmail: staffMember.email,
+        staffName,
+        businessName: business.name,
+        clientName,
+        clientEmail,
+        clientPhone: clientPhone || undefined,
+        serviceName: service.name,
+        date: dateStr,
+        time: timeStr,
+        duration: Number(service.duration),
       }) : Promise.resolve(),
     ])
   })
