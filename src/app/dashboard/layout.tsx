@@ -45,7 +45,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     ...memberBusinesses.filter((mb) => !ownedBusinesses.find((ob) => ob.id === mb.id)),
   ]
 
-  if (allBusinesses.length === 0) redirect("/onboarding")
+  // Usuario sin negocios ni membresías → es solo cliente, ir a su perfil
+  if (allBusinesses.length === 0) redirect("/profile")
 
   // Pick active business from cookie, fallback to first
   const cookieStore = await cookies()
