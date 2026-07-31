@@ -256,7 +256,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           duration: service.duration,
           startTimeISO: startTime.toISOString(),
         }) : Promise.resolve(),
-        staffEmail ? sendStaffBookingAlert({
+        staffEmail && staffEmail !== business?.owner?.email ? sendStaffBookingAlert({
           staffEmail,
           staffName,
           businessName: business?.name || "",
