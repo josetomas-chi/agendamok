@@ -15,15 +15,23 @@ export async function POST(req: Request) {
     const { name, email, password } = schema.parse(body)
 
     const existing = await prisma.user.findUnique({ where: { email } })
-    if (existing) {
-      return NextResponse.json({ error: "Este email ya está registrado" }, { status: 400 })
-    }
 
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    await prisma.user.create({
-      data: { name, email, password: hashedPassword, role: "BUSINESS_OWNER" },
-    })
+    if (existing) {
+      // Allow setting password if account was auto-created (e.g. access request) but never activated
+      if (existing.password) {
+        return NextResponse.json({ error: "Este email ya está registrado" }, { status: 400 })
+      }
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: { name, password: hashedPassword, role: "BUSINESS_OWNER" },
+      })
+    } else {
+      await prisma.user.create({
+        data: { name, email, password: hashedPassword, role: "BUSINESS_OWNER" },
+      })
+    }
 
     return NextResponse.json({ success: true }, { status: 201 })
   } catch (error) {
