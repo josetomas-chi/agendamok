@@ -1,0 +1,39 @@
+// TEMPORARY — delete after use
+import { NextResponse } from "next/server"
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+
+export async function POST(req: Request) {
+  const session = await auth()
+  if (!session?.user?.email !== false && session?.user?.email !== "josetomas@bullpadel.cl") {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+  }
+
+  const { slug } = await req.json()
+
+  const business = await prisma.business.findUnique({
+    where: { slug },
+    select: { id: true, name: true, ownerId: true },
+  })
+  if (!business) return NextResponse.json({ error: "Negocio no encontrado" }, { status: 404 })
+
+  const user = await prisma.user.findUnique({
+    where: { email: "josetomas@bullpadel.cl" },
+    select: { id: true, name: true },
+  })
+  if (!user) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
+
+  if (business.ownerId === user.id) {
+    return NextResponse.json({ ok: true, message: "Ya eres dueño de este negocio" })
+  }
+
+  await prisma.business.update({
+    where: { id: business.id },
+    data: { ownerId: user.id },
+  })
+
+  return NextResponse.json({
+    ok: true,
+    message: `Transferido: ${business.name} → ${user.name} (${user.id})`,
+  })
+}
