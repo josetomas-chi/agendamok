@@ -127,6 +127,7 @@ export default async function DashboardPage() {
       )}
 
       <CalendarWithNew
+        key={business.id}
         businessId={business.id}
         services={business.services}
         staff={business.staff.map((s: typeof business.staff[number]) => ({ id: s.id, color: s.color, user: { name: s.user.name, image: s.user.image } }))}
