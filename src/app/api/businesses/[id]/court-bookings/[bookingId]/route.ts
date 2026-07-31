@@ -5,6 +5,29 @@ import { sendCourtBookingModification, sendCourtBookingCancellation } from "@/li
 
 type Params = { params: Promise<{ id: string; bookingId: string }> }
 
+export async function GET(_req: Request, { params }: Params) {
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+  const { id, bookingId } = await params
+
+  const [owner, member] = await Promise.all([
+    prisma.business.findFirst({ where: { id, ownerId: session.user.id }, select: { id: true } }),
+    prisma.businessMember.findFirst({ where: { businessId: id, userId: session.user.id, acceptedAt: { not: null } }, select: { id: true } }),
+  ])
+  if (!owner && !member) return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+
+  const booking = await prisma.courtBooking.findUnique({
+    where: { id: bookingId },
+    include: {
+      court: { select: { id: true, name: true, sport: true, color: true, isActive: true } },
+      client: { select: { id: true, name: true, lastName: true, email: true, phone: true, rut: true } },
+      coach: { select: { id: true, name: true, color: true } },
+    },
+  })
+  if (!booking) return NextResponse.json({ error: "No encontrada" }, { status: 404 })
+  return NextResponse.json(booking)
+}
+
 export async function PATCH(req: Request, { params }: Params) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })

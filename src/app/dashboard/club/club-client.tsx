@@ -304,8 +304,13 @@ export default function ClubPageClient({ businessId: initialBusinessId }: { busi
               {pendingVouchers.map(v => (
                 <button
                   key={v.id}
-                  onClick={() => {
-                    const b = allBookings.find(b => b.id === v.id)
+                  onClick={async () => {
+                    // La reserva puede estar en una semana diferente a la visible — fetch directo
+                    let b = allBookings.find(b => b.id === v.id)
+                    if (!b) {
+                      const r = await fetch(`/api/businesses/${businessId}/court-bookings/${v.id}`)
+                      if (r.ok) b = await r.json()
+                    }
                     if (b) { setDetailBooking(b); setTab("calendario"); setSelectedDate(new Date(v.startTime)) }
                   }}
                   className="text-xs px-2.5 py-1 rounded-lg font-semibold transition-colors"
