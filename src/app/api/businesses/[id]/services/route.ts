@@ -17,7 +17,7 @@ const schema = z.object({
 })
 
 async function getBusinessId(userId: string) {
-  const b = await prisma.business.findUnique({ where: { ownerId: userId }, select: { id: true } })
+  const b = await prisma.business.findFirst({ where: { ownerId: userId }, select: { id: true } })
   return b?.id
 }
 

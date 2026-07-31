@@ -7,7 +7,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
   const { id, clientId } = await params
-  const business = await prisma.business.findUnique({ where: { id, ownerId: session.user.id } })
+  const business = await prisma.business.findFirst({ where: { id, ownerId: session.user.id } })
   if (!business) return NextResponse.json({ error: "No autorizado" }, { status: 403 })
 
   const body = await req.json()
@@ -52,7 +52,7 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id, clientId } = await params
-  const business = await prisma.business.findUnique({ where: { id, ownerId: session.user.id } })
+  const business = await prisma.business.findFirst({ where: { id, ownerId: session.user.id } })
   if (!business) return NextResponse.json({ error: "No autorizado" }, { status: 403 })
   await prisma.client.update({ where: { id: clientId, businessId: id }, data: { deletedAt: new Date() } })
   return NextResponse.json({ success: true })

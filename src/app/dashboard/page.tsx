@@ -30,8 +30,8 @@ export default async function DashboardPage() {
     },
   } as const
 
-  let business = await prisma.business.findUnique({
-    where: { ownerId: session.user.id },
+  let business = await prisma.business.findFirst({
+    where: { ownerId: session.user.id, deletedAt: null },
     include: businessSelect,
   })
 

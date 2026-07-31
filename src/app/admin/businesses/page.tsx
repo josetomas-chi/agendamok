@@ -39,9 +39,11 @@ export default function AdminBusinessesPage() {
   const [twilioNumber, setTwilioNumber] = useState("")
   const [saving, setSaving] = useState(false)
   const [newOpen, setNewOpen] = useState(false)
-  const [newForm, setNewForm] = useState({ ownerName: "", ownerEmail: "", businessName: "", slug: "", category: "", plan: "FREE" })
+  const [newForm, setNewForm] = useState({ ownerName: "", ownerEmail: "", businessName: "", slug: "", category: "", plan: "STARTER" })
+  const [addToExisting, setAddToExisting] = useState(false)
   const [creating, setCreating] = useState(false)
   const [inviteUrl, setInviteUrl] = useState("")
+  const [addedTo, setAddedTo] = useState<string | null>(null)
 
   useEffect(() => {
     loadBusinesses()
@@ -91,19 +93,24 @@ export default function AdminBusinessesPage() {
 
   async function handleCreate() {
     const { ownerName, ownerEmail, businessName, slug, category } = newForm
-    if (!ownerName || !ownerEmail || !businessName || !slug || !category) {
+    if (!ownerEmail || !businessName || !slug || !category) {
       toast.error("Completa todos los campos obligatorios")
+      return
+    }
+    if (!addToExisting && !ownerName) {
+      toast.error("El nombre del propietario es requerido")
       return
     }
     setCreating(true)
     const r = await fetch("/api/admin/businesses", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newForm),
+      body: JSON.stringify({ ...newForm, addToExisting }),
     })
     const d = await r.json()
     if (r.ok) {
-      setInviteUrl(d.inviteUrl)
+      if (d.inviteUrl) setInviteUrl(d.inviteUrl)
+      else setAddedTo(d.userName)
       loadBusinesses()
     } else {
       toast.error(d.error || "Error al crear negocio")
@@ -114,7 +121,9 @@ export default function AdminBusinessesPage() {
   function resetNew() {
     setNewOpen(false)
     setInviteUrl("")
-    setNewForm({ ownerName: "", ownerEmail: "", businessName: "", slug: "", category: "", plan: "FREE" })
+    setAddedTo(null)
+    setAddToExisting(false)
+    setNewForm({ ownerName: "", ownerEmail: "", businessName: "", slug: "", category: "", plan: "STARTER" })
   }
 
   const filtered = businesses.filter(b =>
@@ -251,32 +260,64 @@ export default function AdminBusinessesPage() {
 
           {inviteUrl ? (
             <div className="space-y-4 pt-2">
-              <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-center space-y-2">
-                <p className="font-semibold text-green-800">Negocio creado exitosamente</p>
-                <p className="text-sm text-green-700">Enviale este link al cliente para que cree su contrasena:</p>
+              <div className="p-4 bg-emerald-500/10 border border-emerald-400/20 rounded-xl text-center space-y-2">
+                <p className="font-semibold text-emerald-400">Negocio creado exitosamente</p>
+                <p className="text-sm text-white/60">Envíale este link al cliente para que cree su contraseña:</p>
               </div>
               <div className="space-y-1.5">
-                <Label>Link de invitacion</Label>
+                <Label>Link de invitación</Label>
                 <div className="flex gap-2">
                   <Input value={inviteUrl} readOnly className="font-mono text-xs" />
                   <Button variant="outline" size="icon" onClick={() => { navigator.clipboard.writeText(inviteUrl); toast.success("Link copiado") }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">El link expira en 7 dias</p>
+                <p className="text-xs text-muted-foreground">El link expira en 7 días</p>
+              </div>
+              <Button className="w-full" onClick={resetNew}>Cerrar</Button>
+            </div>
+          ) : addedTo ? (
+            <div className="space-y-4 pt-2">
+              <div className="p-4 bg-emerald-500/10 border border-emerald-400/20 rounded-xl text-center space-y-2">
+                <p className="font-semibold text-emerald-400">Negocio agregado exitosamente</p>
+                <p className="text-sm text-white/60">El negocio fue asignado a <strong className="text-white">{addedTo}</strong>. Ya aparecerá en el selector de negocios al iniciar sesión.</p>
               </div>
               <Button className="w-full" onClick={resetNew}>Cerrar</Button>
             </div>
           ) : (
             <div className="space-y-4 pt-2">
-              <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Datos del propietario</p>
-              <div className="space-y-1.5">
-                <Label>Nombre *</Label>
-                <Input value={newForm.ownerName} onChange={e => setNewForm(f => ({ ...f, ownerName: e.target.value }))} placeholder="Nombre completo" />
+              {/* Toggle nuevo / existente */}
+              <div className="flex rounded-xl overflow-hidden border border-white/10 text-sm">
+                <button
+                  type="button"
+                  onClick={() => { setAddToExisting(false); setNewForm(f => ({ ...f, ownerName: "", ownerEmail: "" })) }}
+                  className={`flex-1 py-2 font-medium transition-colors ${!addToExisting ? "bg-sky-500 text-white" : "text-white/40 hover:text-white/70"}`}
+                >
+                  Nuevo usuario
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAddToExisting(true); setNewForm(f => ({ ...f, ownerName: "" })) }}
+                  className={`flex-1 py-2 font-medium transition-colors ${addToExisting ? "bg-sky-500 text-white" : "text-white/40 hover:text-white/70"}`}
+                >
+                  Usuario existente
+                </button>
               </div>
+
+              <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                {addToExisting ? "Buscar usuario" : "Datos del propietario"}
+              </p>
+
+              {!addToExisting && (
+                <div className="space-y-1.5">
+                  <Label>Nombre *</Label>
+                  <Input value={newForm.ownerName} onChange={e => setNewForm(f => ({ ...f, ownerName: e.target.value }))} placeholder="Nombre completo" />
+                </div>
+              )}
               <div className="space-y-1.5">
-                <Label>Email *</Label>
+                <Label>Email {addToExisting ? "(usuario existente)" : ""} *</Label>
                 <Input type="email" value={newForm.ownerEmail} onChange={e => setNewForm(f => ({ ...f, ownerEmail: e.target.value }))} placeholder="correo@ejemplo.com" />
+                {addToExisting && <p className="text-xs text-white/40">El negocio se agregará al usuario con este correo</p>}
               </div>
               <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide pt-1">Datos del negocio</p>
               <div className="space-y-1.5">
@@ -291,6 +332,7 @@ export default function AdminBusinessesPage() {
                 <Input value={newForm.slug} onChange={e => setNewForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") }))} placeholder="mi-negocio" />
                 <p className="text-xs text-muted-foreground">Tu pagina de reservas: <span className="font-medium text-foreground">/book/{newForm.slug || "mi-negocio"}</span></p>
               </div>
+              <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide pt-1">Datos del negocio</p>
               <div className="space-y-1.5">
                 <Label>Categoria *</Label>
                 <Select value={newForm.category} onValueChange={v => setNewForm(f => ({ ...f, category: v ?? "" }))}>

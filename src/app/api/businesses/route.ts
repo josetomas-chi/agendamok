@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Ese slug ya está en uso" }, { status: 400 })
     }
 
-    const existingOwner = await prisma.business.findUnique({ where: { ownerId: session.user.id } })
+    const existingOwner = await prisma.business.findFirst({ where: { ownerId: session.user.id } })
     if (existingOwner) {
       return NextResponse.json({ error: "already_exists", businessId: existingOwner.id }, { status: 409 })
     }

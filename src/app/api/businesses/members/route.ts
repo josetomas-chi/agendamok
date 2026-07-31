@@ -7,7 +7,7 @@ import { Resend } from "resend"
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 async function getAdminBusiness(userId: string) {
-  const business = await prisma.business.findUnique({ where: { ownerId: userId } })
+  const business = await prisma.business.findFirst({ where: { ownerId: userId } })
   if (business) return business
   const member = await prisma.businessMember.findFirst({
     where: { userId, role: "ADMIN", acceptedAt: { not: null } },
