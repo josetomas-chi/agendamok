@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { addMinutes, format } from "date-fns"
 import { es } from "date-fns/locale"
-import { sendBookingConfirmation } from "@/lib/email"
+import { sendBookingConfirmation, sendStaffBookingAlert } from "@/lib/email"
 import { utcToChileLocal } from "@/lib/timezone"
 
 const schema = z.object({
@@ -228,20 +228,47 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       },
     })
 
-    // Send confirmation email if client has email
+    // Send emails after response
+    const business = await prisma.business.findUnique({
+      where: { id },
+      select: { name: true, owner: { select: { email: true } } },
+    })
+    const staffUser = await prisma.staffMember.findUnique({
+      where: { id: data.staffId },
+      select: { user: { select: { email: true } } },
+    }).catch(() => null)
+    const staffEmail = staffUser?.user?.email ?? null
+    const dateStr = format(utcToChileLocal(startTime), "EEEE d 'de' MMMM yyyy", { locale: es })
+    const timeStr = format(utcToChileLocal(startTime), "HH:mm")
+    const staffName = appointment.staff.user.name || "Sin asignar"
+
     if (appointment.client?.email) {
-      const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
       sendBookingConfirmation({
         clientName: appointment.client.name,
         clientEmail: appointment.client.email,
         businessName: business?.name || "",
         serviceName: appointment.service.name,
-        staffName: appointment.staff.user.name || "Sin asignar",
-        date: format(utcToChileLocal(startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
-        time: format(utcToChileLocal(startTime), "HH:mm"),
+        staffName,
+        date: dateStr,
+        time: timeStr,
         duration: service.duration,
         startTimeISO: startTime.toISOString(),
       }).catch((err) => { console.error("[email] sendBookingConfirmation failed:", err?.message ?? err) })
+    }
+
+    if (staffEmail) {
+      sendStaffBookingAlert({
+        staffEmail,
+        staffName,
+        businessName: business?.name || "",
+        clientName: appointment.client?.name || "",
+        clientEmail: appointment.client?.email || "",
+        clientPhone: appointment.client?.phone || undefined,
+        serviceName: appointment.service.name,
+        date: dateStr,
+        time: timeStr,
+        duration: service.duration,
+      }).catch((err) => { console.error("[email] sendStaffBookingAlert failed:", err?.message ?? err) })
     }
 
     return NextResponse.json({ appointment }, { status: 201 })
