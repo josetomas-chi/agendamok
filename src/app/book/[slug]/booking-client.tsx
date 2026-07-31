@@ -433,6 +433,10 @@ const COURT_SESSION_KEY = (slug: string) => `booking_court_${slug}`
 
 function CourtBookingFlow({ business, slug, initialClient }: { business: Business; slug: string; initialClient?: { name: string; email: string; phone: string; rut?: string } }) {
   const today = startOfToday()
+  const [isLoggedIn, setIsLoggedIn] = React.useState(false)
+  React.useEffect(() => {
+    fetch("/api/auth/session").then(r => r.ok ? r.json() : null).then(s => { if (s?.user?.email) setIsLoggedIn(true) })
+  }, [])
 
   // Search state
   const sports = [...new Set(business.courts.map(c => c.sport).filter(Boolean))] as string[]
@@ -664,11 +668,19 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
           </div>
           <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: "rgba(56,189,248,0.12)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>Sports</span>
         </div>
-        {business.phone && (
-          <a href={`tel:${business.phone}`} className="flex items-center gap-1 text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
-            <Phone className="w-3 h-3" /> {business.phone}
-          </a>
-        )}
+        <div className="flex items-center gap-3">
+          {business.phone && (
+            <a href={`tel:${business.phone}`} className="flex items-center gap-1 text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
+              <Phone className="w-3 h-3" /> {business.phone}
+            </a>
+          )}
+          {isLoggedIn && (
+            <a href="/profile" className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all" style={{ background: "rgba(56,189,248,0.12)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+              Mi perfil
+            </a>
+          )}
+        </div>
       </div>
 
       {/* ── HERO (cover image del club) ────────────────── */}
