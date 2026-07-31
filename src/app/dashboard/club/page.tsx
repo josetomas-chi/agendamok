@@ -11,6 +11,7 @@ export default async function ClubPage() {
   const cookieStore = await cookies()
   const activeBusinessId = cookieStore.get("active-business-id")?.value
 
+  // 1. Cookie — dueño
   let business = activeBusinessId
     ? await prisma.business.findFirst({
         where: { id: activeBusinessId, ownerId: session.user.id },
@@ -18,6 +19,21 @@ export default async function ClubPage() {
       })
     : null
 
+  // 2. Cookie — miembro
+  if (!business && activeBusinessId) {
+    const member = await prisma.businessMember.findFirst({
+      where: { businessId: activeBusinessId, userId: session.user.id, acceptedAt: { not: null } },
+      select: { businessId: true },
+    })
+    if (member) {
+      business = await prisma.business.findUnique({
+        where: { id: member.businessId },
+        select: { id: true, businessType: true },
+      })
+    }
+  }
+
+  // 3. Fallback — primer negocio propio
   if (!business) {
     business = await prisma.business.findFirst({
       where: { ownerId: session.user.id },
@@ -26,17 +42,17 @@ export default async function ClubPage() {
     })
   }
 
+  // 4. Fallback — primera membresía
   if (!business) {
     const member = await prisma.businessMember.findFirst({
       where: { userId: session.user.id, acceptedAt: { not: null } },
       select: { businessId: true },
     })
     if (member) {
-      const b = await prisma.business.findUnique({
+      business = await prisma.business.findUnique({
         where: { id: member.businessId },
         select: { id: true, businessType: true },
       })
-      if (b) business = b
     }
   }
 
