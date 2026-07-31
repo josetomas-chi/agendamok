@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { addMinutes, format } from "date-fns"
 import { es } from "date-fns/locale"
+import { after } from "next/server"
 import { sendBookingConfirmation, sendStaffBookingAlert } from "@/lib/email"
 import { utcToChileLocal } from "@/lib/timezone"
 
@@ -242,34 +243,33 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const timeStr = format(utcToChileLocal(startTime), "HH:mm")
     const staffName = appointment.staff.user.name || "Sin asignar"
 
-    if (appointment.client?.email) {
-      sendBookingConfirmation({
-        clientName: appointment.client.name,
-        clientEmail: appointment.client.email,
-        businessName: business?.name || "",
-        serviceName: appointment.service.name,
-        staffName,
-        date: dateStr,
-        time: timeStr,
-        duration: service.duration,
-        startTimeISO: startTime.toISOString(),
-      }).catch((err) => { console.error("[email] sendBookingConfirmation failed:", err?.message ?? err) })
-    }
-
-    if (staffEmail) {
-      sendStaffBookingAlert({
-        staffEmail,
-        staffName,
-        businessName: business?.name || "",
-        clientName: appointment.client?.name || "",
-        clientEmail: appointment.client?.email || "",
-        clientPhone: appointment.client?.phone || undefined,
-        serviceName: appointment.service.name,
-        date: dateStr,
-        time: timeStr,
-        duration: service.duration,
-      }).catch((err) => { console.error("[email] sendStaffBookingAlert failed:", err?.message ?? err) })
-    }
+    after(async () => {
+      await Promise.allSettled([
+        appointment.client?.email ? sendBookingConfirmation({
+          clientName: appointment.client.name,
+          clientEmail: appointment.client.email,
+          businessName: business?.name || "",
+          serviceName: appointment.service.name,
+          staffName,
+          date: dateStr,
+          time: timeStr,
+          duration: service.duration,
+          startTimeISO: startTime.toISOString(),
+        }) : Promise.resolve(),
+        staffEmail ? sendStaffBookingAlert({
+          staffEmail,
+          staffName,
+          businessName: business?.name || "",
+          clientName: appointment.client?.name || "",
+          clientEmail: appointment.client?.email || "",
+          clientPhone: appointment.client?.phone || undefined,
+          serviceName: appointment.service.name,
+          date: dateStr,
+          time: timeStr,
+          duration: service.duration,
+        }) : Promise.resolve(),
+      ])
+    })
 
     return NextResponse.json({ appointment }, { status: 201 })
   } catch (e) {
