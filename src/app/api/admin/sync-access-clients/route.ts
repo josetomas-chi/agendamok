@@ -29,7 +29,16 @@ export async function POST() {
     const existingClient = await prisma.client.findFirst({
       where: { businessId: req.businessId, userId: user.id, deletedAt: null },
     })
-    if (existingClient) { skipped++; continue }
+    if (existingClient) {
+      // Ensure allowTransfer is enabled on already-created clients
+      if (!existingClient.allowTransfer) {
+        await prisma.client.update({ where: { id: existingClient.id }, data: { allowTransfer: true } })
+        linked++
+      } else {
+        skipped++
+      }
+      continue
+    }
 
     const clientByEmail = await prisma.client.findFirst({
       where: { businessId: req.businessId, email: req.email, deletedAt: null },
