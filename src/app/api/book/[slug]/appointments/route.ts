@@ -119,7 +119,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         date: dateStr,
         time: timeStr,
       }) : Promise.resolve(),
-      staffMember.email && staffMember.email !== business.owner?.email ? sendStaffBookingAlert({
+      staffMember.email ? sendStaffBookingAlert({
         staffEmail: staffMember.email,
         staffName,
         businessName: business.name,
