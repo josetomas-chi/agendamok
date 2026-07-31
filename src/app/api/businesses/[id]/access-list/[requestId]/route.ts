@@ -28,26 +28,57 @@ export async function PATCH(req: Request, { params }: Params) {
     : null
   const baseUrl = process.env.NEXTAUTH_URL || "https://agendamok.cl"
 
-  if (body.status === "APPROVED" && previous?.status !== "APPROVED" && entry.email && business) {
-    // If user exists but has no password yet, send a new activate link
-    const user = await prisma.user.findUnique({ where: { email: entry.email }, select: { id: true, password: true } })
-    if (user && !user.password) {
-      const secret = process.env.NEXTAUTH_SECRET!
-      const token = jwt.sign({ userId: user.id, type: "invite" }, secret, { expiresIn: "7d" })
-      const activateUrl = `${baseUrl}/invite/${token}`
-      sendAccessApproved({
-        clientName: entry.name,
-        clientEmail: entry.email,
-        businessName: business.name,
-        bookingUrl: activateUrl,
-      }).catch(() => {})
-    } else {
-      sendAccessApproved({
-        clientName: entry.name,
-        clientEmail: entry.email,
-        businessName: business.name,
-        bookingUrl: `${baseUrl}/book/${business.slug}`,
-      }).catch(() => {})
+  if (body.status === "APPROVED" && previous?.status !== "APPROVED") {
+    const user = entry.email
+      ? await prisma.user.findUnique({ where: { email: entry.email }, select: { id: true, password: true } })
+      : null
+
+    // Create Client record in the business if it doesn't exist yet
+    if (user) {
+      const existingClient = await prisma.client.findFirst({
+        where: { businessId: id, userId: user.id, deletedAt: null },
+      })
+      if (!existingClient) {
+        // Also check by email in case there's an unlinked client
+        const clientByEmail = entry.email
+          ? await prisma.client.findFirst({ where: { businessId: id, email: entry.email, deletedAt: null } })
+          : null
+        if (clientByEmail) {
+          await prisma.client.update({ where: { id: clientByEmail.id }, data: { userId: user.id } })
+        } else {
+          await prisma.client.create({
+            data: {
+              businessId: id,
+              userId: user.id,
+              name: entry.name,
+              email: entry.email ?? undefined,
+              phone: entry.phone ?? undefined,
+              rut: entry.rut ?? undefined,
+            },
+          })
+        }
+      }
+    }
+
+    if (entry.email && business) {
+      if (user && !user.password) {
+        const secret = process.env.NEXTAUTH_SECRET!
+        const token = jwt.sign({ userId: user.id, type: "invite" }, secret, { expiresIn: "7d" })
+        const activateUrl = `${baseUrl}/invite/${token}`
+        sendAccessApproved({
+          clientName: entry.name,
+          clientEmail: entry.email,
+          businessName: business.name,
+          bookingUrl: activateUrl,
+        }).catch(() => {})
+      } else {
+        sendAccessApproved({
+          clientName: entry.name,
+          clientEmail: entry.email,
+          businessName: business.name,
+          bookingUrl: `${baseUrl}/book/${business.slug}`,
+        }).catch(() => {})
+      }
     }
   }
 
