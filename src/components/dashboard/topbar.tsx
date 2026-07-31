@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Camera, Menu, Search, ChevronDown, Check, Building2 } from "lucide-react"
 import { toast } from "sonner"
 import Image from "next/image"
@@ -20,6 +20,7 @@ export function TopBar({
   activeBusinessId?: string
 }) {
   const [logo, setLogo] = useState<string | null>(businessLogo)
+  useEffect(() => { setLogo(businessLogo) }, [businessLogo])
   const [uploading, setUploading] = useState(false)
   const [switcherOpen, setSwitcherOpen] = useState(false)
   const [switching, setSwitching] = useState(false)
