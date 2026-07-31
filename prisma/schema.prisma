@@ -315,6 +315,7 @@ model Business {
   schoolClasses             SchoolClass[]
   accessRequests            BusinessAccessRequest[]
   schoolPayments            SchoolPayment[]
+  walletTransactions        WalletTransaction[]
 
   @@index([slug])
   @@map("businesses")
@@ -586,6 +587,7 @@ model Client {
   memberships            ClientMembership[]
   schoolEnrollments      SchoolEnrollment[]
   schoolAttendance       SchoolAttendance[]
+  walletTransactions     WalletTransaction[]
 
   @@unique([businessId, rut])
   @@index([businessId, email])
@@ -1428,4 +1430,33 @@ model TournamentMatch {
 
   @@index([tournamentId])
   @@map("tournament_matches")
+}
+
+// ─── WALLET ───────────────────────────────────────────────────────────────────
+
+model WalletTransaction {
+  id          String   @id @default(cuid())
+  businessId  String
+  clientId    String
+  type        WalletTransactionType
+  amount      Int      // en pesos (entero)
+  method      String?  // FLOW | MP | TRANSFER | MANUAL
+  status      String   @default("PENDING") // PENDING | CONFIRMED | REJECTED
+  reference   String?  // token Flow, payment_id MP, etc.
+  note        String?
+  createdAt   DateTime @default(now())
+  confirmedAt DateTime?
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client   Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([clientId])
+  @@map("wallet_transactions")
+}
+
+enum WalletTransactionType {
+  TOPUP
+  DEBIT
+  ADJUSTMENT
 }

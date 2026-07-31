@@ -1598,10 +1598,18 @@ export default function ProfileContent() {
                             </div>
                           )}
                           <div>
-                            <p style={{ color: MUTED, fontSize: 10 }}>Crédito</p>
+                            <p style={{ color: MUTED, fontSize: 10 }}>Saldo</p>
                             <p style={{ color: "#16a34a", fontWeight: 800, fontSize: 18 }}>
                               ${(b.creditBalance / 100).toLocaleString("es-CL")}
                             </p>
+                            <a
+                              href={`/wallet/${b.businessSlug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ fontSize: 10, color: ACCENT, fontWeight: 600, textDecoration: "none", display: "block", marginTop: 2 }}
+                            >
+                              + Recargar
+                            </a>
                           </div>
                           {b.loyaltyEnabled && b.segmentDiscount > 0 && (
                             <div>
