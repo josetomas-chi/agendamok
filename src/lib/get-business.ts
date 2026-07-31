@@ -6,7 +6,7 @@ export async function getBusinessOrRedirect() {
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
 
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId: session.user.id },
     select: { id: true, name: true, slug: true, currency: true },
   })

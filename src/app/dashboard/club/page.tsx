@@ -7,7 +7,7 @@ export default async function ClubPage() {
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
 
-  let business = await prisma.business.findUnique({
+  let business = await prisma.business.findFirst({
     where: { ownerId: session.user.id },
     select: { id: true },
   })

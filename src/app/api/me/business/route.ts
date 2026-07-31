@@ -6,7 +6,7 @@ export async function GET() {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId: session.user.id },
     select: { id: true, name: true, slug: true, currency: true, category: true, bsaleApiKey: true, businessType: true },
   })
