@@ -16,7 +16,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
           staff: { select: { user: { select: { name: true } } } },
         },
       },
-      business: { select: { name: true, logo: true } },
+      business: { select: { name: true, logo: true, googleMapsUrl: true } },
     },
   })
 

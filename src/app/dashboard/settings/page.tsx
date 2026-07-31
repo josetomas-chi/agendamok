@@ -13,14 +13,14 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle, CheckCircle2, AlertCircle, Loader2, Gift, CalendarX2, ImagePlus, X, Users, UserPlus, Mail } from "lucide-react"
 
-type Business = { id: string; name: string; slug: string; category: string; sports: string[]; businessType: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean; notifConfirmation: boolean; notifReminder24h: boolean; notifReminder1h: boolean; notifNewBooking: boolean; notifCancellation: boolean }
+type Business = { id: string; name: string; slug: string; category: string; sports: string[]; businessType: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean; notifConfirmation: boolean; notifReminder24h: boolean; notifReminder1h: boolean; notifNewBooking: boolean; notifCancellation: boolean; googleMapsUrl: string | null }
 type PaymentSettings = { onlinePaymentsEnabled: boolean; hasCredentials: boolean; mpConnected: boolean; mpPublicKey?: string }
 type Subscription = { plan: string; status: string; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean; flowCustomerId: string | null; trialEndsAt: string | null; isCourtesy: boolean }
 
 function SettingsContent() {
   const [business, setBusiness] = useState<Business | null>(null)
   const [subscription, setSubscription] = useState<Subscription | null>(null)
-  const [form, setForm] = useState({ name: "", slug: "", category: "", description: "", website: "", phone: "", address: "", city: "", timezone: "", currency: "" })
+  const [form, setForm] = useState({ name: "", slug: "", category: "", description: "", website: "", phone: "", address: "", city: "", timezone: "", currency: "", googleMapsUrl: "" })
   const [sports, setSports] = useState<string[]>([])
   const [clinicalEnabled, setClinicalEnabled] = useState(false)
   const [cancellationHours, setCancellationHours] = useState<string>("")
@@ -124,7 +124,7 @@ function SettingsContent() {
       const biz = await r.json()
       setBusiness(biz.business)
       setSubscription(biz.subscription || null)
-      setForm({ name: biz.business.name, slug: biz.business.slug || "", category: biz.business.category || "", description: biz.business.description || "", website: biz.business.website || "", phone: biz.business.phone || "", address: biz.business.address || "", city: biz.business.city || "", timezone: biz.business.timezone, currency: biz.business.currency })
+      setForm({ name: biz.business.name, slug: biz.business.slug || "", category: biz.business.category || "", description: biz.business.description || "", website: biz.business.website || "", phone: biz.business.phone || "", address: biz.business.address || "", city: biz.business.city || "", timezone: biz.business.timezone, currency: biz.business.currency, googleMapsUrl: biz.business.googleMapsUrl || "" })
       setSports(biz.business.sports || [])
       setClinicalEnabled(biz.business.clinicalRecordEnabled ?? false)
       setCancellationHours(biz.business.cancellationHoursNotice?.toString() ?? "")
@@ -543,6 +543,7 @@ function SettingsContent() {
                 </div>
                 <div className="col-span-2 space-y-1.5"><Label>Descripcion</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="Cuenta de que trata tu negocio..." /></div>
                 <div className="space-y-1.5"><Label>Sitio web</Label><Input value={form.website} onChange={e => setForm(f => ({ ...f, website: e.target.value }))} placeholder="https://..." /></div>
+                <div className="space-y-1.5"><Label>Link de reseñas en Google</Label><Input value={form.googleMapsUrl} onChange={e => setForm(f => ({ ...f, googleMapsUrl: e.target.value }))} placeholder="https://g.page/r/..." /><p className="text-xs text-muted-foreground">Los clientes con 4-5 estrellas serán redirigidos aquí para dejar una reseña en Google.</p></div>
                 <div className="space-y-1.5"><Label>Teléfono</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+56 9 1234 5678" /></div>
                 <div className="space-y-1.5"><Label>Moneda</Label><Input value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} placeholder="CLP" /></div>
               </div>

@@ -272,6 +272,7 @@ model Business {
   waAddonStatus               String    @default("INACTIVE") // INACTIVE | ACTIVE | PAST_DUE | CANCELLED
   waFlowSubscriptionId        String?
   metaPhoneNumberId           String?
+  googleMapsUrl               String?
   accessMode                  String    @default("OPEN") // OPEN | CLOSED
   createdAt                   DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
