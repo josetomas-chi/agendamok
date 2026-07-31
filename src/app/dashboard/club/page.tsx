@@ -59,5 +59,5 @@ export default async function ClubPage() {
   if (!business) redirect("/onboarding")
   if (business.businessType !== "SPORTS_CLUB") redirect("/dashboard")
 
-  return <ClubPageClient businessId={business.id} />
+  return <ClubPageClient key={business.id} businessId={business.id} />
 }
