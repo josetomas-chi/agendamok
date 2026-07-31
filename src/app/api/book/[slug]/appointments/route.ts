@@ -58,6 +58,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   const end = addMinutes(start, Number(service.duration))
 
+  // Check staff work schedule
+  const { utcToChileLocal } = await import("@/lib/timezone")
+  const localStart = utcToChileLocal(start)
+  const localEnd = utcToChileLocal(end)
+  const dow = localStart.getDay()
+  const startStr = `${String(localStart.getHours()).padStart(2, "0")}:${String(localStart.getMinutes()).padStart(2, "0")}`
+  const endStr = `${String(localEnd.getHours()).padStart(2, "0")}:${String(localEnd.getMinutes()).padStart(2, "0")}`
+  const schedule = await prisma.workSchedule.findUnique({ where: { staffId_dayOfWeek: { staffId, dayOfWeek: dow } } })
+  if (!schedule || !schedule.isWorking) {
+    return NextResponse.json({ error: "El profesional no trabaja ese día" }, { status: 409 })
+  }
+  if (startStr < schedule.startTime || endStr > schedule.endTime) {
+    return NextResponse.json({ error: `Horario fuera del horario de trabajo del profesional (${schedule.startTime}–${schedule.endTime})` }, { status: 409 })
+  }
+
   // Check no overlap
   const conflict = await prisma.appointment.findFirst({
     where: {
