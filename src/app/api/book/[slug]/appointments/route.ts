@@ -96,7 +96,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   // Emails después de responder — no bloquean la confirmación al cliente
   after(async () => {
-    await Promise.allSettled([
+    console.log("[book/appointments] after() firing, staffMember.email:", staffMember.email)
+    const results = await Promise.allSettled([
       sendBookingConfirmation({
         clientName,
         clientEmail,
@@ -133,6 +134,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         duration: Number(service.duration),
       }) : Promise.resolve(),
     ])
+    results.forEach((r, i) => {
+      if (r.status === "rejected") console.error(`[book/appointments] email[${i}] failed:`, r.reason)
+      else console.log(`[book/appointments] email[${i}] ok`)
+    })
   })
 
   return NextResponse.json({ appointment }, { status: 201 })
