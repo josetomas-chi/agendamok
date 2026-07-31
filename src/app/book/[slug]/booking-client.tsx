@@ -633,6 +633,22 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
     }))
 
     setSubmitting(false)
+
+    // If transfer payment required, stay on page to collect voucher before redirecting
+    if (d.allowTransfer) {
+      setConfirmedBookingId(d.booking?.id ?? null)
+      setAllowTransfer(true)
+      setStep("confirmed")
+      if (createAccount && password.length >= 8) {
+        await fetch(`/api/book/${slug}/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: form.name, email: form.email, password }),
+        })
+      }
+      return
+    }
+
     if (createAccount && password.length >= 8) {
       const regR = await fetch(`/api/book/${slug}/register`, {
         method: "POST",
@@ -1101,8 +1117,10 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
             <Check className="w-12 h-12" style={{ color: "#22c55e" }} />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-white">¡Reserva confirmada!</h2>
-            <p className="text-sm mt-2" style={{ color: "rgba(255,255,255,0.4)" }}>Enviamos la confirmación a {form.email}</p>
+            <h2 className="text-2xl font-black text-white">{allowTransfer && !voucherUploaded ? "¡Casi listo!" : "¡Reserva confirmada!"}</h2>
+            <p className="text-sm mt-2" style={{ color: "rgba(255,255,255,0.4)" }}>
+              {allowTransfer && !voucherUploaded ? "Sube el comprobante de transferencia para confirmar." : `Enviamos la confirmación a ${form.email}`}
+            </p>
           </div>
           <div className="w-full rounded-2xl p-5 space-y-3 text-left" style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}` }}>
             <div className="flex items-center gap-2.5">
@@ -1144,7 +1162,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                 />
               )}
 
-              <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>Una vez realizada la transferencia, adjunta el comprobante abajo. El club lo validará.</p>
+              <p className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.7)" }}>Adjunta el comprobante para confirmar tu reserva. El club lo validará.</p>
               {voucherUploaded ? (
                 <div className="flex items-center gap-2 py-2 px-3 rounded-xl" style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)" }}>
                   <Check className="w-4 h-4" style={{ color: "#22c55e" }} />
@@ -1173,16 +1191,28 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
             </div>
           )}
 
-          <a href={`https://wa.me/?text=${encodeURIComponent(`*${business.name}*\n📅 ${format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })}\n⏰ ${selectedSlot.time} · ${duration} min\n🎾 ${selectedCourt.name}${selectedSlot.price > 0 ? `\n💵 $${selectedSlot.price.toLocaleString("es-CL")}` : ""}\n\n_Reservado con AgendaMok Sports_`)}`}
-            target="_blank" rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold transition-all"
-            style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>
-            <Share2 className="w-4 h-4" /> Compartir por WhatsApp
-          </a>
-
-          <button onClick={reset} className="text-sm font-semibold" style={{ color: SPORTS_ACCENT }}>
-            Reservar otra cancha →
-          </button>
+          {allowTransfer ? (
+            <a href="/profile"
+              onClick={e => { if (!voucherUploaded) e.preventDefault() }}
+              className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-sm transition-all"
+              style={voucherUploaded
+                ? { background: SPORTS_ACCENT, color: SPORTS_BG }
+                : { background: "rgba(56,189,248,0.08)", color: "rgba(56,189,248,0.4)", border: `1px solid ${SPORTS_BORDER}`, cursor: "not-allowed" }}>
+              {voucherUploaded ? "Ver mis reservas →" : "Sube el comprobante para continuar"}
+            </a>
+          ) : (
+            <>
+              <a href={`https://wa.me/?text=${encodeURIComponent(`*${business.name}*\n📅 ${format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })}\n⏰ ${selectedSlot.time} · ${duration} min\n🎾 ${selectedCourt.name}${selectedSlot.price > 0 ? `\n💵 $${selectedSlot.price.toLocaleString("es-CL")}` : ""}\n\n_Reservado con AgendaMok Sports_`)}`}
+                target="_blank" rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold transition-all"
+                style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>
+                <Share2 className="w-4 h-4" /> Compartir por WhatsApp
+              </a>
+              <button onClick={reset} className="text-sm font-semibold" style={{ color: SPORTS_ACCENT }}>
+                Reservar otra cancha →
+              </button>
+            </>
+          )}
         </div>
       )}
 

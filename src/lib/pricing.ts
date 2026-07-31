@@ -36,6 +36,13 @@ export function getCourtBookingPrice(
       const slotMin = nh * 60 + nm - (ch * 60 + cm)
       if (durationMinutes !== slotMin)
         return { price: 0, error: `La duración debe ser ${slotMin} minutos` }
+    } else {
+      // Last fixed slot: validate that booking doesn't exceed rule endTime
+      const [ch, cm] = timeStr.split(":").map(Number)
+      const [eh, em] = rule.endTime.split(":").map(Number)
+      const maxDuration = eh * 60 + em - (ch * 60 + cm)
+      if (durationMinutes > maxDuration)
+        return { price: 0, error: `La duración máxima para este horario es ${maxDuration} minutos` }
     }
     return { price: Number(rule.price) }
   }

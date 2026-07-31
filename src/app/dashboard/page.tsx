@@ -2,6 +2,7 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import { CalendarWithNew } from "@/components/dashboard/calendar-with-new"
 import { StatsCards } from "@/components/dashboard/stats-cards"
 import { SetupChecklist } from "@/components/dashboard/setup-checklist"
@@ -30,10 +31,24 @@ export default async function DashboardPage() {
     },
   } as const
 
-  let business = await prisma.business.findFirst({
-    where: { ownerId: session.user.id, deletedAt: null },
-    include: businessSelect,
-  })
+  const cookieStore = await cookies()
+  const activeBusinessId = cookieStore.get("active-business-id")?.value
+
+  let business = activeBusinessId
+    ? await prisma.business.findFirst({
+        where: { id: activeBusinessId, ownerId: session.user.id, deletedAt: null },
+        include: businessSelect,
+      })
+    : null
+
+  // Fall back to first owned business
+  if (!business) {
+    business = await prisma.business.findFirst({
+      where: { ownerId: session.user.id, deletedAt: null },
+      orderBy: { createdAt: "asc" },
+      include: businessSelect,
+    })
+  }
 
   // Recepcionista / miembro — buscar por BusinessMember
   if (!business) {
