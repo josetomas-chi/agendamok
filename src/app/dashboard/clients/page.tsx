@@ -62,7 +62,7 @@ const SEGMENT_LABELS: Record<string, { label: string; color: string }> = {
   AT_RISK: { label: "En riesgo", color: "bg-orange-500/30 text-orange-200" },
 }
 
-type ImportRow = { name: string; rut: string; email: string; phone: string; notes: string; _error?: string; _warnRut?: boolean }
+type ImportRow = { name: string; lastName: string; rut: string; email: string; phone: string; notes: string; _error?: string; _warnRut?: boolean }
 type ImportState = "idle" | "preview" | "importing" | "done"
 
 export default function ClientsPage() {
@@ -141,11 +141,12 @@ export default function ClientsPage() {
 
     const normalize = (key: string) => key.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim()
     const colMap: Record<string, string> = {
-      nombre: "name", name: "name",
+      nombre: "name", name: "name", firstname: "name",
+      apellido: "lastName", lastname: "lastName", surname: "lastName", apellidos: "lastName",
       rut: "rut", run: "rut",
-      email: "email", correo: "email",
-      telefono: "phone", phone: "phone", cel: "phone", celular: "phone",
-      notas: "notes", notes: "notes", observaciones: "notes",
+      email: "email", correo: "email", mail: "email",
+      telefono: "phone", phone: "phone", cel: "phone", celular: "phone", movil: "phone", fono: "phone",
+      notas: "notes", notes: "notes", observaciones: "notes", comentarios: "notes",
     }
 
     const isExcel = file.name.endsWith(".xlsx") || file.name.endsWith(".xls")
@@ -164,7 +165,7 @@ export default function ClientsPage() {
     }
 
     const rows: ImportRow[] = raw.map(r => {
-      const mapped: ImportRow = { name: "", rut: "", email: "", phone: "", notes: "" }
+      const mapped: ImportRow = { name: "", lastName: "", rut: "", email: "", phone: "", notes: "" }
       for (const [k, v] of Object.entries(r)) {
         const field = colMap[normalize(k)]
         if (field) (mapped as Record<string, string>)[field] = String(v).trim()
