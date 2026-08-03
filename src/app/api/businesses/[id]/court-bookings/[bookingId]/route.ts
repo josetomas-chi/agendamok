@@ -62,27 +62,47 @@ export async function PATCH(req: Request, { params }: Params) {
 
     // Recalcular precio si cambia cancha o horario (y no viene precio explícito)
     if (price === undefined && (courtId !== undefined || startTime !== undefined || endTime !== undefined)) {
-      const current = await prisma.courtBooking.findUnique({ where: { id: bookingId }, select: { courtId: true, startTime: true, endTime: true } })
+      const current = await prisma.courtBooking.findUnique({
+        where: { id: bookingId },
+        select: { courtId: true, startTime: true, endTime: true, coachId: true },
+      })
       if (current) {
-        const resolvedCourtId = courtId ?? current.courtId
-        const resolvedStart = startTime ? new Date(startTime) : current.startTime
-        const resolvedEnd = endTime ? new Date(endTime) : current.endTime
-        const court = await prisma.court.findUnique({ where: { id: resolvedCourtId }, include: { pricingRules: true } })
-        if (court) {
-          const dayOfWeek = resolvedStart.getDay()
-          const timeStr = `${String(resolvedStart.getHours()).padStart(2, "0")}:${String(resolvedStart.getMinutes()).padStart(2, "0")}`
-          const durationHours = (resolvedEnd.getTime() - resolvedStart.getTime()) / (1000 * 60 * 60)
-          const rule = court.pricingRules.find(r => r.days.includes(dayOfWeek) && timeStr >= r.startTime && timeStr < r.endTime)
-          if (rule) {
-            let calculatedPrice = Number(rule.price) * durationHours
+        // Bug fix #2: si la reserva tiene coach, preservar el precio actual (es tarifa de profesor, no de cancha)
+        if (!current.coachId) {
+          const resolvedCourtId = courtId ?? current.courtId
+          const resolvedStart = startTime ? new Date(startTime) : current.startTime
+          const resolvedEnd = endTime ? new Date(endTime) : current.endTime
+          const court = await prisma.court.findUnique({ where: { id: resolvedCourtId }, include: { pricingRules: true } })
+          if (court) {
             const holiday = await prisma.clubHoliday.findFirst({
               where: { businessId: id, date: { gte: new Date(resolvedStart.toDateString()), lt: new Date(new Date(resolvedStart.toDateString()).getTime() + 86400000) }, type: "SURCHARGE" },
             })
+
+            // Bug fix #1: calcular precio proporcional si la reserva cruza cambio de tarifa
+            const dayOfWeek = resolvedStart.getDay()
+            let calculatedPrice = 0
+            let cursor = new Date(resolvedStart)
+            while (cursor < resolvedEnd) {
+              const timeStr = `${String(cursor.getHours()).padStart(2, "0")}:${String(cursor.getMinutes()).padStart(2, "0")}`
+              const rule = court.pricingRules.find(r =>
+                r.days.includes(dayOfWeek) && timeStr >= r.startTime && timeStr < r.endTime
+              )
+              if (!rule) { cursor = new Date(cursor.getTime() + 60 * 1000); continue }
+              // Avanzar hasta el fin de esta regla o el fin de la reserva, lo que sea antes
+              const [reh, rem] = rule.endTime.split(":").map(Number)
+              const ruleEnd = new Date(cursor)
+              ruleEnd.setHours(reh, rem, 0, 0)
+              const segEnd = ruleEnd < resolvedEnd ? ruleEnd : resolvedEnd
+              const segHours = (segEnd.getTime() - cursor.getTime()) / (1000 * 60 * 60)
+              calculatedPrice += Number(rule.price) * segHours
+              cursor = segEnd
+            }
+
             if (holiday?.surchargeValue) {
               if (holiday.surchargeType === "PERCENT") calculatedPrice = calculatedPrice * (1 + holiday.surchargeValue / 100)
               else if (holiday.surchargeType === "FIXED") calculatedPrice = calculatedPrice + holiday.surchargeValue
             }
-            data.price = calculatedPrice
+            if (calculatedPrice > 0) data.price = calculatedPrice
           }
         }
       }
