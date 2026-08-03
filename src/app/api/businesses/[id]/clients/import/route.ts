@@ -85,40 +85,38 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       })).map((c: { email: string | null }) => c.email!.toLowerCase()))
     : new Set<string>()
 
-  let created = 0, skipped = 0
-  // Track seen RUTs and emails within this import batch to handle intra-CSV duplicates
+  // Dedup within batch and against existing records
   const seenRuts = new Set<string>()
   const seenEmails = new Set<string>()
+  const toInsert: {
+    businessId: string; name: string; lastName: string | null; rut: string | null
+    email: string | null; phone: string | null; gender: string | null; notes: string | null
+  }[] = []
+  let skipped = 0
 
   for (const row of valid) {
     const rut = row.rut || undefined
     const email = row.email?.toLowerCase() || undefined
-    // RUT is the primary dedup key; email is fallback if no RUT
     if (rut && (existingByRut.has(rut) || seenRuts.has(rut))) { skipped++; continue }
     if (!rut && email && (existingByEmail.has(email) || seenEmails.has(email))) { skipped++; continue }
 
     const fullName = [row.name, row.lastName].filter(Boolean).join(" ")
-    try {
-      await prisma.client.create({
-        data: {
-          businessId: id,
-          name: fullName,
-          lastName: row.lastName || null,
-          rut: row.rut || null,
-          email: email || null,
-          phone: row.phone || null,
-          gender: row.gender || null,
-          notes: row.notes || null,
-        },
-      })
-      created++
-      if (rut) seenRuts.add(rut)
-      if (email) seenEmails.add(email)
-    } catch {
-      // Constraint violation (race condition) — count as skipped
-      skipped++
-    }
+    toInsert.push({
+      businessId: id,
+      name: fullName,
+      lastName: row.lastName || null,
+      rut: rut || null,
+      email: email || null,
+      phone: row.phone || null,
+      gender: row.gender || null,
+      notes: row.notes || null,
+    })
+    if (rut) seenRuts.add(rut)
+    if (email) seenEmails.add(email)
   }
 
-  return NextResponse.json({ created, skipped, total: valid.length })
+  // Bulk insert — skipDuplicates handles any remaining race conditions
+  const result = await prisma.client.createMany({ data: toInsert, skipDuplicates: true })
+
+  return NextResponse.json({ created: result.count, skipped: skipped + (toInsert.length - result.count), total: valid.length })
 }
