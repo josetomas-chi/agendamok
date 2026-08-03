@@ -58,10 +58,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Esta cancha no está disponible para reservas ese día." }, { status: 400 })
   }
 
-  // Validar que el horario esté dentro del rango de alguna regla activa ese día
+  // Validar que el horario esté cubierto por la unión de reglas activas ese día
+  // (la reserva puede cruzar dos tarifas distintas — basta que cada minuto esté cubierto)
   const dayRules = court.pricingRules.filter(r => r.days.includes(dayOfWeek))
-  if (dayRules.length > 0 && !dayRules.some(r => timeStr >= r.startTime && endTimeStr <= r.endTime)) {
-    return NextResponse.json({ error: "El horario seleccionado está fuera del horario disponible de esta cancha." }, { status: 400 })
+  if (dayRules.length > 0) {
+    let cursor = timeStr
+    let covered = true
+    while (cursor < endTimeStr) {
+      const rule = dayRules.find(r => cursor >= r.startTime && cursor < r.endTime)
+      if (!rule) { covered = false; break }
+      cursor = rule.endTime < endTimeStr ? rule.endTime : endTimeStr
+    }
+    if (!covered) {
+      return NextResponse.json({ error: "El horario seleccionado está fuera del horario disponible de esta cancha." }, { status: 400 })
+    }
   }
 
   // Validar duración mínima
