@@ -193,15 +193,24 @@ function calcPrice(court: Court | undefined, startTime: string, endTime: string,
   const start = new Date(`${date}T${startTime}`)
   const end = new Date(`${date}T${endTime}`)
   if (end <= start) return 0
-  const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
   const dayOfWeek = start.getDay()
-  for (const rule of court.pricingRules) {
-    if (rule.days.includes(dayOfWeek) && startTime >= rule.startTime && startTime < rule.endTime) {
-      if (rule.fixedSlots?.length) return Number(rule.price)
-      return Number(rule.price) * durationHours
-    }
+  // Calcular proporcional si la reserva cruza cambio de tarifa
+  let total = 0
+  let cursor = new Date(start)
+  while (cursor < end) {
+    const h = String(cursor.getHours()).padStart(2, "0")
+    const m = String(cursor.getMinutes()).padStart(2, "0")
+    const ct = `${h}:${m}`
+    const rule = court.pricingRules.find(r => r.days.includes(dayOfWeek) && ct >= r.startTime && ct < r.endTime)
+    if (!rule) { cursor = new Date(cursor.getTime() + 60_000); continue }
+    const [reh, rem] = rule.endTime.split(":").map(Number)
+    const ruleEnd = new Date(new Date(cursor).setHours(reh, rem, 0, 0))
+    const segEnd = ruleEnd < end ? ruleEnd : end
+    const segHours = (segEnd.getTime() - cursor.getTime()) / (1000 * 60 * 60)
+    total += rule.fixedSlots?.length ? Number(rule.price) : Number(rule.price) * segHours
+    cursor = segEnd
   }
-  return 0
+  return total
 }
 
 function calcClassPrice(coach: Coach | undefined, startTime: string, endTime: string, date: string): number {
