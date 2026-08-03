@@ -44,6 +44,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     ...(search && {
       OR: [
         { name: { contains: search, mode: "insensitive" as const } },
+        { lastName: { contains: search, mode: "insensitive" as const } },
         { email: { contains: search, mode: "insensitive" as const } },
         { phone: { contains: search } },
         { rut: { contains: search } },
