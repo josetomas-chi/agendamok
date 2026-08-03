@@ -8,8 +8,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
   const { id } = await params
-  const owner = await prisma.business.findFirst({ where: { id, ownerId: session.user.id }, select: { id: true } })
-  if (!owner) return NextResponse.json({ error: "Solo el dueño puede ejecutar esta acción" }, { status: 403 })
+  const [owner, member] = await Promise.all([
+    prisma.business.findFirst({ where: { id, ownerId: session.user.id }, select: { id: true } }),
+    prisma.businessMember.findFirst({ where: { businessId: id, userId: session.user.id, acceptedAt: { not: null } }, select: { id: true } }),
+  ])
+  if (!owner && !member) return NextResponse.json({ error: "No autorizado" }, { status: 403 })
 
   // Solo borrar clientes que no tienen reservas ni citas (importados sin actividad)
   const result = await prisma.client.deleteMany({
