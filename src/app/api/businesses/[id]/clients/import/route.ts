@@ -100,11 +100,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (rut && (existingByRut.has(rut) || seenRuts.has(rut))) { skipped++; continue }
     if (!rut && email && (existingByEmail.has(email) || seenEmails.has(email))) { skipped++; continue }
 
-    const fullName = [row.name, row.lastName].filter(Boolean).join(" ")
     toInsert.push({
       businessId: id,
-      name: fullName,
-      lastName: row.lastName || null,
+      name: row.name?.trim() || "",
+      lastName: row.lastName?.trim() || null,
       rut: rut || null,
       email: email || null,
       phone: row.phone || null,
