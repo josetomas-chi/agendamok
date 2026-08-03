@@ -48,8 +48,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
   const { id } = await params
-  const business = await prisma.business.findFirst({ where: { id, ownerId: session.user.id } })
-  if (!business) return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  const [owner, member] = await Promise.all([
+    prisma.business.findFirst({ where: { id, ownerId: session.user.id }, select: { id: true } }),
+    prisma.businessMember.findFirst({ where: { businessId: id, userId: session.user.id, acceptedAt: { not: null } }, select: { id: true } }),
+  ])
+  if (!owner && !member) return NextResponse.json({ error: "No autorizado" }, { status: 403 })
 
   let rawRows: Record<string, string>[]
   try {
