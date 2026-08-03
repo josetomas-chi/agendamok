@@ -34,32 +34,43 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const { searchParams } = new URL(req.url)
   const search = searchParams.get("search") || ""
   const segment = searchParams.get("segment") || ""
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
+  const limit = 100
+  const skip = (page - 1) * limit
 
-  const clients = await prisma.client.findMany({
-    where: {
-      businessId: id,
-      deletedAt: null,
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: "insensitive" } },
-          { email: { contains: search, mode: "insensitive" } },
-          { phone: { contains: search } },
-        ],
-      }),
-      ...(segment && { segment: segment as never }),
-    },
-    include: {
-      _count: { select: { appointments: { where: { deletedAt: null } }, courtBookings: { where: { deletedAt: null } } } },
-      appointments: {
-        where: { deletedAt: null, status: "COMPLETED" },
-        select: { payment: { select: { amount: true } } },
-        take: 100,
+  const where = {
+    businessId: id,
+    deletedAt: null,
+    ...(search && {
+      OR: [
+        { name: { contains: search, mode: "insensitive" as const } },
+        { email: { contains: search, mode: "insensitive" as const } },
+        { phone: { contains: search } },
+        { rut: { contains: search } },
+      ],
+    }),
+    ...(segment && { segment: segment as never }),
+  }
+
+  const [clients, total] = await Promise.all([
+    prisma.client.findMany({
+      where,
+      include: {
+        _count: { select: { appointments: { where: { deletedAt: null } }, courtBookings: { where: { deletedAt: null } } } },
+        appointments: {
+          where: { deletedAt: null, status: "COMPLETED" },
+          select: { payment: { select: { amount: true } } },
+          take: 100,
+        },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  })
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.client.count({ where }),
+  ])
 
-  return NextResponse.json({ clients })
+  return NextResponse.json({ clients, total, page, pages: Math.ceil(total / limit) })
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {

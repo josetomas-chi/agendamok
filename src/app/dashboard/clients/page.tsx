@@ -69,6 +69,9 @@ export default function ClientsPage() {
   const { businessId, businessType } = useBusiness()
   const isSports = businessType === "SPORTS_CLUB"
   const [clients, setClients] = useState<Client[]>([])
+  const [clientsTotal, setClientsTotal] = useState(0)
+  const [clientsPage, setClientsPage] = useState(1)
+  const [clientsPages, setClientsPages] = useState(1)
   const [clinicalEnabled, setClinicalEnabled] = useState(false)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -85,26 +88,31 @@ export default function ClientsPage() {
 
   useEffect(() => {
     if (!businessId) return
-    loadClients(businessId, "", "")
+    loadClients(businessId, "", "", 1)
     fetch(`/api/businesses/${businessId}`).then(r => r.json()).then(b => {
       setClinicalEnabled(b.business?.clinicalRecordEnabled ?? false)
     })
   }, [businessId])
 
-  const loadClients = useCallback(async (bid: string, q: string, seg: string) => {
+  const loadClients = useCallback(async (bid: string, q: string, seg: string, pg = 1) => {
     setLoading(true)
     const params = new URLSearchParams()
     if (q) params.set("search", q)
     if (seg) params.set("segment", seg)
+    params.set("page", String(pg))
     const r = await fetch(`/api/businesses/${bid}/clients?${params}`)
     const d = await r.json()
     setClients(d.clients || [])
+    setClientsTotal(d.total ?? 0)
+    setClientsPage(d.page ?? 1)
+    setClientsPages(d.pages ?? 1)
     setLoading(false)
   }, [])
 
   useEffect(() => {
     if (!businessId) return
-    const t = setTimeout(() => loadClients(businessId, search, segment), 300)
+    setClientsPage(1)
+    const t = setTimeout(() => loadClients(businessId, search, segment, 1), 300)
     return () => clearTimeout(t)
   }, [search, segment, businessId, loadClients])
 
@@ -364,6 +372,31 @@ export default function ClientsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Paginación */}
+      {clientsPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+            {clientsTotal.toLocaleString("es-CL")} clientes · página {clientsPage} de {clientsPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              disabled={clientsPage <= 1}
+              onClick={() => { const p = clientsPage - 1; setClientsPage(p); loadClients(businessId, search, segment, p) }}
+              className="h-8 px-3 rounded-lg text-xs font-semibold disabled:opacity-30"
+              style={{ border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)", background: "transparent" }}>
+              ← Anterior
+            </button>
+            <button
+              disabled={clientsPage >= clientsPages}
+              onClick={() => { const p = clientsPage + 1; setClientsPage(p); loadClients(businessId, search, segment, p) }}
+              className="h-8 px-3 rounded-lg text-xs font-semibold disabled:opacity-30"
+              style={{ border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)", background: "transparent" }}>
+              Siguiente →
+            </button>
+          </div>
         </div>
       )}
 
@@ -778,6 +811,29 @@ export default function ClientsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Paginación (sports) */}
+      {clientsPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-xs text-muted-foreground">
+            {clientsTotal.toLocaleString("es-CL")} clientes · página {clientsPage} de {clientsPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              disabled={clientsPage <= 1}
+              onClick={() => { const p = clientsPage - 1; setClientsPage(p); loadClients(businessId, search, segment, p) }}
+              className="h-8 px-3 rounded-lg text-xs font-semibold border border-border disabled:opacity-30">
+              ← Anterior
+            </button>
+            <button
+              disabled={clientsPage >= clientsPages}
+              onClick={() => { const p = clientsPage + 1; setClientsPage(p); loadClients(businessId, search, segment, p) }}
+              className="h-8 px-3 rounded-lg text-xs font-semibold border border-border disabled:opacity-30">
+              Siguiente →
+            </button>
+          </div>
         </div>
       )}
 
