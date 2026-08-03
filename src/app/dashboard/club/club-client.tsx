@@ -828,14 +828,14 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                               )}
                             </div>
                           </div>
-                          {/* Fila 2: nombre cliente */}
+                          {/* Fila 2: protagonista — coach si es clase particular, cliente si es reserva común */}
                           <p className="text-[11px] font-black leading-tight truncate mt-0.5" style={{ color: "#0d1b2a" }}>
-                            {b.client ? [b.client.name, b.client.lastName].filter(Boolean).join(" ") : "Sin cliente"}
+                            {b.coach ? b.coach.name : (b.client ? [b.client.name, b.client.lastName].filter(Boolean).join(" ") : "Sin cliente")}
                           </p>
-                          {/* Fila 3: coach (si hay) */}
+                          {/* Fila 3: secundario — cliente si hay coach, vacío si no */}
                           {b.coach && (
                             <p className="text-[9px] font-semibold leading-tight truncate" style={{ color: "rgba(13,27,42,0.55)" }}>
-                              {b.coach.name}
+                              {b.client ? [b.client.name, b.client.lastName].filter(Boolean).join(" ") : "Sin cliente"}
                             </p>
                           )}
                           {/* Fila 4: precio (solo si hay espacio) */}
