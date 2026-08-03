@@ -182,6 +182,7 @@ export default function ClientsPage() {
     })
     const d = await r.json()
     if (r.ok) {
+      setImportRows([]) // liberar memoria antes de mostrar resultado
       setImportResult({ created: d.created, skipped: d.skipped })
       setImportState("done")
       loadClients(businessId, search, segment)
