@@ -1952,20 +1952,25 @@ function TeamTab() {
   async function handleInvite() {
     if (!email) return
     setInviting(true)
-    const res = await fetch("/api/businesses/members", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, name, businessId: bid }),
-    })
-    const d = await res.json()
-    if (res.ok) {
-      setInviteUrl(d.inviteUrl)
-      setEmail(""); setName("")
-      fetch("/api/businesses/members").then(r => r.json()).then(d => setMembers(d.members || []))
-    } else {
-      toast.error(d.error || "Error al invitar")
+    try {
+      const res = await fetch("/api/businesses/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, name, businessId: bid }),
+      })
+      const d = await res.json()
+      if (res.ok) {
+        setInviteUrl(d.inviteUrl)
+        setEmail(""); setName("")
+        fetch("/api/businesses/members").then(r => r.json()).then(d => setMembers(d.members || []))
+      } else {
+        toast.error(d.error || "Error al invitar")
+      }
+    } catch {
+      toast.error("Error de conexión al invitar")
+    } finally {
+      setInviting(false)
     }
-    setInviting(false)
   }
 
   async function handleRemove(id: string) {
