@@ -473,10 +473,11 @@ function CalendarSkeleton() {
 // ─── Mini calendar + clock ────────────────────────────────────────────────────
 
 function MiniCalendarClock({ selectedDate, onDateChange }: { selectedDate: Date; onDateChange: (d: Date) => void }) {
-  const [now, setNow] = useState(new Date())
+  const [now, setNow] = useState<Date | null>(null)
   const [viewMonth, setViewMonth] = useState(new Date(selectedDate))
 
   useEffect(() => {
+    setNow(new Date())
     const id = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(id)
   }, [])
@@ -492,11 +493,12 @@ function MiniCalendarClock({ selectedDate, onDateChange }: { selectedDate: Date;
   // Lunes como primer día (offset: getDay=0(dom)→6, 1(lun)→0, etc.)
   const startOffset = (getDay(monthStart) + 6) % 7
 
-  const hh = String(now.getHours()).padStart(2, "0")
-  const mm = String(now.getMinutes()).padStart(2, "0")
-  const ss = String(now.getSeconds()).padStart(2, "0")
-  const dayName = format(now, "EEEE", { locale: es })
-  const dateStr = format(now, "d 'de' MMMM yyyy", { locale: es })
+  const display = now ?? new Date(0)
+  const hh = String(display.getHours()).padStart(2, "0")
+  const mm = String(display.getMinutes()).padStart(2, "0")
+  const ss = String(display.getSeconds()).padStart(2, "0")
+  const dayName = now ? format(now, "EEEE", { locale: es }) : ""
+  const dateStr = now ? format(now, "d 'de' MMMM yyyy", { locale: es }) : ""
 
   const GOLD = "#C9A84C"
   const NAVY = "#0d1b2a"
@@ -609,9 +611,11 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
   const [dragLabel, setDragLabel] = useState("")
   const [dropTarget, setDropTarget] = useState<{ courtId: string; slot: string } | null>(null)
 
-  const [nowTime, setNowTime] = useState(() => new Date())
+  // null during SSR — set only on client to guarantee browser local timezone
+  const [nowTime, setNowTime] = useState<Date | null>(null)
   useEffect(() => {
-    const id = setInterval(() => setNowTime(new Date()), 30000)
+    setNowTime(new Date())
+    const id = setInterval(() => setNowTime(new Date()), 60000)
     return () => clearInterval(id)
   }, [])
 
@@ -855,8 +859,8 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                     )
                   })}
 
-                  {/* Current time line */}
-                  {isSameDay(selectedDate, nowTime) && (() => {
+                  {/* Current time line — only rendered client-side (nowTime null during SSR) */}
+                  {nowTime && isSameDay(selectedDate, nowTime) && (() => {
                     const nowMins = nowTime.getHours() * 60 + nowTime.getMinutes()
                     const originMins = START_HOUR * 60
                     if (nowMins < originMins || nowMins > END_HOUR * 60) return null
