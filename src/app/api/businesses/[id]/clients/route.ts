@@ -64,7 +64,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           take: 100,
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ lastName: "asc" }, { name: "asc" }],
       skip,
       take: limit,
     }),

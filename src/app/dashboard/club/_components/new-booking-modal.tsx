@@ -56,7 +56,7 @@ function TimeSelect({ value, onChange, label, minTime }: { value: string; onChan
   )
 }
 
-type NewClientForm = { name: string; email: string; phone: string }
+type NewClientForm = { name: string; rut: string; email: string; phone: string }
 type Client = { id: string; name: string; lastName: string | null; email: string | null; phone: string | null; rut: string | null; creditBalance?: number }
 type CoachFeeRule = { days: number[]; startTime: string; endTime: string; classPrice: number }
 type Coach = { id: string; name: string; color: string; paymentType: string; feeRules: CoachFeeRule[] }
@@ -89,10 +89,10 @@ function ClientCombobox({ clients, value, onSelect }: {
     : clients
   const exactMatch = clients.find(c => [c.name, c.lastName].filter(Boolean).join(" ").toLowerCase() === q)
 
-  function startCreating() { setOpen(false); setCreating({ name: query.trim(), email: "", phone: "" }) }
+  function startCreating() { setOpen(false); setCreating({ name: query.trim(), email: "", phone: "", rut: "" }) }
   function confirmCreate() {
-    if (!creating?.name.trim()) return
-    onSelect({ id: "", name: creating.name.trim(), email: creating.email.trim() || undefined, phone: creating.phone.trim() || undefined })
+    if (!creating?.name.trim() || !creating?.rut?.trim()) return
+    onSelect({ id: "", name: creating.name.trim(), email: creating.email.trim() || undefined, phone: creating.phone.trim() || undefined, rut: creating.rut.trim() || undefined })
     setQuery(creating.name.trim()); setCreating(null)
   }
 
@@ -104,10 +104,10 @@ function ClientCombobox({ clients, value, onSelect }: {
           <p className="text-[10px] font-bold uppercase tracking-wide flex items-center gap-1" style={{ color: GOLD }}>
             <UserPlus className="w-3 h-3" /> Nuevo cliente
           </p>
-          {(["name", "email", "phone"] as const).map(field => (
+          {(["name", "rut", "email", "phone"] as const).map(field => (
             <input key={field} value={creating[field]}
               onChange={e => setCreating(f => f ? { ...f, [field]: e.target.value } : f)}
-              placeholder={field === "name" ? "Nombre *" : field === "email" ? "Email (opcional)" : "Teléfono (opcional)"}
+              placeholder={field === "name" ? "Nombre *" : field === "rut" ? "RUT *" : field === "email" ? "Email (opcional)" : "Teléfono (opcional)"}
               className="w-full h-9 rounded-lg px-3 text-sm"
               style={{ border: "1px solid rgba(13,27,42,0.15)", background: "#f5f4f0", color: NAVY, outline: "none" }} />
           ))}
@@ -117,7 +117,7 @@ function ClientCombobox({ clients, value, onSelect }: {
               style={{ border: "1px solid rgba(13,27,42,0.12)", color: "rgba(13,27,42,0.45)", background: "#f5f4f0" }}>
               Cancelar
             </button>
-            <button type="button" onClick={confirmCreate} disabled={!creating.name.trim()}
+            <button type="button" onClick={confirmCreate} disabled={!creating.name.trim() || !creating.rut.trim()}
               className="flex-1 h-8 rounded-lg text-xs font-bold disabled:opacity-40"
               style={{ background: "rgba(201,168,76,0.15)", border: `1px solid ${GOLD}`, color: "#8a6520" }}>
               Confirmar
