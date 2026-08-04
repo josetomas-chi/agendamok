@@ -49,22 +49,16 @@ export async function POST(req: Request) {
   if (!business) return NextResponse.json({ error: "No tienes un negocio" }, { status: 400 })
   if (!email) return NextResponse.json({ error: "Email requerido" }, { status: 400 })
 
-  // Check if already a member
-  const existing = await prisma.user.findUnique({ where: { email } })
-  if (existing) {
-    const alreadyMember = await prisma.businessMember.findUnique({
-      where: { businessId_userId: { businessId: business.id, userId: existing.id } },
-    })
-    if (alreadyMember) return NextResponse.json({ error: "Este usuario ya es miembro del negocio" }, { status: 409 })
-  }
-
   const token = crypto.randomBytes(32).toString("hex")
   const inviteUrl = `${process.env.NEXTAUTH_URL}/invite/${token}`
 
+  const existing = await prisma.user.findUnique({ where: { email } })
   if (existing) {
-    // User exists — add as member directly (pending acceptance)
-    await prisma.businessMember.create({
-      data: { businessId: business.id, userId: existing.id, role: "RECEPTIONIST", inviteToken: token, inviteEmail: email },
+    // Upsert: update existing pending invite or create new record
+    await prisma.businessMember.upsert({
+      where: { businessId_userId: { businessId: business.id, userId: existing.id } },
+      update: { inviteToken: token, inviteEmail: email, acceptedAt: null },
+      create: { businessId: business.id, userId: existing.id, role: "RECEPTIONIST", inviteToken: token, inviteEmail: email },
     })
   } else {
     // Create placeholder user
