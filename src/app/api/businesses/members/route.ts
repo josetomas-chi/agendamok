@@ -35,6 +35,7 @@ export async function GET() {
 
 // POST — invite receptionist
 export async function POST(req: Request) {
+  try {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
@@ -98,4 +99,8 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ success: true, inviteUrl })
+  } catch (err) {
+    console.error("[POST /api/businesses/members]", err)
+    return NextResponse.json({ error: "Error interno al procesar la invitación" }, { status: 500 })
+  }
 }
