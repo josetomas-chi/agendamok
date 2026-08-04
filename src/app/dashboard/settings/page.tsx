@@ -1958,16 +1958,20 @@ function TeamTab() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, name, businessId: bid }),
       })
-      const d = await res.json()
-      if (res.ok) {
+      const text = await res.text()
+      let d: { inviteUrl?: string; error?: string } = {}
+      try { d = JSON.parse(text) } catch { /* non-JSON response */ }
+      if (res.ok && d.inviteUrl) {
         setInviteUrl(d.inviteUrl)
         setEmail(""); setName("")
         fetch("/api/businesses/members").then(r => r.json()).then(d => setMembers(d.members || []))
+      } else if (res.status === 401 || res.status === 307 || res.status === 302) {
+        toast.error("Sesión expirada, recarga la página")
       } else {
-        toast.error(d.error || "Error al invitar")
+        toast.error(d.error || `Error al invitar (${res.status})`)
       }
     } catch {
-      toast.error("Error de conexión al invitar")
+      toast.error("Error de red al invitar")
     } finally {
       setInviting(false)
     }
