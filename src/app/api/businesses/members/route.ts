@@ -76,27 +76,23 @@ export async function POST(req: Request) {
     })
   }
 
-  // Send invite email
-  try {
-    await resend.emails.send({
-      from: "AgendaMok <noreply@agendamok.cl>",
-      to: email,
-      subject: `Invitación a ${business.name} en AgendaMok`,
-      html: `
-        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px">
-          <h2 style="color:#0ea5e9">Te invitaron a ${business.name}</h2>
-          <p>Fuiste invitado como <strong>Recepcionista</strong> en AgendaMok.</p>
-          <p>Haz clic en el botón para crear tu cuenta y acceder al panel:</p>
-          <a href="${inviteUrl}" style="display:inline-block;margin:16px 0;padding:12px 24px;background:#0ea5e9;color:white;border-radius:8px;text-decoration:none;font-weight:600">
-            Aceptar invitación
-          </a>
-          <p style="color:#999;font-size:12px">Este link expira en 7 días.</p>
-        </div>
-      `,
-    })
-  } catch {
-    // Email failed but invite was created — not critical
-  }
+  // Send invite email in background (don't await — avoid Vercel function timeout)
+  resend.emails.send({
+    from: "AgendaMok <noreply@agendamok.cl>",
+    to: email,
+    subject: `Invitación a ${business.name} en AgendaMok`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px">
+        <h2 style="color:#0ea5e9">Te invitaron a ${business.name}</h2>
+        <p>Fuiste invitado como <strong>Recepcionista</strong> en AgendaMok.</p>
+        <p>Haz clic en el botón para crear tu cuenta y acceder al panel:</p>
+        <a href="${inviteUrl}" style="display:inline-block;margin:16px 0;padding:12px 24px;background:#0ea5e9;color:white;border-radius:8px;text-decoration:none;font-weight:600">
+          Aceptar invitación
+        </a>
+        <p style="color:#999;font-size:12px">Este link expira en 7 días.</p>
+      </div>
+    `,
+  }).catch(() => { /* non-critical */ })
 
   return NextResponse.json({ success: true, inviteUrl })
   } catch (err) {
