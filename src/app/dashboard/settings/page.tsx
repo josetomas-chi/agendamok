@@ -1867,6 +1867,7 @@ const PERMISSION_LABELS: { key: string; label: string }[] = [
 ]
 
 function MemberRow({ m, onRemove }: { m: Member; onRemove: (id: string) => void }) {
+  const { businessId: bid } = useBusiness()
   const [perms, setPerms] = useState<Record<string, boolean>>(m.permissions ?? {})
   const [expanded, setExpanded] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -1876,7 +1877,7 @@ function MemberRow({ m, onRemove }: { m: Member; onRemove: (id: string) => void 
     await fetch(`/api/businesses/members/${m.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ permissions: perms }),
+      body: JSON.stringify({ permissions: perms, businessId: bid }),
     })
     setSaving(false)
     toast.success("Permisos actualizados")
@@ -1979,7 +1980,7 @@ function TeamTab() {
 
   async function handleRemove(id: string) {
     if (!confirm("¿Eliminar este miembro?")) return
-    await fetch(`/api/businesses/members/${id}`, { method: "DELETE" })
+    await fetch(`/api/businesses/members/${id}?businessId=${bid}`, { method: "DELETE" })
     setMembers(m => m.filter(x => x.id !== id))
     toast.success("Miembro eliminado")
   }

@@ -17,11 +17,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
-  const business = await getAdminBusiness(session.user.id)
-  if (!business) return NextResponse.json({ error: "No tienes un negocio" }, { status: 400 })
-
   const { id } = await params
-  const { permissions } = await req.json()
+  const { permissions, businessId } = await req.json()
+
+  const business = businessId
+    ? await prisma.business.findFirst({ where: { id: businessId, OR: [{ ownerId: session.user.id }, { members: { some: { userId: session.user.id, role: "ADMIN", acceptedAt: { not: null } } } }] } })
+    : await getAdminBusiness(session.user.id)
+  if (!business) return NextResponse.json({ error: "No tienes un negocio" }, { status: 400 })
 
   const member = await prisma.businessMember.findFirst({ where: { id, businessId: business.id } })
   if (!member) return NextResponse.json({ error: "Miembro no encontrado" }, { status: 404 })
@@ -31,11 +33,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 // DELETE — remove member
-export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
-  const business = await getAdminBusiness(session.user.id)
+  const { id } = await params
+  const url = new URL(req.url)
+  const businessId = url.searchParams.get("businessId")
+
+  const business = businessId
+    ? await prisma.business.findFirst({ where: { id: businessId, OR: [{ ownerId: session.user.id }, { members: { some: { userId: session.user.id, role: "ADMIN", acceptedAt: { not: null } } } }] } })
+    : await getAdminBusiness(session.user.id)
   if (!business) return NextResponse.json({ error: "No tienes un negocio" }, { status: 400 })
 
   const { id } = await params
