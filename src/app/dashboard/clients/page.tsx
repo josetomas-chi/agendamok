@@ -144,8 +144,8 @@ export default function ClientsPage() {
       nombre: "name", name: "name", firstname: "name",
       apellido: "lastName", lastname: "lastName", surname: "lastName", apellidos: "lastName",
       rut: "rut", run: "rut",
-      email: "email", correo: "email", mail: "email",
-      telefono: "phone", phone: "phone", cel: "phone", celular: "phone", movil: "phone", fono: "phone",
+      email: "email", correo: "email", mail: "email", emailcorreoelectronico: "email", correoelectronico: "email",
+      telefono: "phone", phone: "phone", cel: "phone", celular: "phone", movil: "phone", fono: "phone", ntelefono: "phone", numerodetelefono: "phone",
       notas: "notes", notes: "notes", observaciones: "notes", comentarios: "notes",
     }
 
