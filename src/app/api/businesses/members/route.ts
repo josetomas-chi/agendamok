@@ -17,11 +17,15 @@ async function getAdminBusiness(userId: string) {
 }
 
 // GET — list members
-export async function GET() {
+export async function GET(req: Request) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
-  const business = await getAdminBusiness(session.user.id)
+  const url = new URL(req.url)
+  const businessId = url.searchParams.get("businessId")
+  const business = businessId
+    ? await prisma.business.findFirst({ where: { id: businessId, OR: [{ ownerId: session.user.id }, { members: { some: { userId: session.user.id, acceptedAt: { not: null } } } }] } })
+    : await getAdminBusiness(session.user.id)
   if (!business) return NextResponse.json({ error: "No tienes un negocio" }, { status: 400 })
 
   const members = await prisma.businessMember.findMany({

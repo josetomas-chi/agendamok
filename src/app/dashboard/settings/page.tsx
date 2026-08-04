@@ -1948,8 +1948,9 @@ function TeamTab() {
   const [inviteUrl, setInviteUrl] = useState("")
 
   useEffect(() => {
-    fetch("/api/businesses/members").then(r => r.json()).then(d => setMembers(d.members || []))
-  }, [])
+    if (!bid) return
+    fetch(`/api/businesses/members?businessId=${bid}`).then(r => r.json()).then(d => setMembers(d.members || []))
+  }, [bid])
 
   async function handleInvite() {
     if (!email) return
@@ -1966,7 +1967,7 @@ function TeamTab() {
       if (res.ok && d.inviteUrl) {
         setInviteUrl(d.inviteUrl)
         setEmail(""); setName("")
-        fetch("/api/businesses/members").then(r => r.json()).then(d => setMembers(d.members || []))
+        fetch(`/api/businesses/members?businessId=${bid}`).then(r => r.json()).then(d => setMembers(d.members || []))
       } else if (res.status === 401 || res.status === 307 || res.status === 302) {
         toast.error("Sesión expirada, recarga la página")
       } else {
