@@ -239,7 +239,7 @@ export default function MembershipsPage() {
           <div className="px-5 pb-5 space-y-3">
             <div className="relative">
               <select value={memberForm.clientId} onChange={e => setMemberForm(f => ({ ...f, clientId: e.target.value }))}
-                className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-white focus:outline-none focus:border-sky-500/60 appearance-none">
+                className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-white focus:outline-none focus:border-sky-500/60 appearance-none [color-scheme:dark]">
                 <option value="">Seleccionar cliente *</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
@@ -247,7 +247,7 @@ export default function MembershipsPage() {
             </div>
             <div className="relative">
               <select value={memberForm.planId} onChange={e => setMemberForm(f => ({ ...f, planId: e.target.value }))}
-                className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-white focus:outline-none focus:border-sky-500/60 appearance-none">
+                className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-white focus:outline-none focus:border-sky-500/60 appearance-none [color-scheme:dark]">
                 <option value="">Seleccionar plan *</option>
                 {plans.filter(p => p.isActive).map(p => <option key={p.id} value={p.id}>{p.name} — ${Number(p.price).toLocaleString("es-CL")} / {p.durationDays}d</option>)}
               </select>
