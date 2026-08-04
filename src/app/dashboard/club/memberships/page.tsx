@@ -38,6 +38,8 @@ export default function MembershipsPage() {
   const [saving, setSaving] = useState(false)
   const [planForm, setPlanForm] = useState({ name: "", description: "", price: 0, durationDays: 30 })
   const [memberForm, setMemberForm] = useState({ clientId: "", planId: "", startDate: new Date().toISOString().slice(0, 10) })
+  const [clientDropOpen, setClientDropOpen] = useState(false)
+  const [planDropOpen, setPlanDropOpen] = useState(false)
 
   const load = useCallback(async (bid: string) => {
     const [pRes, mRes, clRes] = await Promise.all([
@@ -237,21 +239,45 @@ export default function MembershipsPage() {
             <button onClick={() => setMemberOpen(false)} className="w-7 h-7 rounded-full flex items-center justify-center text-white/30 hover:text-white hover:bg-white/[0.07] transition-colors"><X className="w-4 h-4" /></button>
           </div>
           <div className="px-5 pb-5 space-y-3">
+            {/* Custom client dropdown */}
             <div className="relative">
-              <select value={memberForm.clientId} onChange={e => setMemberForm(f => ({ ...f, clientId: e.target.value }))}
-                className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-white focus:outline-none focus:border-sky-500/60 appearance-none [color-scheme:dark]">
-                <option value="">Seleccionar cliente *</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+              <button type="button" onClick={() => { setClientDropOpen(o => !o); setPlanDropOpen(false) }}
+                className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-left focus:outline-none focus:border-sky-500/60 flex items-center"
+                style={{ color: memberForm.clientId ? "#fff" : "rgba(255,255,255,0.3)" }}>
+                {memberForm.clientId ? clients.find(c => c.id === memberForm.clientId)?.name ?? "Seleccionar cliente *" : "Seleccionar cliente *"}
+                <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 transition-transform ${clientDropOpen ? "rotate-180" : ""}`} />
+              </button>
+              {clientDropOpen && (
+                <div className="absolute z-50 mt-1 w-full rounded-xl border border-white/[0.12] bg-[#2c2c30] shadow-xl overflow-hidden max-h-52 overflow-y-auto">
+                  {clients.map(c => (
+                    <button key={c.id} type="button"
+                      onClick={() => { setMemberForm(f => ({ ...f, clientId: c.id })); setClientDropOpen(false) }}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${memberForm.clientId === c.id ? "bg-sky-500/20 text-sky-400" : "text-white hover:bg-white/[0.06]"}`}>
+                      {c.name}{c.lastName ? ` ${c.lastName}` : ""}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+            {/* Custom plan dropdown */}
             <div className="relative">
-              <select value={memberForm.planId} onChange={e => setMemberForm(f => ({ ...f, planId: e.target.value }))}
-                className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-white focus:outline-none focus:border-sky-500/60 appearance-none [color-scheme:dark]">
-                <option value="">Seleccionar plan *</option>
-                {plans.filter(p => p.isActive).map(p => <option key={p.id} value={p.id}>{p.name} — ${Number(p.price).toLocaleString("es-CL")} / {p.durationDays}d</option>)}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+              <button type="button" onClick={() => { setPlanDropOpen(o => !o); setClientDropOpen(false) }}
+                className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-left focus:outline-none focus:border-sky-500/60 flex items-center"
+                style={{ color: memberForm.planId ? "#fff" : "rgba(255,255,255,0.3)" }}>
+                {memberForm.planId ? (() => { const p = plans.find(p => p.id === memberForm.planId); return p ? `${p.name} — $${Number(p.price).toLocaleString("es-CL")} / ${p.durationDays}d` : "Seleccionar plan *" })() : "Seleccionar plan *"}
+                <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 transition-transform ${planDropOpen ? "rotate-180" : ""}`} />
+              </button>
+              {planDropOpen && (
+                <div className="absolute z-50 mt-1 w-full rounded-xl border border-white/[0.12] bg-[#2c2c30] shadow-xl overflow-hidden">
+                  {plans.filter(p => p.isActive).map(p => (
+                    <button key={p.id} type="button"
+                      onClick={() => { setMemberForm(f => ({ ...f, planId: p.id })); setPlanDropOpen(false) }}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${memberForm.planId === p.id ? "bg-sky-500/20 text-sky-400" : "text-white hover:bg-white/[0.06]"}`}>
+                      {p.name} — ${Number(p.price).toLocaleString("es-CL")} / {p.durationDays}d
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <input type="date" value={memberForm.startDate} onChange={e => setMemberForm(f => ({ ...f, startDate: e.target.value }))}
               className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white focus:outline-none focus:border-sky-500/60 [color-scheme:dark]" />
