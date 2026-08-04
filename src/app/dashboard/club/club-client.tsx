@@ -609,6 +609,12 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
   const [dragLabel, setDragLabel] = useState("")
   const [dropTarget, setDropTarget] = useState<{ courtId: string; slot: string } | null>(null)
 
+  const [nowTime, setNowTime] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNowTime(new Date()), 30000)
+    return () => clearInterval(id)
+  }, [])
+
   // Scroll to 08:00 on mount
   useEffect(() => {
     if (gridRef.current) gridRef.current.scrollTop = 0
@@ -850,9 +856,8 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                   })}
 
                   {/* Current time line */}
-                  {isSameDay(selectedDate, new Date()) && (() => {
-                    const now = new Date()
-                    const nowMins = now.getHours() * 60 + now.getMinutes()
+                  {isSameDay(selectedDate, nowTime) && (() => {
+                    const nowMins = nowTime.getHours() * 60 + nowTime.getMinutes()
                     const originMins = START_HOUR * 60
                     if (nowMins < originMins || nowMins > END_HOUR * 60) return null
                     const top = ((nowMins - originMins) / SLOT_MINUTES) * SLOT_HEIGHT
