@@ -139,7 +139,7 @@ export default function ClientsPage() {
     if (!file) return
     e.target.value = ""
 
-    const normalize = (key: string) => key.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim()
+    const normalize = (key: string) => key.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "")
     const colMap: Record<string, string> = {
       nombre: "name", name: "name", firstname: "name",
       apellido: "lastName", lastname: "lastName", surname: "lastName", apellidos: "lastName",
