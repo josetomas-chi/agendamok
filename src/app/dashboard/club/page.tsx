@@ -59,5 +59,12 @@ export default async function ClubPage() {
   if (!business) redirect("/onboarding")
   if (business.businessType !== "SPORTS_CLUB") redirect("/dashboard")
 
-  return <ClubPageClient key={business.id} businessId={business.id} />
+  // Pre-fetch courts server-side to avoid loading skeleton on mount
+  const initialCourts = await prisma.court.findMany({
+    where: { businessId: business.id, isActive: true },
+    select: { id: true, name: true, sport: true, color: true, isActive: true },
+    orderBy: { createdAt: "asc" },
+  })
+
+  return <ClubPageClient key={business.id} businessId={business.id} initialCourts={initialCourts} />
 }

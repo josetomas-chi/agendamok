@@ -58,10 +58,10 @@ function utcDate(iso: string, fmt: string) {
   return format(shifted, fmt, { locale: es })
 }
 
-export default function ClubPageClient({ businessId: initialBusinessId }: { businessId: string }) {
+export default function ClubPageClient({ businessId: initialBusinessId, initialCourts = [] }: { businessId: string; initialCourts?: Court[] }) {
   const businessId = initialBusinessId
   const [allBookings, setAllBookings] = useState<Booking[]>([])
-  const [courts, setCourts] = useState<Court[]>([])
+  const [courts, setCourts] = useState<Court[]>(initialCourts)
   const [clients, setClients] = useState<Client[]>([])
   const [membersCount, setMembersCount] = useState(0)
   const [loading, setLoading] = useState(true)
