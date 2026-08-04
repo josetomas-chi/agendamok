@@ -1971,8 +1971,10 @@ function TeamTab() {
       } else {
         toast.error(d.error || `Error al invitar (${res.status})`)
       }
-    } catch {
-      toast.error("Error de red al invitar")
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      toast.error(`Error: ${msg}`)
+      console.error("[handleInvite]", err)
     } finally {
       setInviting(false)
     }
