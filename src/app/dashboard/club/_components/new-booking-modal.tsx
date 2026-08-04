@@ -506,12 +506,24 @@ export default function NewBookingModal({
   async function resolveClientId(): Promise<string | null> {
     if (!selectedClient) return null
     if (selectedClient.id) return selectedClient.id
+    const body: Record<string, string | null> = {
+      name: selectedClient.name,
+      email: selectedClient.email || null,
+      phone: selectedClient.phone || null,
+    }
+    if ((selectedClient as { rut?: string }).rut) body.rut = (selectedClient as { rut?: string }).rut!
     const cr = await fetch(`/api/businesses/${businessId}/clients`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: selectedClient.name, email: selectedClient.email || null, phone: selectedClient.phone || null }),
+      body: JSON.stringify(body),
     })
     if (cr.ok) { const cd = await cr.json(); return cd.client?.id || null }
+    // 409 = RUT o email duplicado — buscar el cliente existente y usarlo
+    if (cr.status === 409) {
+      const search = selectedClient.email || (selectedClient as { rut?: string }).rut || selectedClient.name
+      const sr = await fetch(`/api/businesses/${businessId}/clients?search=${encodeURIComponent(search)}`)
+      if (sr.ok) { const sd = await sr.json(); return sd.clients?.[0]?.id || null }
+    }
     return null
   }
 
