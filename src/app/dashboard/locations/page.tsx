@@ -202,7 +202,7 @@ export default function LocationsPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setSelected(null)}
-            className="w-8 h-8 rounded-lg border border-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors"
+            className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-900 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -231,13 +231,13 @@ export default function LocationsPage() {
           </div>
         </div>
 
-        <div className="flex gap-1 border-b border-white/10">
+        <div className="flex gap-1 border-b border-gray-200">
           {(["staff", "services"] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-                tab === t ? "border-sky-400 text-sky-300" : "border-transparent text-white/40 hover:text-white/70"
+                tab === t ? "border-sky-500 text-sky-600" : "border-transparent text-gray-400 hover:text-gray-700"
               }`}
             >
               {t === "staff" ? (
@@ -251,11 +251,11 @@ export default function LocationsPage() {
 
         {loadingDetail ? (
           <div className="grid grid-cols-2 gap-3">
-            {[...Array(4)].map((_, i) => <div key={i} className="h-16 bg-white/5 rounded-xl animate-pulse" />)}
+            {[...Array(4)].map((_, i) => <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />)}
           </div>
         ) : tab === "staff" ? (
           <div>
-            <p className="text-sm text-white/40 mb-3">Selecciona que staff trabaja en esta sede</p>
+            <p className="text-sm text-gray-500 mb-3">Selecciona qué staff trabaja en esta sede</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {allStaff.map(s => {
                 const assigned = assignedStaff.some(a => a.id === s.id)
@@ -264,7 +264,7 @@ export default function LocationsPage() {
                     key={s.id}
                     onClick={() => toggleStaff(s.id)}
                     className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
-                      assigned ? "border-sky-500/40 bg-sky-500/10" : "border-white/8 bg-white/[0.02] hover:bg-white/[0.05]"
+                      assigned ? "border-sky-400 bg-sky-50" : "border-gray-200 bg-white hover:bg-gray-50"
                     }`}
                   >
                     <div
@@ -273,19 +273,19 @@ export default function LocationsPage() {
                     >
                       {s.user.name?.[0] ?? "?"}
                     </div>
-                    <span className="text-sm font-medium flex-1">{s.user.name}</span>
-                    {assigned && <Check className="w-4 h-4 text-sky-400" />}
+                    <span className="text-sm font-medium text-gray-900 flex-1">{s.user.name}</span>
+                    {assigned && <Check className="w-4 h-4 text-sky-500" />}
                   </button>
                 )
               })}
               {allStaff.length === 0 && (
-                <p className="col-span-2 text-sm text-white/30 py-6 text-center">No hay staff registrado</p>
+                <p className="col-span-2 text-sm text-gray-400 py-6 text-center">No hay staff registrado</p>
               )}
             </div>
           </div>
         ) : (
           <div>
-            <p className="text-sm text-white/40 mb-3">Selecciona que servicios se ofrecen en esta sede</p>
+            <p className="text-sm text-gray-500 mb-3">Selecciona qué servicios se ofrecen en esta sede</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {allServices.map(sv => {
                 const assigned = assignedServices.some(a => a.id === sv.id)
@@ -294,20 +294,20 @@ export default function LocationsPage() {
                     key={sv.id}
                     onClick={() => toggleService(sv.id)}
                     className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
-                      assigned ? "border-sky-500/40 bg-sky-500/10" : "border-white/8 bg-white/[0.02] hover:bg-white/[0.05]"
+                      assigned ? "border-sky-400 bg-sky-50" : "border-gray-200 bg-white hover:bg-gray-50"
                     }`}
                   >
                     <div className="w-3 h-3 rounded-full flex-shrink-0 mt-0.5" style={{ backgroundColor: sv.color }} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{sv.name}</p>
-                      <p className="text-xs text-white/40">{sv.duration} min</p>
+                      <p className="text-sm font-medium text-gray-900 truncate">{sv.name}</p>
+                      <p className="text-xs text-gray-400">{sv.duration} min</p>
                     </div>
-                    {assigned && <Check className="w-4 h-4 text-sky-400 flex-shrink-0" />}
+                    {assigned && <Check className="w-4 h-4 text-sky-500 flex-shrink-0" />}
                   </button>
                 )
               })}
               {allServices.length === 0 && (
-                <p className="col-span-2 text-sm text-white/30 py-6 text-center">No hay servicios registrados</p>
+                <p className="col-span-2 text-sm text-gray-400 py-6 text-center">No hay servicios registrados</p>
               )}
             </div>
           </div>
@@ -354,38 +354,38 @@ export default function LocationsPage() {
             <div
               key={loc.id}
               onClick={() => openLocation(loc)}
-              className="group relative rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] overflow-hidden transition-all cursor-pointer"
+              className="group relative rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 overflow-hidden transition-all cursor-pointer shadow-sm"
             >
-              <div className={`h-1 w-full ${loc.isDefault ? "bg-sky-400" : "bg-primary/40"}`} />
+              <div className={`h-1 w-full ${loc.isDefault ? "bg-sky-400" : "bg-gray-200"}`} />
               <div className="p-5">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <MapPin className="w-4 h-4 text-primary" />
+                    <div className="w-9 h-9 rounded-lg bg-sky-50 flex items-center justify-center">
+                      <MapPin className="w-4 h-4 text-sky-500" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-sm">{loc.name}</h3>
+                      <h3 className="font-semibold text-sm text-gray-900">{loc.name}</h3>
                       <div className="flex gap-1 mt-0.5">
                         {loc.isDefault && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Principal</Badge>}
-                        {!loc.isActive && <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-white/30">Inactiva</Badge>}
+                        {!loc.isActive && <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-gray-400">Inactiva</Badge>}
                       </div>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/50 transition-colors mt-1" />
+                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors mt-1" />
                 </div>
 
                 {(loc.address || loc.city) && (
-                  <p className="text-xs text-white/50 mb-2">
+                  <p className="text-xs text-gray-500 mb-2">
                     {[loc.address, loc.city, loc.country].filter(Boolean).join(", ")}
                   </p>
                 )}
                 {loc.phone && (
-                  <div className="flex items-center gap-1.5 text-xs text-white/40 mb-1">
+                  <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-1">
                     <Phone className="w-3 h-3" /> {loc.phone}
                   </div>
                 )}
                 {loc.timezone && (
-                  <div className="flex items-center gap-1.5 text-xs text-white/40">
+                  <div className="flex items-center gap-1.5 text-xs text-gray-400">
                     <Clock className="w-3 h-3" /> {loc.timezone}
                   </div>
                 )}
@@ -395,8 +395,8 @@ export default function LocationsPage() {
                     onClick={e => toggleActive(loc, e)}
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-colors ${
                       loc.isActive
-                        ? "bg-green-500/10 text-green-400 hover:bg-green-500/20"
-                        : "bg-white/10 text-white/40 hover:bg-white/15"
+                        ? "bg-green-100 text-green-600 hover:bg-green-200"
+                        : "bg-gray-100 text-gray-400 hover:bg-gray-200"
                     }`}
                   >
                     {loc.isActive ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
@@ -404,13 +404,13 @@ export default function LocationsPage() {
                   </button>
                   <button
                     onClick={e => openEdit(loc, e)}
-                    className="p-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white/40 transition-colors"
+                    className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-400 transition-colors"
                   >
                     <Pencil className="w-3 h-3" />
                   </button>
                   <button
                     onClick={e => handleDelete(loc.id, e)}
-                    className="p-1.5 rounded-lg bg-white/10 hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors"
+                    className="p-1.5 rounded-lg bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 transition-colors"
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
