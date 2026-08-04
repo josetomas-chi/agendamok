@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useBusiness } from "@/contexts/business-context"
@@ -140,8 +140,12 @@ export default function ClientsPage() {
     e.target.value = ""
 
     const normalize = (key: string) => key.toLowerCase()
-      .replace(/[áàäâã]/g, "a").replace(/[éèëê]/g, "e").replace(/[íìïî]/g, "i")
-      .replace(/[óòöôõ]/g, "o").replace(/[úùüû]/g, "u").replace(/[^a-z0-9]/g, "")
+      .replace(/[áàäâã]/g, "a")
+      .replace(/[éèëê]/g, "e")
+      .replace(/[íìïî]/g, "i")
+      .replace(/[óòöôõ]/g, "o")
+      .replace(/[úùüû]/g, "u")
+      .replace(/[^a-z0-9]/g, "")
     const colMap: Record<string, string> = {
       nombre: "name", name: "name", firstname: "name",
       apellido: "lastName", lastname: "lastName", surname: "lastName", apellidos: "lastName",
@@ -289,7 +293,7 @@ export default function ClientsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "rgba(201,168,76,0.5)" }} />
           <input className="w-full h-10 rounded-xl pl-9 pr-4 text-sm"
             style={{ border: BORDER, background: NAVY2, color: "#fff", outline: "none" }}
-            placeholder="Buscar por nombre, email o telÃ©fono..." value={search} onChange={e => setSearch(e.target.value)} />
+            placeholder="Buscar por nombre, email o teléfono..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div className="flex gap-2 flex-wrap">
           {["", "VIP", "INFLUENCER", "FREQUENT", "AT_RISK", "NEW"].map(s => (
@@ -314,9 +318,9 @@ export default function ClientsPage() {
             <circle cx="52" cy="28" r="8" stroke="#C9A84C" strokeWidth="2"/>
             <path d="M46 56c0-7 5-12 12-12" stroke="#C9A84C" strokeWidth="2" strokeLinecap="round"/>
           </svg>
-          <p className="font-semibold text-base" style={{ color: "rgba(255,255,255,0.5)" }}>{search ? "Sin resultados" : "AÃºn no hay clientes"}</p>
+          <p className="font-semibold text-base" style={{ color: "rgba(255,255,255,0.5)" }}>{search ? "Sin resultados" : "Aún no hay clientes"}</p>
           <p className="text-sm mt-1.5 max-w-xs text-center" style={{ color: "rgba(255,255,255,0.25)" }}>
-            {search ? `No encontramos a nadie con "${search}"` : "Agrega clientes o impÃ³rtalos desde un archivo CSV"}
+            {search ? `No encontramos a nadie con "${search}"` : "Agrega clientes o impórtalos desde un archivo CSV"}
           </p>
         </div>
       ) : (
@@ -378,11 +382,11 @@ export default function ClientsPage() {
         </div>
       )}
 
-      {/* PaginaciÃ³n */}
+      {/* Paginación */}
       {clientsPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
-            {clientsTotal.toLocaleString("es-CL")} clientes Â· pÃ¡gina {clientsPage} de {clientsPages}
+            {clientsTotal.toLocaleString("es-CL")} clientes · página {clientsPage} de {clientsPages}
           </p>
           <div className="flex gap-2">
             <button
@@ -390,20 +394,20 @@ export default function ClientsPage() {
               onClick={() => { const p = clientsPage - 1; setClientsPage(p); loadClients(businessId, search, segment, p) }}
               className="h-8 px-3 rounded-lg text-xs font-semibold disabled:opacity-30"
               style={{ border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)", background: "transparent" }}>
-              â† Anterior
+              ← Anterior
             </button>
             <button
               disabled={clientsPage >= clientsPages}
               onClick={() => { const p = clientsPage + 1; setClientsPage(p); loadClients(businessId, search, segment, p) }}
               className="h-8 px-3 rounded-lg text-xs font-semibold disabled:opacity-30"
               style={{ border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)", background: "transparent" }}>
-              Siguiente â†’
+              Siguiente →
             </button>
           </div>
         </div>
       )}
 
-      {/* â”€â”€ DiÃ¡logos compartidos (sports + general) â”€â”€ */}
+      {/* ── Diálogos compartidos (sports + general) ── */}
       {/* New client dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
@@ -414,10 +418,10 @@ export default function ClientsPage() {
               <div className="space-y-1.5"><Label>Apellido</Label><Input value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} /></div>
             </div>
             <div className="space-y-1.5"><Label>RUT</Label><Input value={form.rut} placeholder="12.345.678-9" onChange={e => setForm(f => ({ ...f, rut: formatRut(e.target.value) }))} /></div>
-            <div className="space-y-1.5"><Label>Correo electrÃ³nico</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
-            <div className="space-y-1.5"><Label>TelÃ©fono</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>Correo electrónico</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>Teléfono</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
             <div className="space-y-1.5">
-              <Label>GÃ©nero</Label>
+              <Label>Género</Label>
               <select value={form.gender} onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm">
                 <option value="">Sin especificar</option>
@@ -485,8 +489,8 @@ export default function ClientsPage() {
                       <span className="text-emerald-400 text-sm font-bold">$</span>
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-emerald-300">CrÃ©dito a favor</p>
-                      <p className="text-[10px] text-emerald-400/60">Disponible para prÃ³ximas reservas</p>
+                      <p className="text-xs font-semibold text-emerald-300">Crédito a favor</p>
+                      <p className="text-[10px] text-emerald-400/60">Disponible para próximas reservas</p>
                     </div>
                   </div>
                   <p className="text-xl font-black text-emerald-300">${selected.creditBalance.toLocaleString("es-CL")}</p>
@@ -530,7 +534,7 @@ export default function ClientsPage() {
                 )}
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">GÃ©nero</label>
+                <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">Género</label>
                 <select value={editForm.gender} onChange={e => setEditForm(f => ({ ...f, gender: e.target.value }))}
                   className="w-full h-8 rounded-lg border border-white/10 bg-[#1c1c1e] px-3 text-sm text-white focus:outline-none focus:border-sky-500/60" style={{ colorScheme: "dark" }}>
                   <option value="" style={{ background: "#1c1c1e" }}>Sin especificar</option>
@@ -546,7 +550,7 @@ export default function ClientsPage() {
                     className="w-full h-8 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-sm text-white focus:outline-none focus:border-sky-500/60" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">TelÃ©fono</label>
+                  <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">Teléfono</label>
                   <input value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
                     className="w-full h-8 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-sm text-white focus:outline-none focus:border-sky-500/60" />
                 </div>
@@ -561,7 +565,7 @@ export default function ClientsPage() {
                 disabled={savingClient || !editForm.name}
                 className="w-full h-8 rounded-lg bg-sky-500/20 text-sky-300 text-sm font-medium hover:bg-sky-500/30 disabled:opacity-40 transition-colors"
               >
-                {savingClient ? "Guardandoâ€¦" : "Guardar cambios"}
+                {savingClient ? "Guardando…" : "Guardar cambios"}
               </button>
             </div>
 
@@ -591,14 +595,14 @@ export default function ClientsPage() {
                   Guardar
                 </button>
               </div>
-              <p className="text-[11px] text-white/25 mt-1.5">Se asigna VIP automÃ¡ticamente al llegar a 500 pts Â· +10 pts por turno completado</p>
+              <p className="text-[11px] text-white/25 mt-1.5">Se asigna VIP automáticamente al llegar a 500 pts · +10 pts por turno completado</p>
             </div>
 
             {/* Pago por transferencia */}
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-white/70 flex items-center gap-1.5">
-                  <span>ðŸ¦</span> Pago por transferencia
+                  <span>🏦</span> Pago por transferencia
                 </p>
                 <p className="text-[11px] text-white/30 mt-0.5">El cliente puede adjuntar comprobante al reservar</p>
               </div>
@@ -630,7 +634,7 @@ export default function ClientsPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="w-4 h-4" />
-              {importState === "done" ? "ImportaciÃ³n completada" : "Previsualizar importaciÃ³n"}
+              {importState === "done" ? "Importación completada" : "Previsualizar importación"}
             </DialogTitle>
           </DialogHeader>
 
@@ -651,15 +655,15 @@ export default function ClientsPage() {
             <>
               <div className="text-sm text-muted-foreground space-y-1">
                 <div>
-                  {importRows.filter(r => !r._error).length} filas vÃ¡lidas Â·{" "}
+                  {importRows.filter(r => !r._error).length} filas válidas ·{" "}
                   {importRows.filter(r => r._error).length > 0 && (
-                    <span className="text-orange-400">{importRows.filter(r => r._error).length} con error (se omitirÃ¡n)</span>
+                    <span className="text-orange-400">{importRows.filter(r => r._error).length} con error (se omitirán)</span>
                   )}
                 </div>
                 {importRows.filter(r => r._warnRut).length > 0 && (
                   <div className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg" style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", color: "#b45309" }}>
                     <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span><strong>{importRows.filter(r => r._warnRut).length} clientes sin RUT.</strong> Se importarÃ¡n, pero deberÃ¡n completar su RUT desde el perfil.</span>
+                    <span><strong>{importRows.filter(r => r._warnRut).length} clientes sin RUT.</strong> Se importarán, pero deberán completar su RUT desde el perfil.</span>
                   </div>
                 )}
               </div>
@@ -672,7 +676,7 @@ export default function ClientsPage() {
                       <th className="px-3 py-2 text-left">Nombre</th>
                       <th className="px-3 py-2 text-left">RUT</th>
                       <th className="px-3 py-2 text-left">Email</th>
-                      <th className="px-3 py-2 text-left">TelÃ©fono</th>
+                      <th className="px-3 py-2 text-left">Teléfono</th>
                       <th className="px-3 py-2 text-left">Estado</th>
                     </tr>
                   </thead>
@@ -680,15 +684,15 @@ export default function ClientsPage() {
                     {importRows.map((row, i) => (
                       <tr key={i} className={row._error ? "opacity-50" : ""}>
                         <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
-                        <td className="px-3 py-2 font-medium">{row.name || "â€”"}</td>
+                        <td className="px-3 py-2 font-medium">{row.name || "—"}</td>
                         <td className="px-3 py-2 font-mono text-xs">
                           {row.rut
                             ? <span className="text-white/80">{row.rut}</span>
                             : <span className="text-yellow-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" />Sin RUT</span>
                           }
                         </td>
-                        <td className="px-3 py-2 text-muted-foreground">{row.email || "â€”"}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{row.phone || "â€”"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{row.email || "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{row.phone || "—"}</td>
                         <td className="px-3 py-2">
                           {row._error
                             ? <span className="flex items-center gap-1 text-orange-400 text-xs"><AlertCircle className="w-3 h-3" />{row._error}</span>
@@ -709,7 +713,7 @@ export default function ClientsPage() {
               </div>
 
               <p className="text-xs text-muted-foreground text-center">
-                Columnas aceptadas: <strong>nombre</strong>, <strong>rut</strong>, <strong>email</strong>, <strong>telÃ©fono</strong> (o phone/cel), <strong>notas</strong>
+                Columnas aceptadas: <strong>nombre</strong>, <strong>rut</strong>, <strong>email</strong>, <strong>teléfono</strong> (o phone/cel), <strong>notas</strong>
               </p>
             </>
           )}
@@ -718,7 +722,7 @@ export default function ClientsPage() {
     </div>
   )
 
-  // â”€â”€ Render general (no sports) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Render general (no sports) ──────────────────────────────────────────────
   return (
     <div className="space-y-6">
       <div className="page-header">
@@ -738,7 +742,7 @@ export default function ClientsPage() {
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-60">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Buscar por nombre, email o telÃ©fono..." value={search} onChange={e => setSearch(e.target.value)} />
+          <Input className="pl-9" placeholder="Buscar por nombre, email o teléfono..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div className="flex gap-2">
           {["", "VIP", "INFLUENCER", "FREQUENT", "AT_RISK", "NEW"].map(s => (
@@ -754,7 +758,7 @@ export default function ClientsPage() {
         <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-muted animate-pulse rounded-xl" />)}</div>
       ) : clients.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 select-none">
-          <p className="text-white/70 font-semibold text-base">{search ? "Sin resultados" : "AÃºn no hay clientes"}</p>
+          <p className="text-white/70 font-semibold text-base">{search ? "Sin resultados" : "Aún no hay clientes"}</p>
         </div>
       ) : (
         <div className="rounded-xl border border-white/10 overflow-hidden">
@@ -817,24 +821,24 @@ export default function ClientsPage() {
         </div>
       )}
 
-      {/* PaginaciÃ³n (sports) */}
+      {/* Paginación (sports) */}
       {clientsPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <p className="text-xs text-muted-foreground">
-            {clientsTotal.toLocaleString("es-CL")} clientes Â· pÃ¡gina {clientsPage} de {clientsPages}
+            {clientsTotal.toLocaleString("es-CL")} clientes · página {clientsPage} de {clientsPages}
           </p>
           <div className="flex gap-2">
             <button
               disabled={clientsPage <= 1}
               onClick={() => { const p = clientsPage - 1; setClientsPage(p); loadClients(businessId, search, segment, p) }}
               className="h-8 px-3 rounded-lg text-xs font-semibold border border-border disabled:opacity-30">
-              â† Anterior
+              ← Anterior
             </button>
             <button
               disabled={clientsPage >= clientsPages}
               onClick={() => { const p = clientsPage + 1; setClientsPage(p); loadClients(businessId, search, segment, p) }}
               className="h-8 px-3 rounded-lg text-xs font-semibold border border-border disabled:opacity-30">
-              Siguiente â†’
+              Siguiente →
             </button>
           </div>
         </div>
@@ -850,10 +854,10 @@ export default function ClientsPage() {
               <div className="space-y-1.5"><Label>Apellido</Label><Input value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} /></div>
             </div>
             <div className="space-y-1.5"><Label>RUT</Label><Input value={form.rut} placeholder="12.345.678-9" onChange={e => setForm(f => ({ ...f, rut: formatRut(e.target.value) }))} /></div>
-            <div className="space-y-1.5"><Label>Correo electrÃ³nico</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
-            <div className="space-y-1.5"><Label>TelÃ©fono</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>Correo electrónico</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>Teléfono</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
             <div className="space-y-1.5">
-              <Label>GÃ©nero</Label>
+              <Label>Género</Label>
               <select value={form.gender} onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm">
                 <option value="">Sin especificar</option>
@@ -936,7 +940,7 @@ export default function ClientsPage() {
                     className="w-full h-8 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-sky-500/60" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">GÃ©nero</label>
+                  <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">Género</label>
                   <select value={editForm.gender} onChange={e => setEditForm(f => ({ ...f, gender: e.target.value }))}
                     className="w-full h-8 rounded-lg border border-white/10 bg-[#1c1c1e] px-3 text-sm text-white focus:outline-none focus:border-sky-500/60" style={{ colorScheme: "dark" }}>
                     <option value="" style={{ background: "#1c1c1e" }}>Sin especificar</option>
@@ -953,7 +957,7 @@ export default function ClientsPage() {
                     className="w-full h-8 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-sm text-white focus:outline-none focus:border-sky-500/60" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">TelÃ©fono</label>
+                  <label className="text-[11px] font-medium text-white/40 uppercase tracking-wide">Teléfono</label>
                   <input value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
                     className="w-full h-8 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-sm text-white focus:outline-none focus:border-sky-500/60" />
                 </div>
@@ -968,7 +972,7 @@ export default function ClientsPage() {
                 disabled={savingClient || !editForm.name}
                 className="w-full h-8 rounded-lg bg-sky-500/20 text-sky-300 text-sm font-medium hover:bg-sky-500/30 disabled:opacity-40 transition-colors"
               >
-                {savingClient ? "Guardandoâ€¦" : "Guardar cambios"}
+                {savingClient ? "Guardando…" : "Guardar cambios"}
               </button>
             </div>
 
@@ -997,7 +1001,7 @@ export default function ClientsPage() {
             {/* Transfer toggle */}
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-white/70 flex items-center gap-1.5"><span>ðŸ¦</span> Pago por transferencia</p>
+                <p className="text-xs font-medium text-white/70 flex items-center gap-1.5"><span>🏦</span> Pago por transferencia</p>
                 <p className="text-[11px] text-white/30 mt-0.5">El cliente puede adjuntar comprobante al reservar</p>
               </div>
               <button
@@ -1025,12 +1029,12 @@ export default function ClientsPage() {
                   }}
                   className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg bg-amber-500/10 text-amber-300 text-xs font-medium hover:bg-amber-500/20 border border-amber-400/20 transition-colors"
                 >
-                  <KeyRound className="w-3.5 h-3.5" /> Resetear contraseÃ±a
+                  <KeyRound className="w-3.5 h-3.5" /> Resetear contraseña
                 </button>
               )}
               <button
                 onClick={async () => {
-                  if (!confirm(`Â¿Eliminar a ${selected.name}? Esta acciÃ³n no se puede deshacer.`)) return
+                  if (!confirm(`¿Eliminar a ${selected.name}? Esta acción no se puede deshacer.`)) return
                   const r = await fetch(`/api/businesses/${businessId}/clients/${selected.id}`, { method: "DELETE" })
                   if (r.ok) {
                     toast.success("Cliente eliminado")
@@ -1049,4 +1053,3 @@ export default function ClientsPage() {
     </div>
   )
 }
-
