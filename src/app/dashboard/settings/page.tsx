@@ -1955,7 +1955,7 @@ function TeamTab() {
     const res = await fetch("/api/businesses/members", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, name }),
+      body: JSON.stringify({ email, name, businessId: bid }),
     })
     const d = await res.json()
     if (res.ok) {

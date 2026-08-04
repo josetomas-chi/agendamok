@@ -38,10 +38,14 @@ export async function POST(req: Request) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
-  const business = await getAdminBusiness(session.user.id)
-  if (!business) return NextResponse.json({ error: "No tienes un negocio" }, { status: 400 })
+  const { email, name, businessId } = await req.json()
 
-  const { email, name } = await req.json()
+  const business = businessId
+    ? await prisma.business.findFirst({
+        where: { id: businessId, OR: [{ ownerId: session.user.id }, { members: { some: { userId: session.user.id, role: "ADMIN", acceptedAt: { not: null } } } }] },
+      })
+    : await getAdminBusiness(session.user.id)
+  if (!business) return NextResponse.json({ error: "No tienes un negocio" }, { status: 400 })
   if (!email) return NextResponse.json({ error: "Email requerido" }, { status: 400 })
 
   // Check if already a member
