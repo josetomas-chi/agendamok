@@ -104,6 +104,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       businessId: id,
       name: row.name?.trim() || "",
       lastName: row.lastName?.trim() || null,
+      role: "CLIENTE",
       rut: rut || null,
       email: email || null,
       phone: row.phone || null,
