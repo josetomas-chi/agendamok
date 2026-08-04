@@ -244,7 +244,7 @@ export default function MembershipsPage() {
               <button type="button" onClick={() => { setClientDropOpen(o => !o); setPlanDropOpen(false) }}
                 className="w-full h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 pr-9 text-sm text-left focus:outline-none focus:border-sky-500/60 flex items-center"
                 style={{ color: memberForm.clientId ? "#fff" : "rgba(255,255,255,0.3)" }}>
-                {memberForm.clientId ? clients.find(c => c.id === memberForm.clientId)?.name ?? "Seleccionar cliente *" : "Seleccionar cliente *"}
+                {memberForm.clientId ? (() => { const c = clients.find(c => c.id === memberForm.clientId); return c ? [c.name, c.lastName].filter(Boolean).join(" ") : "Seleccionar cliente *" })() : "Seleccionar cliente *"}
                 <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 transition-transform ${clientDropOpen ? "rotate-180" : ""}`} />
               </button>
               {clientDropOpen && (
