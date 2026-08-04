@@ -46,7 +46,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     : await getAdminBusiness(session.user.id)
   if (!business) return NextResponse.json({ error: "No tienes un negocio" }, { status: 400 })
 
-  const { id } = await params
   const member = await prisma.businessMember.findFirst({ where: { id, businessId: business.id } })
   if (!member) return NextResponse.json({ error: "Miembro no encontrado" }, { status: 404 })
 
