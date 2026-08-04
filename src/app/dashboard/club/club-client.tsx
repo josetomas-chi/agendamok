@@ -378,7 +378,7 @@ export default function ClubPageClient({ businessId: initialBusinessId, initialC
 
       {tab === "entrenadores" && <CoachesTab businessId={businessId} />}
 
-      {tab === "calendario" && (loading ? <CalendarSkeleton /> : (
+      {tab === "calendario" && (courts.length === 0 && loading ? <CalendarSkeleton /> : (
         <CourtCalendar
           courts={sportFilter === "Todos" ? courts : courts.filter(c => c.sport && normalize(c.sport) === normalize(sportFilter))}
           bookings={dayBookings}
