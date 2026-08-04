@@ -283,7 +283,7 @@ export default function CourtsPage() {
                   placeholder="Deporte (ej: Pádel)"
                   className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white placeholder-white/20 focus:outline-none focus:border-sky-500/60" />
                 <datalist id="sports-list">
-                  {["Pádel","Tenis","Fútbol","Básquetbol","Volleyball","Squash","Badminton","Tenis de mesa","Natación","Rugby","Hockey","Atletismo","Ciclismo","Boxeo","Artes marciales","CrossFit","Pilates","Yoga"].map(s => (
+                  {["Pádel","Tenis","Pickleball","Fútbol","Básquetbol","Volleyball","Squash","Badminton","Tenis de mesa","Natación","Rugby","Hockey","Atletismo","Ciclismo","Boxeo","Artes marciales","CrossFit","Pilates","Yoga"].map(s => (
                     <option key={s} value={s} />
                   ))}
                 </datalist>
