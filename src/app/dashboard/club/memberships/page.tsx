@@ -19,9 +19,9 @@ type Membership = {
 type Client = { id: string; name: string; lastName?: string | null; email: string | null }
 
 const STATUS_COLORS: Record<string, string> = {
-  ACTIVE: "bg-green-500/20 text-green-400",
-  EXPIRED: "bg-white/10 text-white/40",
-  CANCELLED: "bg-red-500/20 text-red-400",
+  ACTIVE: "bg-green-100 text-green-700",
+  EXPIRED: "bg-gray-100 text-gray-500",
+  CANCELLED: "bg-red-100 text-red-600",
 }
 const STATUS_LABELS: Record<string, string> = { ACTIVE: "Activo", EXPIRED: "Vencido", CANCELLED: "Cancelado" }
 
@@ -103,7 +103,7 @@ export default function MembershipsPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => { setEditingPlan(null); setPlanForm({ name: "", description: "", price: 0, durationDays: 30 }); setPlanOpen(true) }}
-            className="gap-2 border-white/20 text-white/70 hover:bg-white/[0.06]">
+            className="gap-2 border-gray-300 text-gray-600 hover:bg-gray-50">
             <Plus className="w-4 h-4" /> Nuevo plan
           </Button>
           <Button onClick={() => { setMemberForm({ clientId: "", planId: "", startDate: new Date().toISOString().slice(0, 10) }); setMemberOpen(true) }}
@@ -115,29 +115,29 @@ export default function MembershipsPage() {
 
       {/* Plans */}
       <div>
-        <p className="text-xs font-semibold text-white/40 uppercase tracking-wide mb-3">Planes</p>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Planes</p>
         {plans.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center text-white/30 text-sm">
+          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-8 text-center text-gray-400 text-sm">
             No hay planes creados aún
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {plans.map(p => (
-              <div key={p.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-3">
+              <div key={p.id} className="rounded-2xl border border-gray-200 bg-white p-5 space-y-3 shadow-sm">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="font-semibold text-white">{p.name}</p>
-                    {p.description && <p className="text-xs text-white/40 mt-0.5">{p.description}</p>}
+                    <p className="font-semibold text-gray-900">{p.name}</p>
+                    {p.description && <p className="text-xs text-gray-500 mt-0.5">{p.description}</p>}
                   </div>
                   <button onClick={() => { setEditingPlan(p); setPlanForm({ name: p.name, description: p.description || "", price: Number(p.price), durationDays: p.durationDays }); setPlanOpen(true) }}
-                    className="text-white/30 hover:text-white transition-colors text-xs">Editar</button>
+                    className="text-gray-400 hover:text-gray-900 transition-colors text-xs">Editar</button>
                 </div>
                 <div className="flex items-end justify-between">
                   <div>
-                    <p className="text-2xl font-bold text-sky-400">${Number(p.price).toLocaleString("es-CL")}</p>
-                    <p className="text-xs text-white/40">{p.durationDays} días</p>
+                    <p className="text-2xl font-bold text-sky-500">${Number(p.price).toLocaleString("es-CL")}</p>
+                    <p className="text-xs text-gray-500">{p.durationDays} días</p>
                   </div>
-                  <p className="text-xs text-white/30">{p._count.memberships} socios activos</p>
+                  <p className="text-xs text-gray-400">{p._count.memberships} socios activos</p>
                 </div>
               </div>
             ))}
@@ -148,7 +148,7 @@ export default function MembershipsPage() {
       {/* Active memberships */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-semibold text-white/40 uppercase tracking-wide">Socios</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Socios</p>
           {memberships.some(m => m.client.email) && (
             <button onClick={() => setNotifyOpen(true)}
               className="flex items-center gap-1.5 px-3 h-7 rounded-lg text-xs font-semibold transition-colors"
@@ -158,24 +158,24 @@ export default function MembershipsPage() {
           )}
         </div>
         {memberships.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center text-white/30 text-sm">
+          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-8 text-center text-gray-400 text-sm">
             No hay membresías asignadas
           </div>
         ) : (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
-            <div className="divide-y divide-white/[0.04]">
+          <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+            <div className="divide-y divide-gray-100">
               {memberships.map(m => (
-                <div key={m.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.03] transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-sky-500/20 flex items-center justify-center flex-shrink-0">
-                    <Users className="w-3.5 h-3.5 text-sky-400" />
+                <div key={m.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0">
+                    <Users className="w-3.5 h-3.5 text-sky-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white">{[m.client.name, m.client.lastName].filter(Boolean).join(" ")}</p>
-                    <p className="text-xs text-white/40">{m.plan.name} · vence {format(new Date(m.endDate), "d MMM yyyy", { locale: es })}</p>
+                    <p className="text-sm font-medium text-gray-900">{[m.client.name, m.client.lastName].filter(Boolean).join(" ")}</p>
+                    <p className="text-xs text-gray-500">{m.plan.name} · vence {format(new Date(m.endDate), "d MMM yyyy", { locale: es })}</p>
                   </div>
                   <Badge className={`text-[10px] ${STATUS_COLORS[m.status]}`}>{STATUS_LABELS[m.status]}</Badge>
                   {m.status === "ACTIVE" && (
-                    <button onClick={() => cancelMembership(m.id)} className="text-xs text-white/20 hover:text-red-400 transition-colors">Cancelar</button>
+                    <button onClick={() => cancelMembership(m.id)} className="text-xs text-gray-300 hover:text-red-500 transition-colors">Cancelar</button>
                   )}
                 </div>
               ))}
