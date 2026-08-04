@@ -1940,6 +1940,7 @@ function MemberRow({ m, onRemove }: { m: Member; onRemove: (id: string) => void 
 }
 
 function TeamTab() {
+  const { businessId: bid } = useBusiness()
   const [members, setMembers] = useState<Member[]>([])
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
