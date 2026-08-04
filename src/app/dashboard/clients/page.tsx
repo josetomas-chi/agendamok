@@ -291,7 +291,7 @@ export default function ClientsPage() {
       <div className="flex gap-3 flex-wrap mb-6">
         <div className="relative flex-1 min-w-60">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "rgba(201,168,76,0.5)" }} />
-          <input className="w-full h-10 rounded-xl pl-9 pr-4 text-sm"
+          <input className="w-full h-10 rounded-xl pl-9 pr-4 text-sm placeholder-white/30 focus:ring-2 focus:ring-yellow-500/40"
             style={{ border: BORDER, background: NAVY2, color: "#fff", outline: "none" }}
             placeholder="Buscar por nombre, email o teléfono..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
