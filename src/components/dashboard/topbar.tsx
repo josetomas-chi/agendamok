@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation"
 type BusinessOption = { id: string; name: string; logo: string | null; businessType: string }
 
 export function TopBar({
-  onMenuClick, isSports, businessId, businessName, businessLogo, allBusinesses, activeBusinessId,
+  onMenuClick, isSports, businessId, businessName, businessLogo, allBusinesses, activeBusinessId, isSuperAdmin,
 }: {
   onMenuClick?: () => void
   isSports?: boolean
@@ -18,6 +18,7 @@ export function TopBar({
   businessLogo: string | null
   allBusinesses?: BusinessOption[]
   activeBusinessId?: string
+  isSuperAdmin?: boolean
 }) {
   const [logo, setLogo] = useState<string | null>(businessLogo)
   useEffect(() => { setLogo(businessLogo) }, [businessLogo])
@@ -154,6 +155,23 @@ export function TopBar({
                 )}
               </button>
             ))}
+            {isSuperAdmin && (
+              <>
+                <div className={`mx-3 my-1.5 border-t ${dark ? "border-white/10" : "border-gray-100"}`} />
+                <a
+                  href="/admin"
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-all ${dark ? "hover:bg-white/[0.06]" : "hover:bg-gray-50"}`}
+                >
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-sky-500/20 border border-sky-500/30">
+                    <Building2 className="w-4 h-4 text-sky-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium truncate ${dark ? "text-white" : "text-gray-800"}`}>Super Admin</p>
+                    <p className={`text-[11px] text-sky-400`}>Panel de administración</p>
+                  </div>
+                </a>
+              </>
+            )}
           </div>
         </>
       )}

@@ -85,6 +85,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         permissionOverrides={permissionOverrides}
         allBusinesses={allBusinesses.map((b) => ({ id: b.id, name: b.name, logo: b.logo ?? null, businessType: b.businessType }))}
         activeBusinessId={activeBusiness.id}
+        isSuperAdmin={(session.user as { role?: string }).role === "SUPER_ADMIN"}
       >
         {children}
       </DashboardShell>

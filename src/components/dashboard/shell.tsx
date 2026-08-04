@@ -11,7 +11,7 @@ type BusinessOption = { id: string; name: string; logo: string | null; businessT
 
 export function DashboardShell({
   children, businessId, businessName, businessLogo, businessType, memberRole, permissionOverrides,
-  allBusinesses, activeBusinessId,
+  allBusinesses, activeBusinessId, isSuperAdmin,
 }: {
   children: React.ReactNode
   businessId: string
@@ -22,6 +22,7 @@ export function DashboardShell({
   permissionOverrides?: PermissionMap
   allBusinesses?: BusinessOption[]
   activeBusinessId?: string
+  isSuperAdmin?: boolean
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const isSports = businessType === "SPORTS_CLUB"
@@ -53,6 +54,7 @@ export function DashboardShell({
           businessLogo={businessLogo}
           allBusinesses={allBusinesses}
           activeBusinessId={activeBusinessId}
+          isSuperAdmin={isSuperAdmin}
         />
         <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
           <div className="p-4 md:p-6 page-enter">{children}</div>
