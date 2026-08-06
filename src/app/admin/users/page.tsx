@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
-import { Users, Trash2, KeyRound, Search, Copy } from "lucide-react"
+import { Users, Trash2, KeyRound, Search, Copy, XOctagon } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -14,6 +14,7 @@ type User = {
   role: string
   password: string | null
   createdAt: string
+  deletedAt: string | null
   businessOwner: { name: string }[]
 }
 
@@ -34,23 +35,32 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [showDeleted, setShowDeleted] = useState(false)
   const [tempPassword, setTempPassword] = useState<{ name: string; pwd: string } | null>(null)
 
-  useEffect(() => { loadUsers() }, [])
+  useEffect(() => { loadUsers() }, [showDeleted])
 
   async function loadUsers() {
     setLoading(true)
-    const r = await fetch("/api/admin/users")
+    const r = await fetch(`/api/admin/users${showDeleted ? "?includeDeleted=true" : ""}`)
     const d = await r.json()
     setUsers(d.users || [])
     setLoading(false)
   }
 
   async function handleDelete(u: User) {
-    if (!confirm(`¿Eliminar al usuario "${u.name || u.email}"? Esta acción no se puede deshacer.`)) return
+    if (!confirm(`¿Eliminar al usuario "${u.name || u.email}"? Se preserva su historial de turnos si es staff. Podrás verlo de nuevo solo restaurando desde la base de datos — el email queda ocupado.`)) return
     const r = await fetch(`/api/admin/users/${u.id}`, { method: "DELETE" })
     const d = await r.json()
     if (r.ok) { toast.success("Usuario eliminado"); loadUsers() }
+    else toast.error(d.error || "Error al eliminar")
+  }
+
+  async function handlePermanentDelete(u: User) {
+    if (!confirm(`¿BORRAR PERMANENTEMENTE a "${u.name || u.email}"?\n\nEsto elimina también sus turnos e historial si es staff, y no se puede deshacer. Úsalo solo para cuentas de prueba sin historial real.\n\nA cambio, el email ${u.email} queda libre para reutilizarse.`)) return
+    const r = await fetch(`/api/admin/users/${u.id}?permanent=true`, { method: "DELETE" })
+    const d = await r.json()
+    if (r.ok) { toast.success("Usuario borrado permanentemente"); loadUsers() }
     else toast.error(d.error || "Error al eliminar")
   }
 
@@ -78,9 +88,21 @@ export default function AdminUsersPage() {
           <h1 className="page-title">Usuarios</h1>
           <p className="page-subtitle">{users.length} usuarios registrados</p>
         </div>
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-9 w-64" placeholder="Buscar usuario o email..." value={search} onChange={e => setSearch(e.target.value)} />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowDeleted(v => !v)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+              showDeleted
+                ? "bg-red-500/15 text-red-400 border-red-400/30"
+                : "bg-white/5 text-white/40 border-white/10 hover:text-white/60"
+            }`}
+          >
+            {showDeleted ? "Viendo eliminados" : "Mostrar eliminados"}
+          </button>
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input className="pl-9 w-64" placeholder="Buscar usuario o email..." value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
         </div>
       </div>
 
@@ -108,7 +130,7 @@ export default function AdminUsersPage() {
                 </td>
               </tr>
             ) : filtered.map((u, i) => (
-              <tr key={u.id} className={`transition-colors hover:bg-white/[0.03] ${i !== filtered.length - 1 ? "border-b border-white/[0.05]" : ""}`}>
+              <tr key={u.id} className={`transition-colors hover:bg-white/[0.03] ${u.deletedAt ? "opacity-50" : ""} ${i !== filtered.length - 1 ? "border-b border-white/[0.05]" : ""}`}>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400 font-bold text-xs flex-shrink-0">
@@ -127,20 +149,34 @@ export default function AdminUsersPage() {
                 </td>
                 <td className="px-4 py-3 text-white/50">{u.businessOwner?.map(b => b.name).join(", ") || "—"}</td>
                 <td className="px-4 py-3">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${u.password ? "bg-emerald-500/15 text-emerald-400 border-emerald-400/30" : "bg-amber-400/10 text-amber-400 border-amber-400/20"}`}>
-                    {u.password ? "Activo" : "Pendiente"}
-                  </span>
+                  {u.deletedAt ? (
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium border bg-red-500/15 text-red-400 border-red-400/30">
+                      Eliminado
+                    </span>
+                  ) : (
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${u.password ? "bg-emerald-500/15 text-emerald-400 border-emerald-400/30" : "bg-amber-400/10 text-amber-400 border-amber-400/20"}`}>
+                      {u.password ? "Activo" : "Pendiente"}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-white/40">{new Date(u.createdAt).toLocaleDateString("es-CL")}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" className="h-7 px-2 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
-                      title="Resetear contraseña" onClick={() => handleResetPassword(u)}>
-                      <KeyRound className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-7 px-2 text-red-500 hover:text-red-400 hover:bg-red-500/10"
-                      title="Eliminar usuario" onClick={() => handleDelete(u)}>
-                      <Trash2 className="w-3.5 h-3.5" />
+                    {!u.deletedAt && (
+                      <>
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                          title="Resetear contraseña" onClick={() => handleResetPassword(u)}>
+                          <KeyRound className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                          title="Eliminar usuario (preserva historial)" onClick={() => handleDelete(u)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </>
+                    )}
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-red-700 hover:text-red-600 hover:bg-red-700/10"
+                      title="Borrado permanente (libera el email, pierde historial)" onClick={() => handlePermanentDelete(u)}>
+                      <XOctagon className="w-3.5 h-3.5" />
                     </Button>
                   </div>
                 </td>
