@@ -229,7 +229,10 @@ export default function ClientsPage() {
       setClients(prev => prev.map(c => c.id === clientId ? { ...c, ...updated } : c))
       setSelected(prev => prev?.id === clientId ? { ...prev, ...updated } : prev)
       toast.success("Cliente actualizado")
-    } else toast.error("Error al actualizar")
+    } else {
+      const d = await r.json().catch(() => ({}))
+      toast.error(d.error || "Error al actualizar")
+    }
     setSavingClient(false)
   }
 

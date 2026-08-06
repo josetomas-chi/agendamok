@@ -22,7 +22,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   if (data.rut) {
     const conflict = await prisma.client.findFirst({
-      where: { businessId: id, rut: data.rut as string, NOT: { id: clientId } },
+      where: { businessId: id, rut: data.rut as string, deletedAt: null, NOT: { id: clientId } },
     })
     if (conflict) return NextResponse.json({ error: "Ya existe un cliente con ese RUT" }, { status: 409 })
   }
@@ -44,8 +44,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
   }
 
-  const client = await prisma.client.update({ where: { id: clientId, businessId: id }, data })
-  return NextResponse.json({ client })
+  try {
+    const client = await prisma.client.update({ where: { id: clientId, businessId: id }, data })
+    return NextResponse.json({ client })
+  } catch (e) {
+    console.error("Error updating client:", e)
+    return NextResponse.json({ error: "No se pudo guardar el cliente" }, { status: 400 })
+  }
 }
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string; clientId: string }> }) {
