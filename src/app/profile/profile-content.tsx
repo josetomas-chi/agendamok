@@ -486,7 +486,7 @@ export default function ProfileContent() {
   )
 
   const {
-    user, businessBenefits, activeMemberships,
+    user, businessBenefits, activeMemberships, creditBalance,
     upcomingAppointments, upcomingCourtBookings,
     courtBookings, appointments, tournaments, recentMatches, availableTournaments,
   } = data
@@ -591,6 +591,18 @@ export default function ProfileContent() {
               )}
             </div>
           </div>
+          {creditBalance > 0 && (
+            <div style={{
+              marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between",
+              background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)",
+              borderRadius: 10, padding: "8px 12px",
+            }}>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>Saldo a favor</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#4ade80" }}>
+                ${(creditBalance / 100).toLocaleString("es-CL")}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Nav */}
