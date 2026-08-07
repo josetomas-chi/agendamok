@@ -863,18 +863,24 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                         </div>
                         {/* Time slots */}
                         <div className="px-4 pb-4 grid grid-cols-4 gap-1.5">
-                          {court.slots.map(slot => (
-                            <button key={slot.time}
-                              onClick={() => {
-                                setSelectedCourt(court); setSelectedSlot(slot)
-                                setStep("form"); window.scrollTo({ top: 0, behavior: "smooth" })
-                              }}
-                              className="py-2.5 px-1 rounded-xl text-sm font-bold transition-all flex flex-col items-center gap-0.5 hover:scale-105"
-                              style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT, border: `1px solid rgba(56,189,248,0.2)` }}>
-                              <span>{slot.time}</span>
-                              {slot.price > 0 && <span className="text-[9px] font-normal opacity-70">${slot.price.toLocaleString("es-CL")}</span>}
-                            </button>
-                          ))}
+                          {court.slots.map(slot => {
+                            const [sh, sm] = slot.time.split(":").map(Number)
+                            const endMins = sh * 60 + sm + duration
+                            const endTime = `${String(Math.floor(endMins / 60)).padStart(2, "0")}:${String(endMins % 60).padStart(2, "0")}`
+                            return (
+                              <button key={slot.time}
+                                onClick={() => {
+                                  setSelectedCourt(court); setSelectedSlot(slot)
+                                  setStep("form"); window.scrollTo({ top: 0, behavior: "smooth" })
+                                }}
+                                className="py-2.5 px-1 rounded-xl text-sm font-bold transition-all flex flex-col items-center gap-0.5 hover:scale-105"
+                                style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT, border: `1px solid rgba(56,189,248,0.2)` }}>
+                                <span className="text-xs">{slot.time}</span>
+                                <span className="text-[10px] font-semibold opacity-80">→ {endTime}</span>
+                                {slot.price > 0 && <span className="text-[9px] font-normal opacity-60">${slot.price.toLocaleString("es-CL")}</span>}
+                              </button>
+                            )
+                          })}
                         </div>
                       </div>
                     ))}
