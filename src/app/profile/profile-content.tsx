@@ -599,7 +599,7 @@ export default function ProfileContent() {
             }}>
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>Saldo a favor</span>
               <span style={{ fontSize: 13, fontWeight: 800, color: "#4ade80" }}>
-                ${(creditBalance / 100).toLocaleString("es-CL")}
+                ${creditBalance.toLocaleString("es-CL")}
               </span>
             </div>
           )}
@@ -693,7 +693,7 @@ export default function ProfileContent() {
                       {b.businessName}
                     </p>
                     <p style={{ color: b.creditBalance > 0 ? "#4ade80" : "rgba(255,255,255,0.4)", fontWeight: 900, fontSize: 18, lineHeight: 1.1 }}>
-                      ${(b.creditBalance / 100).toLocaleString("es-CL")}
+                      ${b.creditBalance.toLocaleString("es-CL")}
                     </p>
                     <a href={`/wallet/${b.businessSlug}`}
                       style={{ fontSize: 10, color: ACCENT, fontWeight: 700, textDecoration: "none" }}>
@@ -1632,7 +1632,7 @@ export default function ProfileContent() {
                           <div>
                             <p style={{ color: MUTED, fontSize: 10 }}>Saldo</p>
                             <p style={{ color: "#16a34a", fontWeight: 800, fontSize: 18 }}>
-                              ${(b.creditBalance / 100).toLocaleString("es-CL")}
+                              ${b.creditBalance.toLocaleString("es-CL")}
                             </p>
                             <a
                               href={`/wallet/${b.businessSlug}`}
@@ -1729,7 +1729,7 @@ export default function ProfileContent() {
                               borderRadius: 12, padding: "12px", textAlign: "center",
                             }}>
                               <p style={{ fontSize: 26, fontWeight: 900, color: "#16a34a", lineHeight: 1 }}>
-                                ${(b.creditBalance / 100).toLocaleString("es-CL")}
+                                ${b.creditBalance.toLocaleString("es-CL")}
                               </p>
                               <p style={{ fontSize: 10, color: MUTED, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>Crédito</p>
                               <p style={{ fontSize: 10, color: "rgba(22,163,74,0.6)", marginTop: 3 }}>Uso automático</p>
