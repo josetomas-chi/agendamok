@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { businessCreatePayment } from "@/lib/flow"
 import { addMinutes, parseISO } from "date-fns"
 import { sendCourtBookingConfirmation } from "@/lib/email"
+import { chileLocalToUTC } from "@/lib/timezone"
 
 type Params = { params: Promise<{ slug: string }> }
 
@@ -70,7 +71,7 @@ export async function POST(req: Request, { params }: Params) {
     return NextResponse.json({ error: "Faltan campos requeridos" }, { status: 400 })
   }
 
-  const startTime = parseISO(`${date}T${time}`)
+  const startTime = chileLocalToUTC(parseISO(`${date}T${time}`))
   const endTime = addMinutes(startTime, duration)
 
   if (startTime <= new Date()) {

@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { addMinutes, parseISO } from "date-fns"
 import { sendCourtBookingConfirmation } from "@/lib/email"
 import { getCourtBookingPrice } from "@/lib/pricing"
+import { chileLocalToUTC } from "@/lib/timezone"
 
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
@@ -21,7 +22,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   })
   if (!business) return NextResponse.json({ error: "No encontrado" }, { status: 404 })
 
-  const startTime = parseISO(`${date}T${time}`)
+  const startTime = chileLocalToUTC(parseISO(`${date}T${time}`))
   const endTime = addMinutes(startTime, duration)
 
   if (startTime <= new Date()) {
