@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { hasBusinessAccess } from "@/lib/business-access"
 import { z } from "zod"
 import bcrypt from "bcryptjs"
 
@@ -19,6 +20,9 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
+  if (!(await hasBusinessAccess(id, session.user.id))) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  }
 
   const staff = await prisma.staffMember.findMany({
     where: { businessId: id, deletedAt: null },
@@ -37,6 +41,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
+  if (!(await hasBusinessAccess(id, session.user.id))) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  }
 
   try {
     const body = await req.json()

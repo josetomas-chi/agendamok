@@ -1,17 +1,16 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { hasBusinessAccess } from "@/lib/business-access"
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string; clientId: string }> }) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
   const { id, clientId } = await params
-  const [owner, member] = await Promise.all([
-    prisma.business.findFirst({ where: { id, ownerId: session.user.id }, select: { id: true } }),
-    prisma.businessMember.findFirst({ where: { businessId: id, userId: session.user.id, acceptedAt: { not: null } }, select: { id: true } }),
-  ])
-  if (!owner && !member) return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  if (!(await hasBusinessAccess(id, session.user.id))) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  }
 
   const body = await req.json()
   const allowed = ["name", "lastName", "rut", "email", "phone", "gender", "role", "notes", "tags", "creditBalance", "loyaltyPoints", "segment", "allowTransfer"]
@@ -60,11 +59,9 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id, clientId } = await params
-  const [owner, member] = await Promise.all([
-    prisma.business.findFirst({ where: { id, ownerId: session.user.id }, select: { id: true } }),
-    prisma.businessMember.findFirst({ where: { businessId: id, userId: session.user.id, acceptedAt: { not: null } }, select: { id: true } }),
-  ])
-  if (!owner && !member) return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  if (!(await hasBusinessAccess(id, session.user.id))) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  }
   await prisma.client.update({ where: { id: clientId, businessId: id }, data: { deletedAt: new Date() } })
   return NextResponse.json({ success: true })
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { hasBusinessAccess } from "@/lib/business-access"
 import { z } from "zod"
 import { addMinutes, format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -26,6 +27,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
+  if (!(await hasBusinessAccess(id, session.user.id))) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  }
   const { searchParams } = new URL(req.url)
 
   const from = searchParams.get("from")
@@ -59,6 +63,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
+  if (!(await hasBusinessAccess(id, session.user.id))) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  }
 
   try {
     const body = await req.json()
