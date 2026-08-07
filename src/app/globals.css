@@ -140,6 +140,22 @@
   [data-slot="card"] {
     box-shadow: 0 2px 8px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.07);
   }
+  /* Chrome/Edge autofill paints its own yellow bg + dark text over any input
+     style, making text unreadable on our dark inputs. Neutralize it so the
+     input keeps whatever color it already had. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-text-fill-color: inherit !important;
+    caret-color: inherit;
+    transition: background-color 9999s ease-in-out 0s;
+  }
 }
 
 @layer utilities {
