@@ -1178,6 +1178,14 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
         body: JSON.stringify({ amount }),
       })
     }
+    // Notificar al cliente por email
+    if (booking.client?.email) {
+      await fetch(`/api/businesses/${businessId}/court-bookings/${booking.id}/cancel-notify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refundResult: annulType === "credit" ? "credited" : "refunded", amount }),
+      })
+    }
     toast.success(annulType === "credit" ? `Reserva anulada — $${amount.toLocaleString("es-CL")} de crédito agregado al cliente` : "Reserva anulada — devolución registrada")
     setAnnulModal(false)
     onSaved()
