@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { ChevronDown, X, UserPlus, Plus, Trash2 } from "lucide-react"
+import { normalizeText } from "@/lib/normalize-text"
 
 const TIME_SLOTS: string[] = []
 for (let h = 7; h <= 23; h++) {
@@ -77,17 +78,17 @@ function ClientCombobox({ clients, value, onSelect }: {
     return () => document.removeEventListener("mousedown", onClick)
   }, [])
 
-  const q = query.trim().toLowerCase()
+  const q = normalizeText(query.trim())
   const filtered = q.length > 0
     ? clients.filter(c => {
-        const fullName = [c.name, c.lastName].filter(Boolean).join(" ").toLowerCase()
+        const fullName = normalizeText([c.name, c.lastName].filter(Boolean).join(" "))
         return fullName.includes(q) ||
-          (c.email ?? "").toLowerCase().includes(q) ||
+          normalizeText(c.email ?? "").includes(q) ||
           (c.phone ?? "").replace(/\s/g, "").includes(q.replace(/\s/g, "")) ||
           (c.rut ?? "").replace(/[.\-]/g, "").includes(q.replace(/[.\-]/g, ""))
       })
     : clients
-  const exactMatch = clients.find(c => [c.name, c.lastName].filter(Boolean).join(" ").toLowerCase() === q)
+  const exactMatch = clients.find(c => normalizeText([c.name, c.lastName].filter(Boolean).join(" ")) === q)
 
   function startCreating() { setOpen(false); setCreating({ name: query.trim(), email: "", phone: "", rut: "" }) }
   function confirmCreate() {

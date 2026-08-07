@@ -7,6 +7,7 @@ import { es } from "date-fns/locale"
 import { toast } from "sonner"
 import NewBookingModal from "./_components/new-booking-modal"
 import CoachesTab from "./_components/coaches-tab"
+import { normalizeText } from "@/lib/normalize-text"
 
 function formatRut(value: string) {
   const clean = value.replace(/[^0-9kK]/g, "").toUpperCase()
@@ -914,17 +915,17 @@ function ClientCombobox({ clients, value, onSelect }: {
     document.addEventListener("mousedown", onClick)
     return () => document.removeEventListener("mousedown", onClick)
   }, [])
-  const q = query.trim().toLowerCase()
+  const q = normalizeText(query.trim())
   const filtered = q.length > 0
     ? clients.filter(c => {
-        const fullName = [c.name, c.lastName].filter(Boolean).join(" ").toLowerCase()
+        const fullName = normalizeText([c.name, c.lastName].filter(Boolean).join(" "))
         return fullName.includes(q) ||
-          (c.email ?? "").toLowerCase().includes(q) ||
+          normalizeText(c.email ?? "").includes(q) ||
           (c.phone ?? "").replace(/\s/g, "").includes(q.replace(/\s/g, "")) ||
           (c.rut ?? "").replace(/[.\-]/g, "").includes(q.replace(/[.\-]/g, ""))
       })
     : clients
-  const exactMatch = clients.find(c => [c.name, c.lastName].filter(Boolean).join(" ").toLowerCase() === q)
+  const exactMatch = clients.find(c => normalizeText([c.name, c.lastName].filter(Boolean).join(" ")) === q)
 
   function startCreating() {
     setOpen(false)

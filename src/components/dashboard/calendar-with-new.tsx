@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "sonner"
+import { normalizeText } from "@/lib/normalize-text"
 
 type Appointment = {
   id: string; startTime: Date | string; endTime: Date | string; status: string
@@ -45,7 +46,7 @@ function ClientCombobox({ clients, value, onChange }: {
 
   const selected = clients.find(c => c.id === value)
   const filtered = query.trim()
-    ? clients.filter(c => c.name.toLowerCase().includes(query.toLowerCase()))
+    ? clients.filter(c => normalizeText(c.name).includes(normalizeText(query)))
     : clients
 
   useEffect(() => {

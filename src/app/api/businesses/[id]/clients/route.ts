@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { normalizeText } from "@/lib/normalize-text"
 import { z } from "zod"
 
 const schema = z.object({
@@ -38,37 +39,51 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const limit = 100
   const skip = (page - 1) * limit
 
-  const where = {
+  const baseWhere = {
     businessId: id,
     deletedAt: null,
-    ...(search && {
-      OR: [
-        { name: { contains: search, mode: "insensitive" as const } },
-        { lastName: { contains: search, mode: "insensitive" as const } },
-        { email: { contains: search, mode: "insensitive" as const } },
-        { phone: { contains: search } },
-        { rut: { contains: search } },
-      ],
-    }),
     ...(segment && { segment: segment as never }),
+  }
+
+  const include = {
+    _count: { select: { appointments: { where: { deletedAt: null } }, courtBookings: { where: { deletedAt: null } } } },
+    appointments: {
+      where: { deletedAt: null, status: "COMPLETED" as const },
+      select: { payment: { select: { amount: true } } },
+      take: 100,
+    },
+  }
+
+  if (search) {
+    // Prisma's `contains` is accent-sensitive (e.g. "Tomas" won't match "Tomás"),
+    // so we filter/paginate in JS against a normalized comparison instead.
+    const normalizedSearch = normalizeText(search)
+    const candidates = await prisma.client.findMany({
+      where: baseWhere,
+      include,
+      orderBy: [{ lastName: "asc" }, { name: "asc" }],
+    })
+    const matched = candidates.filter((c: { name: string; lastName: string | null; email: string | null; phone: string | null; rut: string | null }) =>
+      normalizeText(c.name).includes(normalizedSearch) ||
+      (c.lastName && normalizeText(c.lastName).includes(normalizedSearch)) ||
+      (c.email && normalizeText(c.email).includes(normalizedSearch)) ||
+      (c.phone && c.phone.includes(search)) ||
+      (c.rut && c.rut.includes(search))
+    )
+    const total = matched.length
+    const clients = matched.slice(skip, skip + limit)
+    return NextResponse.json({ clients, total, page, pages: Math.ceil(total / limit) })
   }
 
   const [clients, total] = await Promise.all([
     prisma.client.findMany({
-      where,
-      include: {
-        _count: { select: { appointments: { where: { deletedAt: null } }, courtBookings: { where: { deletedAt: null } } } },
-        appointments: {
-          where: { deletedAt: null, status: "COMPLETED" },
-          select: { payment: { select: { amount: true } } },
-          take: 100,
-        },
-      },
+      where: baseWhere,
+      include,
       orderBy: [{ lastName: "asc" }, { name: "asc" }],
       skip,
       take: limit,
     }),
-    prisma.client.count({ where }),
+    prisma.client.count({ where: baseWhere }),
   ])
 
   return NextResponse.json({ clients, total, page, pages: Math.ceil(total / limit) })
