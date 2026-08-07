@@ -1441,8 +1441,8 @@ function SettingsContent() {
             </CardContent>
           </Card>
 
-          {/* WhatsApp Phone Number ID */}
-          <Card>
+          {/* WhatsApp Phone Number ID — solo para negocios con add-on activo */}
+          {waStatus === "ACTIVE" && <Card>
             <CardHeader>
               <CardTitle className="text-base">WhatsApp — Número de teléfono</CardTitle>
               <CardDescription>Phone Number ID de Meta para enviar recordatorios y confirmaciones por WhatsApp.</CardDescription>
@@ -1460,7 +1460,7 @@ function SettingsContent() {
               </div>
               <Button size="sm" onClick={handleSave} disabled={saving}>{saving ? "Guardando..." : "Guardar"}</Button>
             </CardContent>
-          </Card>
+          </Card>}
 
           {/* WhatsApp Bot */}
           <Card>
