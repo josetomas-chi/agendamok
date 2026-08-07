@@ -2,11 +2,15 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { isClinicalCategory } from "@/lib/clinical"
+import { hasBusinessAccess } from "@/lib/business-access"
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
+  if (!(await hasBusinessAccess(id, session.user.id))) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  }
 
   const business = await prisma.business.findUnique({
     where: { id },
@@ -20,6 +24,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
+  if (!(await hasBusinessAccess(id, session.user.id))) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  }
 
   const body = await req.json()
 
