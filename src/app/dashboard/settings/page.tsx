@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle, CheckCircle2, AlertCircle, Loader2, Gift, CalendarX2, ImagePlus, X, Users, UserPlus, Mail } from "lucide-react"
 
-type Business = { id: string; name: string; slug: string; category: string; sports: string[]; businessType: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean; notifConfirmation: boolean; notifReminder24h: boolean; notifReminder1h: boolean; notifNewBooking: boolean; notifCancellation: boolean; googleMapsUrl: string | null }
+type Business = { id: string; name: string; slug: string; category: string; sports: string[]; businessType: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean; notifConfirmation: boolean; notifReminder24h: boolean; notifReminder1h: boolean; notifNewBooking: boolean; notifCancellation: boolean; googleMapsUrl: string | null; requireClientRut: boolean }
 type PaymentSettings = { onlinePaymentsEnabled: boolean; hasCredentials: boolean; mpConnected: boolean; mpPublicKey?: string }
 type Subscription = { plan: string; status: string; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean; flowCustomerId: string | null; trialEndsAt: string | null; isCourtesy: boolean }
 
@@ -25,6 +25,7 @@ function SettingsContent() {
   const [clinicalEnabled, setClinicalEnabled] = useState(false)
   const [cancellationHours, setCancellationHours] = useState<string>("")
   const [dailySummary, setDailySummary] = useState(false)
+  const [requireClientRut, setRequireClientRut] = useState(false)
   const [notifToggles, setNotifToggles] = useState({ notifConfirmation: true, notifReminder24h: true, notifReminder1h: true, notifNewBooking: true, notifCancellation: true })
   const [savingNotif, setSavingNotif] = useState(false)
 
@@ -129,6 +130,7 @@ function SettingsContent() {
       setClinicalEnabled(biz.business.clinicalRecordEnabled ?? false)
       setCancellationHours(biz.business.cancellationHoursNotice?.toString() ?? "")
       setDailySummary(biz.business.dailySummaryEnabled ?? false)
+      setRequireClientRut(biz.business.requireClientRut ?? false)
       setNotifToggles({
         notifConfirmation: biz.business.notifConfirmation ?? true,
         notifReminder24h:  biz.business.notifReminder24h  ?? true,
@@ -978,6 +980,25 @@ function SettingsContent() {
             </CardContent>
           </Card>
 
+          {/* Clients */}
+          <Card>
+            <CardHeader><CardTitle>Clientes</CardTitle><CardDescription>Reglas al crear un cliente nuevo</CardDescription></CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="flex-1 pr-4">
+                  <p className="font-medium text-sm">Exigir RUT al crear clientes</p>
+                  <p className="text-xs text-muted-foreground">Evita duplicados por nombre — el RUT es único por cliente en tu negocio</p>
+                </div>
+                <button
+                  onClick={() => setRequireClientRut(v => !v)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${requireClientRut ? "bg-sky-500" : "bg-muted"}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${requireClientRut ? "translate-x-6" : "translate-x-1"}`} />
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+
           <Button
             onClick={async () => {
               if (!business) return
@@ -989,6 +1010,7 @@ function SettingsContent() {
                   body: JSON.stringify({
                     dailySummaryEnabled: dailySummary,
                     cancellationHoursNotice: cancellationHours ? parseInt(cancellationHours) : null,
+                    requireClientRut,
                     ...notifToggles,
                   }),
                 })

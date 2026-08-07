@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { normalizeText } from "@/lib/normalize-text"
+import { hasBusinessAccess } from "@/lib/business-access"
 import { z } from "zod"
 
 const schema = z.object({
@@ -19,18 +20,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
-
-  const isMember = await prisma.business.findFirst({
-    where: {
-      id,
-      OR: [
-        { ownerId: session.user.id },
-        { members: { some: { userId: session.user.id } } },
-      ],
-    },
-    select: { id: true },
-  })
-  if (!isMember) return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  if (!(await hasBusinessAccess(id, session.user.id))) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  }
 
   const { searchParams } = new URL(req.url)
   const search = searchParams.get("search") || ""
@@ -93,22 +85,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
-
-  const isMember = await prisma.business.findFirst({
-    where: {
-      id,
-      OR: [
-        { ownerId: session.user.id },
-        { members: { some: { userId: session.user.id } } },
-      ],
-    },
-    select: { id: true },
-  })
-  if (!isMember) return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  if (!(await hasBusinessAccess(id, session.user.id))) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  }
 
   try {
     const body = await req.json()
     const data = schema.parse(body)
+
+    const business = await prisma.business.findUnique({ where: { id }, select: { requireClientRut: true, accessMode: true } })
+    if (business?.requireClientRut && !data.rut) {
+      return NextResponse.json({ error: "El RUT es obligatorio para crear un cliente en este negocio" }, { status: 400 })
+    }
 
     if (data.rut) {
       const existing = await prisma.client.findUnique({
@@ -136,7 +124,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     // If business is closed-access and client has RUT, auto-approve in access list
     if (data.rut) {
-      const business = await prisma.business.findUnique({ where: { id }, select: { accessMode: true } })
       if (business?.accessMode === "CLOSED") {
         await prisma.businessAccessRequest.upsert({
           where: { businessId_rut: { businessId: id, rut: data.rut } },

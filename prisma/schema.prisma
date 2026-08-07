@@ -275,6 +275,7 @@ model Business {
   metaPhoneNumberId           String?
   googleMapsUrl               String?
   accessMode                  String    @default("OPEN") // OPEN | CLOSED
+  requireClientRut            Boolean   @default(false)
   createdAt                   DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   deletedAt             DateTime?
