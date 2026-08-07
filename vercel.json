@@ -15,10 +15,6 @@
     {
       "path": "/api/cron/survey-emails?secret=agendamok-cron-2026",
       "schedule": "0 15 * * *"
-    },
-    {
-      "path": "/api/cron/reminders-1h?secret=agendamok-cron-2026",
-      "schedule": "0 * * * *"
     }
   ]
 }
