@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { sendCancellationRefundEmail } from "@/lib/email"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import { utcToChileLocal } from "@/lib/timezone"
 
 type Params = { params: Promise<{ id: string; bookingId: string }> }
 
@@ -30,8 +31,8 @@ export async function POST(req: Request, { params }: Params) {
     clientEmail: booking.client.email,
     businessName: booking.business?.name ?? "el club",
     bookingName: `Cancha ${booking.court.name}`,
-    date: format(new Date(booking.startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
-    time: format(new Date(booking.startTime), "HH:mm"),
+    date: format(utcToChileLocal(new Date(booking.startTime)), "EEEE d 'de' MMMM yyyy", { locale: es }),
+    time: format(utcToChileLocal(new Date(booking.startTime)), "HH:mm"),
     amount: amount ?? 0,
     refundResult: refundResult ?? "none",
   })

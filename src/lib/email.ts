@@ -1,4 +1,5 @@
 import { Resend } from "resend"
+import { utcToChileLocal } from "@/lib/timezone"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = process.env.RESEND_FROM_EMAIL ? `AgendaMok <${process.env.RESEND_FROM_EMAIL}>` : "AgendaMok <noreply@agendamok.cl>"
@@ -478,13 +479,13 @@ export async function sendQuoteEmail({
 // ─── Reservas de cancha (Club Deportivo) ────────────────────────────────────
 
 function fmtCourtDate(iso: string) {
-  const d = new Date(iso)
+  const d = utcToChileLocal(new Date(iso))
   const dias = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"]
   const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]
   return `${dias[d.getUTCDay()]} ${d.getUTCDate()} de ${meses[d.getUTCMonth()]} ${d.getUTCFullYear()}`
 }
 function fmtCourtTime(iso: string) {
-  const d = new Date(iso)
+  const d = utcToChileLocal(new Date(iso))
   return `${String(d.getUTCHours()).padStart(2,"0")}:${String(d.getUTCMinutes()).padStart(2,"0")}`
 }
 

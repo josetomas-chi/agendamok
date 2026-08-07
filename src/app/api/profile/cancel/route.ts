@@ -6,6 +6,7 @@ import { refundMpPayment } from "@/lib/mercadopago"
 import { sendCancellationRefundEmail } from "@/lib/email"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import { utcToChileLocal } from "@/lib/timezone"
 
 type RefundChoice = "refund" | "credit"
 
@@ -143,9 +144,9 @@ export async function POST(req: Request) {
         clientName: userRecord.name ?? "Cliente",
         clientEmail: userRecord.email,
         businessName: booking.business.name ?? "el club",
-        bookingName: `Cancha — ${format(new Date(booking.startTime), "EEEE d 'de' MMMM", { locale: es })}`,
-        date: format(new Date(booking.startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
-        time: format(new Date(booking.startTime), "HH:mm"),
+        bookingName: `Cancha — ${format(utcToChileLocal(new Date(booking.startTime)), "EEEE d 'de' MMMM", { locale: es })}`,
+        date: format(utcToChileLocal(new Date(booking.startTime)), "EEEE d 'de' MMMM yyyy", { locale: es }),
+        time: format(utcToChileLocal(new Date(booking.startTime)), "HH:mm"),
         amount: paidAmount,
         refundResult,
         bookingUrl: `${APP_URL}/book/${booking.business.slug}`,
