@@ -47,23 +47,35 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   }
 
   if (search) {
-    // Prisma's `contains` is accent-sensitive (e.g. "Tomas" won't match "Tomás"),
-    // so we filter/paginate in JS against a normalized comparison instead.
+    // Prisma's `contains` is accent-sensitive (e.g. "Tomas" won't match "Tomás"), so we
+    // match in JS — but only over lightweight scalar fields, not the full include (which
+    // has joins/aggregates per row and was the actual cost on businesses with many clients).
+    // The heavier `include` is only fetched afterwards, for the paginated result page.
     const normalizedSearch = normalizeText(search)
     const candidates = await prisma.client.findMany({
       where: baseWhere,
-      include,
+      select: { id: true, name: true, lastName: true, email: true, phone: true, rut: true },
       orderBy: [{ lastName: "asc" }, { name: "asc" }],
     })
-    const matched = candidates.filter((c: { name: string; lastName: string | null; email: string | null; phone: string | null; rut: string | null }) =>
-      normalizeText(c.name).includes(normalizedSearch) ||
-      (c.lastName && normalizeText(c.lastName).includes(normalizedSearch)) ||
-      (c.email && normalizeText(c.email).includes(normalizedSearch)) ||
-      (c.phone && c.phone.includes(search)) ||
-      (c.rut && c.rut.includes(search))
-    )
-    const total = matched.length
-    const clients = matched.slice(skip, skip + limit)
+    const matchedIds = candidates
+      .filter((c: { name: string; lastName: string | null; email: string | null; phone: string | null; rut: string | null }) =>
+        normalizeText(c.name).includes(normalizedSearch) ||
+        (c.lastName && normalizeText(c.lastName).includes(normalizedSearch)) ||
+        (c.email && normalizeText(c.email).includes(normalizedSearch)) ||
+        (c.phone && c.phone.includes(search)) ||
+        (c.rut && c.rut.includes(search))
+      )
+      .map((c: { id: string }) => c.id)
+
+    const total = matchedIds.length
+    const pageIds = matchedIds.slice(skip, skip + limit)
+    const pageClients = pageIds.length
+      ? await prisma.client.findMany({ where: { id: { in: pageIds } }, include })
+      : []
+    // Prisma doesn't preserve `in` order, so re-sort to match the paginated order above
+    const order = new Map<string, number>(pageIds.map((id: string, i: number) => [id, i]))
+    const clients = pageClients.sort((a: { id: string }, b: { id: string }) => order.get(a.id)! - order.get(b.id)!)
+
     return NextResponse.json({ clients, total, page, pages: Math.ceil(total / limit) })
   }
 
