@@ -13,14 +13,14 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle, CheckCircle2, AlertCircle, Loader2, Gift, CalendarX2, ImagePlus, X, Users, UserPlus, Mail } from "lucide-react"
 
-type Business = { id: string; name: string; slug: string; category: string; sports: string[]; businessType: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean; notifConfirmation: boolean; notifReminder24h: boolean; notifReminder1h: boolean; notifNewBooking: boolean; notifCancellation: boolean; googleMapsUrl: string | null; requireClientRut: boolean }
+type Business = { id: string; name: string; slug: string; category: string; sports: string[]; businessType: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean; notifConfirmation: boolean; notifReminder24h: boolean; notifReminder1h: boolean; notifNewBooking: boolean; notifCancellation: boolean; googleMapsUrl: string | null; requireClientRut: boolean; metaPhoneNumberId: string | null }
 type PaymentSettings = { onlinePaymentsEnabled: boolean; hasCredentials: boolean; mpConnected: boolean; mpPublicKey?: string }
 type Subscription = { plan: string; status: string; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean; flowCustomerId: string | null; trialEndsAt: string | null; isCourtesy: boolean }
 
 function SettingsContent() {
   const [business, setBusiness] = useState<Business | null>(null)
   const [subscription, setSubscription] = useState<Subscription | null>(null)
-  const [form, setForm] = useState({ name: "", slug: "", category: "", description: "", website: "", phone: "", address: "", city: "", timezone: "", currency: "", googleMapsUrl: "" })
+  const [form, setForm] = useState({ name: "", slug: "", category: "", description: "", website: "", phone: "", address: "", city: "", timezone: "", currency: "", googleMapsUrl: "", metaPhoneNumberId: "" })
   const [sports, setSports] = useState<string[]>([])
   const [clinicalEnabled, setClinicalEnabled] = useState(false)
   const [cancellationHours, setCancellationHours] = useState<string>("")
@@ -125,7 +125,7 @@ function SettingsContent() {
       const biz = await r.json()
       setBusiness(biz.business)
       setSubscription(biz.subscription || null)
-      setForm({ name: biz.business.name, slug: biz.business.slug || "", category: biz.business.category || "", description: biz.business.description || "", website: biz.business.website || "", phone: biz.business.phone || "", address: biz.business.address || "", city: biz.business.city || "", timezone: biz.business.timezone, currency: biz.business.currency, googleMapsUrl: biz.business.googleMapsUrl || "" })
+      setForm({ name: biz.business.name, slug: biz.business.slug || "", category: biz.business.category || "", description: biz.business.description || "", website: biz.business.website || "", phone: biz.business.phone || "", address: biz.business.address || "", city: biz.business.city || "", timezone: biz.business.timezone, currency: biz.business.currency, googleMapsUrl: biz.business.googleMapsUrl || "", metaPhoneNumberId: biz.business.metaPhoneNumberId || "" })
       setSports(biz.business.sports || [])
       setClinicalEnabled(biz.business.clinicalRecordEnabled ?? false)
       setCancellationHours(biz.business.cancellationHoursNotice?.toString() ?? "")
@@ -1438,6 +1438,27 @@ function SettingsContent() {
                   </Button>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* WhatsApp Phone Number ID */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">WhatsApp — Número de teléfono</CardTitle>
+              <CardDescription>Phone Number ID de Meta para enviar recordatorios y confirmaciones por WhatsApp.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>Phone Number ID</Label>
+                <Input
+                  value={form.metaPhoneNumberId}
+                  onChange={e => setForm(f => ({ ...f, metaPhoneNumberId: e.target.value }))}
+                  placeholder="ej: 12349207030408​16"
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground">Lo encuentras en Meta Developers → WhatsApp → Configuración de la API.</p>
+              </div>
+              <Button size="sm" onClick={handleSave} disabled={saving}>{saving ? "Guardando..." : "Guardar"}</Button>
             </CardContent>
           </Card>
 
