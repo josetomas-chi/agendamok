@@ -43,7 +43,6 @@ export async function GET(req: Request) {
         to: appt.client.phone,
         clientName: appt.client.name,
         businessName: appt.business.name,
-        serviceName: appt.service.name,
         date: format(local, "EEEE d 'de' MMMM", { locale: es }),
         time: format(local, "HH:mm"),
       })

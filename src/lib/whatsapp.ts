@@ -63,33 +63,31 @@ async function sendTemplate(phoneNumberId: string, to: string, templateName: str
 // Template: "Hola {{1}} 👋 Te recordamos que mañana tienes un turno en *{{2}}*: 📋 {{3}} · 📅 {{4}} · 🕐 {{5}} hrs"
 
 export async function sendWhatsAppReminder24h({
-  phoneNumberId, to, clientName, businessName, serviceName, date, time,
+  phoneNumberId, to, clientName, businessName, date, time,
 }: {
   phoneNumberId: string
   to: string
   clientName: string
   businessName: string
-  serviceName: string
   date: string
   time: string
 }) {
-  await sendTemplate(phoneNumberId, to, "recordatorio_24h", [clientName, businessName, serviceName, date, time])
+  await sendTemplate(phoneNumberId, to, "recordatorio_turno_24h", [clientName, businessName, date, time])
 }
 
 // ─── Recordatorio 1h ─────────────────────────────────────────────────────────
 // Template: "Hola {{1}} ⏰ Tu turno en *{{2}}* es en 1 hora: 📋 {{3}} a las {{4}} hrs. ¡Te esperamos!"
 
 export async function sendWhatsAppReminder1h({
-  phoneNumberId, to, clientName, businessName, serviceName, time,
+  phoneNumberId, to, clientName, businessName, time,
 }: {
   phoneNumberId: string
   to: string
   clientName: string
   businessName: string
-  serviceName: string
   time: string
 }) {
-  await sendTemplate(phoneNumberId, to, "recordatorio_1h", [clientName, businessName, serviceName, time])
+  await sendTemplate(phoneNumberId, to, "recordatorio_turno_1h", [clientName, businessName, time])
 }
 
 // ─── Reactivación ────────────────────────────────────────────────────────────
