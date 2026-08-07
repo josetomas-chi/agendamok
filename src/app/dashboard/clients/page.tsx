@@ -628,6 +628,36 @@ export default function ClientsPage() {
                 {selected.tags.map(t => <Badge key={t} variant="secondary" className="gap-1"><Tag className="w-3 h-3" />{t}</Badge>)}
               </div>
             )}
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-1 border-t border-white/[0.06]">
+              {selected.email && (
+                <button
+                  onClick={async () => {
+                    const r = await fetch(`/api/businesses/${businessId}/clients/${selected.id}/reset-password`, { method: "POST" })
+                    if (r.ok) toast.success("Email de restablecimiento enviado")
+                    else { const d = await r.json().catch(() => ({})); toast.error(d.error || "Error al enviar") }
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg bg-amber-500/10 text-amber-300 text-xs font-medium hover:bg-amber-500/20 border border-amber-400/20 transition-colors"
+                >
+                  <KeyRound className="w-3.5 h-3.5" /> Resetear contraseña
+                </button>
+              )}
+              <button
+                onClick={async () => {
+                  if (!confirm(`¿Eliminar a ${selected.name}? Esta acción no se puede deshacer.`)) return
+                  const r = await fetch(`/api/businesses/${businessId}/clients/${selected.id}`, { method: "DELETE" })
+                  if (r.ok) {
+                    toast.success("Cliente eliminado")
+                    setClients(prev => prev.filter(c => c.id !== selected.id))
+                    setSelected(null)
+                  } else { const d = await r.json().catch(() => ({})); toast.error(d.error || "Error al eliminar") }
+                }}
+                className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg bg-red-500/10 text-red-400 text-xs font-medium hover:bg-red-500/20 border border-red-400/20 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Eliminar
+              </button>
+            </div>
           </DialogContent>
         </Dialog>
       )}
