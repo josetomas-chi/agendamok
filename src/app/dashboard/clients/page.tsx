@@ -94,7 +94,9 @@ export default function ClientsPage() {
     })
   }, [businessId])
 
+  const loadClientsRequestId = useRef(0)
   const loadClients = useCallback(async (bid: string, q: string, seg: string, pg = 1) => {
+    const requestId = ++loadClientsRequestId.current
     setLoading(true)
     const params = new URLSearchParams()
     if (q) params.set("search", q)
@@ -102,6 +104,8 @@ export default function ClientsPage() {
     params.set("page", String(pg))
     const r = await fetch(`/api/businesses/${bid}/clients?${params}`)
     const d = await r.json()
+    // Ignore stale responses from an older, slower request that resolves after a newer one
+    if (requestId !== loadClientsRequestId.current) return
     setClients(d.clients || [])
     setClientsTotal(d.total ?? 0)
     setClientsPage(d.page ?? 1)
