@@ -186,6 +186,10 @@ function ClientCombobox({ clients, value, onSelect }: {
   )
 }
 
+function localToIso(date: string, time: string) {
+  return new Date(`${date}T${time}`).toISOString()
+}
+
 type PricingRule = { id: string; name: string; days: number[]; startTime: string; endTime: string; price: number; fixedSlots?: string[]; paymentPlayers?: number }
 type Court = { id: string; name: string; sport: string | null; color: string; isActive?: boolean; pricingRules?: PricingRule[] }
 
@@ -585,8 +589,8 @@ export default function NewBookingModal({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               courtId: classCourtId, clientId, coachId: selectedCoachId,
-              startTime: `${form.date}T${form.startTime}:00`,
-              endTime: `${form.date}T${resolvedEnd}:00`,
+              startTime: localToIso(form.date, `${form.startTime}:00`),
+              endTime: localToIso(form.date, `${resolvedEnd}:00`),
               notes: form.notes || null,
             }),
           })
@@ -608,8 +612,8 @@ export default function NewBookingModal({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             courtId: form.courtId, clientId,
-            startTime: `${form.date}T${form.startTime}:00`,
-            endTime: `${form.date}T${resolvedEnd}:00`,
+            startTime: localToIso(form.date, `${form.startTime}:00`),
+            endTime: localToIso(form.date, `${resolvedEnd}:00`),
             notes: form.notes || null,
           }),
         })
@@ -687,8 +691,8 @@ export default function NewBookingModal({
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 courtId, clientId,
-                startTime: `${bookingDate}T${slot.startTime}:00`,
-                endTime: `${bookingDate}T${slot.endTime}:00`,
+                startTime: localToIso(bookingDate, `${slot.startTime}:00`),
+                endTime: localToIso(bookingDate, `${slot.endTime}:00`),
                 notes: form.notes || null,
               }),
             })

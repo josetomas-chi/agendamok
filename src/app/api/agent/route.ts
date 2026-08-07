@@ -331,7 +331,7 @@ async function runCourtTool(name: string, input: Record<string, string | number>
     if (name === "book_court") {
       const { businessId, courtId, date, time, duration, price, clientName, clientEmail, clientPhone } = input as Record<string, string>
 
-      const startTime = parseISO(`${date}T${time}`)
+      const startTime = chileLocalToUTC(parseISO(`${date}T${time}`))
       const endTime = addMinutes(startTime, Number(duration || 60))
 
       const conflict = await prisma.courtBooking.findFirst({

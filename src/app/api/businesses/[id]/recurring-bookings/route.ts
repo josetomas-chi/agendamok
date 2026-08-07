@@ -6,6 +6,7 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { sendRecurringBookingConfirmation } from "@/lib/email"
 import { calcCourtPrice } from "@/lib/pricing"
+import { chileLocalToUTC } from "@/lib/timezone"
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -78,9 +79,10 @@ export async function POST(req: Request, { params }: Params) {
       continue
     }
 
-    const start = new Date(
+    const naiveLocal = new Date(
       Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth(), cursor.getUTCDate(), startHour, startMinute, 0),
     )
+    const start = chileLocalToUTC(naiveLocal)
     const end = new Date(start.getTime() + durationMinutes * 60 * 1000)
 
     // Validar solapamiento

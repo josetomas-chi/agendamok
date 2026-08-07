@@ -51,12 +51,10 @@ function timeToMinutes(t: string) {
 // so we must always display in UTC to match what the user entered
 function utcTime(iso: string) {
   const d = new Date(iso)
-  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
 }
 function utcDate(iso: string, fmt: string) {
-  const d = new Date(iso)
-  const shifted = new Date(d.getTime() + d.getTimezoneOffset() * 60000)
-  return format(shifted, fmt, { locale: es })
+  return format(new Date(iso), fmt, { locale: es })
 }
 
 export default function ClubPageClient({ businessId: initialBusinessId, initialCourts = [] }: { businessId: string; initialCourts?: Court[] }) {
@@ -676,11 +674,11 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
       const slot = slots[idx] ?? null
       if (!slot) return
       const dateStr = format(selectedDateRef.current, "yyyy-MM-dd")
-      const startTime = `${dateStr}T${slot}:00`
+      const startTime = new Date(`${dateStr}T${slot}:00`).toISOString()
       const endMins = timeToMinutes(slot) + info.durationMins
       const endH = String(Math.floor(endMins / 60)).padStart(2, "0")
       const endM = String(endMins % 60).padStart(2, "0")
-      const endTime = `${dateStr}T${endH}:${endM}:00`
+      const endTime = new Date(`${dateStr}T${endH}:${endM}:00`).toISOString()
       const r = await fetch(`/api/businesses/${businessId}/court-bookings/${info.bookingId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -1095,8 +1093,8 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
     // Siempre actualiza esta sesión
     const r = await patch({
       clientId,
-      startTime: `${editForm.date}T${editForm.startTime}:00`,
-      endTime: `${editForm.date}T${editForm.endTime}:00`,
+      startTime: new Date(`${editForm.date}T${editForm.startTime}:00`).toISOString(),
+      endTime: new Date(`${editForm.date}T${editForm.endTime}:00`).toISOString(),
       notes: editForm.notes || null,
     })
     if (!r.ok) { const d = await r.json().catch(() => ({})); toast.error(d.error || "Error al guardar"); return }
