@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format, isToday, isTomorrow, differenceInDays } from "date-fns"
 import { es } from "date-fns/locale"
-import { utcToChileLocal } from "@/lib/timezone"
 import {
   User, Camera, Calendar, Trophy, LogOut, Clock,
   Loader2, Medal, Star, Zap, Gift, X, AlertCircle, CreditCard, ArrowLeft,
@@ -1026,7 +1025,7 @@ export default function ProfileContent() {
                     const badgeBg = isToday ? "rgba(34,197,94,0.15)" : isTomorrow ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.07)"
                     const badgeColor = isToday ? "#4ade80" : isTomorrow ? "#fbbf24" : "rgba(255,255,255,0.45)"
                     const badgeBorder = isToday ? "rgba(34,197,94,0.3)" : isTomorrow ? "rgba(251,191,36,0.25)" : "rgba(255,255,255,0.1)"
-                    const endTime = format(utcToChileLocal(new Date(b.endTime)), "HH:mm")
+                    const endTime = format(new Date(b.endTime), "HH:mm")
 
                     return (
                       <div key={b.id} style={{
@@ -1066,7 +1065,7 @@ export default function ProfileContent() {
                             <div style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.45)", fontSize: 12 }}>
                               <Clock style={{ width: 12, height: 12 }} />
                               <span style={{ fontWeight: 600 }}>
-                                {format(utcToChileLocal(new Date(b.startTime)), "HH:mm")} – {endTime} hrs
+                                {format(new Date(b.startTime), "HH:mm")} – {endTime} hrs
                               </span>
                             </div>
                             {b.type === "court" && Number(b.price) > 0 && (
@@ -1555,11 +1554,11 @@ export default function ProfileContent() {
                         <div style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 11, color: MUTED }}>
                           <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
                             <Calendar style={{ width: 10, height: 10 }} />
-                            {format(utcToChileLocal(new Date(b.startTime)), "d MMM yyyy", { locale: es })}
+                            {format(new Date(b.startTime), "d MMM yyyy", { locale: es })}
                           </span>
                           <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
                             <Clock style={{ width: 10, height: 10 }} />
-                            {format(utcToChileLocal(new Date(b.startTime)), "HH:mm")}
+                            {format(new Date(b.startTime), "HH:mm")}
                           </span>
                           {b.type === "court" && b.price > 0 && (
                             <span style={{ marginLeft: "auto", fontWeight: 700, color: TXT }}>
