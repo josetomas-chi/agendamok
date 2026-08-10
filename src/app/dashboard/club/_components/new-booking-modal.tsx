@@ -21,7 +21,7 @@ const BORDER = "rgba(201,168,76,0.2)"
 type BookingType = "simple" | "recurring" | "class"
 type TimeSlot = { id: string; startTime: string; endTime: string }
 
-function TimeSelect({ value, onChange, label, minTime }: { value: string; onChange: (v: string) => void; label: string; minTime?: string }) {
+function TimeSelect({ value, onChange, label, minTime, allowedRange }: { value: string; onChange: (v: string) => void; label: string; minTime?: string; allowedRange?: { start: string; end: string }[] }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -29,7 +29,10 @@ function TimeSelect({ value, onChange, label, minTime }: { value: string; onChan
     document.addEventListener("mousedown", onClick)
     return () => document.removeEventListener("mousedown", onClick)
   }, [])
-  const slots = minTime ? TIME_SLOTS.filter(t => t > minTime) : TIME_SLOTS
+  let slots = minTime ? TIME_SLOTS.filter(t => t > minTime) : TIME_SLOTS
+  if (allowedRange && allowedRange.length > 0) {
+    slots = slots.filter(t => allowedRange.some(r => t >= r.start && t < r.end))
+  }
   return (
     <div>
       <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1.5" style={{ color: "rgba(13,27,42,0.4)" }}>{label}</p>
@@ -403,6 +406,13 @@ export default function NewBookingModal({
     (!form.startTime || (form.startTime >= rule.startTime && form.startTime < rule.endTime))
   )
   const fixedSlots: string[] = activeRuleWithSlots?.fixedSlots ?? []
+
+  // Allowed time ranges from pricing rules for the selected court+day (for TimeSelect filtering)
+  const allowedStartRange = selectedDayOfWeek >= 0 && selectedCourt?.pricingRules?.length
+    ? selectedCourt.pricingRules
+        .filter(r => r.days.includes(selectedDayOfWeek))
+        .map(r => ({ start: r.startTime, end: r.endTime }))
+    : undefined
 
   function getSlotEnd(startStr: string): string {
     const idx = fixedSlots.indexOf(startStr)
@@ -839,8 +849,8 @@ export default function NewBookingModal({
                   })}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <TimeSelect label="Inicio" value={form.startTime} onChange={v => setForm(f => ({ ...f, startTime: v }))} />
-                  <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} minTime={form.startTime} />
+                  <TimeSelect label="Inicio" value={form.startTime} onChange={v => setForm(f => ({ ...f, startTime: v }))} allowedRange={allowedStartRange} />
+                  <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} minTime={form.startTime} allowedRange={allowedStartRange} />
                 </div>
               </div>
             )}
