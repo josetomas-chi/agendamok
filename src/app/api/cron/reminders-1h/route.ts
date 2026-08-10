@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     include: {
       client: { select: { name: true, phone: true, email: true } },
       service: { select: { name: true } },
-      business: { select: { name: true, metaPhoneNumberId: true } },
+      business: { select: { id: true, name: true, metaPhoneNumberId: true } },
     },
   })
 
@@ -46,6 +46,7 @@ export async function GET(req: Request) {
           clientName: appt.client.name,
           businessName: appt.business.name,
           time,
+          businessId: appt.business.id,
         })
       }
 

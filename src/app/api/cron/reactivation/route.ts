@@ -47,6 +47,7 @@ export async function GET(req: Request) {
           to: client.phone,
           clientName: client.name,
           businessName: biz.name,
+          businessId: biz.id,
         })
         // Mark as AT_RISK so we don't resend immediately
         await prisma.client.update({ where: { id: client.id }, data: { segment: "AT_RISK" } })
