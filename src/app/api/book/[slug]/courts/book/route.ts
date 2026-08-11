@@ -55,16 +55,22 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     ? await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true } })
     : null
 
+  // Resolve userId: from active session or by matching email to an existing User account
+  const userByEmail = !loggedUser
+    ? await prisma.user.findUnique({ where: { email: clientEmail }, select: { id: true } })
+    : null
+  const resolvedUserId = loggedUser?.id ?? userByEmail?.id ?? null
+
   let client = await prisma.client.findFirst({
     where: { businessId: business.id, email: clientEmail, deletedAt: null },
   })
   if (!client) {
     client = await prisma.client.create({
-      data: { businessId: business.id, name: clientName, email: clientEmail, phone: clientPhone || null, rut: clientRut || null, ...(loggedUser ? { userId: loggedUser.id } : {}) },
+      data: { businessId: business.id, name: clientName, email: clientEmail, phone: clientPhone || null, rut: clientRut || null, ...(resolvedUserId ? { userId: resolvedUserId } : {}) },
     })
   } else {
     const updates: Record<string, unknown> = {}
-    if (loggedUser && client.userId !== loggedUser.id) updates.userId = loggedUser.id
+    if (resolvedUserId && client.userId !== resolvedUserId) updates.userId = resolvedUserId
     if (clientRut && !client.rut) updates.rut = clientRut
     if (Object.keys(updates).length > 0)
       client = await prisma.client.update({ where: { id: client.id }, data: updates })
