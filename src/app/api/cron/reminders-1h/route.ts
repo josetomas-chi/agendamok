@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     include: {
       client: { select: { name: true, phone: true, email: true } },
       service: { select: { name: true } },
-      business: { select: { id: true, name: true, metaPhoneNumberId: true } },
+      business: { select: { id: true, name: true } },
     },
   })
 
@@ -39,9 +39,9 @@ export async function GET(req: Request) {
     const time = format(local, "HH:mm")
 
     try {
-      if (appt.client.phone && appt.business.metaPhoneNumberId) {
+      if (appt.client.phone) {
         await sendWhatsAppReminder1h({
-          phoneNumberId: appt.business.metaPhoneNumberId,
+          phoneNumberId: process.env.META_PHONE_NUMBER_ID ?? "",
           to: appt.client.phone,
           clientName: appt.client.name,
           businessName: appt.business.name,

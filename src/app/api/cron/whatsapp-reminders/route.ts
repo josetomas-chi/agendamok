@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     include: {
       client: { select: { name: true, phone: true } },
       service: { select: { name: true } },
-      business: { select: { id: true, name: true, metaPhoneNumberId: true } },
+      business: { select: { id: true, name: true } },
     },
   })
 
@@ -34,12 +34,12 @@ export async function GET(req: Request) {
   let skipped = 0
 
   for (const appt of appointments) {
-    if (!appt.client.phone || !appt.business.metaPhoneNumberId) { skipped++; continue }
+    if (!appt.client.phone) { skipped++; continue }
 
     const local = utcToChileLocal(appt.startTime)
     try {
       await sendWhatsAppReminder24h({
-        phoneNumberId: appt.business.metaPhoneNumberId,
+        phoneNumberId: process.env.META_PHONE_NUMBER_ID ?? "",
         to: appt.client.phone,
         clientName: appt.client.name,
         businessName: appt.business.name,

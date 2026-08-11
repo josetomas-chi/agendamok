@@ -1441,26 +1441,6 @@ function SettingsContent() {
             </CardContent>
           </Card>
 
-          {/* WhatsApp Phone Number ID — solo para negocios con add-on activo */}
-          {waStatus === "ACTIVE" && <Card>
-            <CardHeader>
-              <CardTitle className="text-base">WhatsApp — Número de teléfono</CardTitle>
-              <CardDescription>Phone Number ID de Meta para enviar recordatorios y confirmaciones por WhatsApp.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-1.5">
-                <Label>Phone Number ID</Label>
-                <Input
-                  value={form.metaPhoneNumberId}
-                  onChange={e => setForm(f => ({ ...f, metaPhoneNumberId: e.target.value }))}
-                  placeholder="ej: 12349207030408​16"
-                  className="font-mono text-sm"
-                />
-                <p className="text-xs text-muted-foreground">Lo encuentras en Meta Developers → WhatsApp → Configuración de la API.</p>
-              </div>
-              <Button size="sm" onClick={handleSave} disabled={saving}>{saving ? "Guardando..." : "Guardar"}</Button>
-            </CardContent>
-          </Card>}
 
           {/* WhatsApp Bot */}
           <Card>

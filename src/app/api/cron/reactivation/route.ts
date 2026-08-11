@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   // Get businesses and their inactive client threshold (default 60 days)
   const businesses = await prisma.business.findMany({
     where: { isActive: true, deletedAt: null },
-    select: { id: true, name: true, slug: true, metaPhoneNumberId: true },
+    select: { id: true, name: true, slug: true },
   })
 
   let sent = 0
@@ -40,10 +40,10 @@ export async function GET(req: Request) {
     })
 
     for (const client of inactiveClients) {
-      if (!client.phone || !biz.metaPhoneNumberId) { skipped++; continue }
+      if (!client.phone) { skipped++; continue }
       try {
         await sendWhatsAppReactivation({
-          phoneNumberId: biz.metaPhoneNumberId,
+          phoneNumberId: process.env.META_PHONE_NUMBER_ID ?? "",
           to: client.phone,
           clientName: client.name,
           businessName: biz.name,
