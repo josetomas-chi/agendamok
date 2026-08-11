@@ -121,7 +121,7 @@ export async function GET() {
 
   // Upcoming court bookings
   const upcomingCourtBookings = await prisma.courtBooking.findMany({
-    where: { clientId: { in: clientIds }, deletedAt: null, startTime: { gt: now }, status: "CONFIRMED" },
+    where: { clientId: { in: clientIds }, deletedAt: null, startTime: { gt: now }, status: { in: ["CONFIRMED", "PENDING"] } },
     select: {
       id: true, startTime: true, endTime: true, price: true, paidAmount: true, status: true, paidOnline: true,
       transferVoucher: true, recurringGroupId: true,
