@@ -382,10 +382,16 @@ export async function POST(req: Request) {
     where: { id: businessId },
     select: {
       businessType: true,
+      chatBotEnabled: true,
       subscription: { select: { plan: true, status: true } },
     },
   })
   const isSports = business?.businessType === "SPORTS_CLUB"
+
+  // Check if widget is manually disabled
+  if (!business?.chatBotEnabled) {
+    return NextResponse.json({ error: "El asistente de IA no está disponible." }, { status: 403 })
+  }
 
   const plan = business?.subscription?.plan ?? "STARTER"
   const subStatus = business?.subscription?.status ?? "INACTIVE"

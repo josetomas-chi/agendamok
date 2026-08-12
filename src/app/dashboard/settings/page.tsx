@@ -11,9 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle, CheckCircle2, AlertCircle, Loader2, Gift, CalendarX2, ImagePlus, X, Users, UserPlus, Mail } from "lucide-react"
+import { Building2, Bell, CreditCard, Link2, Globe, Copy, Navigation, MapPin, Key, Plus, Trash2, Eye, EyeOff, Banknote, FileText, CheckCircle, CheckCircle2, AlertCircle, Loader2, Gift, CalendarX2, ImagePlus, X, Users, UserPlus, Mail, Bot } from "lucide-react"
 
-type Business = { id: string; name: string; slug: string; category: string; sports: string[]; businessType: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean; notifConfirmation: boolean; notifReminder24h: boolean; notifReminder1h: boolean; notifNewBooking: boolean; notifCancellation: boolean; googleMapsUrl: string | null; requireClientRut: boolean; metaPhoneNumberId: string | null }
+type Business = { id: string; name: string; slug: string; category: string; sports: string[]; businessType: string; description: string | null; website: string | null; phone: string | null; address: string | null; city: string | null; latitude: number | null; longitude: number | null; timezone: string; currency: string; clinicalRecordEnabled: boolean; cancellationHoursNotice: number | null; dailySummaryEnabled: boolean; notifConfirmation: boolean; notifReminder24h: boolean; notifReminder1h: boolean; notifNewBooking: boolean; notifCancellation: boolean; googleMapsUrl: string | null; requireClientRut: boolean; metaPhoneNumberId: string | null; chatBotEnabled: boolean }
 type PaymentSettings = { onlinePaymentsEnabled: boolean; hasCredentials: boolean; mpConnected: boolean; mpPublicKey?: string }
 type Subscription = { plan: string; status: string; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean; flowCustomerId: string | null; trialEndsAt: string | null; isCourtesy: boolean }
 
@@ -26,6 +26,8 @@ function SettingsContent() {
   const [cancellationHours, setCancellationHours] = useState<string>("")
   const [dailySummary, setDailySummary] = useState(false)
   const [requireClientRut, setRequireClientRut] = useState(false)
+  const [chatBotEnabled, setChatBotEnabled] = useState(false)
+  const [savingChatBot, setSavingChatBot] = useState(false)
   const [notifToggles, setNotifToggles] = useState({ notifConfirmation: true, notifReminder24h: true, notifReminder1h: true, notifNewBooking: true, notifCancellation: true })
   const [savingNotif, setSavingNotif] = useState(false)
 
@@ -131,6 +133,7 @@ function SettingsContent() {
       setCancellationHours(biz.business.cancellationHoursNotice?.toString() ?? "")
       setDailySummary(biz.business.dailySummaryEnabled ?? false)
       setRequireClientRut(biz.business.requireClientRut ?? false)
+      setChatBotEnabled(biz.business.chatBotEnabled ?? false)
       setNotifToggles({
         notifConfirmation: biz.business.notifConfirmation ?? true,
         notifReminder24h:  biz.business.notifReminder24h  ?? true,
@@ -1441,6 +1444,51 @@ function SettingsContent() {
             </CardContent>
           </Card>
 
+
+          {/* Asistente IA del widget de reservas */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-sky-500">
+                    <Bot className="w-4 h-4 text-white" />
+                  </span>
+                  Asistente IA en página de reservas
+                </div>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${chatBotEnabled ? "bg-emerald-500/10 text-emerald-400" : "bg-muted/40 text-muted-foreground"}`}>
+                  {chatBotEnabled ? "Activo" : "Inactivo"}
+                </span>
+              </CardTitle>
+              <CardDescription>
+                Chat con IA que aparece en tu página pública de reservas y ayuda a los clientes a agendar. Incluido según el plan contratado.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-4">
+                <div>
+                  <p className="text-sm font-medium">{chatBotEnabled ? "El asistente está activo" : "El asistente está desactivado"}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{chatBotEnabled ? "Los clientes ven el chat al entrar a tu página de reservas." : "El botón de chat no aparece en la página de reservas."}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant={chatBotEnabled ? "destructive" : "default"}
+                  disabled={savingChatBot}
+                  onClick={async () => {
+                    if (!business) return
+                    setSavingChatBot(true)
+                    const newVal = !chatBotEnabled
+                    const r = await fetch(`/api/businesses/${business.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chatBotEnabled: newVal }) })
+                    if (r.ok) { setChatBotEnabled(newVal); toast.success(newVal ? "Asistente IA activado" : "Asistente IA desactivado") }
+                    else toast.error("Error al guardar")
+                    setSavingChatBot(false)
+                  }}
+                >
+                  {savingChatBot && <Loader2 className="w-3 h-3 animate-spin mr-1" />}
+                  {chatBotEnabled ? "Desactivar" : "Activar"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* WhatsApp Bot */}
           <Card>
