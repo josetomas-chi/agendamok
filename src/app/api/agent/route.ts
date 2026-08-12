@@ -377,9 +377,41 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Faltan parámetros" }, { status: 400 })
   }
 
-  // Detectar tipo de negocio
-  const business = await prisma.business.findUnique({ where: { id: businessId }, select: { businessType: true } })
+  // Detectar tipo de negocio y verificar cuota por plan
+  const business = await prisma.business.findUnique({
+    where: { id: businessId },
+    select: {
+      businessType: true,
+      subscription: { select: { plan: true, status: true } },
+    },
+  })
   const isSports = business?.businessType === "SPORTS_CLUB"
+
+  const plan = business?.subscription?.plan ?? "STARTER"
+  const subStatus = business?.subscription?.status ?? "INACTIVE"
+  const AGENT_LIMITS: Record<string, number> = { STARTER: 0, NEGOCIO: 50, PRO: 150, SPORTS: 150 }
+  const monthlyLimit = AGENT_LIMITS[plan] ?? 0
+
+  // Starter no tiene widget; o suscripción no activa
+  const activeStatuses = ["ACTIVE", "TRIALING"]
+  if (monthlyLimit === 0 || !activeStatuses.includes(subStatus)) {
+    return NextResponse.json({ error: "El plan actual no incluye el asistente de IA." }, { status: 403 })
+  }
+
+  // Check and increment usage
+  const month = new Date().toISOString().slice(0, 7)
+  const usage = await prisma.agentMonthlyUsage.upsert({
+    where: { businessId_month: { businessId, month } },
+    create: { businessId, month, count: 0 },
+    update: {},
+  })
+  if (usage.count >= monthlyLimit) {
+    return NextResponse.json({ error: "Se alcanzó el límite mensual del asistente de IA. Contacta a tu proveedor para más información." }, { status: 429 })
+  }
+  await prisma.agentMonthlyUsage.update({
+    where: { businessId_month: { businessId, month } },
+    data: { count: { increment: 1 } },
+  })
 
   const nowChile = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Santiago" }))
   const today = nowChile.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
@@ -437,7 +469,7 @@ No pidas profesional — el sistema asigna automáticamente.`
   }))
 
   let response = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
+    model: "claude-haiku-4-5-20251001",
     max_tokens: 1024,
     system: systemPrompt,
     tools,
@@ -459,7 +491,7 @@ No pidas profesional — el sistema asigna automáticamente.`
     anthropicMessages.push({ role: "user", content: toolResults })
 
     response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 1024,
       system: systemPrompt,
       tools,

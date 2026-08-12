@@ -312,6 +312,7 @@ model Business {
   members                   BusinessMember[]
   whatsappSessions          WhatsAppSession[]
   whatsappUsage             WhatsAppMonthlyUsage[]
+  agentUsage                AgentMonthlyUsage[]
   schoolGroups              SchoolGroup[]
   schoolEnrollments         SchoolEnrollment[]
   schoolClasses             SchoolClass[]
@@ -370,6 +371,20 @@ model WhatsAppMonthlyUsage {
 
   @@unique([businessId, month])
   @@map("whatsapp_monthly_usage")
+}
+
+model AgentMonthlyUsage {
+  id         String   @id @default(cuid())
+  businessId String
+  month      String   // "2026-07"
+  count      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, month])
+  @@map("agent_monthly_usage")
 }
 
 model BusinessMember {
