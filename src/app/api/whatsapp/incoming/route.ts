@@ -394,9 +394,36 @@ export async function POST(req: Request) {
           const msgBody: string = msg.text?.body?.trim() || ""
           if (!msgBody) continue
 
-          // Find business by Meta phone number ID
-          const business = await prisma.business.findFirst({
-            where: { metaPhoneNumberId: phoneNumberId, whatsappBotEnabled: true, isActive: true, deletedAt: null },
+          // ── Route to the correct business ──────────────────────────────────
+          // Since all businesses share the single AgendaMok number, we resolve
+          // the business from: 1) existing session, 2) client record by phone.
+
+          let businessId: string | null = null
+
+          // 1. Active session (most common path — client is mid-conversation)
+          const existingSessionForRouting = await prisma.whatsAppSession.findFirst({
+            where: { phone: from },
+            orderBy: { updatedAt: "desc" },
+            select: { businessId: true, updatedAt: true },
+          })
+          if (existingSessionForRouting && Date.now() - new Date(existingSessionForRouting.updatedAt).getTime() < SESSION_TTL_MS) {
+            businessId = existingSessionForRouting.businessId
+          }
+
+          // 2. Client record by phone number
+          if (!businessId) {
+            const clientRecord = await prisma.client.findFirst({
+              where: { phone: { contains: from.replace(/^\+?56/, "").replace(/\D/g, "") }, deletedAt: null, business: { whatsappBotEnabled: true, isActive: true, deletedAt: null, waAddonStatus: "ACTIVE" } },
+              select: { businessId: true },
+              orderBy: { createdAt: "desc" },
+            })
+            businessId = clientRecord?.businessId ?? null
+          }
+
+          if (!businessId) continue
+
+          const business = await prisma.business.findUnique({
+            where: { id: businessId, whatsappBotEnabled: true, isActive: true, deletedAt: null },
             select: { id: true, name: true, businessType: true },
           })
           if (!business) continue
