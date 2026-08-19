@@ -400,6 +400,10 @@ export default function ClubPageClient({ businessId: initialBusinessId, initialC
           onSaved={() => {
             setNewBookingOpen(false); setPreselect(null)
             refreshCurrent(businessId, selectedDate)
+            fetch(`/api/businesses/${businessId}/clients`)
+              .then(r => r.ok ? r.json() : {})
+              .then(d => { if (d.clients) setClients(d.clients) })
+              .catch(() => {})
           }}
         />
       )}
