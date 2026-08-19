@@ -1017,7 +1017,7 @@ function ClientCombobox({ clients, businessId, value, onSelect }: {
                     const fullName = [c.name, c.lastName].filter(Boolean).join(" ")
                     return (
                       <button key={c.id} type="button"
-                        onClick={() => { onSelect({ id: c.id, name: c.name }); setQuery(fullName); setOpen(false) }}
+                        onClick={() => { onSelect({ id: c.id, name: c.name }); setQuery(fullName); setServerResults(null); setOpen(false) }}
                         className="w-full px-4 py-2.5 text-sm text-left flex items-center gap-2" style={{ color: NAVY }}>
                         <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style={{ background: NAVY }}>
                           {c.name[0].toUpperCase()}

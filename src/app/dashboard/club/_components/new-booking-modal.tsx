@@ -169,7 +169,7 @@ function ClientCombobox({ clients, businessId, value, onSelect }: {
                 <div className="max-h-36 overflow-y-auto">
                   {filtered.map(c => (
                     <button key={c.id} type="button"
-                      onClick={() => { onSelect({ id: c.id, name: c.name, email: c.email ?? undefined, phone: c.phone ?? undefined, creditBalance: c.creditBalance }); setQuery(c.name); setOpen(false) }}
+                      onClick={() => { onSelect({ id: c.id, name: c.name, email: c.email ?? undefined, phone: c.phone ?? undefined, creditBalance: c.creditBalance }); setQuery([c.name, c.lastName].filter(Boolean).join(" ")); setServerResults(null); setOpen(false) }}
                       className="w-full px-4 py-2.5 text-sm text-left transition-colors flex items-center gap-2"
                       style={{ color: NAVY }}>
                       <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
