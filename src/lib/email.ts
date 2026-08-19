@@ -490,30 +490,32 @@ function fmtCourtTime(iso: string) {
 }
 
 export async function sendCourtBookingConfirmation({
-  clientName, clientEmail, businessName, courtName, startTime, endTime, price, paidAmount, sponsorName, sponsorLogo, sponsorUrl,
+  clientName, clientEmail, businessName, courtName, startTime, endTime, price, paidAmount, coachName, sponsorName, sponsorLogo, sponsorUrl,
 }: {
   clientName: string; clientEmail: string; businessName: string
   courtName: string; startTime: string; endTime: string; price: number
-  paidAmount?: number; sponsorName?: string; sponsorLogo?: string; sponsorUrl?: string
+  paidAmount?: number; coachName?: string; sponsorName?: string; sponsorLogo?: string; sponsorUrl?: string
 }) {
   if (!process.env.RESEND_API_KEY) return
   const fmt = (iso: string) => new Date(iso).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"
   const displayCourtName = sponsorName ? `${courtName} ${sponsorName}` : courtName
+  const isClass = !!coachName
   const gcalUrl = `https://calendar.google.com/calendar/render?${new URLSearchParams({
     action: "TEMPLATE",
-    text: `Reserva ${displayCourtName} — ${businessName}`,
+    text: isClass ? `Clase particular ${displayCourtName} — ${businessName}` : `Reserva ${displayCourtName} — ${businessName}`,
     dates: `${fmt(startTime)}/${fmt(endTime)}`,
-    details: `Reserva confirmada en ${businessName}`,
+    details: isClass ? `Clase particular con ${coachName} en ${businessName}` : `Reserva confirmada en ${businessName}`,
   }).toString()}`
   await resend.emails.send({
     from: FROM,
     to: clientEmail,
-    subject: `Reserva confirmada — ${businessName}`,
+    subject: isClass ? `Clase particular confirmada — ${businessName}` : `Reserva confirmada — ${businessName}`,
     html: base(`
-      <h1>¡Reserva confirmada! ✓</h1>
-      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu reserva en <strong style="color:#38bdf8">${businessName}</strong> está confirmada.</p>
+      <h1>${isClass ? "¡Clase particular confirmada! ✓" : "¡Reserva confirmada! ✓"}</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu ${isClass ? "clase particular" : "reserva"} en <strong style="color:#38bdf8">${businessName}</strong> está confirmada.</p>
       <div class="box">
         <div class="row"><span class="label">Cancha</span><span class="value">${displayCourtName}</span></div>
+        ${isClass ? `<div class="row"><span class="label">Entrenador</span><span class="value">${coachName}</span></div>` : ""}
         <div class="row"><span class="label">Fecha</span><span class="value">${fmtCourtDate(startTime)}</span></div>
         <div class="row"><span class="label">Horario</span><span class="value">${fmtCourtTime(startTime)} – ${fmtCourtTime(endTime)} hrs</span></div>
         <div class="row"><span class="label">Precio</span><span class="value">$${price.toLocaleString("es-CL")}</span></div>

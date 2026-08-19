@@ -154,6 +154,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       startTime: booking.startTime.toISOString(),
       endTime: booking.endTime.toISOString(),
       price: Number(booking.price),
+      coachName: booking.coach?.name ?? undefined,
       sponsorName: booking.court.sponsorName ?? undefined,
       sponsorLogo: booking.court.sponsorLogo ?? undefined,
       sponsorUrl: booking.court.sponsorUrl ?? undefined,
