@@ -65,15 +65,19 @@ type Client = { id: string; name: string; lastName: string | null; email: string
 type CoachFeeRule = { days: number[]; startTime: string; endTime: string; classPrice: number }
 type Coach = { id: string; name: string; color: string; paymentType: string; feeRules: CoachFeeRule[] }
 
-function ClientCombobox({ clients, value, onSelect }: {
+function ClientCombobox({ clients, businessId, value, onSelect }: {
   clients: Client[]
+  businessId: string
   value: { id: string; name: string; email?: string; phone?: string; creditBalance?: number } | null
   onSelect: (v: { id: string; name: string; email?: string; phone?: string; creditBalance?: number } | null) => void
 }) {
   const [query, setQuery] = useState(value?.name || "")
   const [open, setOpen] = useState(false)
   const [creating, setCreating] = useState<NewClientForm | null>(null)
+  const [serverResults, setServerResults] = useState<Client[] | null>(null)
+  const [searching, setSearching] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     function onClick(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
@@ -81,17 +85,35 @@ function ClientCombobox({ clients, value, onSelect }: {
     return () => document.removeEventListener("mousedown", onClick)
   }, [])
 
+  function handleQueryChange(val: string) {
+    setQuery(val)
+    setOpen(true)
+    onSelect(null)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    const trimmed = val.trim()
+    if (trimmed.length < 2) { setServerResults(null); return }
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const r = await fetch(`/api/businesses/${businessId}/clients?search=${encodeURIComponent(trimmed)}`)
+        if (r.ok) { const d = await r.json(); setServerResults(d.clients ?? []) }
+      } finally { setSearching(false) }
+    }, 300)
+  }
+
   const q = normalizeText(query.trim())
-  const filtered = q.length > 0
-    ? clients.filter(c => {
-        const fullName = normalizeText([c.name, c.lastName].filter(Boolean).join(" "))
-        return fullName.includes(q) ||
-          normalizeText(c.email ?? "").includes(q) ||
-          (c.phone ?? "").replace(/\s/g, "").includes(q.replace(/\s/g, "")) ||
-          (c.rut ?? "").replace(/[.\-]/g, "").includes(q.replace(/[.\-]/g, ""))
-      })
-    : clients
-  const exactMatch = clients.find(c => normalizeText([c.name, c.lastName].filter(Boolean).join(" ")) === q)
+  const filtered = serverResults !== null
+    ? serverResults
+    : q.length > 0
+      ? clients.filter(c => {
+          const fullName = normalizeText([c.name, c.lastName].filter(Boolean).join(" "))
+          return fullName.includes(q) ||
+            normalizeText(c.email ?? "").includes(q) ||
+            (c.phone ?? "").replace(/\s/g, "").includes(q.replace(/\s/g, "")) ||
+            (c.rut ?? "").replace(/[.\-]/g, "").includes(q.replace(/[.\-]/g, ""))
+        })
+      : clients
+  const exactMatch = (serverResults ?? clients).find(c => normalizeText([c.name, c.lastName].filter(Boolean).join(" ")) === q)
 
   function startCreating() { setOpen(false); setCreating({ name: query.trim(), email: "", phone: "", rut: "" }) }
   function confirmCreate() {
@@ -130,10 +152,11 @@ function ClientCombobox({ clients, value, onSelect }: {
         </div>
       ) : (
         <div className="relative">
-          <input value={query} onChange={e => { setQuery(e.target.value); setOpen(true); onSelect(null) }}
+          <input value={query} onChange={e => handleQueryChange(e.target.value)}
             onFocus={() => setOpen(true)} placeholder="Buscar o dejar sin cliente…"
             className="w-full h-10 rounded-xl px-4 text-sm"
             style={{ border: BORDER, background: "#f5f4f0", color: NAVY, outline: "none" }} />
+          {searching && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px]" style={{ color: "rgba(13,27,42,0.3)" }}>…</span>}
           {open && (
             <div className="absolute z-50 mt-1 w-full rounded-xl border shadow-2xl overflow-hidden"
               style={{ border: BORDER, background: "#ffffff" }}>
@@ -796,7 +819,7 @@ export default function NewBookingModal({
               </div>
             </div>
 
-            <ClientCombobox clients={clients} value={selectedClient} onSelect={setSelectedClient} />
+            <ClientCombobox clients={clients} businessId={businessId} value={selectedClient} onSelect={setSelectedClient} />
 
             <div>
               <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha</p>
@@ -975,7 +998,7 @@ export default function NewBookingModal({
               )
             })()}
 
-            <ClientCombobox clients={clients} value={selectedClient} onSelect={setSelectedClient} />
+            <ClientCombobox clients={clients} businessId={businessId} value={selectedClient} onSelect={setSelectedClient} />
 
             <div>
               <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha de inicio</p>
@@ -1236,7 +1259,7 @@ export default function NewBookingModal({
               </div>
             </div>
 
-            <ClientCombobox clients={clients} value={selectedClient} onSelect={setSelectedClient} />
+            <ClientCombobox clients={clients} businessId={businessId} value={selectedClient} onSelect={setSelectedClient} />
 
             <div>
               <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>
