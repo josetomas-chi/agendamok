@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendCourtBookingConfirmation } from "@/lib/email"
 import { calcCourtPrice } from "@/lib/pricing"
+import { utcToChileLocal } from "@/lib/timezone"
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -49,9 +50,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   })
   if (!court) return NextResponse.json({ error: "Cancha no encontrada" }, { status: 404 })
 
-  const dayOfWeek = start.getDay()
-  const timeStr = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`
-  const endTimeStr = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`
+  // Pricing rules store times in Chile local time — convert UTC dates before comparing
+  const startChile = utcToChileLocal(start)
+  const endChile = utcToChileLocal(end)
+  const dayOfWeek = startChile.getDay()
+  const timeStr = `${String(startChile.getHours()).padStart(2, "0")}:${String(startChile.getMinutes()).padStart(2, "0")}`
+  const endTimeStr = `${String(endChile.getHours()).padStart(2, "0")}:${String(endChile.getMinutes()).padStart(2, "0")}`
 
   // Validar que la cancha esté disponible ese día de la semana
   if (court.pricingRules.length > 0 && !court.pricingRules.some(r => r.days.includes(dayOfWeek))) {
@@ -121,7 +125,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       include: { feeRules: true },
     })
     if (coach) {
-      const rule = coach.feeRules.find(r => r.days.includes(dayOfWeek) && timeStr >= r.startTime && timeStr < r.endTime)
+      const rule = coach.feeRules.find(r => r.days.includes(startChile.getDay()) && timeStr >= r.startTime && timeStr < r.endTime)
       if (rule) price = Number(rule.classPrice) * durationHours
     }
   } else {
@@ -129,7 +133,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const holiday = await prisma.clubHoliday.findFirst({
       where: { businessId: id, date: { gte: new Date(start.toDateString()), lt: new Date(new Date(start.toDateString()).getTime() + 86400000) }, type: "SURCHARGE" },
     })
-    price = calcCourtPrice(court.pricingRules, start, end, holiday)
+    price = calcCourtPrice(court.pricingRules, startChile, endChile, holiday)
   }
 
   const booking = await prisma.courtBooking.create({
