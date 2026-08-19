@@ -58,13 +58,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       orderBy: [{ lastName: "asc" }, { name: "asc" }],
     })
     const matchedIds = candidates
-      .filter((c: { name: string; lastName: string | null; email: string | null; phone: string | null; rut: string | null }) =>
-        normalizeText(c.name).includes(normalizedSearch) ||
-        (c.lastName && normalizeText(c.lastName).includes(normalizedSearch)) ||
-        (c.email && normalizeText(c.email).includes(normalizedSearch)) ||
-        (c.phone && c.phone.includes(search)) ||
-        (c.rut && c.rut.includes(search))
-      )
+      .filter((c: { name: string; lastName: string | null; email: string | null; phone: string | null; rut: string | null }) => {
+        const fullName = normalizeText([c.name, c.lastName].filter(Boolean).join(" "))
+        return fullName.includes(normalizedSearch) ||
+          normalizeText(c.name).includes(normalizedSearch) ||
+          (c.lastName && normalizeText(c.lastName).includes(normalizedSearch)) ||
+          (c.email && normalizeText(c.email).includes(normalizedSearch)) ||
+          (c.phone && c.phone.includes(search)) ||
+          (c.rut && c.rut.includes(search))
+      })
       .map((c: { id: string }) => c.id)
 
     const total = matchedIds.length
