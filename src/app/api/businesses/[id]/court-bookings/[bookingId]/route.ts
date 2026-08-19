@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendCourtBookingModification, sendCourtBookingCancellation } from "@/lib/email"
+import { utcToChileLocal } from "@/lib/timezone"
 
 type Params = { params: Promise<{ id: string; bookingId: string }> }
 
@@ -69,7 +70,9 @@ export async function PATCH(req: Request, { params }: Params) {
       if (current) {
         const resolvedStart = startTime ? new Date(startTime) : current.startTime
         const resolvedEnd = endTime ? new Date(endTime) : current.endTime
-        const dayOfWeek = resolvedStart.getDay()
+        const startChile = utcToChileLocal(resolvedStart)
+        const endChile = utcToChileLocal(resolvedEnd)
+        const dayOfWeek = startChile.getDay()
         const durationHours = (resolvedEnd.getTime() - resolvedStart.getTime()) / (1000 * 60 * 60)
 
         if (current.coachId) {
@@ -79,7 +82,7 @@ export async function PATCH(req: Request, { params }: Params) {
             include: { feeRules: true },
           })
           if (coach) {
-            const timeStr = `${String(resolvedStart.getHours()).padStart(2, "0")}:${String(resolvedStart.getMinutes()).padStart(2, "0")}`
+            const timeStr = `${String(startChile.getHours()).padStart(2, "0")}:${String(startChile.getMinutes()).padStart(2, "0")}`
             const feeRule = coach.feeRules.find(r =>
               r.days.map(Number).includes(dayOfWeek) && timeStr >= r.startTime && timeStr < r.endTime
             )
@@ -91,11 +94,12 @@ export async function PATCH(req: Request, { params }: Params) {
           const court = await prisma.court.findUnique({ where: { id: resolvedCourtId }, include: { pricingRules: true } })
           if (court) {
             const holiday = await prisma.clubHoliday.findFirst({
-              where: { businessId: id, date: { gte: new Date(resolvedStart.toDateString()), lt: new Date(new Date(resolvedStart.toDateString()).getTime() + 86400000) }, type: "SURCHARGE" },
+              where: { businessId: id, date: { gte: new Date(startChile.toDateString()), lt: new Date(new Date(startChile.toDateString()).getTime() + 86400000) }, type: "SURCHARGE" },
             })
             let calculatedPrice = 0
-            let cursor = new Date(resolvedStart)
-            while (cursor < resolvedEnd) {
+            let cursor = new Date(startChile)
+            const endChileCursor = endChile
+            while (cursor < endChileCursor) {
               const timeStr = `${String(cursor.getHours()).padStart(2, "0")}:${String(cursor.getMinutes()).padStart(2, "0")}`
               const rule = court.pricingRules.find(r =>
                 r.days.includes(dayOfWeek) && timeStr >= r.startTime && timeStr < r.endTime
@@ -103,7 +107,7 @@ export async function PATCH(req: Request, { params }: Params) {
               if (!rule) { cursor = new Date(cursor.getTime() + 60 * 1000); continue }
               const [reh, rem] = rule.endTime.split(":").map(Number)
               const ruleEnd = new Date(cursor); ruleEnd.setHours(reh, rem, 0, 0)
-              const segEnd = ruleEnd < resolvedEnd ? ruleEnd : resolvedEnd
+              const segEnd = ruleEnd < endChileCursor ? ruleEnd : endChileCursor
               calculatedPrice += Number(rule.price) * ((segEnd.getTime() - cursor.getTime()) / (1000 * 60 * 60))
               cursor = segEnd
             }
@@ -142,9 +146,11 @@ export async function PATCH(req: Request, { params }: Params) {
         // Validate fixed slots + time range
         const resolvedCourt = await prisma.court.findUnique({ where: { id: resolvedCourtId }, include: { pricingRules: true } })
         if (resolvedCourt) {
-          const sStr = `${String(resolvedStart.getHours()).padStart(2, "0")}:${String(resolvedStart.getMinutes()).padStart(2, "0")}`
-          const eStr = `${String(resolvedEnd.getHours()).padStart(2, "0")}:${String(resolvedEnd.getMinutes()).padStart(2, "0")}`
-          const dow = resolvedStart.getDay()
+          const sChile = utcToChileLocal(resolvedStart)
+          const eChile = utcToChileLocal(resolvedEnd)
+          const sStr = `${String(sChile.getHours()).padStart(2, "0")}:${String(sChile.getMinutes()).padStart(2, "0")}`
+          const eStr = `${String(eChile.getHours()).padStart(2, "0")}:${String(eChile.getMinutes()).padStart(2, "0")}`
+          const dow = sChile.getDay()
           if (resolvedCourt.pricingRules.length > 0 && !resolvedCourt.pricingRules.some(r => r.days.includes(dow))) {
             return NextResponse.json({ error: "Esta cancha no está disponible para reservas ese día." }, { status: 400 })
           }
