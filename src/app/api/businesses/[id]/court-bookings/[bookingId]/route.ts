@@ -155,8 +155,15 @@ export async function PATCH(req: Request, { params }: Params) {
             return NextResponse.json({ error: "Esta cancha no está disponible para reservas ese día." }, { status: 400 })
           }
           const dayRules = resolvedCourt.pricingRules.filter(r => r.days.includes(dow))
-          if (dayRules.length > 0 && !dayRules.some(r => sStr >= r.startTime && eStr <= r.endTime)) {
-            return NextResponse.json({ error: "El horario seleccionado está fuera del horario disponible de esta cancha." }, { status: 400 })
+          if (dayRules.length > 0) {
+            let cursor = sStr
+            let covered = true
+            while (cursor < eStr) {
+              const rule = dayRules.find(r => cursor >= r.startTime && cursor < r.endTime)
+              if (!rule) { covered = false; break }
+              cursor = rule.endTime < eStr ? rule.endTime : eStr
+            }
+            if (!covered) return NextResponse.json({ error: "El horario seleccionado está fuera del horario disponible de esta cancha." }, { status: 400 })
           }
           for (const rule of resolvedCourt.pricingRules) {
             if (!rule.fixedSlots?.length || !rule.days.includes(dow)) continue
