@@ -6,7 +6,7 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { sendRecurringBookingConfirmation } from "@/lib/email"
 import { calcCourtPrice } from "@/lib/pricing"
-import { chileLocalToUTC } from "@/lib/timezone"
+import { chileLocalToUTC, utcToChileLocal } from "@/lib/timezone"
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -22,8 +22,8 @@ async function calcPrice(
 ): Promise<number> {
   const court = await prisma.court.findUnique({ where: { id: courtId }, include: { pricingRules: true } })
   if (!court) return 0
-  // useUTC=true porque las fechas de reservas recurrentes se construyen con UTC
-  return calcCourtPrice(court.pricingRules, start, end, holiday, true)
+  // Convertir a hora local Chile antes de comparar con las reglas de tarifa
+  return calcCourtPrice(court.pricingRules, utcToChileLocal(start), utcToChileLocal(end), holiday)
 }
 
 export async function POST(req: Request, { params }: Params) {
