@@ -323,7 +323,9 @@ export default function NewBookingModal({
   const [multiDays, setMultiDays] = useState<number[]>([])
 
   // ── Estado Clase particular ────────────────────────────────────────────────
-  const [classCourtId, setClassCourtId] = useState(preselect?.courtId || courts[0]?.id || "")
+  const [classCourtIds, setClassCourtIds] = useState<string[]>(
+    preselect?.courtId ? [preselect.courtId] : (courts[0]?.id ? [courts[0].id] : [])
+  )
   const [classRecurring, setClassRecurring] = useState(false)
   const [classRangeEnd, setClassRangeEnd] = useState("")
   const [classDays, setClassDays] = useState<number[]>([])
@@ -421,7 +423,7 @@ export default function NewBookingModal({
   // ── Fixed slots para Reserva común ───────────────────────────────────────
   const selectedCourt = allCourts.find(c => c.id === form.courtId)
   const selectedCoach = coaches.find(c => c.id === selectedCoachId)
-  const classCourt = allCourts.find(c => c.id === classCourtId)
+  const classCourt = allCourts.find(c => c.id === classCourtIds[0])
 
   const activeRuleWithSlots = selectedCourt?.pricingRules?.find(rule =>
     (rule.fixedSlots?.length ?? 0) > 0 &&
@@ -577,6 +579,7 @@ export default function NewBookingModal({
     }
     if (bookingType === "class") {
       if (!selectedCoachId) { toast.error("Selecciona un entrenador"); return }
+      if (classCourtIds.length === 0) { toast.error("Selecciona al menos una cancha"); return }
       if (classRecurring && !classRangeEnd) { toast.error("Selecciona una fecha de término para la recurrencia"); return }
     }
 
@@ -594,18 +597,20 @@ export default function NewBookingModal({
 
           const days = effectiveClassDays
           let totalCreated = 0, totalConflicts = 0
-          for (const day of days) {
-            const r = await fetch(`/api/businesses/${businessId}/recurring-bookings`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                courtId: classCourtId, clientId, coachId: selectedCoachId,
-                dayOfWeek: day, startHour, startMinute, durationMinutes,
-                rangeStart: form.date, rangeEnd: classRangeEnd, notes: form.notes || null,
-              }),
-            })
-            const d = await r.json()
-            if (r.ok) { totalCreated += d.created ?? 0; totalConflicts += d.conflicts?.length ?? 0 }
+          for (const courtId of classCourtIds) {
+            for (const day of days) {
+              const r = await fetch(`/api/businesses/${businessId}/recurring-bookings`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  courtId, clientId, coachId: selectedCoachId,
+                  dayOfWeek: day, startHour, startMinute, durationMinutes,
+                  rangeStart: form.date, rangeEnd: classRangeEnd, notes: form.notes || null,
+                }),
+              })
+              const d = await r.json()
+              if (r.ok) { totalCreated += d.created ?? 0; totalConflicts += d.conflicts?.length ?? 0 }
+            }
           }
           if (totalCreated > 0) {
             const msg = [`${totalCreated} clase${totalCreated !== 1 ? "s" : ""} creada${totalCreated !== 1 ? "s" : ""}`]
@@ -617,21 +622,23 @@ export default function NewBookingModal({
           }
         } else {
           const resolvedEnd = fixedSlots.length > 0 ? getSlotEnd(form.startTime) : form.endTime
-          const r = await fetch(`/api/businesses/${businessId}/court-bookings`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              courtId: classCourtId, clientId, coachId: selectedCoachId,
-              startTime: localToIso(form.date, `${form.startTime}:00`),
-              endTime: localToIso(form.date, `${resolvedEnd}:00`),
-              notes: form.notes || null,
-            }),
-          })
-          if (r.ok) {
-            toast.success("Clase particular creada")
+          const startIso = localToIso(form.date, `${form.startTime}:00`)
+          const endIso = localToIso(form.date, `${resolvedEnd}:00`)
+          const results = await Promise.all(classCourtIds.map(courtId =>
+            fetch(`/api/businesses/${businessId}/court-bookings`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ courtId, clientId, coachId: selectedCoachId, startTime: startIso, endTime: endIso, notes: form.notes || null }),
+            })
+          ))
+          const errors = await Promise.all(results.filter(r => !r.ok).map(r => r.json()))
+          const created = results.filter(r => r.ok).length
+          if (created > 0) {
+            const suffix = classCourtIds.length > 1 ? ` en ${created} cancha${created !== 1 ? "s" : ""}` : ""
+            toast.success(`Clase particular creada${suffix}`)
             onSaved()
           } else {
-            const d = await r.json(); toast.error(d.error || "Error al crear")
+            toast.error(errors[0]?.error || "Error al crear")
           }
         }
         return
@@ -1246,16 +1253,34 @@ export default function NewBookingModal({
             </div>
 
             <div>
-              <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Cancha</p>
-              <div className="relative">
-                <select value={classCourtId} onChange={e => setClassCourtId(e.target.value)}
-                  className={inputCls + " appearance-none pr-9"} style={inputStyle}>
-                  <option value="" disabled>Seleccionar cancha</option>
-                  {activeCourts.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}{c.sport ? ` (${c.sport})` : ""}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: GOLD }} />
+              <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>
+                Cancha{classCourtIds.length > 1 ? `s (${classCourtIds.length})` : ""}
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {activeCourts.map(c => {
+                  const selected = classCourtIds.includes(c.id)
+                  return (
+                    <button key={c.id} type="button"
+                      onClick={() => setClassCourtIds(prev =>
+                        prev.includes(c.id)
+                          ? prev.length > 1 ? prev.filter(id => id !== c.id) : prev
+                          : [...prev, c.id]
+                      )}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2 text-left transition-all"
+                      style={selected
+                        ? { background: "rgba(201,168,76,0.1)", border: `1.5px solid ${GOLD}` }
+                        : { background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.1)" }}>
+                      <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0"
+                        style={{ background: selected ? GOLD : "transparent", border: selected ? "none" : "1.5px solid rgba(13,27,42,0.2)" }}>
+                        {selected && <span className="text-white text-[10px] font-black">✓</span>}
+                      </div>
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: c.color || GOLD }} />
+                      <p className="text-sm font-semibold truncate" style={{ color: selected ? "#8a6520" : NAVY }}>
+                        {c.name}{c.sport ? <span className="font-normal text-xs" style={{ color: "rgba(13,27,42,0.4)" }}> · {c.sport}</span> : ""}
+              </p>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
@@ -1327,7 +1352,10 @@ export default function NewBookingModal({
                   <div className="flex items-center justify-between text-xs rounded-lg px-3 py-2"
                     style={{ background: "rgba(201,168,76,0.1)", color: "#8a6520" }}>
                     <span>Se crearán</span>
-                    <span className="font-black">{classSessionCount} clase{classSessionCount !== 1 ? "s" : ""}</span>
+                    <span className="font-black">
+                      {classSessionCount * classCourtIds.length} clase{classSessionCount * classCourtIds.length !== 1 ? "s" : ""}
+                      {classCourtIds.length > 1 ? ` (${classCourtIds.length} canchas × ${classSessionCount})` : ""}
+                    </span>
                   </div>
                 )}
               </div>
@@ -1337,9 +1365,13 @@ export default function NewBookingModal({
               <div className="rounded-xl px-4 py-2.5 flex items-center justify-between"
                 style={{ background: "rgba(201,168,76,0.08)", border: `1px solid rgba(201,168,76,0.25)` }}>
                 <p className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.5)" }}>
-                  {classRecurring && classSessionCount > 0 ? `Precio por clase` : "Precio estimado"}
+                  {classRecurring && classSessionCount > 0
+                    ? `Precio por clase${classCourtIds.length > 1 ? ` × cancha` : ""}`
+                    : classCourtIds.length > 1 ? `Precio total (${classCourtIds.length} canchas)` : "Precio estimado"}
                 </p>
-                <p className="text-sm font-black" style={{ color: GOLD }}>${simplePrice.toLocaleString("es-CL")}</p>
+                <p className="text-sm font-black" style={{ color: GOLD }}>
+                  ${(simplePrice * (classRecurring ? 1 : classCourtIds.length)).toLocaleString("es-CL")}
+                </p>
               </div>
             )}
           </>)}
