@@ -613,9 +613,10 @@ export default function NewBookingModal({
             }
           }
           if (totalCreated > 0) {
-            const msg = [`${totalCreated} clase${totalCreated !== 1 ? "s" : ""} creada${totalCreated !== 1 ? "s" : ""}`]
-            if (totalConflicts > 0) msg.push(`${totalConflicts} con conflicto`)
-            toast.success(msg.join(" · "))
+            toast.success(`${totalCreated} clase${totalCreated !== 1 ? "s" : ""} creada${totalCreated !== 1 ? "s" : ""}`)
+            if (totalConflicts > 0) {
+              toast.warning(`${totalConflicts} fecha${totalConflicts !== 1 ? "s" : ""} no se reservaron por conflicto de horario — revisa el calendario para completarlas manualmente`, { duration: 8000 })
+            }
             onSaved()
           } else {
             toast.error("No se pudieron crear clases — verifica disponibilidad")
@@ -704,9 +705,10 @@ export default function NewBookingModal({
         const totalCreated = results.reduce((sum, r) => sum + (r.created ?? 0), 0)
         const totalConflicts = results.reduce((sum, r) => sum + (r.conflicts?.length ?? 0), 0)
         if (totalCreated > 0) {
-          const msg = [`${totalCreated} sesión${totalCreated !== 1 ? "es" : ""} creada${totalCreated !== 1 ? "s" : ""}`]
-          if (totalConflicts > 0) msg.push(`${totalConflicts} con conflicto`)
-          toast.success(msg.join(" · "))
+          toast.success(`${totalCreated} sesión${totalCreated !== 1 ? "es" : ""} creada${totalCreated !== 1 ? "s" : ""}`)
+          if (totalConflicts > 0) {
+            toast.warning(`${totalConflicts} fecha${totalConflicts !== 1 ? "s" : ""} no se reservaron por conflicto de horario — revisa el calendario para completarlas manualmente`, { duration: 8000 })
+          }
           onSaved()
         } else {
           toast.error("No se pudieron crear sesiones — verifica disponibilidad")
