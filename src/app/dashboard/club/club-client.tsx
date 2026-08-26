@@ -1128,16 +1128,22 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
     })
     if (!r.ok) { const d = await r.json().catch(() => ({})); toast.error(d.error || "Error al guardar"); return }
 
-    // Si aplica a futuras, llama al endpoint de grupo
-    if (scope === "future" && booking.recurringGroupId && timeChanged) {
+    // Si aplica a futuras, llama al endpoint de grupo (siempre si es recurrente, no solo cuando cambió el horario)
+    if (scope === "future" && booking.recurringGroupId) {
       const [sh, sm] = editForm.startTime.split(":").map(Number)
       const [eh, em] = editForm.endTime.split(":").map(Number)
       const durationMinutes = (eh * 60 + em) - (sh * 60 + sm)
-      await fetch(`/api/businesses/${businessId}/recurring-bookings/${booking.recurringGroupId}/update-future`, {
+      const fr = await fetch(`/api/businesses/${businessId}/recurring-bookings/${booking.recurringGroupId}/update-future`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ startHour: sh, startMinute: sm, durationMinutes, fromBookingId: booking.id }),
       })
-      toast.success("Sesiones futuras actualizadas")
+      if (fr.ok) {
+        const fd = await fr.json()
+        toast.success(`Sesiones futuras actualizadas (${fd.updated ?? 0})`)
+      } else {
+        const fd = await fr.json().catch(() => ({}))
+        toast.error(fd.error || "Error al actualizar sesiones futuras")
+      }
     } else {
       toast.success("Reserva actualizada")
     }
@@ -1145,9 +1151,8 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
   }
 
   function handleSaveEditClick() {
-    // Si es recurrente y cambió el horario, preguntar alcance
-    if (booking.recurringGroupId && timeChanged) {
-      setApplyScope("this") // abre modal
+    if (booking.recurringGroupId) {
+      setApplyScope("this") // abre modal de alcance
     } else {
       handleSaveEdit("this")
     }
