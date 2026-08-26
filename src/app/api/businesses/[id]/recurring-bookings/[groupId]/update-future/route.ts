@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { chileLocalToUTC, utcToChileLocal } from "@/lib/timezone"
 
 type Params = { params: Promise<{ id: string; groupId: string }> }
 
@@ -37,7 +38,9 @@ export async function PATCH(req: Request, { params }: Params) {
   // Actualizar cada una con los nuevos horarios y precio recalculado
   await Promise.all(future.map(async (b: typeof future[0]) => {
     const d = new Date(b.startTime)
-    const newStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), startHour, startMinute, 0))
+    // startHour/startMinute son hora Chile local → convertir a UTC real
+    const naiveLocal = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), startHour, startMinute, 0))
+    const newStart = chileLocalToUTC(naiveLocal)
     const newEnd = new Date(newStart.getTime() + durationMinutes * 60 * 1000)
 
     // Validar solapamiento (excluyendo la propia sesión)
@@ -53,9 +56,10 @@ export async function PATCH(req: Request, { params }: Params) {
     })
     if (conflict) return // silenciosamente omite las que tienen conflicto
 
-    // Recalcular precio
-    const dayOfWeek = newStart.getUTCDay()
-    const timeStr = `${String(newStart.getUTCHours()).padStart(2, "0")}:${String(newStart.getUTCMinutes()).padStart(2, "0")}`
+    // Recalcular precio comparando en hora Chile local (donde están las reglas de tarifa)
+    const startChile = utcToChileLocal(newStart)
+    const dayOfWeek = startChile.getDay()
+    const timeStr = `${String(startChile.getHours()).padStart(2, "0")}:${String(startChile.getMinutes()).padStart(2, "0")}`
     const durationHours = durationMinutes / 60
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rule = (b.court as any).pricingRules?.find((r: { days: number[]; startTime: string; endTime: string; price: unknown }) =>
