@@ -596,7 +596,8 @@ export default function NewBookingModal({
           if (durationMinutes <= 0) { toast.error("El horario de fin debe ser posterior al de inicio"); setSaving(false); return }
 
           const days = effectiveClassDays
-          let totalCreated = 0, totalConflicts = 0
+          let totalCreated = 0
+          const conflictDates: string[] = []
           for (const courtId of classCourtIds) {
             for (const day of days) {
               const r = await fetch(`/api/businesses/${businessId}/recurring-bookings`, {
@@ -609,13 +610,14 @@ export default function NewBookingModal({
                 }),
               })
               const d = await r.json()
-              if (r.ok) { totalCreated += d.created ?? 0; totalConflicts += d.conflicts?.length ?? 0 }
+              if (r.ok) { totalCreated += d.created ?? 0; conflictDates.push(...(d.conflicts ?? [])) }
             }
           }
           if (totalCreated > 0) {
             toast.success(`${totalCreated} clase${totalCreated !== 1 ? "s" : ""} creada${totalCreated !== 1 ? "s" : ""}`)
-            if (totalConflicts > 0) {
-              toast.warning(`${totalConflicts} fecha${totalConflicts !== 1 ? "s" : ""} no se reservaron por conflicto de horario — revisa el calendario para completarlas manualmente`, { duration: 8000 })
+            if (conflictDates.length > 0) {
+              const fmt = (s: string) => { const [y,m,d] = s.split("-"); return `${d}/${m}/${y}` }
+              toast.warning(`${conflictDates.length} fecha${conflictDates.length !== 1 ? "s" : ""} sin reservar por conflicto:\n${conflictDates.map(fmt).join(", ")}`, { duration: 10000 })
             }
             onSaved()
           } else {
@@ -681,7 +683,8 @@ export default function NewBookingModal({
       // Con recurrencia semanal: recurring-bookings por cada día × cancha × slot
       if (multiRangeEnd) {
         const effectiveDays = multiDays.length > 0 ? multiDays : [selectedDayOfWeek]
-        const results: { ok: boolean; created?: number; conflicts?: string[] }[] = []
+        let totalCreated = 0
+        const conflictDates: string[] = []
         for (const day of effectiveDays) {
           for (const courtId of multiCourtIds) {
             for (const slot of multiSlots) {
@@ -698,16 +701,15 @@ export default function NewBookingModal({
                 }),
               })
               const d = await r.json()
-              results.push({ ok: r.ok, ...d })
+              if (r.ok) { totalCreated += d.created ?? 0; conflictDates.push(...(d.conflicts ?? [])) }
             }
           }
         }
-        const totalCreated = results.reduce((sum, r) => sum + (r.created ?? 0), 0)
-        const totalConflicts = results.reduce((sum, r) => sum + (r.conflicts?.length ?? 0), 0)
         if (totalCreated > 0) {
           toast.success(`${totalCreated} sesión${totalCreated !== 1 ? "es" : ""} creada${totalCreated !== 1 ? "s" : ""}`)
-          if (totalConflicts > 0) {
-            toast.warning(`${totalConflicts} fecha${totalConflicts !== 1 ? "s" : ""} no se reservaron por conflicto de horario — revisa el calendario para completarlas manualmente`, { duration: 8000 })
+          if (conflictDates.length > 0) {
+            const fmt = (s: string) => { const [y,m,d] = s.split("-"); return `${d}/${m}/${y}` }
+            toast.warning(`${conflictDates.length} fecha${conflictDates.length !== 1 ? "s" : ""} sin reservar por conflicto:\n${conflictDates.map(fmt).join(", ")}`, { duration: 10000 })
           }
           onSaved()
         } else {
