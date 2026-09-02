@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { utcToChileLocal } from "@/lib/timezone"
 
 type Params = { params: Promise<{ id: string; coachId: string }> }
 
@@ -47,10 +48,9 @@ export async function GET(req: Request, { params }: Params) {
     let coachPays = 0
     let clubEarns = 0
 
-    const h = b.startTime.getUTCHours()
-    const m = b.startTime.getUTCMinutes()
-    const timeStr = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
-    const dow = b.startTime.getUTCDay()
+    const startChile = utcToChileLocal(b.startTime)
+    const timeStr = `${String(startChile.getUTCHours()).padStart(2, "0")}:${String(startChile.getUTCMinutes()).padStart(2, "0")}`
+    const dow = startChile.getUTCDay()
     const rule = coach.feeRules.find(
       (r: { days: number[]; startTime: string; endTime: string }) => r.days.includes(dow) && timeStr >= r.startTime && timeStr < r.endTime
     )
