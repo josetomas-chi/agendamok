@@ -7,6 +7,7 @@ import { es } from "date-fns/locale"
 import { toast } from "sonner"
 import NewBookingModal from "./_components/new-booking-modal"
 import CoachesTab from "./_components/coaches-tab"
+import OccupancyTab from "./_components/occupancy-tab"
 import { normalizeText } from "@/lib/normalize-text"
 import { utcToChileLocal, chileLocalToUTC } from "@/lib/timezone"
 
@@ -66,7 +67,7 @@ export default function ClubPageClient({ businessId: initialBusinessId, initialC
   const [clients, setClients] = useState<Client[]>([])
   const [membersCount, setMembersCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<"resumen" | "calendario" | "entrenadores">("calendario")
+  const [tab, setTab] = useState<"resumen" | "calendario" | "ocupacion" | "entrenadores">("calendario")
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [datepickerOpen, setDatepickerOpen] = useState(false)
   const [datepickerMonth, setDatepickerMonth] = useState(new Date())
@@ -159,11 +160,11 @@ export default function ClubPageClient({ businessId: initialBusinessId, initialC
       <div className="flex items-center gap-2 flex-wrap">
         {/* Tabs */}
         <div className="flex gap-1 p-1 rounded-xl" style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.1)" }}>
-          {(["calendario", "resumen", "entrenadores"] as const).map(t => (
+          {(["calendario", "resumen", "ocupacion", "entrenadores"] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
               style={tab === t ? { background: "#ffffff", color: "#C9A84C", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" } : { color: "rgba(13,27,42,0.4)" }}>
-              {t === "calendario" ? "Calendario" : t === "resumen" ? "Resumen" : "Entrenadores"}
+              {t === "calendario" ? "Calendario" : t === "resumen" ? "Resumen" : t === "ocupacion" ? "Ocupación" : "Entrenadores"}
             </button>
           ))}
         </div>
@@ -375,6 +376,12 @@ export default function ClubPageClient({ businessId: initialBusinessId, initialC
             )}
           </div>
         </>
+      )}
+
+      {tab === "ocupacion" && (
+        <div className="rounded-2xl p-5" style={{ border: "1px solid rgba(201,168,76,0.2)", background: "#f9f9f7" }}>
+          <OccupancyTab businessId={businessId} />
+        </div>
       )}
 
       {tab === "entrenadores" && <CoachesTab businessId={businessId} />}
