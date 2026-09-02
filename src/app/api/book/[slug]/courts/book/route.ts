@@ -78,7 +78,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   // Atomic: check availability + create booking in a serializable transaction
   // This prevents double-bookings if two requests arrive simultaneously.
-  let booking: { id: string; startTime: Date; endTime: Date; price: number; status: string } | null = null
+  let booking: { id: string; startTime: Date; endTime: Date; price: number; status: string; clientId: string } | null = null
+  let existingOwnBooking: typeof booking | null = null
   try {
     booking = await prisma.$transaction(async (tx) => {
       const conflict = await tx.courtBooking.findFirst({
@@ -89,8 +90,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
           endTime: { gt: startTime },
           status: { not: "CANCELLED" },
         },
+        select: { id: true, startTime: true, endTime: true, price: true, status: true, clientId: true },
       })
-      if (conflict) return null
+      // If the conflict belongs to the same client (duplicate submission), return it as success
+      if (conflict) {
+        if (conflict.clientId === client.id) {
+          existingOwnBooking = conflict
+          return conflict
+        }
+        return null
+      }
 
       return tx.courtBooking.create({
         data: {
@@ -103,6 +112,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
           notes: notes || null,
           status: "CONFIRMED",
         },
+        select: { id: true, startTime: true, endTime: true, price: true, status: true, clientId: true },
       })
     }, { isolationLevel: "Serializable" })
   } catch {
@@ -112,19 +122,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   if (!booking) return NextResponse.json({ error: "Horario no disponible" }, { status: 409 })
 
-  // Send confirmation email (non-blocking)
-  sendCourtBookingConfirmation({
-    clientName,
-    clientEmail,
-    businessName: business.name,
-    courtName: court.name,
-    startTime: startTime.toISOString(),
-    endTime: endTime.toISOString(),
-    price,
-    sponsorName: court.sponsorName ?? undefined,
-    sponsorLogo: court.sponsorLogo ?? undefined,
-    sponsorUrl: court.sponsorUrl ?? undefined,
-  }).catch(() => {})
+  // Send confirmation email only for new bookings (not duplicate submissions)
+  if (!existingOwnBooking) {
+    sendCourtBookingConfirmation({
+      clientName,
+      clientEmail,
+      businessName: business.name,
+      courtName: court.name,
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+      price,
+      sponsorName: court.sponsorName ?? undefined,
+      sponsorLogo: court.sponsorLogo ?? undefined,
+      sponsorUrl: court.sponsorUrl ?? undefined,
+    }).catch(() => {})
+  }
 
   return NextResponse.json({ booking, allowTransfer: client.allowTransfer })
 }
