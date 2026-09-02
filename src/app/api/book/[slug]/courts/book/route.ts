@@ -8,6 +8,7 @@ import { chileLocalToUTC } from "@/lib/timezone"
 
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
+  try {
   const { slug } = await params
   const body = await req.json()
   const { courtId, date, time, duration = 60, clientName, clientEmail, clientPhone, clientRut, notes } = body
@@ -139,4 +140,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   }
 
   return NextResponse.json({ booking, allowTransfer: client.allowTransfer })
+  } catch (err) {
+    console.error("[/api/book/courts/book] unhandled error:", err)
+    return NextResponse.json({ error: "Error interno al confirmar reserva", detail: String(err) }, { status: 500 })
+  }
 }

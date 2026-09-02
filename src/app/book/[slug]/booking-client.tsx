@@ -699,9 +699,16 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
         price: selectedSlot.price,
       }),
     })
-    const d = await r.json()
+    let d: Record<string, unknown>
+    try {
+      d = await r.json()
+    } catch {
+      alert("Error al confirmar (respuesta inválida del servidor)")
+      setSubmitting(false)
+      return
+    }
     if (!r.ok) {
-      alert(d.error || "Error al confirmar")
+      alert((d.error as string) || "Error al confirmar")
       setSubmitting(false)
       return
     }
