@@ -776,12 +776,14 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
               <Phone className="w-3 h-3" /> {business.phone}
             </a>
           )}
-          <button
-            onClick={() => { setShowMyBookings(true); setMyBookings(null); setMyBookingsRut("") }}
-            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all"
-            style={{ background: "rgba(56,189,248,0.10)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>
-            <Calendar className="w-3 h-3" /> Mis reservas
-          </button>
+          {!isLoggedIn && (
+            <button
+              onClick={() => { setShowMyBookings(true); setMyBookings(null); setMyBookingsRut("") }}
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all"
+              style={{ background: "rgba(56,189,248,0.10)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>
+              <Calendar className="w-3 h-3" /> Mis reservas
+            </button>
+          )}
           {isLoggedIn && (
             <a href="/profile" className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all" style={{ background: "rgba(56,189,248,0.12)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
