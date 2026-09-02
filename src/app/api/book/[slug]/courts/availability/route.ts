@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { addMinutes, format, parseISO, startOfDay, endOfDay } from "date-fns"
+import { chileLocalToUTC } from "@/lib/timezone"
 
 export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -69,8 +70,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     const courtBookings = bookings.filter(b => b.courtId === court.id)
     const slots: { time: string; price: number; paymentPlayers: number }[] = []
 
+    // Slot times are constructed as "local clock" dates (server-UTC = wall-clock time without tz offset).
+    // Bookings in DB are stored as true UTC via chileLocalToUTC. To compare correctly, convert slot
+    // times to true UTC before checking overlap.
     function isBooked(start: Date, end: Date) {
-      return courtBookings.some(b => start < new Date(b.endTime) && end > new Date(b.startTime))
+      const startUTC = chileLocalToUTC(start)
+      const endUTC = chileLocalToUTC(end)
+      return courtBookings.some(b => startUTC < new Date(b.endTime) && endUTC > new Date(b.startTime))
     }
 
     // Separate rules: fixed-slot rules vs flexible rules

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { addMinutes, parseISO, startOfDay, endOfDay } from "date-fns"
+import { chileLocalToUTC } from "@/lib/timezone"
 
 export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -83,7 +84,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       const courtBookings = dayBookings.filter(b => b.courtId === court.id)
 
       function isBooked(start: Date, end: Date) {
-        return courtBookings.some(b => start < new Date(b.endTime) && end > new Date(b.startTime))
+        const startUTC = chileLocalToUTC(start)
+        const endUTC = chileLocalToUTC(end)
+        return courtBookings.some(b => startUTC < new Date(b.endTime) && endUTC > new Date(b.startTime))
       }
 
       // Check fixed slots
