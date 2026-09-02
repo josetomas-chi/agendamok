@@ -62,6 +62,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     : null
   const resolvedUserId = loggedUser?.id ?? userByEmail?.id ?? null
 
+  // Normalize RUT for DB lookup: strip dots/spaces, keep digits+k
+  const normalizedRut = clientRut ? clientRut.replace(/[.\s]/g, "").toLowerCase() : null
+
+  // Find existing client by email OR by rut (trying normalized forms)
   let client = await prisma.client.findFirst({
     where: {
       businessId: business.id,
@@ -69,26 +73,49 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       OR: [
         { email: { equals: clientEmail, mode: "insensitive" } },
         ...(clientRut ? [{ rut: clientRut }] : []),
+        ...(normalizedRut && normalizedRut !== clientRut ? [{ rut: normalizedRut }] : []),
       ],
     },
   })
   if (!client) {
-    client = await prisma.client.create({
-      data: { businessId: business.id, name: clientName, email: clientEmail, phone: clientPhone || null, rut: clientRut || null, ...(resolvedUserId ? { userId: resolvedUserId } : {}) },
-    })
+    // Try creating; if unique constraint fires (duplicate rut), find and use existing
+    try {
+      client = await prisma.client.create({
+        data: { businessId: business.id, name: clientName, email: clientEmail, phone: clientPhone || null, rut: clientRut || null, ...(resolvedUserId ? { userId: resolvedUserId } : {}) },
+      })
+    } catch (createErr: unknown) {
+      const isUniqueViolation = (createErr as { code?: string })?.code === "P2002"
+      if (!isUniqueViolation) throw createErr
+      // Another client with this rut exists (different format) — find and use it
+      client = await prisma.client.findFirst({
+        where: { businessId: business.id, deletedAt: null, OR: [{ email: { equals: clientEmail, mode: "insensitive" } }, ...(clientRut ? [{ rut: { contains: clientRut.replace(/[.\s-]/g, "") } }] : [])] },
+      }) ?? await prisma.client.findFirst({ where: { businessId: business.id, deletedAt: null, email: { equals: clientEmail, mode: "insensitive" } } })
+      if (!client) throw createErr
+    }
   } else {
     const updates: Record<string, unknown> = {}
     if (resolvedUserId && client.userId !== resolvedUserId) updates.userId = resolvedUserId
     if (clientRut && !client.rut) {
       // Only assign RUT if no other client in this business already has it
       const rutTaken = await prisma.client.findFirst({
-        where: { businessId: business.id, rut: clientRut, NOT: { id: client.id }, deletedAt: null },
+        where: { businessId: business.id, deletedAt: null, NOT: { id: client.id }, OR: [{ rut: clientRut }, ...(normalizedRut ? [{ rut: normalizedRut }] : [])] },
         select: { id: true },
       })
       if (!rutTaken) updates.rut = clientRut
     }
-    if (Object.keys(updates).length > 0)
-      client = await prisma.client.update({ where: { id: client.id }, data: updates })
+    if (Object.keys(updates).length > 0) {
+      try {
+        client = await prisma.client.update({ where: { id: client.id }, data: updates })
+      } catch (updateErr: unknown) {
+        // Unique constraint on rut — skip the rut update, keep the rest
+        const isUniqueViolation = (updateErr as { code?: string })?.code === "P2002"
+        if (!isUniqueViolation) throw updateErr
+        const safeUpdates = { ...updates }
+        delete safeUpdates.rut
+        if (Object.keys(safeUpdates).length > 0)
+          client = await prisma.client.update({ where: { id: client.id }, data: safeUpdates })
+      }
+    }
   }
 
   // Atomic: check availability + create booking in a serializable transaction
