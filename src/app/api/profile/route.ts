@@ -142,7 +142,7 @@ export async function GET() {
   // Upcoming court bookings
   console.log("[/api/profile] querying upcomingCourtBookings for clientIds:", clientIds.length)
   const upcomingCourtBookings = await prisma.courtBooking.findMany({
-    where: { clientId: { in: clientIds }, deletedAt: null, startTime: { gt: now }, status: { not: "CANCELLED" } },
+    where: { clientId: { in: clientIds }, deletedAt: null, startTime: { gt: now }, status: { in: ["CONFIRMED", "COMPLETED"] } },
     select: {
       id: true, startTime: true, endTime: true, price: true, paidAmount: true, status: true, paidOnline: true,
       transferVoucher: true, recurringGroupId: true,
