@@ -19,7 +19,7 @@ const GOLD = "#C9A84C"
 const NAVY = "#0d1b2a"
 const BORDER = "rgba(201,168,76,0.2)"
 
-type BookingType = "simple" | "recurring" | "class"
+type BookingType = "simple" | "recurring" | "class" | "block"
 type TimeSlot = { id: string; startTime: string; endTime: string }
 
 function TimeSelect({ value, onChange, label, minTime, allowedRange }: { value: string; onChange: (v: string) => void; label: string; minTime?: string; allowedRange?: { start: string; end: string }[] }) {
@@ -280,6 +280,7 @@ const BOOKING_TYPES: { key: BookingType; label: string; desc: string }[] = [
   { key: "simple",    label: "Reserva común",    desc: "Cancha libre sin instructor" },
   { key: "recurring", label: "Reserva múltiple", desc: "Varias canchas u horarios" },
   { key: "class",     label: "Clase particular", desc: "Con entrenador asignado" },
+  { key: "block",     label: "Bloquear cancha",  desc: "Mantención o evento" },
 ]
 
 export default function NewBookingModal({
@@ -576,6 +577,27 @@ export default function NewBookingModal({
   async function handleSave() {
     if (!form.date) { toast.error("Selecciona una fecha"); return }
 
+    if (bookingType === "block") {
+      if (!form.courtId) { toast.error("Selecciona una cancha"); return }
+      setSaving(true)
+      try {
+        const r = await fetch(`/api/businesses/${businessId}/court-bookings`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            courtId: form.courtId,
+            startTime: localToIso(form.date, `${form.startTime}:00`),
+            endTime: localToIso(form.date, `${form.endTime}:00`),
+            notes: form.notes || null,
+            blockType: "BLOCK",
+          }),
+        })
+        if (r.ok) { toast.success("Cancha bloqueada"); onSaved() }
+        else { const d = await r.json(); toast.error(d.error || "Error al bloquear") }
+      } finally { setSaving(false) }
+      return
+    }
+
     if (bookingType === "simple") {
       if (!form.courtId) { toast.error("Selecciona una cancha"); return }
     }
@@ -772,6 +794,7 @@ export default function NewBookingModal({
   // Texto del botón guardar
   const saveLabel = (() => {
     if (saving) return "Guardando…"
+    if (bookingType === "block") return "Bloquear cancha"
     if (bookingType === "class") return classRecurring ? "Crear clases recurrentes" : "Crear clase particular"
     if (bookingType === "simple") return "Confirmar reserva"
     // recurring
@@ -804,17 +827,23 @@ export default function NewBookingModal({
           {/* Tipo de reserva */}
           <div>
             <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Tipo de reserva</p>
-            <div className="grid grid-cols-3 gap-1.5">
-              {BOOKING_TYPES.map(bt => (
-                <button key={bt.key} type="button" onClick={() => handleSetBookingType(bt.key)}
-                  className="rounded-xl px-2 py-2.5 text-center transition-all"
-                  style={bookingType === bt.key
-                    ? { background: "rgba(201,168,76,0.1)", border: `1.5px solid ${GOLD}` }
-                    : { background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.1)" }}>
-                  <p className="text-[11px] font-black leading-tight" style={{ color: bookingType === bt.key ? "#8a6520" : NAVY }}>{bt.label}</p>
-                  <p className="text-[9px] mt-0.5 leading-tight" style={{ color: "rgba(13,27,42,0.4)" }}>{bt.desc}</p>
-                </button>
-              ))}
+            <div className="grid grid-cols-2 gap-1.5">
+              {BOOKING_TYPES.map(bt => {
+                const isBlock = bt.key === "block"
+                const isActive = bookingType === bt.key
+                return (
+                  <button key={bt.key} type="button" onClick={() => handleSetBookingType(bt.key)}
+                    className="rounded-xl px-2 py-2.5 text-center transition-all"
+                    style={isActive
+                      ? isBlock
+                        ? { background: "rgba(100,100,100,0.12)", border: "1.5px solid #888" }
+                        : { background: "rgba(201,168,76,0.1)", border: `1.5px solid ${GOLD}` }
+                      : { background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.1)" }}>
+                    <p className="text-[11px] font-black leading-tight" style={{ color: isActive ? (isBlock ? "#555" : "#8a6520") : NAVY }}>{bt.label}</p>
+                    <p className="text-[9px] mt-0.5 leading-tight" style={{ color: "rgba(13,27,42,0.4)" }}>{bt.desc}</p>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -1385,11 +1414,50 @@ export default function NewBookingModal({
             )}
           </>)}
 
-          {/* Notas — siempre visible */}
+          {/* ══════════════ BLOQUEO DE CANCHA ══════════════ */}
+          {bookingType === "block" && (<>
+            <div className="rounded-xl px-4 py-3 flex items-start gap-2.5"
+              style={{ background: "repeating-linear-gradient(-45deg, rgba(100,100,100,0.06) 0px, rgba(100,100,100,0.06) 4px, transparent 4px, transparent 10px)", border: "1.5px solid rgba(100,100,100,0.25)" }}>
+              <span className="text-lg">🚧</span>
+              <div>
+                <p className="text-xs font-black" style={{ color: "#555" }}>Bloqueo de cancha</p>
+                <p className="text-[10px]" style={{ color: "rgba(13,27,42,0.4)" }}>El slot quedará ocupado y no aparecerá como disponible para reservas online.</p>
+              </div>
+            </div>
+
+            <div>
+              <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Cancha</p>
+              <div className="relative">
+                <select value={form.courtId} onChange={e => setForm(f => ({ ...f, courtId: e.target.value }))}
+                  className={inputCls + " appearance-none pr-9"} style={inputStyle}>
+                  <option value="" disabled>Seleccionar cancha</option>
+                  {activeCourts.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}{c.sport ? ` (${c.sport})` : ""}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: "#888" }} />
+              </div>
+            </div>
+
+            <div>
+              <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha</p>
+              <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                className={inputCls} style={{ ...inputStyle, colorScheme: "light" } as React.CSSProperties} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <TimeSelect label="Inicio" value={form.startTime} onChange={v => setForm(f => ({ ...f, startTime: v }))} />
+              <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} minTime={form.startTime} />
+            </div>
+          </>)}
+
+          {/* Notas — siempre visible (en bloqueo sirve como "motivo") */}
           <div>
-            <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Notas</p>
+            <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>
+              {bookingType === "block" ? "Motivo del bloqueo (opcional)" : "Notas"}
+            </p>
             <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-              placeholder="Observaciones (opcional)"
+              placeholder={bookingType === "block" ? "Ej: Mantención césped, evento privado…" : "Observaciones (opcional)"}
               className={inputCls} style={{ ...inputStyle, color: NAVY }} />
           </div>
 

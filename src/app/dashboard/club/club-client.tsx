@@ -28,6 +28,7 @@ type Booking = {
   paidAmount: number; paidOnline: boolean
   transferVoucher: string | null
   recurringGroupId: string | null
+  blockType: string | null
   court: Court; client: Client | null
   coach: { id: string; name: string; color: string } | null
 }
@@ -816,18 +817,31 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                   {getBookingsForCourt(court.id).map(b => {
                     const { top, height } = bookingStyle(b)
                     const heightPx = height
+                    const isBlockEntry = b.blockType === "BLOCK"
                     return (
                       <div key={b.id}
-                        onMouseDown={e => { if (e.button === 0) handleBookingMouseDown(e, b) }}
+                        onMouseDown={e => { if (e.button === 0 && !isBlockEntry) handleBookingMouseDown(e, b) }}
                         onClick={e => { if (!dropTarget) { e.stopPropagation(); onBookingClick(b) } }}
-                        className="absolute left-0.5 right-0.5 rounded-md cursor-grab transition-all overflow-hidden z-10 flex items-center justify-center"
+                        className={`absolute left-0.5 right-0.5 rounded-md transition-all overflow-hidden z-10 flex items-center justify-center ${isBlockEntry ? "cursor-pointer" : "cursor-grab"}`}
                         style={{ top, height,
-                          background: (b.status === "COMPLETED" || (Number(b.price) > 0 && Number(b.paidAmount) >= Number(b.price))) ? "rgba(34,197,94,0.55)" : b.coach?.color ? `${b.coach.color}cc` : "rgba(201,168,76,0.85)",
-                          borderLeft: `3px solid ${(b.status === "COMPLETED" || (Number(b.price) > 0 && Number(b.paidAmount) >= Number(b.price))) ? "#16a34a" : b.coach?.color ?? "#C9A84C"}`,
+                          background: isBlockEntry
+                            ? "repeating-linear-gradient(-45deg, rgba(90,90,90,0.18) 0px, rgba(90,90,90,0.18) 3px, rgba(220,220,220,0.55) 3px, rgba(220,220,220,0.55) 8px)"
+                            : (b.status === "COMPLETED" || (Number(b.price) > 0 && Number(b.paidAmount) >= Number(b.price))) ? "rgba(34,197,94,0.55)" : b.coach?.color ? `${b.coach.color}cc` : "rgba(201,168,76,0.85)",
+                          borderLeft: isBlockEntry ? "3px solid #999" : `3px solid ${(b.status === "COMPLETED" || (Number(b.price) > 0 && Number(b.paidAmount) >= Number(b.price))) ? "#16a34a" : b.coach?.color ?? "#C9A84C"}`,
                           opacity: draggingId === b.id ? 0.35 : 1 }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = "brightness(0.92)" }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = "none" }}
                       >
+                        {isBlockEntry ? (
+                          <div className="w-full h-full flex flex-col justify-start px-1.5 pt-1 overflow-hidden">
+                            <p className="text-[9px] font-semibold leading-none truncate" style={{ color: "rgba(60,60,60,0.7)" }}>
+                              {utcTime(b.startTime)}–{utcTime(b.endTime)}
+                            </p>
+                            <p className="text-[10px] font-black leading-tight truncate mt-0.5" style={{ color: "#444" }}>
+                              🚧 {b.notes || "Bloqueado"}
+                            </p>
+                          </div>
+                        ) : (
                         <div className="w-full h-full flex flex-col justify-start px-1.5 pt-1 pb-1 overflow-hidden">
                           {/* Fila 1: hora + badges */}
                           <div className="flex items-center justify-between gap-1 flex-shrink-0">
@@ -847,23 +861,22 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                               )}
                             </div>
                           </div>
-                          {/* Fila 2: protagonista — coach si es clase particular, cliente si es reserva común */}
+                          {/* Fila 2: protagonista */}
                           <p className="text-[11px] font-black leading-tight truncate mt-0.5" style={{ color: "#0d1b2a" }}>
                             {b.coach ? b.coach.name : (b.client ? [b.client.name, b.client.lastName].filter(Boolean).join(" ") : "Sin cliente")}
                           </p>
-                          {/* Fila 3: secundario — cliente si hay coach, vacío si no */}
                           {b.coach && (
                             <p className="text-[9px] font-semibold leading-tight truncate" style={{ color: "rgba(13,27,42,0.55)" }}>
                               {b.client ? [b.client.name, b.client.lastName].filter(Boolean).join(" ") : "Sin cliente"}
                             </p>
                           )}
-                          {/* Fila 4: precio (solo si hay espacio) */}
                           {heightPx >= 56 && (
                             <p className="text-[9px] font-bold mt-auto" style={{ color: "rgba(13,27,42,0.65)" }}>
                               ${Number(b.price).toLocaleString("es-CL")}
                             </p>
                           )}
                         </div>
+                        )}
                       </div>
                     )
                   })}
@@ -1319,6 +1332,7 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
 
   const isCancelled = booking.status === "CANCELLED"
   const isCompleted = booking.status === "COMPLETED"
+  const isBlockEntry = booking.blockType === "BLOCK"
 
   const GOLD = "#C9A84C"
   const NAVY = "#0d1b2a"
@@ -1333,10 +1347,16 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4" style={{ borderBottom: `1px solid rgba(13,27,42,0.08)` }}>
           <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: booking.court.color, boxShadow: `0 0 8px ${booking.court.color}` }} />
+            {isBlockEntry
+              ? <span className="text-xl leading-none">🚧</span>
+              : <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: booking.court.color, boxShadow: `0 0 8px ${booking.court.color}` }} />}
             <div>
-              <p className="text-[15px] font-black uppercase tracking-wide" style={{ color: NAVY }}>{booking.court.name}</p>
-              <p className="text-xs font-semibold" style={{ color: GOLD }}>{booking.court.sport || "Cancha"}</p>
+              <p className="text-[15px] font-black uppercase tracking-wide" style={{ color: NAVY }}>
+                {isBlockEntry ? "Cancha bloqueada" : booking.court.name}
+              </p>
+              <p className="text-xs font-semibold" style={{ color: isBlockEntry ? "#888" : GOLD }}>
+                {isBlockEntry ? booking.court.name : (booking.court.sport || "Cancha")}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">

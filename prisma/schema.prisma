@@ -1047,6 +1047,7 @@ model CourtBooking {
   transferVoucher    String?
   mpPaymentId        String?
   coachPaid          Boolean                @default(false)
+  blockType          String?                @default("BOOKING")
   notes              String?                @db.Text
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
