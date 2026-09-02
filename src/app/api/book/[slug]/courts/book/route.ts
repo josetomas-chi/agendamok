@@ -79,7 +79,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   } else {
     const updates: Record<string, unknown> = {}
     if (resolvedUserId && client.userId !== resolvedUserId) updates.userId = resolvedUserId
-    if (clientRut && !client.rut) updates.rut = clientRut
+    if (clientRut && !client.rut) {
+      // Only assign RUT if no other client in this business already has it
+      const rutTaken = await prisma.client.findFirst({
+        where: { businessId: business.id, rut: clientRut, NOT: { id: client.id }, deletedAt: null },
+        select: { id: true },
+      })
+      if (!rutTaken) updates.rut = clientRut
+    }
     if (Object.keys(updates).length > 0)
       client = await prisma.client.update({ where: { id: client.id }, data: updates })
   }
