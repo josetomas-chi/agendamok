@@ -17,7 +17,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
   const { id: businessId } = await params
-  const hasAccess = await hasBusinessAccess(session.user.id, businessId)
+  const isSuperAdmin = (session.user as { role?: string }).role === "SUPER_ADMIN"
+  const hasAccess = isSuperAdmin || await hasBusinessAccess(session.user.id, businessId)
   if (!hasAccess) return NextResponse.json({ error: "Sin acceso" }, { status: 403 })
 
   const url = new URL(req.url)
