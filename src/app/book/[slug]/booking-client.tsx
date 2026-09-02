@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from "react"
+import { signIn } from "next-auth/react"
 import { format, addDays, startOfToday, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 import {
@@ -553,6 +554,9 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   const [voucherUploaded, setVoucherUploaded] = useState(false)
   const [pendingRestore, setPendingRestore] = useState<{ courtId: string; slot: { time: string; price: number; paymentPlayers: number } } | null>(null)
   const autoConfirmRef = useRef(false)
+  const [loginPassword, setLoginPassword] = useState("")
+  const [loginRemember, setLoginRemember] = useState(true)
+  const [loginError, setLoginError] = useState<string | null>(null)
 
   // Restore booking state if returning from login
   useEffect(() => {
@@ -1135,27 +1139,28 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                   <Check className="w-4 h-4 flex-shrink-0" style={{ color: SPORTS_ACCENT }} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-white">Ya tienes cuenta</p>
-                    <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>Ingresa para confirmar tu reserva</p>
+                    <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>Ingresa tu contraseña para confirmar</p>
                   </div>
                 </div>
+                <input
+                  type="password"
+                  value={loginPassword}
+                  onChange={e => { setLoginPassword(e.target.value); setLoginError(null) }}
+                  placeholder="Contraseña"
+                  className="w-full rounded-xl px-4 py-3 text-sm outline-none placeholder:opacity-30"
+                  style={{ background: "rgba(56,189,248,0.07)", border: `1px solid ${loginError ? "#f87171" : SPORTS_BORDER}`, color: "#f0f6ff" }}
+                />
+                {loginError && <p className="text-xs" style={{ color: "#f87171" }}>{loginError}</p>}
                 <button
-                  onClick={() => {
-                    sessionStorage.setItem(COURT_SESSION_KEY(slug), JSON.stringify({
-                      date: selectedDate,
-                      sports: selectedSports,
-                      duration,
-                      form,
-                      rut,
-                      emailExists: true,
-                      courtId: selectedCourt?.id,
-                      slot: selectedSlot,
-                      autoConfirm: true,
-                    }))
-                    window.location.href = `/login?callbackUrl=${encodeURIComponent(`/book/${slug}`)}`
-                  }}
-                  className="w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
-                  style={{ background: SPORTS_ACCENT, color: SPORTS_BG }}>
-                  Ingresar y confirmar →
+                  type="button"
+                  onClick={() => setLoginRemember(v => !v)}
+                  className="flex items-center gap-2 py-0.5"
+                >
+                  <div className="w-4 h-4 rounded flex-shrink-0 flex items-center justify-center transition-all"
+                    style={{ background: loginRemember ? SPORTS_ACCENT : "rgba(56,189,248,0.1)", border: `1.5px solid ${loginRemember ? SPORTS_ACCENT : SPORTS_BORDER}` }}>
+                    {loginRemember && <Check className="w-2.5 h-2.5" style={{ color: SPORTS_BG }} />}
+                  </div>
+                  <span className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>Mantener sesión abierta en este dispositivo</span>
                 </button>
               </div>
             ) : (
@@ -1226,14 +1231,30 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
               </div>
             )}
 
-            <button onClick={handleConfirm} disabled={submitting || !form.name || !form.email || (!emailExists && createAccount && password.length > 0 && password.length < 8)}
+            <button
+              onClick={async () => {
+                if (!isLoggedIn && emailExists) {
+                  if (!loginPassword) { setLoginError("Ingresa tu contraseña"); return }
+                  setSubmitting(true)
+                  const res = await signIn("credentials", { email: form.email, password: loginPassword, redirect: false })
+                  if (res?.error) { setLoginError("Contraseña incorrecta"); setSubmitting(false); return }
+                  localStorage.setItem("agendamok_remember", loginRemember ? "1" : "0")
+                  sessionStorage.setItem("agendamok_alive", "1")
+                  setIsLoggedIn(true)
+                  setSubmitting(false)
+                }
+                handleConfirm()
+              }}
+              disabled={submitting || !form.name || !form.email || (!emailExists && createAccount && password.length > 0 && password.length < 8)}
               className="w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
               style={{ background: SPORTS_ACCENT, color: SPORTS_BG }}>
               {submitting
-                ? <><Loader2 className="w-4 h-4 animate-spin" />{courtPayMethod === "online" ? "Redirigiendo al pago..." : "Confirmando..."}</>
-                : courtPayMethod === "online" && business.onlinePaymentsEnabled && selectedSlot.price > 0
-                  ? `Pagar $${Math.round(selectedSlot.price / Math.max(1, selectedSlot.paymentPlayers)).toLocaleString("es-CL")} →`
-                  : "Confirmar reserva →"}
+                ? <><Loader2 className="w-4 h-4 animate-spin" />{!isLoggedIn && emailExists ? "Ingresando..." : courtPayMethod === "online" ? "Redirigiendo al pago..." : "Confirmando..."}</>
+                : !isLoggedIn && emailExists
+                  ? "Ingresar y confirmar →"
+                  : courtPayMethod === "online" && business.onlinePaymentsEnabled && selectedSlot.price > 0
+                    ? `Pagar $${Math.round(selectedSlot.price / Math.max(1, selectedSlot.paymentPlayers)).toLocaleString("es-CL")} →`
+                    : "Confirmar reserva →"}
             </button>
           </div>
         </div>
