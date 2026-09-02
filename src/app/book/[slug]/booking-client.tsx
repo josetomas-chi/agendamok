@@ -1349,10 +1349,9 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
         </div>
       )}
 
-      {/* Footer */}
-      <div className="fixed bottom-0 left-0 right-0 py-2.5 flex items-center justify-center gap-1.5 pointer-events-none" style={{ background: `linear-gradient(to top, ${SPORTS_BG}, transparent)` }}>
-        <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.15)" }}>Reservas por</span>
-        <span className="text-[10px] font-black" style={{ color: "rgba(56,189,248,0.4)" }}>AgendaMok Sports</span>
+      {/* Watermark — esquina, sin tapar contenido */}
+      <div className="fixed bottom-3 right-3 pointer-events-none select-none" style={{ opacity: 0.35, zIndex: 5 }}>
+        <span className="text-[9px] font-semibold" style={{ color: SPORTS_ACCENT, letterSpacing: "0.04em" }}>AgendaMok Sports</span>
       </div>
 
       {/* ── Mis reservas — bottom sheet ───────────────────── */}
