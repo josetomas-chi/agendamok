@@ -313,9 +313,21 @@ async function runCourtTool(name: string, input: Record<string, string | number>
             const slotEnd = addMinutes(cursor, duration)
             if (slotEnd > cutoff) break
             if (chileLocalToUTC(cursor) > now && !isBooked(cursor, slotEnd)) {
-              const cm = cursor.getHours() * 60 + cursor.getMinutes()
-              const rule = flexRules.find(r => cm >= timeToMinutes(r.startTime) && cm < timeToMinutes(r.endTime))
-              slots.push({ time: format(cursor, "HH:mm"), price: rule ? Number(rule.price) : 0 })
+              // Precio proporcional con soporte de cruce de tarifa
+              let totalPrice = 0
+              let pc = new Date(cursor)
+              const slotEndMs = slotEnd.getTime()
+              while (pc.getTime() < slotEndMs) {
+                const pcMins = pc.getHours() * 60 + pc.getMinutes()
+                const rule = flexRules.find(r => pcMins >= timeToMinutes(r.startTime) && pcMins < timeToMinutes(r.endTime))
+                if (!rule) { pc = addMinutes(pc, 1); continue }
+                const [reh, rem] = rule.endTime.split(":").map(Number)
+                const ruleEndMs = new Date(pc).setHours(reh, rem, 0, 0)
+                const segEnd = ruleEndMs < slotEndMs ? new Date(ruleEndMs) : slotEnd
+                totalPrice += Number(rule.price) * ((segEnd.getTime() - pc.getTime()) / (1000 * 60 * 60))
+                pc = segEnd
+              }
+              slots.push({ time: format(cursor, "HH:mm"), price: Math.round(totalPrice) })
             }
             cursor = addMinutes(cursor, 30)
           }
