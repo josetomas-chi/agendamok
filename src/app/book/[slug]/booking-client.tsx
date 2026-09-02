@@ -714,7 +714,10 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
 
     setSubmitting(false)
 
-    // If transfer payment required, stay on page to collect voucher before redirecting
+    // Refresh slot availability so the booked slot no longer appears as free
+    search().catch(() => {})
+
+    // If transfer payment required, stay on page to collect voucher
     if (d.allowTransfer) {
       setConfirmedBookingId(d.booking?.id ?? null)
       setAllowTransfer(true)
@@ -741,8 +744,9 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
         return
       }
     }
-    if (isLoggedIn) window.location.href = "/profile"
-    // else: stay on confirmed page — user sees success without needing a profile
+    setStep("confirmed")
+    // Don't force-redirect to /profile here — the confirmed step shows success inline.
+    // The user can navigate to their profile from the header button.
   }
 
   function reset() {
