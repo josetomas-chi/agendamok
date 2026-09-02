@@ -48,8 +48,18 @@ export async function GET() {
   }
 
   // All client records for this user (including just-linked ones)
+  // Fetch all client records for this user: by userId OR by matching email.
+  // The OR ensures clubs show up even when the userId link failed or is on a different record.
+  // Deduplicate by businessId below to avoid showing the same club twice.
   const clients = await prisma.client.findMany({
-    where: { userId, deletedAt: null },
+    where: {
+      deletedAt: null,
+      OR: [
+        { userId },
+        ...(userEmail ? [{ email: { equals: userEmail, mode: "insensitive" as const } }] : []),
+        ...(knownRut ? [{ rut: knownRut }] : []),
+      ],
+    },
     select: {
       id: true, businessId: true, rut: true, phone: true,
       loyaltyPoints: true, creditBalance: true, segment: true,
@@ -73,15 +83,23 @@ export async function GET() {
     },
   })
 
-  const clientIds = clients.map(c => c.id)
-  const rut = clients.find(c => c.rut)?.rut ?? null
-  const phone = clients.find(c => c.phone)?.phone ?? null
-  const loyaltyPoints = clients.reduce((s, c) => s + c.loyaltyPoints, 0)
-  const creditBalance = clients.reduce((s, c) => s + c.creditBalance, 0)
-  const activeMemberships = clients.flatMap(c => c.memberships)
+  // Deduplicate: if same business appears via both userId and email match, keep the one with userId (more authoritative)
+  const seenBiz = new Set<string>()
+  const uniqueClients = clients.filter(c => {
+    if (seenBiz.has(c.businessId)) return false
+    seenBiz.add(c.businessId)
+    return true
+  })
+
+  const clientIds = uniqueClients.map(c => c.id)
+  const rut = uniqueClients.find(c => c.rut)?.rut ?? null
+  const phone = uniqueClients.find(c => c.phone)?.phone ?? null
+  const loyaltyPoints = uniqueClients.reduce((s, c) => s + c.loyaltyPoints, 0)
+  const creditBalance = uniqueClients.reduce((s, c) => s + c.creditBalance, 0)
+  const activeMemberships = uniqueClients.flatMap(c => c.memberships)
 
   // Per-business loyalty summary (only businesses with some data)
-  const businessBenefits = clients.map(c => {
+  const businessBenefits = uniqueClients.map(c => {
       const discounts = (c.business.segmentDiscounts ?? {}) as Record<string, number>
       const segmentDiscount = discounts[c.segment] ?? 0
       const vipThreshold = c.business.loyaltyVipThreshold ?? 500
