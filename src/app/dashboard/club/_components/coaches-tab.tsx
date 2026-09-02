@@ -66,13 +66,16 @@ const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto
 function fmt(n: number) { return n.toLocaleString("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }) }
 function fmtHours(h: number) { return `${Math.floor(h)}h ${Math.round((h % 1) * 60)}m` }
 
-function utcTime(iso: string) {
+function chileTime(iso: string) {
+  // offset manual Chile (UTC-3 invierno / UTC-4 verano via Intl)
   const d = new Date(iso)
-  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`
+  const chile = new Date(d.toLocaleString("en-US", { timeZone: "America/Santiago" }))
+  return `${String(chile.getHours()).padStart(2, "0")}:${String(chile.getMinutes()).padStart(2, "0")}`
 }
-function utcDateShort(iso: string) {
+function chileDateShort(iso: string) {
   const d = new Date(iso)
-  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()].slice(0, 3)}`
+  const chile = new Date(d.toLocaleString("en-US", { timeZone: "America/Santiago" }))
+  return `${chile.getDate()} ${MONTHS[chile.getMonth()].slice(0, 3)}`
 }
 
 // ─── Formulario de entrenador ────────────────────────────────────────────────
@@ -449,7 +452,7 @@ function ReportModal({ businessId, coach, onClose }: { businessId: string; coach
                           style={{ borderTop: i > 0 ? "1px solid rgba(13,27,42,0.06)" : undefined, background: i % 2 === 0 ? "#fff" : "rgba(13,27,42,0.02)" }}>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold" style={{ color: "#0d1b2a" }}>
-                              {utcDateShort(s.startTime)} · {utcTime(s.startTime)}–{utcTime(s.endTime)}
+                              {chileDateShort(s.startTime)} · {chileTime(s.startTime)}–{chileTime(s.endTime)}
                             </p>
                             <p className="text-xs" style={{ color: "rgba(13,27,42,0.45)" }}>
                               {s.courtName}{s.clientName ? ` · ${s.clientName}` : ""}
