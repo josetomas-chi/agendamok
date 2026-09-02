@@ -134,9 +134,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         },
         select: { id: true, startTime: true, endTime: true, price: true, status: true, clientId: true },
       })
-      // If the conflict belongs to the same client (duplicate submission), return it as success
+      // If the conflict belongs to the same person (by clientId OR by same email in this business),
+      // treat it as a duplicate submission and return it as success.
       if (conflict) {
         if (conflict.clientId === client.id) {
+          existingOwnBooking = conflict
+          return conflict
+        }
+        // Check if the conflicting booking belongs to another record of the same person
+        const conflictClient = await tx.client.findUnique({
+          where: { id: conflict.clientId },
+          select: { email: true, rut: true },
+        })
+        const sameEmail = conflictClient?.email && clientEmail &&
+          conflictClient.email.toLowerCase() === clientEmail.toLowerCase()
+        const sameRut = conflictClient?.rut && clientRut &&
+          conflictClient.rut.replace(/[.\s]/g, "") === clientRut.replace(/[.\s]/g, "")
+        if (sameEmail || sameRut) {
           existingOwnBooking = conflict
           return conflict
         }
@@ -164,8 +178,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   if (!booking) return NextResponse.json({ error: "Horario no disponible" }, { status: 409 })
 
-  // Send confirmation email only for new bookings (not duplicate submissions)
-  if (!existingOwnBooking) {
+  // Send confirmation email for new bookings AND for own-duplicate (email may not have arrived before)
+  if (true) {
     sendCourtBookingConfirmation({
       clientName,
       clientEmail,
