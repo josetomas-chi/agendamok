@@ -108,6 +108,7 @@ export async function GET() {
   const now = new Date()
 
   // Upcoming appointments
+  console.log("[/api/profile] querying upcomingAppointments")
   const upcomingAppointments = await prisma.appointment.findMany({
     where: { clientId: { in: clientIds }, deletedAt: null, startTime: { gt: now }, status: { in: ["PENDING", "CONFIRMED"] } },
     select: {
@@ -121,6 +122,7 @@ export async function GET() {
   })
 
   // Upcoming court bookings
+  console.log("[/api/profile] querying upcomingCourtBookings for clientIds:", clientIds.length)
   const upcomingCourtBookings = await prisma.courtBooking.findMany({
     where: { clientId: { in: clientIds }, deletedAt: null, startTime: { gt: now }, status: { in: ["CONFIRMED", "PENDING"] } },
     select: {
@@ -136,6 +138,7 @@ export async function GET() {
     take: 20,
   })
   // Past appointments (history)
+  console.log("[/api/profile] querying past appointments")
   const appointments = await prisma.appointment.findMany({
     where: { clientId: { in: clientIds }, deletedAt: null, startTime: { lte: now } },
     select: {
@@ -149,6 +152,7 @@ export async function GET() {
   })
 
   // Past court bookings (history)
+  console.log("[/api/profile] querying past courtBookings")
   const courtBookings = await prisma.courtBooking.findMany({
     where: { clientId: { in: clientIds }, deletedAt: null, startTime: { lte: now } },
     select: {
@@ -185,6 +189,7 @@ export async function GET() {
     rut ? { rut } : null,
   ].filter(Boolean) as { email?: string; rut?: string }[]
 
+  console.log("[/api/profile] querying tournamentParticipants")
   const tournamentParticipants = emailOrRutFilter.length > 0
     ? await prisma.tournamentParticipant.findMany({
         where: { OR: emailOrRutFilter },
@@ -212,6 +217,7 @@ export async function GET() {
   // Tournaments open for registration (not already joined)
   const joinedTournamentIds = tournamentParticipants.map(p => p.tournament.id)
   const now2 = new Date()
+  console.log("[/api/profile] querying availableTournaments")
   const availableTournaments = await prisma.tournament.findMany({
     where: {
       status: { in: ["OPEN", "IN_PROGRESS"] },
@@ -253,6 +259,7 @@ export async function GET() {
     return [...asP1, ...asP2]
   }).sort((a, b) => b.round - a.round).slice(0, 10)
 
+  console.log("[/api/profile] all queries complete, returning response")
   return NextResponse.json({
     user: { ...user, phone, rut },
     loyaltyPoints,
