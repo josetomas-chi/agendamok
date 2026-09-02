@@ -496,6 +496,40 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   const [form, setForm] = useState({ name: initialClient?.name ?? "", email: initialClient?.email ?? "", phone: initialClient?.phone ?? "", notes: "" })
   const [rut, setRut] = useState(initialClient?.rut ? formatRut(initialClient.rut) : "")
   const [rutFound, setRutFound] = useState(!!initialClient?.name)
+
+  // "Mis reservas" state
+  type MyBooking = { id: string; startTime: string; endTime: string; price: number; paidOnline: boolean; paidAmount: number; status: string; court: { name: string; sport: string | null; color: string } }
+  const [showMyBookings, setShowMyBookings] = useState(false)
+  const [myBookingsRut, setMyBookingsRut] = useState("")
+  const [myBookingsLoading, setMyBookingsLoading] = useState(false)
+  const [myBookings, setMyBookings] = useState<MyBooking[] | null>(null)
+  const [myBookingsClient, setMyBookingsClient] = useState<{ name: string } | null>(null)
+  const [myBookingsCancelHours, setMyBookingsCancelHours] = useState(24)
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
+
+  async function fetchMyBookings(rutValue: string) {
+    if (!rutValue.trim()) return
+    setMyBookingsLoading(true)
+    const raw = rutValue.replace(/[^0-9kK]/g, "")
+    const r = await fetch(`/api/book/${slug}/my-bookings?rut=${encodeURIComponent(raw)}`)
+    const d = await r.json()
+    setMyBookings(d.bookings ?? [])
+    setMyBookingsClient(d.client ?? null)
+    setMyBookingsCancelHours(d.cancellationHoursNotice ?? 24)
+    setMyBookingsLoading(false)
+  }
+
+  async function cancelMyBooking(bookingId: string) {
+    setCancellingId(bookingId)
+    const r = await fetch(`/api/book/${slug}/my-bookings/${bookingId}/cancel`, { method: "PATCH" })
+    const d = await r.json()
+    if (r.ok) {
+      setMyBookings(prev => prev ? prev.filter(b => b.id !== bookingId) : prev)
+    } else {
+      alert(d.error || "No se pudo cancelar")
+    }
+    setCancellingId(null)
+  }
   const [createAccount, setCreateAccount] = useState(false)
   const [password, setPassword] = useState("")
   const [emailExists, setEmailExists] = useState(!!initialClient?.email)
@@ -715,6 +749,12 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
               <Phone className="w-3 h-3" /> {business.phone}
             </a>
           )}
+          <button
+            onClick={() => { setShowMyBookings(true); setMyBookings(null); setMyBookingsRut("") }}
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all"
+            style={{ background: "rgba(56,189,248,0.10)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>
+            <Calendar className="w-3 h-3" /> Mis reservas
+          </button>
           {isLoggedIn && (
             <a href="/profile" className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all" style={{ background: "rgba(56,189,248,0.12)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
@@ -1290,6 +1330,119 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
         <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.15)" }}>Reservas por</span>
         <span className="text-[10px] font-black" style={{ color: "rgba(56,189,248,0.4)" }}>AgendaMok Sports</span>
       </div>
+
+      {/* ── Mis reservas — bottom sheet ───────────────────── */}
+      {showMyBookings && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+          onClick={e => { if (e.target === e.currentTarget) setShowMyBookings(false) }}>
+          <div className="rounded-t-2xl overflow-hidden flex flex-col" style={{ background: "#0d1b2a", border: `1px solid ${SPORTS_BORDER}`, maxHeight: "85vh" }}>
+            {/* Handle + header */}
+            <div className="flex-shrink-0 px-5 pt-4 pb-3" style={{ borderBottom: `1px solid ${SPORTS_BORDER}` }}>
+              <div className="w-10 h-1 rounded-full mx-auto mb-3" style={{ background: "rgba(255,255,255,0.12)" }} />
+              <div className="flex items-center justify-between">
+                <p className="font-bold text-white text-base">Mis reservas</p>
+                <button onClick={() => setShowMyBookings(false)} className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <X className="w-4 h-4" style={{ color: "rgba(255,255,255,0.4)" }} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+              {/* RUT input */}
+              {myBookings === null && (
+                <div className="space-y-3">
+                  <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+                    Ingresa tu RUT para ver tus próximas reservas en {business.name}.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      value={myBookingsRut}
+                      onChange={e => setMyBookingsRut(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && fetchMyBookings(myBookingsRut)}
+                      placeholder="12.345.678-9"
+                      className="flex-1 h-11 rounded-xl border border-white/[0.1] bg-white/[0.05] px-4 text-sm text-white placeholder-white/20 focus:outline-none focus:border-sky-500/60"
+                    />
+                    <button
+                      onClick={() => fetchMyBookings(myBookingsRut)}
+                      disabled={myBookingsLoading || !myBookingsRut.trim()}
+                      className="h-11 px-5 rounded-xl font-semibold text-sm transition-all disabled:opacity-40"
+                      style={{ background: SPORTS_ACCENT, color: "#0d1b2a" }}>
+                      {myBookingsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ver"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Results */}
+              {myBookings !== null && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      {myBookingsClient && <p className="font-semibold text-white text-sm">{myBookingsClient.name}</p>}
+                      <p className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
+                        {myBookings.length === 0 ? "Sin reservas próximas" : `${myBookings.length} reserva${myBookings.length !== 1 ? "s" : ""} próxima${myBookings.length !== 1 ? "s" : ""}`}
+                      </p>
+                    </div>
+                    <button onClick={() => { setMyBookings(null); setMyBookingsRut("") }} className="text-xs" style={{ color: SPORTS_ACCENT }}>
+                      Cambiar RUT
+                    </button>
+                  </div>
+
+                  {myBookings.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <p className="text-sm" style={{ color: "rgba(255,255,255,0.25)" }}>No tienes reservas próximas</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {myBookings.map(b => {
+                        const start = new Date(b.startTime)
+                        const end = new Date(b.endTime)
+                        const hoursUntil = (start.getTime() - Date.now()) / (1000 * 60 * 60)
+                        const canCancel = hoursUntil >= myBookingsCancelHours
+                        const chileStart = new Date(start.toLocaleString("en-US", { timeZone: "America/Santiago" }))
+                        const chileEnd   = new Date(end.toLocaleString("en-US", { timeZone: "America/Santiago" }))
+                        const timeStr = `${String(chileStart.getHours()).padStart(2,"0")}:${String(chileStart.getMinutes()).padStart(2,"0")} – ${String(chileEnd.getHours()).padStart(2,"0")}:${String(chileEnd.getMinutes()).padStart(2,"0")}`
+                        const dateStr = format(chileStart, "EEEE d 'de' MMMM", { locale: es })
+                        return (
+                          <div key={b.id} className="rounded-xl overflow-hidden" style={{ border: `1px solid ${SPORTS_BORDER}`, background: "rgba(255,255,255,0.03)" }}>
+                            <div className="h-1" style={{ background: b.court.color }} />
+                            <div className="p-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-bold text-sm text-white">{b.court.name}</p>
+                                  {b.court.sport && <p className="text-[10px] font-semibold uppercase tracking-wide mt-0.5" style={{ color: b.court.color }}>{b.court.sport}</p>}
+                                  <p className="text-xs mt-1.5 capitalize" style={{ color: "rgba(255,255,255,0.5)" }}>{dateStr}</p>
+                                  <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>{timeStr}</p>
+                                  <p className="text-xs mt-1 font-bold" style={{ color: SPORTS_ACCENT }}>${Number(b.price).toLocaleString("es-CL")}</p>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    if (!canCancel) { alert(`Solo puedes cancelar con ${myBookingsCancelHours}h de anticipación. Contacta al club.`); return }
+                                    if (confirm("¿Cancelar esta reserva?")) cancelMyBooking(b.id)
+                                  }}
+                                  disabled={cancellingId === b.id}
+                                  className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-40"
+                                  style={canCancel
+                                    ? { background: "rgba(248,113,113,0.12)", color: "#f87171", border: "1px solid rgba(248,113,113,0.25)" }
+                                    : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.08)", cursor: "default" }}>
+                                  {cancellingId === b.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : canCancel ? "Cancelar" : `< ${myBookingsCancelHours}h`}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                  <p className="text-[11px] text-center pb-2" style={{ color: "rgba(255,255,255,0.2)" }}>
+                    Cancelación gratuita hasta {myBookingsCancelHours}h antes · Después contacta al club
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
