@@ -445,8 +445,12 @@ const COURT_SESSION_KEY = (slug: string) => `booking_court_${slug}`
 function CourtBookingFlow({ business, slug, initialClient }: { business: Business; slug: string; initialClient?: { name: string; email: string; phone: string; rut?: string } }) {
   const today = startOfToday()
   const [isLoggedIn, setIsLoggedIn] = React.useState(false)
+  const [sessionChecked, setSessionChecked] = React.useState(false)
   React.useEffect(() => {
-    fetch("/api/auth/session").then(r => r.ok ? r.json() : null).then(s => { if (s?.user?.email) setIsLoggedIn(true) })
+    fetch("/api/auth/session")
+      .then(r => r.ok ? r.json() : null)
+      .then(s => { if (s?.user?.email) setIsLoggedIn(true) })
+      .finally(() => setSessionChecked(true))
   }, [])
 
   // Search state
@@ -1133,7 +1137,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
             </div>
 
             {/* Account creation / already registered */}
-            {!isLoggedIn && emailExists ? (
+            {sessionChecked && !isLoggedIn && emailExists ? (
               <div className="rounded-2xl px-4 py-3.5 space-y-3" style={{ background: "rgba(56,189,248,0.06)", border: `1px solid ${SPORTS_ACCENT}40` }}>
                 <div className="flex items-center gap-3">
                   <Check className="w-4 h-4 flex-shrink-0" style={{ color: SPORTS_ACCENT }} />
@@ -1233,7 +1237,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
 
             <button
               onClick={async () => {
-                if (!isLoggedIn && emailExists) {
+                if (sessionChecked && !isLoggedIn && emailExists) {
                   if (!loginPassword) { setLoginError("Ingresa tu contraseña"); return }
                   setSubmitting(true)
                   const res = await signIn("credentials", { email: form.email, password: loginPassword, redirect: false })
@@ -1250,7 +1254,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
               style={{ background: SPORTS_ACCENT, color: SPORTS_BG }}>
               {submitting
                 ? <><Loader2 className="w-4 h-4 animate-spin" />{!isLoggedIn && emailExists ? "Ingresando..." : courtPayMethod === "online" ? "Redirigiendo al pago..." : "Confirmando..."}</>
-                : !isLoggedIn && emailExists
+                : sessionChecked && !isLoggedIn && emailExists
                   ? "Ingresar y confirmar →"
                   : courtPayMethod === "online" && business.onlinePaymentsEnabled && selectedSlot.price > 0
                     ? `Pagar $${Math.round(selectedSlot.price / Math.max(1, selectedSlot.paymentPlayers)).toLocaleString("es-CL")} →`
