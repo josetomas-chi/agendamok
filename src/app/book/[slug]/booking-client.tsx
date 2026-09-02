@@ -493,6 +493,19 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   const [selectedSlot, setSelectedSlot] = useState<{ time: string; price: number; paymentPlayers: number } | null>(null)
   const [courtPayMethod, setCourtPayMethod] = useState<"local" | "online">("local")
   const [step, setStep] = useState<CourtStep>("home")
+  const [pressingSlot, setPressingSlot] = useState<string | null>(null) // courtId-slotTime
+
+  function selectSlot(court: CourtResult, slot: { time: string; price: number; paymentPlayers: number }) {
+    const key = `${court.id}-${slot.time}`
+    setPressingSlot(key)
+    setTimeout(() => {
+      setPressingSlot(null)
+      setSelectedCourt(court)
+      setSelectedSlot(slot)
+      setStep("form")
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    }, 160)
+  }
   const [form, setForm] = useState({ name: initialClient?.name ?? "", email: initialClient?.email ?? "", phone: initialClient?.phone ?? "", notes: "" })
   const [rut, setRut] = useState(initialClient?.rut ? formatRut(initialClient.rut) : "")
   const [rutFound, setRutFound] = useState(!!initialClient?.name)
@@ -731,6 +744,12 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
 
   return (
     <div style={{ background: SPORTS_BG, minHeight: "100vh", color: "#f0f6ff", fontFamily: "sans-serif", overflowX: "hidden" }}>
+      <style>{`
+        @keyframes _slideUp { from { transform: translateY(18px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes _fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+        ._slide-up { animation: _slideUp 0.22s cubic-bezier(0.22,1,0.36,1) both; }
+        ._fade-in  { animation: _fadeIn  0.18s ease both; }
+      `}</style>
       {business.chatBotEnabled && <ChatWidget businessId={business.id} businessName={business.name} />}
 
       {/* ── HEADER AgendaMok Sports ────────────────────── */}
@@ -970,14 +989,19 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                             const [sh, sm] = slot.time.split(":").map(Number)
                             const endMins = sh * 60 + sm + duration
                             const endTime = `${String(Math.floor(endMins / 60)).padStart(2, "0")}:${String(endMins % 60).padStart(2, "0")}`
+                            const key = `${court.id}-${slot.time}`
+                            const pressing = pressingSlot === key
                             return (
                               <button key={slot.time}
-                                onClick={() => {
-                                  setSelectedCourt(court); setSelectedSlot(slot)
-                                  setStep("form"); window.scrollTo({ top: 0, behavior: "smooth" })
-                                }}
-                                className="py-2.5 px-1 rounded-xl text-sm font-bold transition-all flex flex-col items-center gap-0.5 hover:scale-105"
-                                style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT, border: `1px solid rgba(56,189,248,0.2)` }}>
+                                onClick={() => selectSlot(court, slot)}
+                                className="py-2.5 px-1 rounded-xl text-sm font-bold flex flex-col items-center gap-0.5"
+                                style={{
+                                  background: pressing ? SPORTS_ACCENT : "rgba(56,189,248,0.1)",
+                                  color: pressing ? SPORTS_BG : SPORTS_ACCENT,
+                                  border: `1px solid rgba(56,189,248,0.2)`,
+                                  transform: pressing ? "scale(0.93)" : "scale(1)",
+                                  transition: "transform 0.1s ease, background 0.1s ease, color 0.1s ease",
+                                }}>
                                 <span className="text-xs">{slot.time}</span>
                                 <span className="text-[10px] font-semibold opacity-80">→ {endTime}</span>
                                 {slot.price > 0 && <span className="text-[9px] font-normal opacity-60">${slot.price.toLocaleString("es-CL")}</span>}
@@ -998,7 +1022,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
 
       {/* ── FORM ───────────────────────────────────────── */}
       {step === "form" && selectedCourt && selectedSlot && (
-        <div className="max-w-lg mx-auto w-full overflow-x-hidden">
+        <div key={`form-${selectedSlot.time}`} className="_slide-up max-w-lg mx-auto w-full overflow-x-hidden">
           <div className="sticky top-0 z-20 px-4 py-3 flex items-center gap-3" style={{ background: `${SPORTS_BG}ee`, backdropFilter: "blur(12px)", borderBottom: `1px solid ${SPORTS_BORDER}` }}>
             <button onClick={() => setStep("home")} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
               style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT }}>
@@ -1221,7 +1245,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
 
       {/* ── CONFIRMED ──────────────────────────────────── */}
       {step === "confirmed" && selectedCourt && selectedSlot && (
-        <div className="max-w-lg mx-auto px-4 py-16 flex flex-col items-center text-center space-y-6">
+        <div className="_fade-in max-w-lg mx-auto px-4 py-16 flex flex-col items-center text-center space-y-6">
           <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)" }}>
             <Check className="w-12 h-12" style={{ color: "#22c55e" }} />
           </div>
