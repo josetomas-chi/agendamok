@@ -129,9 +129,7 @@ function dateLabel(dateStr: string) {
   const d = new Date(dateStr)
   if (isToday(d)) return "Hoy"
   if (isTomorrow(d)) return "Mañana"
-  const days = differenceInDays(d, new Date())
-  if (days > 0 && days <= 6) return `En ${days} días`
-  return format(d, "d MMM", { locale: es })
+  return format(d, "EEEE d MMM", { locale: es })
 }
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
