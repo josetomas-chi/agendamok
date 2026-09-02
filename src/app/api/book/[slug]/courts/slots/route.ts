@@ -66,14 +66,25 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         return cursor < bEnd && slotEnd > bStart
       })
       if (!overlaps) {
-        // Find price for this slot
-        const slotHour = cursor.getHours()
-        const rule = rulesForDay.find(r => {
-          const rStart = Number(r.startTime.split(":")[0])
-          const rEnd = Number(r.endTime.split(":")[0])
-          return slotHour >= rStart && slotHour < rEnd
-        })
-        slots.push({ time: format(cursor, "HH:mm"), price: rule ? Number(rule.price) : 0 })
+        // Calcular precio proporcional, soportando cruces de tarifa (ej. 17:00–18:30)
+        let totalPrice = 0
+        let priceCursor = new Date(cursor)
+        const slotEndMs = slotEnd.getTime()
+        while (priceCursor.getTime() < slotEndMs) {
+          const h = priceCursor.getHours()
+          const m = priceCursor.getMinutes()
+          const timeStr = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+          const rule = rulesForDay.find(r => timeStr >= r.startTime && timeStr < r.endTime)
+          if (!rule) { priceCursor = addMinutes(priceCursor, 1); continue }
+          const [reh, rem] = rule.endTime.split(":").map(Number)
+          const ruleEnd = new Date(priceCursor)
+          ruleEnd.setHours(reh, rem, 0, 0)
+          const segEnd = ruleEnd.getTime() < slotEndMs ? ruleEnd : slotEnd
+          const segHours = (segEnd.getTime() - priceCursor.getTime()) / (1000 * 60 * 60)
+          totalPrice += Number(rule.price) * segHours
+          priceCursor = segEnd
+        }
+        slots.push({ time: format(cursor, "HH:mm"), price: Math.round(totalPrice) })
       }
     }
     cursor = addMinutes(cursor, 30)

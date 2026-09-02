@@ -109,11 +109,23 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         const slotEnd = addMinutes(cursor, duration)
         if (slotEnd > cutoff) break
         if (cursor > now && !isBooked(cursor, slotEnd)) {
+          // Precio proporcional, soportando cruces de tarifa (ej. 17:00–18:30)
+          let totalPrice = 0
+          let pc = new Date(cursor)
+          const slotEndMs = slotEnd.getTime()
+          while (pc.getTime() < slotEndMs) {
+            const pcMins = pc.getHours() * 60 + pc.getMinutes()
+            const rule = flexRules.find(r => pcMins >= timeToMinutes(r.startTime) && pcMins < timeToMinutes(r.endTime))
+            if (!rule) { pc = addMinutes(pc, 1); continue }
+            const ruleEndMs = new Date(pc).setHours(...(rule.endTime.split(":").map(Number) as [number, number]), 0, 0)
+            const segEnd = ruleEndMs < slotEndMs ? new Date(ruleEndMs) : slotEnd
+            const segHours = (segEnd.getTime() - pc.getTime()) / (1000 * 60 * 60)
+            totalPrice += Number(rule.price) * segHours
+            pc = segEnd
+          }
           const cursorMinutes = cursor.getHours() * 60 + cursor.getMinutes()
-          const rule = flexRules.find(r =>
-            cursorMinutes >= timeToMinutes(r.startTime) && cursorMinutes < timeToMinutes(r.endTime)
-          )
-          slots.push({ time: format(cursor, "HH:mm"), price: rule ? Number(rule.price) : 0, paymentPlayers: rule?.paymentPlayers ?? 1 })
+          const baseRule = flexRules.find(r => cursorMinutes >= timeToMinutes(r.startTime) && cursorMinutes < timeToMinutes(r.endTime))
+          slots.push({ time: format(cursor, "HH:mm"), price: Math.round(totalPrice), paymentPlayers: baseRule?.paymentPlayers ?? 1 })
         }
         cursor = addMinutes(cursor, 30)
       }
