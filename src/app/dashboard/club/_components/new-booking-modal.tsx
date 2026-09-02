@@ -4,6 +4,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { ChevronDown, X, UserPlus, Plus, Trash2 } from "lucide-react"
 import { normalizeText } from "@/lib/normalize-text"
+import { chileLocalToUTC } from "@/lib/timezone"
 
 const TIME_SLOTS: string[] = []
 for (let h = 7; h <= 23; h++) {
@@ -213,7 +214,11 @@ function ClientCombobox({ clients, businessId, value, onSelect }: {
 }
 
 function localToIso(date: string, time: string) {
-  return new Date(`${date}T${time}`).toISOString()
+  // Construir como UTC naive (sin zona) y convertir a UTC real con offset Chile
+  const [y, m, d] = date.split("-").map(Number)
+  const [h, min, s] = time.split(":").map(Number)
+  const naive = new Date(Date.UTC(y, m - 1, d, h, min, s ?? 0))
+  return chileLocalToUTC(naive).toISOString()
 }
 
 type PricingRule = { id: string; name: string; days: number[]; startTime: string; endTime: string; price: number; fixedSlots?: string[]; paymentPlayers?: number }

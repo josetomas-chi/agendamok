@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import NewBookingModal from "./_components/new-booking-modal"
 import CoachesTab from "./_components/coaches-tab"
 import { normalizeText } from "@/lib/normalize-text"
+import { utcToChileLocal, chileLocalToUTC } from "@/lib/timezone"
 
 function formatRut(value: string) {
   const clean = value.replace(/[^0-9kK]/g, "").toUpperCase()
@@ -50,11 +51,11 @@ function timeToMinutes(t: string) {
 // Booking datetimes are stored as UTC (sent without tz from client)
 // so we must always display in UTC to match what the user entered
 function utcTime(iso: string) {
-  const d = new Date(iso)
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+  const d = utcToChileLocal(new Date(iso))
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`
 }
 function utcDate(iso: string, fmt: string) {
-  return format(new Date(iso), fmt, { locale: es })
+  return format(utcToChileLocal(new Date(iso)), fmt, { locale: es })
 }
 
 export default function ClubPageClient({ businessId: initialBusinessId, initialCourts = [] }: { businessId: string; initialCourts?: Court[] }) {
@@ -678,11 +679,16 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
       const slot = slots[idx] ?? null
       if (!slot) return
       const dateStr = format(selectedDateRef.current, "yyyy-MM-dd")
-      const startTime = new Date(`${dateStr}T${slot}:00`).toISOString()
+      const toChileUTC = (date: string, time: string) => {
+        const [y, m, d] = date.split("-").map(Number)
+        const [h, min] = time.split(":").map(Number)
+        return chileLocalToUTC(new Date(Date.UTC(y, m - 1, d, h, min, 0))).toISOString()
+      }
+      const startTime = toChileUTC(dateStr, slot)
       const endMins = timeToMinutes(slot) + info.durationMins
       const endH = String(Math.floor(endMins / 60)).padStart(2, "0")
       const endM = String(endMins % 60).padStart(2, "0")
-      const endTime = new Date(`${dateStr}T${endH}:${endM}:00`).toISOString()
+      const endTime = toChileUTC(dateStr, `${endH}:${endM}`)
       const r = await fetch(`/api/businesses/${businessId}/court-bookings/${info.bookingId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
