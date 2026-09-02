@@ -453,6 +453,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   const [selectedSports, setSelectedSports] = useState<string[]>(sports.length > 0 ? [sports[0]] : [])
   const [selectedDate, setSelectedDate] = useState(format(today, "yyyy-MM-dd"))
   const [weekOffset, setWeekOffset] = useState(0)
+  const [weekAvailability, setWeekAvailability] = useState<Record<string, boolean>>({})
 
   // Derive available durations from fixedSlots of courts matching selected sports
   const availableDurations = React.useMemo(() => {
@@ -557,6 +558,20 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
     search(pendingRestore ?? undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, selectedSports, duration])
+
+  // Fetch week availability when week or sport/duration changes (shows dots on calendar)
+  useEffect(() => {
+    const from = format(weekDays[0], "yyyy-MM-dd")
+    const to = format(weekDays[6], "yyyy-MM-dd")
+    const multiSport = selectedSports.length > 1
+    const params = new URLSearchParams({ from, to, duration: multiSport ? "0" : String(duration) })
+    if (selectedSports.length > 0) params.set("sport", selectedSports.join(","))
+    fetch(`/api/book/${slug}/courts/week-availability?${params}`)
+      .then(r => r.json())
+      .then(d => setWeekAvailability(prev => ({ ...prev, ...d })))
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekOffset, selectedSports, duration])
 
   // Auto-confirm when returning from login with autoConfirm flag
   useEffect(() => {
@@ -814,14 +829,24 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                   const isPast = day < today
                   const isOutOfWindow = day > maxDate
                   const isSelected = key === selectedDate
+                  const avail = weekAvailability[key]
+                  const hasSlots = avail === true
+                  const noSlots = avail === false
                   return (
                     <button key={key} disabled={isPast || isOutOfWindow} onClick={() => setSelectedDate(key)}
-                      className="flex flex-col items-center py-2.5 rounded-xl transition-all disabled:opacity-25"
+                      className="flex flex-col items-center py-2 rounded-xl transition-all disabled:opacity-25"
                       style={isSelected
                         ? { background: SPORTS_ACCENT, color: SPORTS_BG }
-                        : { background: "rgba(56,189,248,0.07)", color: "rgba(255,255,255,0.5)", border: `1px solid ${SPORTS_BORDER}` }}>
+                        : noSlots
+                          ? { background: "rgba(56,189,248,0.03)", color: "rgba(255,255,255,0.22)", border: `1px solid ${SPORTS_BORDER}` }
+                          : { background: "rgba(56,189,248,0.07)", color: "rgba(255,255,255,0.5)", border: `1px solid ${SPORTS_BORDER}` }}>
                       <span className="text-[8px] font-bold uppercase tracking-wide leading-none mb-1">{format(day, "EEE", { locale: es })}</span>
                       <span className="text-sm font-bold">{format(day, "d")}</span>
+                      <span className="h-1.5 mt-1 flex items-center justify-center">
+                        {!isSelected && hasSlots && (
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#4ade80" }} />
+                        )}
+                      </span>
                     </button>
                   )
                 })}
