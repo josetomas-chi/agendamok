@@ -63,7 +63,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const resolvedUserId = loggedUser?.id ?? userByEmail?.id ?? null
 
   let client = await prisma.client.findFirst({
-    where: { businessId: business.id, email: clientEmail, deletedAt: null },
+    where: {
+      businessId: business.id,
+      deletedAt: null,
+      OR: [
+        { email: { equals: clientEmail, mode: "insensitive" } },
+        ...(clientRut ? [{ rut: clientRut }] : []),
+      ],
+    },
   })
   if (!client) {
     client = await prisma.client.create({
