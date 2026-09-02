@@ -640,6 +640,16 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   async function handleConfirm() {
     if (!selectedCourt || !selectedSlot || !form.name || !form.email) return
     setSubmitting(true)
+    try {
+      await _handleConfirmInner()
+    } catch (err) {
+      console.error("[handleConfirm] unexpected error:", err)
+      alert("Error inesperado al confirmar. Intenta nuevamente.")
+      setSubmitting(false)
+    }
+  }
+
+  async function _handleConfirmInner() {
 
     // Online payment path
     if (courtPayMethod === "online" && business.onlinePaymentsEnabled && selectedSlot.price > 0) {
