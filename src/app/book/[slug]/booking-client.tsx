@@ -438,7 +438,7 @@ const SPORTS_CARD = "#0f2a3f"
 const SPORTS_ACCENT = "#38bdf8"
 const SPORTS_BORDER = "rgba(56,189,248,0.18)"
 
-type CourtResult = Court & { slots: { time: string; price: number; paymentPlayers: number }[] }
+type CourtResult = Court & { slots: { time: string; price: number; paymentPlayers: number; duration: number }[] }
 
 const COURT_SESSION_KEY = (slug: string) => `booking_court_${slug}`
 
@@ -495,12 +495,12 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
 
   // Booking state
   const [selectedCourt, setSelectedCourt] = useState<CourtResult | null>(null)
-  const [selectedSlot, setSelectedSlot] = useState<{ time: string; price: number; paymentPlayers: number } | null>(null)
+  const [selectedSlot, setSelectedSlot] = useState<{ time: string; price: number; paymentPlayers: number; duration: number } | null>(null)
   const [courtPayMethod, setCourtPayMethod] = useState<"local" | "online">("local")
   const [step, setStep] = useState<CourtStep>("home")
   const [pressingSlot, setPressingSlot] = useState<string | null>(null) // courtId-slotTime
 
-  function selectSlot(court: CourtResult, slot: { time: string; price: number; paymentPlayers: number }) {
+  function selectSlot(court: CourtResult, slot: { time: string; price: number; paymentPlayers: number; duration: number }) {
     const key = `${court.id}-${slot.time}`
     setPressingSlot(key)
     setTimeout(() => {
@@ -650,7 +650,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
           courtId: selectedCourt.id,
           date: selectedDate,
           time: selectedSlot.time,
-          duration,
+          duration: selectedSlot.duration,
           clientName: form.name,
           clientEmail: form.email,
           clientPhone: form.phone || undefined,
@@ -680,7 +680,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
         courtId: selectedCourt.id,
         date: selectedDate,
         time: selectedSlot.time,
-        duration,
+        duration: selectedSlot.duration,
         clientName: form.name,
         clientEmail: form.email,
         clientPhone: form.phone || undefined,
@@ -707,7 +707,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
       sport: selectedCourt.sport,
       date: selectedDate,
       time: selectedSlot.time,
-      duration,
+      duration: selectedSlot.duration,
       price: selectedSlot.price,
       allowTransfer: d.allowTransfer ?? false,
     }))
@@ -963,7 +963,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                                 <p className="font-bold text-sm text-white leading-tight">{court.name}</p>
                                 {court.slots[0]?.price > 0 && (
                                   <p className="text-[11px] font-semibold" style={{ color: SPORTS_ACCENT }}>
-                                    desde ${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")} · {duration} min
+                                    desde ${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")} · {court.slots[0]?.duration ?? duration} min
                                   </p>
                                 )}
                               </div>
@@ -982,7 +982,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                                 <p className="font-bold text-sm text-white">{court.name}</p>
                                 {court.slots[0]?.price > 0 && (
                                   <p className="text-xs mt-0.5 font-semibold" style={{ color: SPORTS_ACCENT }}>
-                                    desde ${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")} · {duration} min
+                                    desde ${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")} · {court.slots[0]?.duration ?? duration} min
                                   </p>
                                 )}
                               </div>
@@ -1002,7 +1002,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                         <div className="px-4 pb-4 grid grid-cols-4 gap-1.5">
                           {court.slots.map(slot => {
                             const [sh, sm] = slot.time.split(":").map(Number)
-                            const endMins = sh * 60 + sm + duration
+                            const endMins = sh * 60 + sm + slot.duration
                             const endTime = `${String(Math.floor(endMins / 60)).padStart(2, "0")}:${String(endMins % 60).padStart(2, "0")}`
                             const key = `${court.id}-${slot.time}`
                             const pressing = pressingSlot === key
@@ -1048,7 +1048,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
               <div className="min-w-0">
                 <p className="text-sm font-bold truncate text-white">{selectedCourt.name}</p>
                 <p className="text-xs truncate" style={{ color: SPORTS_ACCENT }}>
-                  {format(parseISO(selectedDate), "d MMM", { locale: es })} · {selectedSlot.time} · {duration} min
+                  {format(parseISO(selectedDate), "d MMM", { locale: es })} · {selectedSlot.time} · {selectedSlot.duration} min
                 </p>
               </div>
             </div>
@@ -1363,7 +1363,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
             </a>
           ) : (
             <>
-              <a href={`https://wa.me/?text=${encodeURIComponent(`*${business.name}*\n📅 ${format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })}\n⏰ ${selectedSlot.time} · ${duration} min\n🎾 ${selectedCourt.name}${selectedSlot.price > 0 ? `\n💵 $${selectedSlot.price.toLocaleString("es-CL")}` : ""}\n\n_Reservado con AgendaMok Sports_`)}`}
+              <a href={`https://wa.me/?text=${encodeURIComponent(`*${business.name}*\n📅 ${format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })}\n⏰ ${selectedSlot.time} · ${selectedSlot.duration} min\n🎾 ${selectedCourt.name}${selectedSlot.price > 0 ? `\n💵 $${selectedSlot.price.toLocaleString("es-CL")}` : ""}\n\n_Reservado con AgendaMok Sports_`)}`}
                 target="_blank" rel="noopener noreferrer"
                 className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold transition-all"
                 style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>

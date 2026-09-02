@@ -68,7 +68,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     }
 
     const courtBookings = bookings.filter(b => b.courtId === court.id)
-    const slots: { time: string; price: number; paymentPlayers: number }[] = []
+    const slots: { time: string; price: number; paymentPlayers: number; duration: number }[] = []
 
     // Slot times are constructed as "local clock" dates (server-UTC = wall-clock time without tz offset).
     // Bookings in DB are stored as true UTC via chileLocalToUTC. To compare correctly, convert slot
@@ -97,7 +97,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         const end = addMinutes(start, ruleDuration)
         if (start <= now) continue
         if (!isBooked(start, end)) {
-          slots.push({ time: slotTime, price: Number(rule.price), paymentPlayers: rule.paymentPlayers ?? 1 })
+          slots.push({ time: slotTime, price: Number(rule.price), paymentPlayers: rule.paymentPlayers ?? 1, duration: ruleDuration })
         }
       }
     }
@@ -131,7 +131,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
           }
           const cursorMinutes = cursor.getHours() * 60 + cursor.getMinutes()
           const baseRule = flexRules.find(r => cursorMinutes >= timeToMinutes(r.startTime) && cursorMinutes < timeToMinutes(r.endTime))
-          slots.push({ time: format(cursor, "HH:mm"), price: Math.round(totalPrice), paymentPlayers: baseRule?.paymentPlayers ?? 1 })
+          slots.push({ time: format(cursor, "HH:mm"), price: Math.round(totalPrice), paymentPlayers: baseRule?.paymentPlayers ?? 1, duration })
         }
         cursor = addMinutes(cursor, 30)
       }
