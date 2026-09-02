@@ -34,6 +34,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       name: courtData.name,
       sport: courtData.sport || null,
       description: courtData.description || null,
+      image: courtData.image || null,
       color: courtData.color || "#38bdf8",
       sponsorName: courtData.sponsorName || null,
       sponsorLogo: courtData.sponsorLogo || null,

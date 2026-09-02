@@ -25,7 +25,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       ...(sports.length > 0 ? { sport: { in: sports } } : {}),
     },
     select: {
-      id: true, name: true, sport: true, color: true,
+      id: true, name: true, sport: true, description: true, image: true, color: true,
       sponsorName: true, sponsorLogo: true, sponsorUrl: true,
       pricingRules: { select: { days: true, startTime: true, endTime: true, price: true, fixedSlots: true, paymentPlayers: true } },
     },
@@ -135,7 +135,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     slots.sort((a, b) => a.time.localeCompare(b.time))
 
     return {
-      id: court.id, name: court.name, sport: court.sport, color: court.color,
+      id: court.id, name: court.name, sport: court.sport, description: court.description, image: court.image, color: court.color,
       sponsorName: court.sponsorName, sponsorLogo: court.sponsorLogo, sponsorUrl: court.sponsorUrl,
       slots,
     }

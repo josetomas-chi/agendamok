@@ -975,6 +975,7 @@ model Court {
   color       String   @default("#38bdf8")
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
+  image       String?
   sponsorName String?
   sponsorLogo String?
   sponsorUrl  String?

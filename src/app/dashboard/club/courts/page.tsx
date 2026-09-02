@@ -7,7 +7,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { toast } from "sonner"
 
 type PricingRule = { id?: string; name: string; days: number[]; startTime: string; endTime: string; price: number; fixedSlots: string[]; paymentPlayers: number }
-type Court = { id: string; name: string; sport: string | null; description: string | null; color: string; isActive: boolean; sponsorName: string | null; sponsorLogo: string | null; sponsorUrl: string | null; pricingRules: PricingRule[] }
+type Court = { id: string; name: string; sport: string | null; description: string | null; image: string | null; color: string; isActive: boolean; sponsorName: string | null; sponsorLogo: string | null; sponsorUrl: string | null; pricingRules: PricingRule[] }
 
 const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
 const EMPTY_RULE: PricingRule = { name: "", days: [1, 2, 3, 4, 5], startTime: "08:00", endTime: "18:00", price: 0, fixedSlots: [], paymentPlayers: 1 }
@@ -19,8 +19,9 @@ export default function CourtsPage() {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Court | null>(null)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ name: "", sport: "", description: "", color: "#38bdf8", sponsorName: "", sponsorLogo: "", sponsorUrl: "", pricingRules: [{ ...EMPTY_RULE }] as PricingRule[] })
+  const [form, setForm] = useState({ name: "", sport: "", description: "", image: "", color: "#38bdf8", sponsorName: "", sponsorLogo: "", sponsorUrl: "", pricingRules: [{ ...EMPTY_RULE }] as PricingRule[] })
   const [uploadingSponsor, setUploadingSponsor] = useState(false)
+  const [uploadingCourtImage, setUploadingCourtImage] = useState(false)
   const dragIndex = useRef<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
   const [futureBookings, setFutureBookings] = useState(0)
@@ -49,15 +50,26 @@ export default function CourtsPage() {
     setUploadingSponsor(false)
   }
 
+  async function handleCourtImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingCourtImage(true)
+    const fd = new FormData(); fd.append("file", file)
+    const r = await fetch("/api/upload", { method: "POST", body: fd })
+    const d = await r.json()
+    if (r.ok) setForm(f => ({ ...f, image: d.url }))
+    setUploadingCourtImage(false)
+  }
+
   function openNew() {
     setEditing(null)
-    setForm({ name: "", sport: "", description: "", color: "#38bdf8", sponsorName: "", sponsorLogo: "", sponsorUrl: "", pricingRules: [{ ...EMPTY_RULE }] })
+    setForm({ name: "", sport: "", description: "", image: "", color: "#38bdf8", sponsorName: "", sponsorLogo: "", sponsorUrl: "", pricingRules: [{ ...EMPTY_RULE }] })
     setOpen(true)
   }
 
   async function openEdit(c: Court) {
     setEditing(c)
-    setForm({ name: c.name, sport: c.sport || "", description: c.description || "", color: c.color, sponsorName: c.sponsorName || "", sponsorLogo: c.sponsorLogo || "", sponsorUrl: c.sponsorUrl || "", pricingRules: c.pricingRules.length > 0 ? c.pricingRules.map(r => ({ ...r })) : [{ ...EMPTY_RULE }] })
+    setForm({ name: c.name, sport: c.sport || "", description: c.description || "", image: c.image || "", color: c.color, sponsorName: c.sponsorName || "", sponsorLogo: c.sponsorLogo || "", sponsorUrl: c.sponsorUrl || "", pricingRules: c.pricingRules.length > 0 ? c.pricingRules.map(r => ({ ...r })) : [{ ...EMPTY_RULE }] })
     setFutureBookings(0)
     setUpdateFutureBookings(false)
     setOpen(true)
@@ -197,18 +209,31 @@ export default function CourtsPage() {
                 minHeight: "160px",
               }}
             >
-              <div className="h-1.5" style={{ background: c.color }} />
+              {c.image ? (
+                <div className="relative h-28 overflow-hidden">
+                  <img src={c.image} alt={c.name} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(13,27,42,0.85) 100%)" }} />
+                  <div className="absolute bottom-2 left-3">
+                    {c.sport && <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: c.color }}>{c.sport}</p>}
+                    <p className="text-sm font-bold text-white">{c.name}{c.sponsorName ? ` ${c.sponsorName}` : ""}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-1.5" style={{ background: c.color }} />
+              )}
               <div className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <GripVertical className="w-4 h-4 flex-shrink-0" style={{ color: "rgba(255,255,255,0.2)" }} />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold text-sm text-white">{c.name}{c.sponsorName ? ` ${c.sponsorName}` : ""}</p>
-                        {c.sponsorLogo && <img src={c.sponsorLogo} alt={c.sponsorName || ""} className="h-5 w-auto object-contain opacity-90" />}
+                    {!c.image && (
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-sm text-white">{c.name}{c.sponsorName ? ` ${c.sponsorName}` : ""}</p>
+                          {c.sponsorLogo && <img src={c.sponsorLogo} alt={c.sponsorName || ""} className="h-5 w-auto object-contain opacity-90" />}
+                        </div>
+                        {c.sport && <p className="text-xs mt-0.5 font-semibold uppercase tracking-wide" style={{ color: "#C9A84C" }}>{c.sport}</p>}
                       </div>
-                      {c.sport && <p className="text-xs mt-0.5 font-semibold uppercase tracking-wide" style={{ color: "#C9A84C" }}>{c.sport}</p>}
-                    </div>
+                    )}
                   </div>
                   <div className="flex gap-1.5">
                     <button onClick={e => { e.stopPropagation(); openEdit(c) }}
@@ -292,6 +317,39 @@ export default function CourtsPage() {
                 <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
                   className="w-6 h-6 rounded cursor-pointer bg-transparent border-0 p-0" />
                 <span className="text-sm text-white/50">Color</span>
+              </div>
+            </div>
+
+            {/* Foto y descripción */}
+            <div>
+              <p className="text-xs font-semibold text-white/50 uppercase tracking-wide mb-3">Foto y descripción</p>
+              <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 space-y-3">
+                {/* Foto */}
+                {form.image ? (
+                  <div className="relative rounded-xl overflow-hidden" style={{ height: 140 }}>
+                    <img src={form.image} alt="Foto cancha" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => setForm(f => ({ ...f, image: "" }))}
+                      className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center"
+                      style={{ background: "rgba(0,0,0,0.6)" }}>
+                      <X className="w-3.5 h-3.5 text-white" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/[0.15] text-xs text-white/40 hover:border-sky-500/50 hover:text-sky-400 transition-colors cursor-pointer" style={{ height: 100 }}>
+                    {uploadingCourtImage ? "Subiendo…" : "Subir foto de la cancha"}
+                    <span className="text-[10px] text-white/25">Recomendado: 800×500 px</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleCourtImage} disabled={uploadingCourtImage} />
+                  </label>
+                )}
+                {/* Descripción */}
+                <input
+                  value={form.description}
+                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                  placeholder="Descripción breve (ej: Techada · Iluminación LED · Césped 10mm)"
+                  className="w-full h-10 rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 text-sm text-white placeholder-white/20 focus:outline-none focus:border-sky-500/60"
+                />
+                <p className="text-[10px] text-white/25">Se muestra en el booking público bajo el nombre de la cancha</p>
               </div>
             </div>
 

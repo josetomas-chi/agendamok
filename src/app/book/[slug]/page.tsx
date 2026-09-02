@@ -73,7 +73,7 @@ export default async function BookingPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <BookingClient slug={slug} />
+      <BookingClient slug={slug} initialName={business.name} initialLogo={business.logo} />
     </>
   )
 }

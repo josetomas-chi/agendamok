@@ -19,7 +19,7 @@ type Staff = {
   user: { name: string | null; image: string | null }
 }
 type PricingRule = { days: number[]; startTime: string; endTime: string; price: number; fixedSlots: string[] }
-type Court = { id: string; name: string; sport: string | null; color: string; description: string | null; sponsorName: string | null; sponsorLogo: string | null; sponsorUrl: string | null; pricingRules: PricingRule[] }
+type Court = { id: string; name: string; sport: string | null; color: string; description: string | null; image: string | null; sponsorName: string | null; sponsorLogo: string | null; sponsorUrl: string | null; pricingRules: PricingRule[] }
 type Business = {
   id: string; name: string; category: string; description: string | null
   logo: string | null; coverImage: string | null; coverImagePositionY: number | null; phone: string | null
@@ -109,7 +109,7 @@ function BankDetails({
   )
 }
 
-export default function BookingClient({ slug }: { slug: string }) {
+export default function BookingClient({ slug, initialName, initialLogo }: { slug: string; initialName?: string; initialLogo?: string | null }) {
   const [business, setBusiness] = useState<Business | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -206,10 +206,20 @@ export default function BookingClient({ slug }: { slug: string }) {
   }, [business, slug])
 
   if (loading || !autoChecked) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: "#0f0f11" }}>
-      <div className="flex flex-col items-center gap-3">
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#38bdf8" }} />
-        <p className="text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>Cargando...</p>
+    <div className="min-h-screen flex flex-col items-center justify-center gap-5" style={{ background: "#0f0f11" }}>
+      {initialLogo ? (
+        <img src={initialLogo} alt={initialName ?? "Logo"} style={{ width: 72, height: 72, borderRadius: 16, objectFit: "cover" }} />
+      ) : (
+        <div style={{ width: 72, height: 72, borderRadius: 16, background: "#1c1c1e", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Calendar className="w-8 h-8" style={{ color: "#38bdf8" }} />
+        </div>
+      )}
+      {initialName && (
+        <p className="font-semibold text-base" style={{ color: "rgba(255,255,255,0.85)", letterSpacing: "-0.01em" }}>{initialName}</p>
+      )}
+      <div className="flex flex-col items-center gap-2">
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#38bdf8" }} />
+        <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>Cargando...</p>
       </div>
     </div>
   )
@@ -844,23 +854,51 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                     {results.filter(c => c.slots.length > 0).map(court => (
                       <div key={court.id} className="rounded-2xl overflow-hidden" style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}` }}>
                         {/* Color bar */}
-                        <div className="h-1" style={{ background: court.color }} />
-                        {/* Court header */}
-                        <div className="px-4 pt-3 pb-2 flex items-center gap-3">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-sm text-white">{court.name}</p>
-                            {court.slots[0]?.price > 0 && (
-                              <p className="text-xs mt-0.5 font-semibold" style={{ color: SPORTS_ACCENT }}>
-                                desde ${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")}/hr
-                              </p>
-                            )}
+                        {/* Court image or color bar */}
+                        {court.image ? (
+                          <div className="relative h-32 overflow-hidden">
+                            <img src={court.image} alt={court.name} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.75) 100%)" }} />
+                            <div className="absolute bottom-0 left-0 right-0 px-4 pb-2.5 flex items-end justify-between gap-2">
+                              <div>
+                                <p className="font-bold text-sm text-white leading-tight">{court.name}</p>
+                                {court.slots[0]?.price > 0 && (
+                                  <p className="text-[11px] font-semibold" style={{ color: SPORTS_ACCENT }}>
+                                    desde ${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")} · {duration} min
+                                  </p>
+                                )}
+                              </div>
+                              {court.sponsorLogo && (
+                                <img src={court.sponsorLogo} alt={court.sponsorName || ""}
+                                  className="h-7 w-auto max-w-[60px] object-contain flex-shrink-0 rounded"
+                                  style={{ background: "white", padding: "3px" }} />
+                              )}
+                            </div>
                           </div>
-                          {court.sponsorLogo && (
-                            <img src={court.sponsorLogo} alt={court.sponsorName || ""}
-                              className="h-9 w-auto max-w-[72px] object-contain flex-shrink-0 rounded"
-                              style={{ background: "white", padding: "4px" }} />
-                          )}
-                        </div>
+                        ) : (
+                          <>
+                            <div className="h-1" style={{ background: court.color }} />
+                            <div className="px-4 pt-3 pb-2 flex items-center gap-3">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-bold text-sm text-white">{court.name}</p>
+                                {court.slots[0]?.price > 0 && (
+                                  <p className="text-xs mt-0.5 font-semibold" style={{ color: SPORTS_ACCENT }}>
+                                    desde ${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")} · {duration} min
+                                  </p>
+                                )}
+                              </div>
+                              {court.sponsorLogo && (
+                                <img src={court.sponsorLogo} alt={court.sponsorName || ""}
+                                  className="h-9 w-auto max-w-[72px] object-contain flex-shrink-0 rounded"
+                                  style={{ background: "white", padding: "4px" }} />
+                              )}
+                            </div>
+                          </>
+                        )}
+                        {/* Descripción de la cancha */}
+                        {court.description && (
+                          <p className="px-4 pb-2 text-[11px] leading-snug" style={{ color: "rgba(255,255,255,0.4)" }}>{court.description}</p>
+                        )}
                         {/* Time slots */}
                         <div className="px-4 pb-4 grid grid-cols-4 gap-1.5">
                           {court.slots.map(slot => {
