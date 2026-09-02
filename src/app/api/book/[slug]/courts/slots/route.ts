@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { addMinutes, format, parseISO, startOfDay, endOfDay } from "date-fns"
+import { chileLocalToUTC } from "@/lib/timezone"
 
 export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -60,10 +61,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     const slotEnd = addMinutes(cursor, duration)
     if (slotEnd > cutoff) break
     if (cursor > now) {
+      const cursorUTC = chileLocalToUTC(cursor)
+      const slotEndUTC = chileLocalToUTC(slotEnd)
       const overlaps = existing.some(b => {
         const bStart = new Date(b.startTime)
         const bEnd = new Date(b.endTime)
-        return cursor < bEnd && slotEnd > bStart
+        return cursorUTC < bEnd && slotEndUTC > bStart
       })
       if (!overlaps) {
         // Calcular precio proporcional, soportando cruces de tarifa (ej. 17:00–18:30)
