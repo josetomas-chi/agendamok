@@ -1135,27 +1135,23 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                   <Check className="w-4 h-4 flex-shrink-0" style={{ color: SPORTS_ACCENT }} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-white">Ya tienes cuenta</p>
-                    <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>Ingresa para confirmar la reserva desde tu perfil</p>
+                    <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>Ingresa para confirmar tu reserva</p>
                   </div>
                 </div>
                 <button
                   onClick={() => {
-                    sessionStorage.setItem("booking_pending", JSON.stringify({
-                      slug,
-                      businessName: business.name,
-                      courtId: selectedCourt?.id,
-                      courtName: selectedCourt?.name,
-                      courtColor: selectedCourt?.color,
-                      sport: selectedCourt?.sport,
-                      slot: selectedSlot,
+                    sessionStorage.setItem(COURT_SESSION_KEY(slug), JSON.stringify({
                       date: selectedDate,
+                      sports: selectedSports,
                       duration,
                       form,
                       rut,
-                      courtPayMethod,
-                      price: selectedSlot?.price ?? 0,
+                      emailExists: true,
+                      courtId: selectedCourt?.id,
+                      slot: selectedSlot,
+                      autoConfirm: true,
                     }))
-                    window.location.href = `/login?callbackUrl=/profile`
+                    window.location.href = `/login?callbackUrl=${encodeURIComponent(`/book/${slug}`)}`
                   }}
                   className="w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
                   style={{ background: SPORTS_ACCENT, color: SPORTS_BG }}>
