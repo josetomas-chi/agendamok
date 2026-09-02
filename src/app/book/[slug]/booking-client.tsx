@@ -741,7 +741,8 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
         return
       }
     }
-    window.location.href = "/profile"
+    if (isLoggedIn) window.location.href = "/profile"
+    // else: stay on confirmed page — user sees success without needing a profile
   }
 
   function reset() {
@@ -1348,13 +1349,13 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
           )}
 
           {allowTransfer ? (
-            <a href="/profile"
+            <a href={isLoggedIn ? "/profile" : undefined}
               onClick={e => { if (!voucherUploaded) e.preventDefault() }}
               className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-sm transition-all"
               style={voucherUploaded
                 ? { background: SPORTS_ACCENT, color: SPORTS_BG }
                 : { background: "rgba(56,189,248,0.08)", color: "rgba(56,189,248,0.4)", border: `1px solid ${SPORTS_BORDER}`, cursor: "not-allowed" }}>
-              {voucherUploaded ? "Ver mis reservas →" : "Sube el comprobante para continuar"}
+              {voucherUploaded ? (isLoggedIn ? "Ver mis reservas →" : "¡Listo! Puedes cerrar esta ventana") : "Sube el comprobante para continuar"}
             </a>
           ) : (
             <>

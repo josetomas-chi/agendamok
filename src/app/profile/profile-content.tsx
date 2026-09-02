@@ -298,7 +298,14 @@ export default function ProfileContent() {
       .then(session => {
         if (!session?.user) { router.push("/login?callbackUrl=/profile"); return }
         return fetch("/api/profile")
-          .then(r => r.ok ? r.json() : null)
+          .then(async r => {
+            if (!r.ok) {
+              const txt = await r.text().catch(() => "")
+              console.error("[profile] /api/profile failed", r.status, txt)
+              return null
+            }
+            return r.json()
+          })
           .then(d => { if (d) setData(d) })
       })
       .catch(() => router.push("/login?callbackUrl=/profile"))
