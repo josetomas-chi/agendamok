@@ -768,7 +768,9 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
 
   function reset() {
     setStep("home"); setSelectedCourt(null); setSelectedSlot(null)
-    setForm({ name: "", email: "", phone: "", notes: "" })
+    // Keep personal data (name, email, phone, rut) so the user doesn't re-type
+    // them when booking another court in the same session. Only clear notes.
+    setForm(prev => ({ ...prev, notes: "" }))
     setCreateAccount(false); setPassword("")
   }
 
@@ -1654,7 +1656,7 @@ function ServiceBookingFlow({ business, slug, initialClient }: { business: Busin
   function resetBooking() {
     setStep("home"); setSelectedService(null); setSelectedStaff(null)
     setSelectedDate(""); setSelectedTime(""); setSearchQ(""); setWeekOffset(0)
-    setForm({ name: "", email: "", phone: "", notes: "" })
+    setForm(prev => ({ ...prev, notes: "" }))
   }
 
   function pickService(s: Service) {
