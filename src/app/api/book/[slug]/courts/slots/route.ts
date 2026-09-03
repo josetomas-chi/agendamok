@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { addMinutes, format, parseISO, startOfDay, endOfDay } from "date-fns"
+import { addMinutes, format, parseISO, startOfDay } from "date-fns"
 import { chileLocalToUTC } from "@/lib/timezone"
 
 export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
@@ -27,7 +27,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   const day = parseISO(date)
   const dayOfWeek = day.getDay() // 0=Sun ... 6=Sat
   const dayStart = startOfDay(day)
-  const dayEnd = endOfDay(day)
 
   // Determine operating hours from pricing rules for this day, default 8–22
   const rulesForDay = court.pricingRules.filter(r => r.days.includes(dayOfWeek))
@@ -39,11 +38,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     closeHour = Math.max(...ends)
   }
 
-  // Existing bookings
+  // Compute UTC boundaries for the operating window in Chile time. This ensures bookings
+  // whose startTime crosses midnight UTC (e.g. 20:00–22:00 Chile = 00:00–02:00 UTC+1)
+  // are captured even when their startTime falls outside the UTC calendar day.
+  const chileOpen = new Date(dayStart); chileOpen.setHours(openHour, 0, 0, 0)
+  const chileClose = new Date(dayStart); chileClose.setHours(closeHour, 0, 0, 0)
+  const periodStartUTC = chileLocalToUTC(chileOpen)
+  const periodEndUTC = chileLocalToUTC(chileClose)
+
+  // Existing bookings that overlap with this operating window
   const existing = await prisma.courtBooking.findMany({
     where: {
       courtId,
-      startTime: { gte: dayStart, lte: dayEnd },
+      startTime: { lt: periodEndUTC },
+      endTime: { gt: periodStartUTC },
       status: { notIn: ["CANCELLED"] },
       deletedAt: null,
     },
