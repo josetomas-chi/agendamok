@@ -1176,7 +1176,23 @@ function SettingsContent() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setPaySettings(s => ({ ...s, onlinePaymentsEnabled: !s.onlinePaymentsEnabled }))}
+                  onClick={async () => {
+                    if (!business) return
+                    const next = !paySettings.onlinePaymentsEnabled
+                    setPaySettings(s => ({ ...s, onlinePaymentsEnabled: next }))
+                    const r = await fetch(`/api/businesses/${business.id}/payment-settings`, {
+                      method: "PATCH", headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ onlinePaymentsEnabled: next }),
+                    })
+                    if (r.ok) {
+                      const d = await r.json()
+                      setPaySettings(d)
+                      toast.success(next ? "Cobros online activados" : "Cobros online desactivados")
+                    } else {
+                      setPaySettings(s => ({ ...s, onlinePaymentsEnabled: !next }))
+                      toast.error("Error al guardar")
+                    }
+                  }}
                   className={`relative w-11 h-6 rounded-full transition-colors ${paySettings.onlinePaymentsEnabled && paySettings.hasCredentials ? "bg-sky-500" : "bg-muted"}`}
                   disabled={!paySettings.hasCredentials}
                 >
