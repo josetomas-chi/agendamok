@@ -958,6 +958,7 @@ enum CourtBookingStatus {
   CONFIRMED
   CANCELLED
   COMPLETED
+  PENDING
 }
 
 enum MembershipStatus {
