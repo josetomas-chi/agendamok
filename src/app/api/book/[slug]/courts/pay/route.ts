@@ -80,8 +80,8 @@ export async function POST(req: Request, { params }: Params) {
   const clientAmount = Math.round(price * pct / 100)
 
   // Cancel stale PENDING bookings before attempting to create a new one:
-  // - Any expired PENDING on this court (any client)
-  // - Any PENDING from this client on this court (allow retrying different slots)
+  // - Any expired PENDING on this court (any client, older than 15min)
+  // - Any PENDING from this client for this exact same slot (retry on same slot)
   const expiryThreshold = new Date(Date.now() - PENDING_EXPIRY_MS)
   try {
     await prisma.courtBooking.updateMany({
@@ -90,7 +90,7 @@ export async function POST(req: Request, { params }: Params) {
         status: "PENDING",
         OR: [
           { createdAt: { lt: expiryThreshold } },
-          { clientId: client!.id },
+          { clientId: client!.id, startTime, endTime },
         ],
       },
       data: { status: "CANCELLED" },
