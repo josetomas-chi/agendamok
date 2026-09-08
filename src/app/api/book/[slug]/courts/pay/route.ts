@@ -145,7 +145,7 @@ export async function POST(req: Request, { params }: Params) {
         subject: `Cancha ${court.name} — ${business.name}`,
         amount: clientAmount,
         email: clientEmail,
-        urlReturn: `${baseUrl}/book/${slug}/pay-court-return?orderId=${commerceOrder}&bookingId=${booking.id}`,
+        urlReturn: `${baseUrl}/book/${slug}/pay-court-return/${booking.id}`,
         urlConfirmation: `${baseUrl}/api/book/${slug}/courts/pay-webhook`,
       }
     )
