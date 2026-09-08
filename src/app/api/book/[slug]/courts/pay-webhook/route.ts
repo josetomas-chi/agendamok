@@ -52,23 +52,23 @@ export async function POST(req: Request, { params }: Params) {
 
       const paidAmount = Number(payment.amount ?? 0)
 
-      await prisma.$transaction([
-        prisma.courtBooking.update({
-          where: { id: bookingId },
-          data: { status: "CONFIRMED", paidAmount, paidOnline: true },
-        }),
-        prisma.payment.create({
-          data: {
-            businessId: business.id,
-            courtBookingId: bookingId,
-            amount: paidAmount,
-            currency: "CLP",
-            status: "PAID",
-            method: "ONLINE",
-            paidAt: new Date(),
-          },
-        }),
-      ])
+      await prisma.courtBooking.update({
+        where: { id: bookingId },
+        data: { status: "CONFIRMED", paidAmount, paidOnline: true },
+      })
+      await prisma.payment.upsert({
+        where: { courtBookingId: bookingId },
+        create: {
+          businessId: business.id,
+          courtBookingId: bookingId,
+          amount: paidAmount,
+          currency: "CLP",
+          status: "PAID",
+          method: "ONLINE",
+          paidAt: new Date(),
+        },
+        update: { amount: paidAmount, status: "PAID", paidAt: new Date() },
+      })
 
       // Client confirmation email
       if (booking.client.email) {
