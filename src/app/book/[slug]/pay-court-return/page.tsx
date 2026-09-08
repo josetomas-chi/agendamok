@@ -8,17 +8,41 @@ import Link from "next/link"
 function PayCourtReturnContent() {
   const { slug } = useParams<{ slug: string }>()
   const searchParams = useSearchParams()
+  const bookingId = searchParams.get("bookingId")
   const token = searchParams.get("token")
 
   const [status, setStatus] = useState<"loading" | "paid" | "failed">("loading")
 
   useEffect(() => {
-    if (!token) { setStatus("failed"); return }
-    fetch(`/api/book/${slug}/payment-result?token=${token}`)
-      .then(r => r.json())
-      .then(d => setStatus(d.paid ? "paid" : "failed"))
-      .catch(() => setStatus("failed"))
-  }, [slug, token])
+    if (!bookingId) { setStatus("failed"); return }
+
+    let attempts = 0
+    const maxAttempts = 8
+
+    async function poll() {
+      attempts++
+      try {
+        const params = new URLSearchParams({ bookingId })
+        if (token) params.set("token", token)
+        const r = await fetch(`/api/book/${slug}/courts/booking-status?${params}`)
+        const d = await r.json()
+        if (d.status === "confirmed") { setStatus("paid"); return }
+        if (d.status === "cancelled") { setStatus("failed"); return }
+        // still pending — retry
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 1500)
+        } else {
+          setStatus("failed")
+        }
+      } catch {
+        if (attempts < maxAttempts) setTimeout(poll, 1500)
+        else setStatus("failed")
+      }
+    }
+
+    poll()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="min-h-screen bg-[#0d1b2a] text-[#f4f4f5] flex items-center justify-center px-4">
