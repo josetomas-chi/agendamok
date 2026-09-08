@@ -68,8 +68,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   while (cursor < cutoff) {
     const slotEnd = addMinutes(cursor, duration)
     if (slotEnd > cutoff) break
-    if (cursor > now) {
-      const cursorUTC = chileLocalToUTC(cursor)
+    const cursorUTC = chileLocalToUTC(cursor)
+    if (cursorUTC > now) {
       const slotEndUTC = chileLocalToUTC(slotEnd)
       const overlaps = existing.some(b => {
         const bStart = new Date(b.startTime)
