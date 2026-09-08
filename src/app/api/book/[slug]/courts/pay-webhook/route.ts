@@ -26,7 +26,9 @@ export async function POST(req: Request, { params }: Params) {
   const body = await req.text()
   const rawParams = Object.fromEntries(new URLSearchParams(body))
 
-  if (!verifyBusinessWebhook(business.flowSecretKey, rawParams)) {
+  const sigOk = verifyBusinessWebhook(business.flowSecretKey, rawParams)
+  console.log("[pay-webhook] sig check:", sigOk, "secretLen:", business.flowSecretKey?.length, "params:", Object.keys(rawParams).sort().join(","), "s:", rawParams.s?.slice(0, 8))
+  if (!sigOk) {
     return NextResponse.json({ error: "Firma inválida" }, { status: 401 })
   }
 
