@@ -20,7 +20,7 @@ export async function GET(req: Request, { params }: Params) {
 
   const booking = await prisma.courtBooking.findFirst({
     where: { id: bookingId, businessId: business.id },
-    select: { status: true },
+    select: { status: true, notes: true },
   })
   if (!booking) return NextResponse.json({ status: "not_found" }, { status: 404 })
 
@@ -28,11 +28,14 @@ export async function GET(req: Request, { params }: Params) {
   if (booking.status === "CONFIRMED") return NextResponse.json({ status: "confirmed" })
   if (booking.status === "CANCELLED") return NextResponse.json({ status: "cancelled" })
 
+  // Resolve token: from URL param or from stored [ftoken:...] in notes
+  const flowToken = token ?? booking.notes?.match(/\[ftoken:([^\]]+)\]/)?.[1] ?? null
+
   // Still PENDING — try to confirm via Flow API as fallback (for when webhook is delayed)
-  if (token && business.flowApiKey && business.flowSecretKey) {
+  if (flowToken && business.flowApiKey && business.flowSecretKey) {
     let flowError: string | null = null
     try {
-      const payment = await businessGetPaymentStatus(business.flowApiKey, business.flowSecretKey, token)
+      const payment = await businessGetPaymentStatus(business.flowApiKey, business.flowSecretKey, flowToken)
       if (payment.status === 2) {
         await prisma.courtBooking.update({
           where: { id: bookingId },
@@ -44,8 +47,8 @@ export async function GET(req: Request, { params }: Params) {
     } catch (err) {
       flowError = err instanceof Error ? err.message : String(err)
     }
-    return NextResponse.json({ status: "pending", debug: { bookingStatus: booking.status, flowError, hasToken: !!token } })
+    return NextResponse.json({ status: "pending", debug: { bookingStatus: booking.status, flowError, hasToken: !!flowToken } })
   }
 
-  return NextResponse.json({ status: "pending", debug: { bookingStatus: booking.status, hasToken: !!token } })
+  return NextResponse.json({ status: "pending", debug: { bookingStatus: booking.status, hasToken: !!flowToken } })
 }

@@ -150,10 +150,10 @@ export async function POST(req: Request, { params }: Params) {
       }
     )
 
-    // Store the commerce order so we can reconcile on webhook
+    // Store commerce order and Flow token for webhook reconciliation and status fallback
     await prisma.courtBooking.update({
       where: { id: booking.id },
-      data: { notes: `[flow:${commerceOrder}] ${notes || ""}`.trim() },
+      data: { notes: `[flow:${commerceOrder}][ftoken:${result.token}] ${notes || ""}`.trim() },
     })
 
     return NextResponse.json({ url: result.url, token: result.token, bookingId: booking.id })
