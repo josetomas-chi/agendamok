@@ -497,6 +497,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   const [selectedCourt, setSelectedCourt] = useState<CourtResult | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<{ time: string; price: number; paymentPlayers: number; duration: number } | null>(null)
   const [courtPayMethod, setCourtPayMethod] = useState<"local" | "online">("local")
+  const [depositPct, setDepositPct] = useState<25 | 50 | 100>(25)
   const [step, setStep] = useState<CourtStep>("home")
   const [pressingSlot, setPressingSlot] = useState<string | null>(null) // courtId-slotTime
 
@@ -667,6 +668,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
           notes: form.notes || undefined,
           price: selectedSlot.price,
           paymentPlayers: selectedSlot.paymentPlayers,
+          depositPct,
         }),
       })
       const d = await r.json()
@@ -678,7 +680,8 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
           body: JSON.stringify({ name: form.name, email: form.email, password }),
         })
       }
-      window.location.href = d.url
+      // Flow payment URL requires the token as query param
+      window.location.href = d.token ? `${d.url}?token=${d.token}` : d.url
       return
     }
 
@@ -1253,10 +1256,31 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                     </button>
                   ))}
                 </div>
-                {courtPayMethod === "online" && selectedSlot.paymentPlayers > 1 && (
-                  <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.35)" }}>
-                    Pagas tu parte ({selectedSlot.paymentPlayers === 2 ? "50%" : "25%"}) · El resto lo pagan los otros jugadores
-                  </p>
+                {courtPayMethod === "online" && (
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: SPORTS_ACCENT }}>Monto a pagar ahora</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([25, 50, 100] as const).map(pct => {
+                        const amt = Math.round(selectedSlot.price * pct / 100)
+                        return (
+                          <button key={pct} type="button" onClick={() => setDepositPct(pct)}
+                            className="py-2.5 px-2 rounded-xl text-center transition-all"
+                            style={depositPct === pct
+                              ? { background: "rgba(56,189,248,0.15)", border: `1.5px solid ${SPORTS_ACCENT}`, color: "#f0f6ff" }
+                              : { background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}`, color: "rgba(255,255,255,0.4)" }}>
+                            <p className="text-[10px] font-bold">{pct === 100 ? "Total" : `${pct}%`}</p>
+                            <p className="text-xs font-bold text-white">${amt.toLocaleString("es-CL")}</p>
+                            {pct === 25 && <p className="text-[9px] opacity-50">mínimo</p>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {depositPct < 100 && (
+                      <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+                        Resto (${Math.round(selectedSlot.price * (100 - depositPct) / 100).toLocaleString("es-CL")}) se paga en cancha
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -1283,7 +1307,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                 : sessionChecked && !isLoggedIn && emailExists
                   ? "Ingresar y confirmar →"
                   : courtPayMethod === "online" && business.onlinePaymentsEnabled && selectedSlot.price > 0
-                    ? `Pagar $${Math.round(selectedSlot.price / Math.max(1, selectedSlot.paymentPlayers)).toLocaleString("es-CL")} →`
+                    ? `Pagar $${Math.round(selectedSlot.price * depositPct / 100).toLocaleString("es-CL")} →`
                     : "Confirmar reserva →"}
             </button>
           </div>

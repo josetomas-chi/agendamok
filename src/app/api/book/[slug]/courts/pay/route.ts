@@ -31,6 +31,7 @@ export async function POST(req: Request, { params }: Params) {
     courtId, date, time, duration = 60,
     clientName, clientEmail, clientPhone, notes,
     paymentPlayers = 1,
+    depositPct = 100,
   } = body
 
   if (!courtId || !date || !time || !clientName || !clientEmail) {
@@ -74,8 +75,9 @@ export async function POST(req: Request, { params }: Params) {
     })
   }
 
-  // Amount each player pays (their share of the total)
-  const clientAmount = Math.round(price / Math.max(1, Number(paymentPlayers)))
+  // Amount to charge now: depositPct % of total (min 25%, max 100%)
+  const pct = Math.min(100, Math.max(25, Number(depositPct)))
+  const clientAmount = Math.round(price * pct / 100)
 
   // Atomic: check availability + create PENDING booking in a serializable transaction
   const expiryThreshold = new Date(Date.now() - PENDING_EXPIRY_MS)
