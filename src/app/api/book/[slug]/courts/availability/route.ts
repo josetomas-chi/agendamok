@@ -103,7 +103,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         const start = new Date(dayStart)
         start.setHours(sh, sm, 0, 0)
         const end = addMinutes(start, ruleDuration)
-        if (start <= now) continue
+        if (chileLocalToUTC(start) <= now) continue
         if (!isBooked(start, end)) {
           slots.push({ time: slotTime, price: Number(rule.price), paymentPlayers: rule.paymentPlayers ?? 1, duration: ruleDuration })
         }
@@ -122,7 +122,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       while (cursor < cutoff) {
         const slotEnd = addMinutes(cursor, duration)
         if (slotEnd > cutoff) break
-        if (cursor > now && !isBooked(cursor, slotEnd)) {
+        if (chileLocalToUTC(cursor) > now && !isBooked(cursor, slotEnd)) {
           // Precio proporcional, soportando cruces de tarifa (ej. 17:00–18:30)
           let totalPrice = 0
           let pc = new Date(cursor)
