@@ -30,18 +30,22 @@ export async function GET(req: Request, { params }: Params) {
 
   // Still PENDING — try to confirm via Flow API as fallback (for when webhook is delayed)
   if (token && business.flowApiKey && business.flowSecretKey) {
+    let flowError: string | null = null
     try {
       const payment = await businessGetPaymentStatus(business.flowApiKey, business.flowSecretKey, token)
       if (payment.status === 2) {
-        // Webhook hasn't fired yet but payment is confirmed — update manually
         await prisma.courtBooking.update({
           where: { id: bookingId },
           data: { status: "CONFIRMED", paidAmount: Number(payment.amount ?? 0), paidOnline: true },
         })
         return NextResponse.json({ status: "confirmed" })
       }
-    } catch { /* webhook will handle it */ }
+      flowError = `flow_status:${payment.status}`
+    } catch (err) {
+      flowError = err instanceof Error ? err.message : String(err)
+    }
+    return NextResponse.json({ status: "pending", debug: { bookingStatus: booking.status, flowError, hasToken: !!token } })
   }
 
-  return NextResponse.json({ status: "pending" })
+  return NextResponse.json({ status: "pending", debug: { bookingStatus: booking.status, hasToken: !!token } })
 }

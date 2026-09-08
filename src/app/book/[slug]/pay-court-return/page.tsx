@@ -26,6 +26,7 @@ function PayCourtReturnContent() {
         if (token) params.set("token", token)
         const r = await fetch(`/api/book/${slug}/courts/booking-status?${params}`)
         const d = await r.json()
+        console.log(`[pay-court-return] attempt ${attempts}:`, d)
         if (d.status === "confirmed") { setStatus("paid"); return }
         if (d.status === "cancelled") { setStatus("failed"); return }
         // still pending — retry
