@@ -863,6 +863,12 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                               {b.status === "COMPLETED" && (
                                 <span className="text-[9px] font-black leading-none" style={{ color: "#15803d" }}>✓</span>
                               )}
+                              {b.status === "PENDING" && b.notes?.includes("[flow:") && (
+                                <span className="text-[8px] font-black px-1 rounded leading-none py-0.5" style={{ background: "#f59e0b", color: "#000" }} title="Pago online pendiente de confirmar">$?</span>
+                              )}
+                              {b.paidOnline && Number(b.paidAmount) > 0 && Number(b.paidAmount) < Number(b.price) && (
+                                <span className="text-[8px] font-black px-1 rounded leading-none py-0.5" style={{ background: "rgba(56,189,248,0.3)", color: "#0ea5e9" }} title={`Abono online: $${Number(b.paidAmount).toLocaleString("es-CL")}`}>$✓</span>
+                              )}
                               {b.transferVoucher && Number(b.paidAmount) < Number(b.price) && (
                                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "#f59e0b" }} title="Comprobante pendiente" />
                               )}
@@ -1468,9 +1474,12 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                 { label: "Fecha", value: utcDate(booking.startTime, "EEEE d 'de' MMMM yyyy") },
                 { label: "Horario", value: `${utcTime(booking.startTime)} – ${utcTime(booking.endTime)}` },
                 { label: "Precio total", value: `$${Number(booking.price).toLocaleString("es-CL")}` },
+                ...(booking.status === "PENDING" && booking.notes?.includes("[flow:") ? [
+                  { label: "Estado pago", value: "⏳ Pago online en verificación" },
+                ] : []),
                 ...(booking.paidOnline && booking.paidAmount > 0 ? [
                   { label: "Pagado online", value: `$${Number(booking.paidAmount).toLocaleString("es-CL")} ✓` },
-                  ...(Number(booking.price) - Number(booking.paidAmount) > 0 ? [{ label: "Pendiente", value: `$${(Number(booking.price) - Number(booking.paidAmount)).toLocaleString("es-CL")}` }] : []),
+                  ...(Number(booking.price) - Number(booking.paidAmount) > 0 ? [{ label: "Pendiente en cancha", value: `$${(Number(booking.price) - Number(booking.paidAmount)).toLocaleString("es-CL")}` }] : []),
                 ] : []),
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between px-4 py-2.5" style={{ borderColor: "rgba(13,27,42,0.06)" }}>
