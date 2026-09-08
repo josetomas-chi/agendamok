@@ -496,7 +496,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   // Booking state
   const [selectedCourt, setSelectedCourt] = useState<CourtResult | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<{ time: string; price: number; paymentPlayers: number; duration: number } | null>(null)
-  const [courtPayMethod, setCourtPayMethod] = useState<"local" | "online">("local")
+  const [courtPayMethod, setCourtPayMethod] = useState<"local" | "online">(business.onlinePaymentsEnabled ? "online" : "local")
   const [depositPct, setDepositPct] = useState<25 | 50 | 100>(25)
   const [step, setStep] = useState<CourtStep>("home")
   const [pressingSlot, setPressingSlot] = useState<string | null>(null) // courtId-slotTime
@@ -589,8 +589,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
 
   async function search(restore?: typeof pendingRestore) {
     setSearching(true)
-    const multiSport = selectedSports.length > 1
-    const params = new URLSearchParams({ date: selectedDate, duration: multiSport ? "0" : String(duration) })
+    const params = new URLSearchParams({ date: selectedDate, duration: String(duration) })
     if (selectedSports.length > 0) params.set("sport", selectedSports.join(","))
     const r = await fetch(`/api/book/${slug}/courts/availability?${params}`)
     const d = await r.json()
@@ -619,8 +618,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   useEffect(() => {
     const from = format(weekDays[0], "yyyy-MM-dd")
     const to = format(weekDays[6], "yyyy-MM-dd")
-    const multiSport = selectedSports.length > 1
-    const params = new URLSearchParams({ from, to, duration: multiSport ? "0" : String(duration) })
+    const params = new URLSearchParams({ from, to, duration: String(duration) })
     if (selectedSports.length > 0) params.set("sport", selectedSports.join(","))
     fetch(`/api/book/${slug}/courts/week-availability?${params}`)
       .then(r => r.json())
@@ -883,8 +881,8 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
               </div>
             )}
 
-            {/* Duration — only shown when a single sport is selected */}
-            {selectedSports.length <= 1 && (
+            {/* Duration selector */}
+            {availableDurations.length > 1 && (
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: SPORTS_ACCENT }}>Duración</p>
                 <div className="flex gap-2">
@@ -1233,28 +1231,13 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
             </div>
             )}
 
-            {/* Payment method selector (only if online payments enabled and price > 0) */}
+            {/* Payment method selector — when online payments enabled, pago online is mandatory (min 25%) */}
             {business.onlinePaymentsEnabled && selectedSlot.price > 0 && (
               <div className="space-y-2">
                 <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: SPORTS_ACCENT }}>Forma de pago</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {([
-                    { value: "local" as const, label: "Pagar en cancha", sub: "Efectivo o tarjeta" },
-                    {
-                      value: "online" as const,
-                      label: "Pagar ahora",
-                      sub: `$${Math.round(selectedSlot.price / Math.max(1, selectedSlot.paymentPlayers)).toLocaleString("es-CL")} con tarjeta`,
-                    },
-                  ]).map(opt => (
-                    <button key={opt.value} type="button" onClick={() => setCourtPayMethod(opt.value)}
-                      className="py-3 px-3 rounded-xl text-left transition-all"
-                      style={courtPayMethod === opt.value
-                        ? { background: "rgba(56,189,248,0.15)", border: `1.5px solid ${SPORTS_ACCENT}`, color: "#f0f6ff" }
-                        : { background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}`, color: "rgba(255,255,255,0.4)" }}>
-                      <p className="text-xs font-bold leading-none text-white">{opt.label}</p>
-                      <p className="text-[10px] mt-0.5 opacity-60">{opt.sub}</p>
-                    </button>
-                  ))}
+                <div className="rounded-xl py-3 px-3" style={{ background: "rgba(56,189,248,0.15)", border: `1.5px solid ${SPORTS_ACCENT}` }}>
+                  <p className="text-xs font-bold text-white">Pagar ahora con tarjeta</p>
+                  <p className="text-[10px] mt-0.5 opacity-60">Mínimo 25% para confirmar la reserva</p>
                 </div>
                 {courtPayMethod === "online" && (
                   <div className="space-y-1.5">

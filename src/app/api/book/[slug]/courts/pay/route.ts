@@ -79,8 +79,23 @@ export async function POST(req: Request, { params }: Params) {
   const pct = Math.min(100, Math.max(25, Number(depositPct)))
   const clientAmount = Math.round(price * pct / 100)
 
-  // Atomic: check availability + create PENDING booking in a serializable transaction
+  // Cancel any stale PENDING bookings for this slot (expired or from the same client retrying)
   const expiryThreshold = new Date(Date.now() - PENDING_EXPIRY_MS)
+  await prisma.courtBooking.updateMany({
+    where: {
+      courtId,
+      startTime,
+      endTime,
+      status: "PENDING",
+      OR: [
+        { createdAt: { lt: expiryThreshold } },
+        { clientId: client.id },
+      ],
+    },
+    data: { status: "CANCELLED" },
+  })
+
+  // Atomic: check availability + create PENDING booking in a serializable transaction
   let booking: { id: string } | null = null
   try {
     booking = await prisma.$transaction(async (tx) => {
