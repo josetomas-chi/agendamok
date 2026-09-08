@@ -1491,8 +1491,8 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                 </div>
               ))}
             </div>
-            {booking.notes && (
-              <p className="text-xs px-1 italic" style={{ color: "rgba(13,27,42,0.45)" }}>"{booking.notes}"</p>
+            {booking.notes?.replace(/\[flow:[^\]]*\]/g, "").replace(/\[ftoken:[^\]]*\]/g, "").trim() && (
+              <p className="text-xs px-1 italic" style={{ color: "rgba(13,27,42,0.45)" }}>"{booking.notes.replace(/\[flow:[^\]]*\]/g, "").replace(/\[ftoken:[^\]]*\]/g, "").trim()}"</p>
             )}
 
             {/* Comprobante transferencia */}
