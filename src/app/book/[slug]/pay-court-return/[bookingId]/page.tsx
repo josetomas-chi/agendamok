@@ -62,10 +62,16 @@ function PayCourtReturnContent() {
               <h1 className="text-2xl font-bold">Pago exitoso</h1>
               <p className="text-white/50 mt-2">Tu cancha está reservada. Recibirás un correo de confirmación.</p>
             </div>
-            <Link href={`/book/${slug}`}
-              className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-sky-500 hover:bg-sky-400 transition-colors font-semibold text-sm">
-              Reservar otra cancha
-            </Link>
+            <div className="flex flex-col gap-3">
+              <Link href={`/book/${slug}`}
+                className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-sky-500 hover:bg-sky-400 transition-colors font-semibold text-sm">
+                Reservar otra cancha
+              </Link>
+              <Link href={`/book/${slug}/my-bookings`}
+                className="inline-flex items-center justify-center px-6 py-3 rounded-xl border border-white/20 hover:border-white/40 transition-colors font-semibold text-sm">
+                Ver mis reservas
+              </Link>
+            </div>
           </>
         )}
         {status === "failed" && (
