@@ -867,7 +867,10 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                                 <span className="text-[8px] font-black px-1 rounded leading-none py-0.5" style={{ background: "#f59e0b", color: "#000" }} title="Pago online pendiente de confirmar">$?</span>
                               )}
                               {b.paidOnline && Number(b.paidAmount) > 0 && Number(b.paidAmount) < Number(b.price) && (
-                                <span className="text-[8px] font-black px-1 rounded leading-none py-0.5" style={{ background: "rgba(56,189,248,0.3)", color: "#0ea5e9" }} title={`Abono online: $${Number(b.paidAmount).toLocaleString("es-CL")}`}>$✓</span>
+                                <span className="text-[8px] font-black px-1 rounded leading-none py-0.5" style={{ background: "rgba(34,197,94,0.25)", color: "#16a34a" }} title={`Abono online: $${Number(b.paidAmount).toLocaleString("es-CL")}`}>$✓</span>
+                              )}
+                              {b.paidOnline && Number(b.paidAmount) >= Number(b.price) && Number(b.price) > 0 && (
+                                <span className="text-[8px] font-black px-1 rounded leading-none py-0.5" style={{ background: "rgba(34,197,94,0.25)", color: "#16a34a" }} title={`Pago completo online: $${Number(b.paidAmount).toLocaleString("es-CL")}`}>$✓✓</span>
                               )}
                               {b.transferVoucher && Number(b.paidAmount) < Number(b.price) && (
                                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "#f59e0b" }} title="Comprobante pendiente" />
