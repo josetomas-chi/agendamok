@@ -147,8 +147,9 @@ export async function POST(req: Request, { params }: Params) {
         })
       }
     }
-  } catch {
-    // Flow expects 200
+  } catch (err) {
+    console.error("[pay-webhook] error:", err instanceof Error ? err.message : err)
+    // Flow expects 200 regardless
   }
 
   return NextResponse.json({ ok: true })

@@ -156,7 +156,9 @@ async function businessFlowGet(
   params.s = signWith(params, secretKey)
   const qs = new URLSearchParams(params).toString()
   const res = await fetch(`${API_URL}${endpoint}?${qs}`)
-  return res.json()
+  const text = await res.text()
+  if (!res.ok) throw new Error(`Flow error ${res.status}: ${text}`)
+  return JSON.parse(text)
 }
 
 export async function businessCreatePayment(
