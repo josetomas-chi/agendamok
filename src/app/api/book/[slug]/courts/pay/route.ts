@@ -81,19 +81,21 @@ export async function POST(req: Request, { params }: Params) {
 
   // Cancel any stale PENDING bookings for this slot (expired or from the same client retrying)
   const expiryThreshold = new Date(Date.now() - PENDING_EXPIRY_MS)
-  await prisma.courtBooking.updateMany({
-    where: {
-      courtId,
-      startTime,
-      endTime,
-      status: "PENDING",
-      OR: [
-        { createdAt: { lt: expiryThreshold } },
-        { clientId: client.id },
-      ],
-    },
-    data: { status: "CANCELLED" },
-  })
+  try {
+    await prisma.courtBooking.updateMany({
+      where: {
+        courtId,
+        startTime,
+        endTime,
+        status: "PENDING",
+        OR: [
+          { createdAt: { lt: expiryThreshold } },
+          { clientId: client!.id },
+        ],
+      },
+      data: { status: "CANCELLED" },
+    })
+  } catch { /* non-critical — conflict check below will catch real conflicts */ }
 
   // Atomic: check availability + create PENDING booking in a serializable transaction
   let booking: { id: string } | null = null

@@ -669,8 +669,9 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
           depositPct,
         }),
       })
-      const d = await r.json()
-      if (!r.ok) { alert(d.error || "Error al iniciar pago"); setSubmitting(false); return }
+      let d: Record<string, unknown> = {}
+      try { d = await r.json() } catch { /* non-JSON response */ }
+      if (!r.ok) { alert((d.error as string) || `Error al iniciar pago (${r.status})`); setSubmitting(false); return }
       if (createAccount && password.length >= 8) {
         await fetch(`/api/book/${slug}/register`, {
           method: "POST",
@@ -679,7 +680,10 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
         })
       }
       // Flow payment URL requires the token as query param
-      window.location.href = d.token ? `${d.url}?token=${d.token}` : d.url
+      const url = d.url as string | undefined
+      const token = d.token as string | undefined
+      if (!url) { alert("Error: no se recibió URL de pago"); setSubmitting(false); return }
+      window.location.href = token ? `${url}?token=${token}` : url
       return
     }
 
