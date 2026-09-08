@@ -97,29 +97,27 @@ export async function POST(req: Request, { params }: Params) {
     })
   } catch { /* non-critical — conflict check below will catch real conflicts */ }
 
-  // Atomic: check availability + create PENDING booking in a serializable transaction
+  // Check availability then create PENDING booking
   let booking: { id: string } | null = null
   try {
-    booking = await prisma.$transaction(async (tx) => {
-      const conflict = await tx.courtBooking.findFirst({
-        where: {
-          courtId,
-          deletedAt: null,
-          startTime: { lt: endTime },
-          endTime: { gt: startTime },
-          OR: [
-            { status: { notIn: ["CANCELLED", "PENDING"] } },
-            { status: "PENDING", createdAt: { gte: expiryThreshold } },
-          ],
-        },
-      })
-      if (conflict) return null
-
-      return tx.courtBooking.create({
+    const conflict = await prisma.courtBooking.findFirst({
+      where: {
+        courtId,
+        deletedAt: null,
+        startTime: { lt: endTime },
+        endTime: { gt: startTime },
+        OR: [
+          { status: { notIn: ["CANCELLED", "PENDING"] } },
+          { status: "PENDING", createdAt: { gte: expiryThreshold } },
+        ],
+      },
+    })
+    if (!conflict) {
+      booking = await prisma.courtBooking.create({
         data: {
           businessId: business.id,
           courtId,
-          clientId: client.id,
+          clientId: client!.id,
           startTime,
           endTime,
           price,
@@ -127,9 +125,10 @@ export async function POST(req: Request, { params }: Params) {
           status: "PENDING",
         },
       })
-    }, { isolationLevel: "Serializable" })
-  } catch {
-    return NextResponse.json({ error: "Horario no disponible" }, { status: 409 })
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Error desconocido"
+    return NextResponse.json({ error: `Error al crear reserva: ${msg}` }, { status: 500 })
   }
 
   if (!booking) return NextResponse.json({ error: "Horario no disponible" }, { status: 409 })
