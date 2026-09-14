@@ -697,13 +697,22 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
       const endH = String(Math.floor(endMins / 60)).padStart(2, "0")
       const endM = String(endMins % 60).padStart(2, "0")
       const endTime = toChileUTC(dateStr, `${endH}:${endM}`)
+      const draggedBooking = bookings.find(b => b.id === info.bookingId)
+      if (draggedBooking?.paidOnline && Number(draggedBooking.paidAmount) > 0) {
+        const paid = Number(draggedBooking.paidAmount).toLocaleString("es-CL")
+        const confirmed = window.confirm(`Esta reserva tiene un pago online de $${paid}.\n¿Confirmas moverla al nuevo horario?\n\nEl pago quedará registrado en el nuevo horario.`)
+        if (!confirmed) return
+      }
       const r = await fetch(`/api/businesses/${businessId}/court-bookings/${info.bookingId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ courtId: court.courtId, startTime, endTime }),
       })
       if (r.ok) onSaved()
-      else toast.error("Error al mover la reserva")
+      else {
+        const err = await r.json().catch(() => ({}))
+        toast.error(err.error || "Error al mover la reserva")
+      }
     }
 
     document.addEventListener("mousemove", onMouseMove)
