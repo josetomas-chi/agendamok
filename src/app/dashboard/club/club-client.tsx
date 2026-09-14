@@ -1092,6 +1092,8 @@ function ClientCombobox({ clients, businessId, value, onSelect }: {
   )
 }
 
+type BookingLog = { id: string; fromStatus: string | null; toStatus: string; source: string; meta: string | null; createdAt: string }
+
 function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
   booking: Booking
   businessId: string
@@ -1107,6 +1109,15 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
   const [assigningClient, setAssigningClient] = useState(false)
   const [assignQuery, setAssignQuery] = useState("")
   const [viewClient, setViewClient] = useState<Client | null>(booking.client)
+  const [logs, setLogs] = useState<BookingLog[]>([])
+
+  useEffect(() => {
+    fetch(`/api/businesses/${businessId}/court-bookings/${booking.id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.logs) setLogs(d.logs) })
+      .catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [booking.id])
   const [editForm, setEditForm] = useState({
     date: utcDate(booking.startTime, "yyyy-MM-dd"),
     startTime: utcTime(booking.startTime),
@@ -1493,6 +1504,42 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
             </div>
             {booking.notes?.replace(/\[flow:[^\]]*\]/g, "").replace(/\[ftoken:[^\]]*\]/g, "").trim() && (
               <p className="text-xs px-1 italic" style={{ color: "rgba(13,27,42,0.45)" }}>"{booking.notes.replace(/\[flow:[^\]]*\]/g, "").replace(/\[ftoken:[^\]]*\]/g, "").trim()}"</p>
+            )}
+
+            {/* Historial de cambios */}
+            {logs.length > 0 && (
+              <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(13,27,42,0.08)" }}>
+                <div className="px-3 py-2" style={{ background: "#f5f4f0", borderBottom: "1px solid rgba(13,27,42,0.06)" }}>
+                  <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "rgba(13,27,42,0.5)" }}>Historial</p>
+                </div>
+                <div className="divide-y" style={{ divideColor: "rgba(13,27,42,0.04)" }}>
+                  {logs.map(log => {
+                    const sourceLabel: Record<string, string> = {
+                      pay_create: "Pago iniciado",
+                      polling: "Confirmado (retorno web)",
+                      webhook: "Confirmado (webhook Flow)",
+                      dashboard: "Modificado en dashboard",
+                      dashboard_delete: "Eliminado en dashboard",
+                      admin: "Admin",
+                      cancel_client: "Cancelado por cliente",
+                    }
+                    const statusColor: Record<string, string> = {
+                      CONFIRMED: "#16a34a",
+                      CANCELLED: "#dc2626",
+                      PENDING: "#ca8a04",
+                      COMPLETED: "#0ea5e9",
+                    }
+                    const time = new Date(log.createdAt).toLocaleString("es-CL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+                    return (
+                      <div key={log.id} className="flex items-center gap-2 px-3 py-2">
+                        <span className="text-[10px] tabular-nums shrink-0" style={{ color: "rgba(13,27,42,0.35)" }}>{time}</span>
+                        <span className="text-[10px] flex-1 truncate" style={{ color: "rgba(13,27,42,0.55)" }}>{sourceLabel[log.source] ?? log.source}</span>
+                        <span className="text-[10px] font-bold shrink-0" style={{ color: statusColor[log.toStatus] ?? "rgba(13,27,42,0.5)" }}>→ {log.toStatus}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
             )}
 
             {/* Comprobante transferencia */}

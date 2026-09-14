@@ -84,7 +84,7 @@ export async function POST(req: Request, { params }: Params) {
   // - Any PENDING from this client for this exact same slot (retry on same slot)
   const expiryThreshold = new Date(Date.now() - PENDING_EXPIRY_MS)
   try {
-    await prisma.courtBooking.updateMany({
+    const stalePending = await prisma.courtBooking.findMany({
       where: {
         courtId,
         status: "PENDING",
@@ -93,9 +93,21 @@ export async function POST(req: Request, { params }: Params) {
           { clientId: client!.id, startTime, endTime },
         ],
       },
-      data: { status: "CANCELLED" },
+      select: { id: true },
     })
-  } catch { /* non-critical — conflict check below will catch real conflicts */ }
+    if (stalePending.length > 0) {
+      await prisma.courtBooking.updateMany({
+        where: { id: { in: stalePending.map(b => b.id) } },
+        data: { status: "CANCELLED" },
+      })
+      await prisma.courtBookingLog.createMany({
+        data: stalePending.map(b => ({
+          bookingId: b.id, fromStatus: "PENDING", toStatus: "CANCELLED",
+          source: "pay_create", meta: JSON.stringify({ reason: "stale_or_retry", clientEmail }),
+        })),
+      })
+    }
+  } catch { /* non-critical */ }
 
   // Check availability then create PENDING booking
   let booking: { id: string } | null = null
@@ -124,6 +136,9 @@ export async function POST(req: Request, { params }: Params) {
           notes: notes || null,
           status: "PENDING",
         },
+      })
+      await prisma.courtBookingLog.create({
+        data: { bookingId: booking.id, fromStatus: null, toStatus: "PENDING", source: "pay_create", meta: JSON.stringify({ clientEmail, depositPct: pct }) },
       })
     }
   } catch (err) {

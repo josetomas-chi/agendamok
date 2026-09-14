@@ -1061,11 +1061,28 @@ model CourtBooking {
   coach          ClubCoach?             @relation(fields: [coachId], references: [id])
   payment        Payment?
 
+  logs           CourtBookingLog[]
+
   @@index([businessId, startTime])
   @@index([courtId, startTime])
   @@index([recurringGroupId])
   @@index([coachId])
   @@map("court_bookings")
+}
+
+model CourtBookingLog {
+  id         String   @id @default(cuid())
+  bookingId  String
+  fromStatus String?
+  toStatus   String
+  source     String   // "webhook", "polling", "dashboard", "admin", "pay_create", "cancel_client"
+  meta       String?  @db.Text // JSON con info extra (paymentStatus de Flow, userId, etc.)
+  createdAt  DateTime @default(now())
+
+  booking CourtBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@map("court_booking_logs")
 }
 
 model MembershipPlan {

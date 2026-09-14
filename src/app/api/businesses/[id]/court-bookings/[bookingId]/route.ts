@@ -23,6 +23,7 @@ export async function GET(_req: Request, { params }: Params) {
       court: { select: { id: true, name: true, sport: true, color: true, isActive: true } },
       client: { select: { id: true, name: true, lastName: true, email: true, phone: true, rut: true } },
       coach: { select: { id: true, name: true, color: true } },
+      logs: { orderBy: { createdAt: "asc" } },
     },
   })
   if (!booking) return NextResponse.json({ error: "No encontrada" }, { status: 404 })
@@ -179,6 +180,9 @@ export async function PATCH(req: Request, { params }: Params) {
       }
     }
 
+    const prevForLog = status !== undefined
+      ? await prisma.courtBooking.findUnique({ where: { id: bookingId }, select: { status: true } })
+      : null
     const booking = await prisma.courtBooking.update({
       where: { id: bookingId, businessId: id },
       data,
@@ -187,6 +191,11 @@ export async function PATCH(req: Request, { params }: Params) {
         client: { select: { id: true, name: true, email: true, phone: true, rut: true } },
       },
     })
+    if (status !== undefined && prevForLog?.status !== status) {
+      await prisma.courtBookingLog.create({
+        data: { bookingId, fromStatus: prevForLog?.status ?? null, toStatus: status, source: "dashboard", meta: JSON.stringify({ userId: session.user.id }) },
+      }).catch(() => {})
+    }
 
     // Auto-marcar coachPaid al completar si el coach trabaja a COURT_FEE
     if (status === "COMPLETED" && booking.coachId) {
@@ -240,6 +249,7 @@ export async function DELETE(req: Request, { params }: Params) {
   const { id, bookingId } = await params
   const silent = new URL(req.url).searchParams.get("silent") === "1"
 
+  const prevStatus = await prisma.courtBooking.findUnique({ where: { id: bookingId }, select: { status: true } })
   const booking = await prisma.courtBooking.update({
     where: { id: bookingId, businessId: id },
     data: { deletedAt: new Date(), status: "CANCELLED" },
@@ -248,6 +258,9 @@ export async function DELETE(req: Request, { params }: Params) {
       client: { select: { name: true, email: true } },
     },
   })
+  await prisma.courtBookingLog.create({
+    data: { bookingId, fromStatus: prevStatus?.status ?? null, toStatus: "CANCELLED", source: "dashboard_delete", meta: JSON.stringify({ userId: session.user.id }) },
+  }).catch(() => {})
 
   if (!silent && booking.client?.email) {
     const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })

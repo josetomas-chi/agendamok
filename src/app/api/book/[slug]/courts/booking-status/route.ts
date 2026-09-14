@@ -38,6 +38,7 @@ export async function GET(req: Request, { params }: Params) {
       const payment = await businessGetPaymentStatus(business.flowApiKey, business.flowSecretKey, flowToken)
       if (payment.status === 2) {
         const paidAmount = Number(payment.amount ?? 0)
+        const prev = await prisma.courtBooking.findUnique({ where: { id: bookingId }, select: { status: true } })
         await prisma.courtBooking.update({
           where: { id: bookingId },
           data: { status: "CONFIRMED", paidAmount, paidOnline: true },
@@ -54,6 +55,9 @@ export async function GET(req: Request, { params }: Params) {
             paidAt: new Date(),
           },
           update: { amount: paidAmount, status: "PAID", paidAt: new Date() },
+        })
+        await prisma.courtBookingLog.create({
+          data: { bookingId, fromStatus: prev?.status ?? null, toStatus: "CONFIRMED", source: "polling", meta: JSON.stringify({ flowStatus: payment.status, paidAmount }) },
         })
         return NextResponse.json({ status: "confirmed" })
       }

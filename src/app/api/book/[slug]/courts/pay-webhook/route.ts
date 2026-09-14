@@ -52,9 +52,13 @@ export async function POST(req: Request, { params }: Params) {
 
       const paidAmount = Number(payment.amount ?? 0)
 
+      const prevBooking = await prisma.courtBooking.findFirst({ where: { id: bookingId }, select: { status: true } })
       await prisma.courtBooking.update({
         where: { id: bookingId },
         data: { status: "CONFIRMED", paidAmount, paidOnline: true },
+      })
+      await prisma.courtBookingLog.create({
+        data: { bookingId, fromStatus: prevBooking?.status ?? null, toStatus: "CONFIRMED", source: "webhook", meta: JSON.stringify({ flowStatus: payment.status, paidAmount, commerceOrder }) },
       })
       await prisma.payment.upsert({
         where: { courtBookingId: bookingId },
@@ -138,14 +142,20 @@ export async function POST(req: Request, { params }: Params) {
       }
     } else if (payment.status === 3 || payment.status === 4) {
       // Payment rejected or cancelled — mark booking as CANCELLED to free the slot
-      const commerceOrder: string = payment.commerceOrder || ""
-      const match = commerceOrder.match(/^court_([^_]+)_/)
-      if (match) {
-        const bookingId = match[1]
-        await prisma.courtBooking.updateMany({
-          where: { id: bookingId, businessId: business.id, status: "PENDING" },
-          data: { status: "CANCELLED" },
-        })
+      const commerceOrder2: string = payment.commerceOrder || ""
+      const match2 = commerceOrder2.match(/^court_([^_]+)_/)
+      if (match2) {
+        const bookingId2 = match2[1]
+        const prev2 = await prisma.courtBooking.findFirst({ where: { id: bookingId2, businessId: business.id, status: "PENDING" }, select: { status: true } })
+        if (prev2) {
+          await prisma.courtBooking.updateMany({
+            where: { id: bookingId2, businessId: business.id, status: "PENDING" },
+            data: { status: "CANCELLED" },
+          })
+          await prisma.courtBookingLog.create({
+            data: { bookingId: bookingId2, fromStatus: "PENDING", toStatus: "CANCELLED", source: "webhook", meta: JSON.stringify({ flowStatus: payment.status, commerceOrder: commerceOrder2 }) },
+          })
+        }
       }
     }
   } catch (err) {
