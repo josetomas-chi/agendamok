@@ -1958,6 +1958,22 @@ function MemberRow({ m, onRemove }: { m: Member; onRemove: (id: string) => void 
   const [perms, setPerms] = useState<Record<string, boolean>>(m.permissions ?? {})
   const [expanded, setExpanded] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [resending, setResending] = useState(false)
+
+  async function handleResend() {
+    setResending(true)
+    try {
+      const res = await fetch("/api/businesses/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: m.user.email, name: m.user.name, businessId: bid }),
+      })
+      if (res.ok) toast.success("Invitación reenviada")
+      else toast.error("Error al reenviar")
+    } finally {
+      setResending(false)
+    }
+  }
 
   async function savePerms() {
     setSaving(true)
@@ -1985,7 +2001,13 @@ function MemberRow({ m, onRemove }: { m: Member; onRemove: (id: string) => void 
             Recepcionista
           </span>
           {!m.acceptedAt && (
-            <span className="px-2 py-0.5 rounded-full text-xs border bg-amber-400/10 text-amber-400 border-amber-400/20">Pendiente</span>
+            <>
+              <span className="px-2 py-0.5 rounded-full text-xs border bg-amber-400/10 text-amber-400 border-amber-400/20">Pendiente</span>
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-muted-foreground hover:text-sky-400"
+                onClick={handleResend} disabled={resending}>
+                {resending ? "Enviando…" : "Reenviar"}
+              </Button>
+            </>
           )}
           <Button size="sm" variant="ghost" className="h-7 px-2 text-muted-foreground hover:text-foreground text-xs"
             onClick={() => setExpanded(e => !e)}>
