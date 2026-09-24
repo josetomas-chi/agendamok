@@ -847,7 +847,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                             ? "repeating-linear-gradient(-45deg, rgba(90,90,90,0.18) 0px, rgba(90,90,90,0.18) 3px, rgba(220,220,220,0.55) 3px, rgba(220,220,220,0.55) 8px)"
                             : `linear-gradient(160deg, ${accentColor}f0 0%, ${accentColor}cc 100%)`,
                           borderLeft: isBlockEntry ? "4px solid #888" : `4px solid ${accentColor}`,
-                          boxShadow: isBlockEntry ? `0 0 0 1.5px #888b, 0 2px 8px rgba(0,0,0,0.18)` : `0 0 0 1.5px ${accentColor}bb, 0 2px 8px ${accentColor}33`,
+                          boxShadow: isBlockEntry ? `0 0 0 2px #666, 0 3px 10px rgba(0,0,0,0.3)` : `0 0 0 2px ${accentColor}, 0 3px 12px ${accentColor}66`,
                           opacity: draggingId === b.id ? 0.35 : 1 }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = "brightness(0.94)" }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = "none" }}
@@ -865,7 +865,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                         <div className="w-full h-full flex flex-col justify-start px-1.5 pt-1 pb-1 overflow-hidden">
                           {/* Fila 1: hora + badges */}
                           <div className="flex items-center justify-between gap-1 flex-shrink-0">
-                            <p className="text-[9px] font-semibold leading-none truncate" style={{ color: "rgba(255,255,255,0.75)", textShadow: "0 1px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.4)" }}>
+                            <p className="text-[9px] font-semibold leading-none truncate" style={{ color: "rgba(255,255,255,0.75)", textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.6)", WebkitTextStroke: "0.3px rgba(0,0,0,0.6)" }}>
                               {utcTime(b.startTime)}–{utcTime(b.endTime)}
                             </p>
                             <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -891,19 +891,19 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                             </div>
                           </div>
                           {/* Fila 2: protagonista */}
-                          <p className="text-[11px] font-black leading-tight truncate mt-0.5" style={{ color: "#ffffff", textShadow: "0 1px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5)" }}>
+                          <p className="text-[11px] font-black leading-tight truncate mt-0.5" style={{ color: "#ffffff", textShadow: "0 1px 5px rgba(0,0,0,0.95), 0 0 12px rgba(0,0,0,0.7)", WebkitTextStroke: "0.4px rgba(0,0,0,0.7)" }}>
                             {b.coach ? b.coach.name : (b.client ? [b.client.name, b.client.lastName].filter(Boolean).join(" ") : "Sin cliente")}
                           </p>
                           {b.coach && (
-                            <p className="text-[9px] font-semibold leading-tight truncate" style={{ color: "rgba(255,255,255,0.75)", textShadow: "0 1px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.4)" }}>
+                            <p className="text-[9px] font-semibold leading-tight truncate" style={{ color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.6)", WebkitTextStroke: "0.3px rgba(0,0,0,0.6)" }}>
                               {b.client ? [b.client.name, b.client.lastName].filter(Boolean).join(" ") : "Sin cliente"}
                             </p>
                           )}
-                          <p className="text-[8px] font-bold uppercase tracking-wide leading-none truncate mt-0.5" style={{ color: "rgba(255,255,255,0.7)", textShadow: "0 1px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.4)" }}>
+                          <p className="text-[8px] font-bold uppercase tracking-wide leading-none truncate mt-0.5" style={{ color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.6)", WebkitTextStroke: "0.3px rgba(0,0,0,0.5)" }}>
                             {b.coach ? "Clase Particular" : "Reserva Común"}
                           </p>
                           {heightPx >= 56 && (
-                            <p className="text-[9px] font-bold mt-auto" style={{ color: "rgba(255,255,255,0.9)", textShadow: "0 1px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.4)" }}>
+                            <p className="text-[9px] font-bold mt-auto" style={{ color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.6)", WebkitTextStroke: "0.3px rgba(0,0,0,0.5)" }}>
                               ${Number(b.price).toLocaleString("es-CL")}
                             </p>
                           )}
