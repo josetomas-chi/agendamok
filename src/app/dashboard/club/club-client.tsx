@@ -806,7 +806,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                         className={slotAvailable ? "cursor-pointer transition-colors" : "cursor-not-allowed"}
                         style={{
                           height: SLOT_HEIGHT,
-                          borderBottom: slot.endsWith(":00") ? `1px solid rgba(13,27,42,0.05)` : `1px solid rgba(13,27,42,0.18)`,
+                          borderBottom: slot.endsWith(":00") ? `1px solid rgba(13,27,42,0.05)` : `2px solid rgba(13,27,42,0.2)`,
                           background: isDropOver ? "rgba(201,168,76,0.12)" : !slotAvailable && courtAvailable ? "repeating-linear-gradient(45deg,rgba(13,27,42,0.04) 0px,rgba(13,27,42,0.04) 3px,transparent 3px,transparent 8px)" : "transparent",
                         }}
                         onMouseEnter={e => { if (slotAvailable && !customDragRef.current) (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.07)" }}
