@@ -896,6 +896,9 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                               {b.client ? [b.client.name, b.client.lastName].filter(Boolean).join(" ") : "Sin cliente"}
                             </p>
                           )}
+                          <p className="text-[8px] font-bold uppercase tracking-wide leading-none truncate mt-0.5" style={{ color: "rgba(13,27,42,0.45)" }}>
+                            {b.coach ? "Clase Particular" : "Reserva Común"}
+                          </p>
                           {heightPx >= 56 && (
                             <p className="text-[9px] font-bold mt-auto" style={{ color: "rgba(13,27,42,0.65)" }}>
                               ${Number(b.price).toLocaleString("es-CL")}
