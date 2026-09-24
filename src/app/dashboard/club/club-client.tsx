@@ -739,13 +739,14 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
     return bookings.filter(b => b.courtId === courtId && b.status !== "CANCELLED")
   }
 
+  const GAP = 2 // px visual gap between bookings
   function bookingStyle(b: Booking) {
     const startMins = timeToMinutes(utcTime(b.startTime))
     const endMins = timeToMinutes(utcTime(b.endTime))
     const originMins = START_HOUR * 60
-    const top = ((startMins - originMins) / SLOT_MINUTES) * SLOT_HEIGHT
-    const height = ((endMins - startMins) / SLOT_MINUTES) * SLOT_HEIGHT
-    return { top, height: Math.max(height, SLOT_HEIGHT - 2) }
+    const top = ((startMins - originMins) / SLOT_MINUTES) * SLOT_HEIGHT + GAP
+    const height = ((endMins - startMins) / SLOT_MINUTES) * SLOT_HEIGHT - GAP
+    return { top, height: Math.max(height, SLOT_HEIGHT - GAP - 2) }
   }
 
   const GOLD = "#C9A84C"
