@@ -846,8 +846,8 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                           background: isBlockEntry
                             ? "repeating-linear-gradient(-45deg, rgba(90,90,90,0.18) 0px, rgba(90,90,90,0.18) 3px, rgba(220,220,220,0.55) 3px, rgba(220,220,220,0.55) 8px)"
                             : `linear-gradient(160deg, ${accentColor}f0 0%, ${accentColor}cc 100%)`,
-                          borderLeft: isBlockEntry ? "3px solid #aaa" : `4px solid ${accentColor}`,
-                          boxShadow: isBlockEntry ? undefined : `0 0 0 1.5px ${accentColor}bb, 0 2px 8px ${accentColor}33`,
+                          borderLeft: isBlockEntry ? "4px solid #888" : `4px solid ${accentColor}`,
+                          boxShadow: isBlockEntry ? `0 0 0 1.5px #888b, 0 2px 8px rgba(0,0,0,0.18)` : `0 0 0 1.5px ${accentColor}bb, 0 2px 8px ${accentColor}33`,
                           opacity: draggingId === b.id ? 0.35 : 1 }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = "brightness(0.94)" }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = "none" }}
