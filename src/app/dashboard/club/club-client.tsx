@@ -845,7 +845,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                         style={{ top, height,
                           background: isBlockEntry
                             ? "repeating-linear-gradient(-45deg, rgba(90,90,90,0.18) 0px, rgba(90,90,90,0.18) 3px, rgba(220,220,220,0.55) 3px, rgba(220,220,220,0.55) 8px)"
-                            : `${accentColor}2e`,
+                            : `linear-gradient(160deg, ${accentColor}f0 0%, ${accentColor}cc 100%)`,
                           borderLeft: isBlockEntry ? "3px solid #aaa" : `4px solid ${accentColor}`,
                           boxShadow: isBlockEntry ? undefined : `0 0 0 1.5px ${accentColor}bb, 0 2px 8px ${accentColor}33`,
                           opacity: draggingId === b.id ? 0.35 : 1 }}
@@ -865,45 +865,45 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                         <div className="w-full h-full flex flex-col justify-start px-1.5 pt-1 pb-1 overflow-hidden">
                           {/* Fila 1: hora + badges */}
                           <div className="flex items-center justify-between gap-1 flex-shrink-0">
-                            <p className="text-[9px] font-semibold leading-none truncate" style={{ color: "rgba(13,27,42,0.65)" }}>
+                            <p className="text-[9px] font-semibold leading-none truncate" style={{ color: "rgba(255,255,255,0.75)" }}>
                               {utcTime(b.startTime)}–{utcTime(b.endTime)}
                             </p>
                             <div className="flex items-center gap-0.5 flex-shrink-0">
                               {b.recurringGroupId && (
                                 <span className="text-[8px] font-black px-1 rounded leading-none py-0.5"
-                                  style={{ background: "rgba(13,27,42,0.18)", color: "#0d1b2a" }}>R</span>
+                                  style={{ background: "rgba(0,0,0,0.2)", color: "#fff" }}>R</span>
                               )}
                               {b.status === "COMPLETED" && (
-                                <span className="text-[9px] font-black leading-none" style={{ color: "#15803d" }}>✓</span>
+                                <span className="text-[9px] font-black leading-none" style={{ color: "#fff" }}>✓</span>
                               )}
                               {b.status === "PENDING" && b.notes?.includes("[flow:") && (
                                 <span className="text-[8px] font-black px-1 rounded leading-none py-0.5" style={{ background: "#f59e0b", color: "#000" }} title="Pago online pendiente de confirmar">$?</span>
                               )}
                               {b.paidOnline && Number(b.paidAmount) > 0 && Number(b.paidAmount) < Number(b.price) && (
-                                <span className="text-[8px] font-black px-1 rounded leading-none py-0.5" style={{ background: "rgba(34,197,94,0.25)", color: "#16a34a" }} title={`Abono online: $${Number(b.paidAmount).toLocaleString("es-CL")}`}>$✓</span>
+                                <span className="text-[8px] font-black px-1 rounded leading-none py-0.5" style={{ background: "rgba(255,255,255,0.25)", color: "#fff" }} title={`Abono online: $${Number(b.paidAmount).toLocaleString("es-CL")}`}>$✓</span>
                               )}
                               {b.paidOnline && Number(b.paidAmount) >= Number(b.price) && Number(b.price) > 0 && (
-                                <span className="text-[8px] font-black px-1 rounded leading-none py-0.5" style={{ background: "rgba(34,197,94,0.25)", color: "#16a34a" }} title={`Pago completo online: $${Number(b.paidAmount).toLocaleString("es-CL")}`}>$✓✓</span>
+                                <span className="text-[8px] font-black px-1 rounded leading-none py-0.5" style={{ background: "rgba(255,255,255,0.25)", color: "#fff" }} title={`Pago completo online: $${Number(b.paidAmount).toLocaleString("es-CL")}`}>$✓✓</span>
                               )}
                               {b.transferVoucher && Number(b.paidAmount) < Number(b.price) && (
-                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "#f59e0b" }} title="Comprobante pendiente" />
+                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "#fbbf24" }} title="Comprobante pendiente" />
                               )}
                             </div>
                           </div>
                           {/* Fila 2: protagonista */}
-                          <p className="text-[11px] font-black leading-tight truncate mt-0.5" style={{ color: "#0d1b2a" }}>
+                          <p className="text-[11px] font-black leading-tight truncate mt-0.5" style={{ color: "#ffffff" }}>
                             {b.coach ? b.coach.name : (b.client ? [b.client.name, b.client.lastName].filter(Boolean).join(" ") : "Sin cliente")}
                           </p>
                           {b.coach && (
-                            <p className="text-[9px] font-semibold leading-tight truncate" style={{ color: "rgba(13,27,42,0.55)" }}>
+                            <p className="text-[9px] font-semibold leading-tight truncate" style={{ color: "rgba(255,255,255,0.75)" }}>
                               {b.client ? [b.client.name, b.client.lastName].filter(Boolean).join(" ") : "Sin cliente"}
                             </p>
                           )}
-                          <p className="text-[8px] font-bold uppercase tracking-wide leading-none truncate mt-0.5" style={{ color: "rgba(13,27,42,0.45)" }}>
+                          <p className="text-[8px] font-bold uppercase tracking-wide leading-none truncate mt-0.5" style={{ color: "rgba(255,255,255,0.6)" }}>
                             {b.coach ? "Clase Particular" : "Reserva Común"}
                           </p>
                           {heightPx >= 56 && (
-                            <p className="text-[9px] font-bold mt-auto" style={{ color: "rgba(13,27,42,0.65)" }}>
+                            <p className="text-[9px] font-bold mt-auto" style={{ color: "rgba(255,255,255,0.85)" }}>
                               ${Number(b.price).toLocaleString("es-CL")}
                             </p>
                           )}
