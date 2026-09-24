@@ -835,6 +835,8 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                     const { top, height } = bookingStyle(b)
                     const heightPx = height
                     const isBlockEntry = b.blockType === "BLOCK"
+                    const isPaid = !isBlockEntry && (b.status === "COMPLETED" || (Number(b.price) > 0 && Number(b.paidAmount) >= Number(b.price)))
+                    const accentColor = isPaid ? "#22c55e" : (b.coach?.color ?? "#C9A84C")
                     return (
                       <div key={b.id}
                         onMouseDown={e => { if (e.button === 0 && !isBlockEntry) handleBookingMouseDown(e, b) }}
@@ -843,10 +845,11 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                         style={{ top, height,
                           background: isBlockEntry
                             ? "repeating-linear-gradient(-45deg, rgba(90,90,90,0.18) 0px, rgba(90,90,90,0.18) 3px, rgba(220,220,220,0.55) 3px, rgba(220,220,220,0.55) 8px)"
-                            : (b.status === "COMPLETED" || (Number(b.price) > 0 && Number(b.paidAmount) >= Number(b.price))) ? "rgba(34,197,94,0.55)" : b.coach?.color ? `${b.coach.color}cc` : "rgba(201,168,76,0.85)",
-                          borderLeft: isBlockEntry ? "3px solid #999" : `3px solid ${(b.status === "COMPLETED" || (Number(b.price) > 0 && Number(b.paidAmount) >= Number(b.price))) ? "#16a34a" : b.coach?.color ?? "#C9A84C"}`,
+                            : `${accentColor}2e`,
+                          borderLeft: isBlockEntry ? "3px solid #aaa" : `4px solid ${accentColor}`,
+                          boxShadow: isBlockEntry ? undefined : `0 0 0 1.5px ${accentColor}bb, 0 2px 8px ${accentColor}33`,
                           opacity: draggingId === b.id ? 0.35 : 1 }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = "brightness(0.92)" }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = "brightness(0.94)" }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = "none" }}
                       >
                         {isBlockEntry ? (
