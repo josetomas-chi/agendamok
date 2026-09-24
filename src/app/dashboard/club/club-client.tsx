@@ -865,7 +865,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                         <div className="w-full h-full flex flex-col justify-start px-1.5 pt-1 pb-1 overflow-hidden">
                           {/* Fila 1: hora + badges */}
                           <div className="flex items-center justify-between gap-1 flex-shrink-0">
-                            <p className="text-[9px] font-semibold leading-none truncate" style={{ color: "rgba(255,255,255,0.75)" }}>
+                            <p className="text-[9px] font-semibold leading-none truncate" style={{ color: "rgba(255,255,255,0.75)", textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
                               {utcTime(b.startTime)}–{utcTime(b.endTime)}
                             </p>
                             <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -891,19 +891,19 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                             </div>
                           </div>
                           {/* Fila 2: protagonista */}
-                          <p className="text-[11px] font-black leading-tight truncate mt-0.5" style={{ color: "#ffffff" }}>
+                          <p className="text-[11px] font-black leading-tight truncate mt-0.5" style={{ color: "#ffffff", textShadow: "0 1px 3px rgba(0,0,0,0.55)" }}>
                             {b.coach ? b.coach.name : (b.client ? [b.client.name, b.client.lastName].filter(Boolean).join(" ") : "Sin cliente")}
                           </p>
                           {b.coach && (
-                            <p className="text-[9px] font-semibold leading-tight truncate" style={{ color: "rgba(255,255,255,0.75)" }}>
+                            <p className="text-[9px] font-semibold leading-tight truncate" style={{ color: "rgba(255,255,255,0.75)", textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
                               {b.client ? [b.client.name, b.client.lastName].filter(Boolean).join(" ") : "Sin cliente"}
                             </p>
                           )}
-                          <p className="text-[8px] font-bold uppercase tracking-wide leading-none truncate mt-0.5" style={{ color: "rgba(255,255,255,0.6)" }}>
+                          <p className="text-[8px] font-bold uppercase tracking-wide leading-none truncate mt-0.5" style={{ color: "rgba(255,255,255,0.6)", textShadow: "0 1px 2px rgba(0,0,0,0.45)" }}>
                             {b.coach ? "Clase Particular" : "Reserva Común"}
                           </p>
                           {heightPx >= 56 && (
-                            <p className="text-[9px] font-bold mt-auto" style={{ color: "rgba(255,255,255,0.85)" }}>
+                            <p className="text-[9px] font-bold mt-auto" style={{ color: "rgba(255,255,255,0.85)", textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
                               ${Number(b.price).toLocaleString("es-CL")}
                             </p>
                           )}
