@@ -54,7 +54,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
       day.setDate(day.getDate() + i)
       const dow = day.getDay()
 
-      const dayRules = court.pricingRules.filter(r => r.days.includes(dow))
+      const dayRules = court.pricingRules.filter((r: { days: number[]; startTime: string; endTime: string }) => r.days.includes(dow))
       for (const rule of dayRules) {
         const [sh, sm] = rule.startTime.split(":").map(Number)
         const [eh, em] = rule.endTime.split(":").map(Number)
@@ -92,13 +92,14 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   }
 
   // Global summary stats across all courts
-  const totalBookedMinutes = bookings.reduce((sum, b) => {
+  type BookingSel = { courtId: string; startTime: Date; endTime: Date; clientId: string | null }
+  const totalBookedMinutes = (bookings as BookingSel[]).reduce((sum: number, b: BookingSel) => {
     return sum + (new Date(b.endTime).getTime() - new Date(b.startTime).getTime()) / 60000
   }, 0)
-  const uniqueClients = new Set(bookings.map(b => b.clientId).filter(Boolean)).size
+  const uniqueClients = new Set((bookings as BookingSel[]).map((b: BookingSel) => b.clientId).filter((cid: string | null): cid is string => cid !== null)).size
 
   return NextResponse.json({
-    courts: courts.map(c => ({ id: c.id, name: c.name, color: c.color })),
+    courts: courts.map((c: { id: string; name: string; color: string }) => ({ id: c.id, name: c.name, color: c.color })),
     heatmap: result,
     summary: {
       totalBookings: bookings.length,

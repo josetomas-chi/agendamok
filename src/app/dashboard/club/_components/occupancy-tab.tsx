@@ -55,9 +55,9 @@ export default function OccupancyTab({ businessId }: { businessId: string }) {
   const allCells = courtData
     ? Object.values(courtData).flatMap(dayMap => Object.values(dayMap))
     : []
-  const totalBooked    = allCells.reduce((s, c) => s + c.booked, 0)
-  const totalAvailable = allCells.reduce((s, c) => s + c.available, 0)
-  const globalPct = totalAvailable > 0 ? Math.round((totalBooked / totalAvailable) * 100) : 0
+  const courtBooked    = allCells.reduce((s, c) => s + c.booked, 0)
+  const courtAvailableMin = allCells.reduce((s, c) => s + c.available, 0)
+  const globalPct = courtAvailableMin > 0 ? Math.round((courtBooked / courtAvailableMin) * 100) : 0
 
   // Best and worst slot
   type SlotPct = { day: number; hour: number; p: number }
