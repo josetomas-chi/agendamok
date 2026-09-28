@@ -31,7 +31,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
       blockType: { not: "BLOCK" },
       deletedAt: null,
     },
-    select: { courtId: true, startTime: true, endTime: true },
+    select: { courtId: true, startTime: true, endTime: true, clientId: true },
   })
 
   // For each court, build a map: dayOfWeek → hour → { booked minutes, available minutes }
@@ -91,8 +91,20 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     result[court.id] = heatmap
   }
 
+  // Global summary stats across all courts
+  const totalBookedMinutes = bookings.reduce((sum, b) => {
+    return sum + (new Date(b.endTime).getTime() - new Date(b.startTime).getTime()) / 60000
+  }, 0)
+  const uniqueClients = new Set(bookings.map(b => b.clientId).filter(Boolean)).size
+
   return NextResponse.json({
     courts: courts.map(c => ({ id: c.id, name: c.name, color: c.color })),
     heatmap: result,
+    summary: {
+      totalBookings: bookings.length,
+      totalHours: Math.round(totalBookedMinutes / 60 * 10) / 10,
+      uniqueClients,
+      avgHoursPerCourt: courts.length > 0 ? Math.round(totalBookedMinutes / 60 / courts.length * 10) / 10 : 0,
+    },
   })
 }

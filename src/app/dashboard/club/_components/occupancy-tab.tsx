@@ -26,10 +26,13 @@ type Court = { id: string; name: string; color: string }
 type Cell  = { booked: number; available: number }
 type HeatmapRow = Record<number, Record<number, Cell>>
 
+type Summary = { totalBookings: number; totalHours: number; uniqueClients: number; avgHoursPerCourt: number }
+
 export default function OccupancyTab({ businessId }: { businessId: string }) {
   const [courts, setCourts]   = useState<Court[]>([])
   const [heatmap, setHeatmap] = useState<Record<string, HeatmapRow>>({})
   const [selected, setSelected] = useState<string>("")
+  const [summary, setSummary] = useState<Summary | null>(null)
   const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
@@ -40,6 +43,7 @@ export default function OccupancyTab({ businessId }: { businessId: string }) {
         setCourts(d.courts ?? [])
         setHeatmap(d.heatmap ?? {})
         setSelected(d.courts?.[0]?.id ?? "")
+        setSummary(d.summary ?? null)
       })
       .finally(() => setLoading(false))
   }, [businessId])
@@ -86,8 +90,35 @@ export default function OccupancyTab({ businessId }: { businessId: string }) {
     )
   }
 
+  // Global occupancy % across all courts
+  const allHeatmapCells = Object.values(heatmap).flatMap(courtMap =>
+    Object.values(courtMap).flatMap(dayMap => Object.values(dayMap))
+  )
+  const totalBooked    = allHeatmapCells.reduce((s, c) => s + c.booked, 0)
+  const totalAvailable = allHeatmapCells.reduce((s, c) => s + c.available, 0)
+  const globalOccupancy = totalAvailable > 0 ? Math.round((totalBooked / totalAvailable) * 1000) / 10 : 0
+
   return (
     <div className="space-y-4">
+      {/* Barra de stats globales */}
+      {summary && (
+        <div className="flex items-center gap-0 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(201,168,76,0.2)", background: "#ffffff" }}>
+          {[
+            { label: "Ocupación", value: `${globalOccupancy}%`, color: globalOccupancy >= 70 ? "#dc2626" : globalOccupancy >= 40 ? GOLD : "#0369a1" },
+            { label: "Horas reservadas", value: `${summary.totalHours}`, color: NAVY },
+            { label: "Reservas", value: `${summary.totalBookings}`, color: NAVY },
+            { label: "Participantes únicos", value: `${summary.uniqueClients}`, color: NAVY },
+            { label: "Media hs por cancha", value: `${summary.avgHoursPerCourt}`, color: NAVY },
+          ].map((s, i) => (
+            <div key={s.label} className="flex-1 px-4 py-3 text-center"
+              style={{ borderLeft: i > 0 ? "1px solid rgba(13,27,42,0.07)" : "none" }}>
+              <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "rgba(13,27,42,0.38)" }}>{s.label}</p>
+              <p className="text-lg font-black leading-tight mt-0.5" style={{ color: s.color }}>{s.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Header + selector de cancha */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
