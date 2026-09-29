@@ -100,7 +100,7 @@ export function TopBar({
             </p>
             <p className={`text-[11px] leading-none mt-1 ${dark ? "text-white/55" : "font-semibold uppercase tracking-widest"}`}
               style={dark ? {} : { color: "#C9A84C" }}>
-              {uploading ? "Subiendo..." : switching ? "Cambiando..." : "Tu negocio"}
+              {uploading ? "Subiendo..." : switching ? "Cambiando..." : "Organización"}
             </p>
           </div>
           <ChevronDown className={`w-3.5 h-3.5 transition-transform mt-0.5 ${switcherOpen ? "rotate-180" : ""} ${dark ? "text-white/40" : "text-gray-400"}`} />
@@ -112,7 +112,7 @@ export function TopBar({
           </p>
           <p className={`text-[11px] leading-none mt-1 ${dark ? "text-white/55" : "font-semibold uppercase tracking-widest"}`}
             style={dark ? {} : { color: "#C9A84C" }}>
-            {uploading ? "Subiendo..." : "Tu negocio"}
+            {uploading ? "Subiendo..." : "Organización"}
           </p>
         </div>
       )}
