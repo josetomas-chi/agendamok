@@ -1193,7 +1193,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
             </div>
 
             {/* Account creation / already registered */}
-            {sessionChecked && !isLoggedIn && emailExists ? (
+            {sessionChecked && !isLoggedIn && emailExists && !rutFound ? (
               <div className="rounded-2xl px-4 py-3.5 space-y-3" style={{ background: "rgba(56,189,248,0.06)", border: `1px solid ${SPORTS_ACCENT}40` }}>
                 <div className="flex items-center gap-3">
                   <Check className="w-4 h-4 flex-shrink-0" style={{ color: SPORTS_ACCENT }} />
@@ -1299,7 +1299,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
 
             <button
               onClick={async () => {
-                if (sessionChecked && !isLoggedIn && emailExists) {
+                if (sessionChecked && !isLoggedIn && emailExists && !rutFound) {
                   if (!loginPassword) { setLoginError("Ingresa tu contraseña"); return }
                   setSubmitting(true)
                   const res = await signIn("credentials", { email: form.email, password: loginPassword, redirect: false })
