@@ -1056,9 +1056,9 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                                   transform: pressing ? "scale(0.93)" : "scale(1)",
                                   transition: "transform 0.1s ease, background 0.1s ease, color 0.1s ease",
                                 }}>
-                                <span className="text-xs">{slot.time}</span>
-                                <span className="text-[10px] font-semibold opacity-80">→ {endTime}</span>
-                                {slot.price > 0 && <span className="text-[9px] font-normal opacity-60">{business.clubSettings?.donationMode ? "Aporte" : `$${slot.price.toLocaleString("es-CL")}`}</span>}
+                                <span className="text-[11px] font-bold leading-none">{slot.time}</span>
+                                <span className="text-[10px] font-normal opacity-60 leading-none">{endTime}</span>
+                                {(slot.price > 0 || business.clubSettings?.donationMode) && <span className="text-[9px] font-normal opacity-60 leading-none mt-0.5">{business.clubSettings?.donationMode ? "Aporte" : `$${slot.price.toLocaleString("es-CL")}`}</span>}
                               </button>
                             )
                           })}
