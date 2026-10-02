@@ -585,7 +585,9 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   const bookingWindowDays = business.clubSettings?.bookingWindowDays ?? 30
   const maxDate = addDays(today, bookingWindowDays - 1)
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(today, weekOffset * 7 + i))
-  const maxWeekOffset = Math.floor(bookingWindowDays / 7)
+  // Disable next-week arrow only when the first day of that week is already past maxDate
+  const nextWeekFirstDay = addDays(today, (weekOffset + 1) * 7)
+  const canGoNextWeek = nextWeekFirstDay <= maxDate
 
   async function search(restore?: typeof pendingRestore) {
     setSearching(true)
@@ -915,7 +917,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                 <p className="flex-1 text-center text-xs font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>
                   {format(weekDays[0], "d MMM", { locale: es })} — {format(weekDays[6], "d MMM", { locale: es })}
                 </p>
-                <button onClick={() => setWeekOffset(w => w + 1)} disabled={weekOffset >= maxWeekOffset}
+                <button onClick={() => setWeekOffset(w => w + 1)} disabled={!canGoNextWeek}
                   className="w-7 h-7 rounded-lg flex items-center justify-center disabled:opacity-30 transition-all"
                   style={{ background: "rgba(56,189,248,0.1)", color: SPORTS_ACCENT }}>
                   <ChevronRight className="w-3.5 h-3.5" />
