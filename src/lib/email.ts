@@ -490,11 +490,12 @@ function fmtCourtTime(iso: string) {
 }
 
 export async function sendCourtBookingConfirmation({
-  clientName, clientEmail, businessName, courtName, startTime, endTime, price, paidAmount, coachName, sponsorName, sponsorLogo, sponsorUrl,
+  clientName, clientEmail, businessName, courtName, startTime, endTime, price, paidAmount, coachName, sponsorName, sponsorLogo, sponsorUrl, donationMode, donationNote,
 }: {
   clientName: string; clientEmail: string; businessName: string
   courtName: string; startTime: string; endTime: string; price: number
   paidAmount?: number; coachName?: string; sponsorName?: string; sponsorLogo?: string; sponsorUrl?: string
+  donationMode?: boolean; donationNote?: string | null
 }) {
   if (!process.env.RESEND_API_KEY) return
   const fmt = (iso: string) => new Date(iso).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"
@@ -518,8 +519,16 @@ export async function sendCourtBookingConfirmation({
         ${isClass ? `<div class="row"><span class="label">Entrenador</span><span class="value">${coachName}</span></div>` : ""}
         <div class="row"><span class="label">Fecha</span><span class="value">${fmtCourtDate(startTime)}</span></div>
         <div class="row"><span class="label">Horario</span><span class="value">${fmtCourtTime(startTime)} – ${fmtCourtTime(endTime)} hrs</span></div>
-        <div class="row"><span class="label">Precio</span><span class="value">$${price.toLocaleString("es-CL")}</span></div>
+        ${donationMode
+          ? `<div class="row"><span class="label">Valor</span><span class="value" style="color:#38bdf8">Aporte voluntario</span></div>`
+          : `<div class="row"><span class="label">Precio</span><span class="value">$${price.toLocaleString("es-CL")}</span></div>`
+        }
       </div>
+      ${donationMode ? `
+      <div style="background:rgba(56,189,248,0.07);border:1px solid rgba(56,189,248,0.2);border-radius:10px;padding:14px 18px;margin:16px 0;text-align:left">
+        <p style="margin:0 0 4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:rgba(56,189,248,0.7)">💙 Organización sin fines de lucro</p>
+        <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.55);line-height:1.5">${donationNote || "El aporte recaudado se destina íntegramente a la mantención de las instalaciones."}</p>
+      </div>` : ""}
       ${sponsorLogo ? `
       <div style="text-align:center;margin:20px 0 4px">
         <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:0 0 10px;text-transform:uppercase;letter-spacing:0.08em">Presentado por</p>

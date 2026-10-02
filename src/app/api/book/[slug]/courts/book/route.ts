@@ -19,7 +19,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   const business = await prisma.business.findUnique({
     where: { slug, isActive: true, deletedAt: null },
-    select: { id: true, name: true, clubSettings: { select: { bookingWindowDays: true } } },
+    select: { id: true, name: true, clubSettings: { select: { bookingWindowDays: true, donationMode: true, donationNote: true } } },
   })
   if (!business) return NextResponse.json({ error: "No encontrado" }, { status: 404 })
 
@@ -191,6 +191,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       sponsorName: court.sponsorName ?? undefined,
       sponsorLogo: court.sponsorLogo ?? undefined,
       sponsorUrl: court.sponsorUrl ?? undefined,
+      donationMode: business.clubSettings?.donationMode ?? false,
+      donationNote: business.clubSettings?.donationNote ?? null,
     }).catch(() => {})
   }
 
