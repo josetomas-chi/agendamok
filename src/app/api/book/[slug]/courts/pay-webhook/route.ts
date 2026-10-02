@@ -17,6 +17,7 @@ export async function POST(req: Request, { params }: Params) {
       id: true, name: true, flowApiKey: true, flowSecretKey: true,
       bsaleApiKey: true, bsaleAutoInvoice: true, bsaleDocType: true,
       owner: { select: { name: true, email: true } },
+      clubSettings: { select: { donationMode: true, donationNote: true } },
     },
   })
   if (!business?.flowApiKey || !business?.flowSecretKey) {
@@ -85,6 +86,8 @@ export async function POST(req: Request, { params }: Params) {
           endTime: booking.endTime.toISOString(),
           price: Number(booking.price),
           paidAmount,
+          donationMode: business.clubSettings?.donationMode ?? false,
+          donationNote: business.clubSettings?.donationNote ?? null,
         }).catch(() => {})
       }
 
