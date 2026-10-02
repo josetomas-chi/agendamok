@@ -850,7 +850,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = "none" }}
                       >
                         {isBlockEntry ? (
-                          <div className="w-full h-full flex flex-col justify-center px-1.5 overflow-hidden">
+                          <div className="w-full flex flex-col px-1.5 overflow-hidden">
                             <p className="text-[9px] font-semibold leading-none truncate" style={{ color: "rgba(60,60,60,0.7)" }}>
                               {utcTime(b.startTime)}–{utcTime(b.endTime)}
                             </p>
@@ -859,7 +859,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                             </p>
                           </div>
                         ) : (
-                        <div className="w-full h-full flex flex-col justify-center px-1.5 py-1 overflow-hidden">
+                        <div className="w-full flex flex-col px-1.5 py-1 overflow-hidden">
                           {/* Fila 1: hora + badges */}
                           <div className="flex items-center justify-between gap-1 flex-shrink-0">
                             <p className="text-[9px] font-semibold leading-none truncate" style={{ color: "rgba(13,27,42,0.65)" }}>
