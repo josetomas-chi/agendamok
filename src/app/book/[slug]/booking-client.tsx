@@ -31,7 +31,7 @@ type Business = {
   accessMode: string
   bankName: string | null; bankAccountHolder: string | null; bankAccountType: string | null
   bankAccountNumber: string | null; bankRut: string | null; bankEmail: string | null
-  clubSettings: { bookingWindowDays: number } | null
+  clubSettings: { bookingWindowDays: number; donationMode: boolean; donationNote: string | null } | null
   courts: Court[]
   services: Service[]; staff: Staff[]
 }
@@ -987,7 +987,9 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                                 <p className="font-bold text-sm text-white leading-tight">{court.name}</p>
                                 {court.slots[0]?.price > 0 && (
                                   <p className="text-[11px] font-semibold" style={{ color: SPORTS_ACCENT }}>
-                                    desde ${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")} · {court.slots[0]?.duration ?? duration} min
+                                    {business.clubSettings?.donationMode
+                                      ? `Aporte · ${court.slots[0]?.duration ?? duration} min`
+                                      : `desde $${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")} · ${court.slots[0]?.duration ?? duration} min`}
                                   </p>
                                 )}
                               </div>
@@ -1006,7 +1008,9 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                                 <p className="font-bold text-sm text-white">{court.name}</p>
                                 {court.slots[0]?.price > 0 && (
                                   <p className="text-xs mt-0.5 font-semibold" style={{ color: SPORTS_ACCENT }}>
-                                    desde ${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")} · {court.slots[0]?.duration ?? duration} min
+                                    {business.clubSettings?.donationMode
+                                      ? `Aporte · ${court.slots[0]?.duration ?? duration} min`
+                                      : `desde $${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")} · ${court.slots[0]?.duration ?? duration} min`}
                                   </p>
                                 )}
                               </div>
@@ -1043,7 +1047,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                                 }}>
                                 <span className="text-xs">{slot.time}</span>
                                 <span className="text-[10px] font-semibold opacity-80">→ {endTime}</span>
-                                {slot.price > 0 && <span className="text-[9px] font-normal opacity-60">${slot.price.toLocaleString("es-CL")}</span>}
+                                {slot.price > 0 && <span className="text-[9px] font-normal opacity-60">{business.clubSettings?.donationMode ? "Aporte" : `$${slot.price.toLocaleString("es-CL")}`}</span>}
                               </button>
                             )
                           })}
@@ -1088,9 +1092,19 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                 <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: selectedCourt.color }} />
                 <span className="font-bold text-sm text-white">{selectedCourt.name}</span>
                 {selectedSlot.price > 0 && (
-                  <span className="ml-auto font-bold text-sm" style={{ color: SPORTS_ACCENT }}>${selectedSlot.price.toLocaleString("es-CL")}</span>
+                  <span className="ml-auto font-bold text-sm" style={{ color: SPORTS_ACCENT }}>
+                    {business.clubSettings?.donationMode ? "Aporte" : `$${selectedSlot.price.toLocaleString("es-CL")}`}
+                  </span>
                 )}
               </div>
+              {business.clubSettings?.donationMode && (
+                <div className="flex items-start gap-2 px-3 py-2 rounded-xl" style={{ background: "rgba(56,189,248,0.07)", border: "1px solid rgba(56,189,248,0.15)" }}>
+                  <span className="text-xs mt-0.5">💙</span>
+                  <p className="text-[11px] leading-snug" style={{ color: "rgba(255,255,255,0.55)" }}>
+                    {business.clubSettings?.donationNote || "El aporte recaudado se destina íntegramente a la mantención de las instalaciones."}
+                  </p>
+                </div>
+              )}
               <div className="flex items-center gap-2 text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
                 <Clock className="w-3.5 h-3.5" /> {duration} min
               </div>

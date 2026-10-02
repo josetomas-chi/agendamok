@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useEffect, useCallback } from "react"
 import { useBusiness } from "@/contexts/business-context"
-import { Settings, CalendarX2, Plus, Trash2 } from "lucide-react"
+import { Settings, CalendarX2, Plus, Trash2, Heart } from "lucide-react"
 import { toast } from "sonner"
 
 const NAVY = "#0d1b2a"
@@ -23,10 +23,10 @@ for (let h = 0; h <= 23; h++) {
   TIME_SLOTS.push(`${String(h).padStart(2, "0")}:30`)
 }
 
-type ClubForm = { clubName: string; description: string; address: string; phone: string; website: string; openDays: number[]; openTime: string; closeTime: string; slotMinutes: number; bookingWindowDays: number }
+type ClubForm = { clubName: string; description: string; address: string; phone: string; website: string; openDays: number[]; openTime: string; closeTime: string; slotMinutes: number; bookingWindowDays: number; donationMode: boolean; donationNote: string }
 type Holiday = { id: string; date: string; name: string; type: string; surchargeType: string | null; surchargeValue: number | null }
 const EMPTY_HOLIDAY = { date: "", name: "", type: "CLOSED", surchargeType: "PERCENT", surchargeValue: "" }
-const DEFAULTS: ClubForm = { clubName: "", description: "", address: "", phone: "", website: "", openDays: [1,2,3,4,5,6], openTime: "08:00", closeTime: "22:00", slotMinutes: 60, bookingWindowDays: 30 }
+const DEFAULTS: ClubForm = { clubName: "", description: "", address: "", phone: "", website: "", openDays: [1,2,3,4,5,6], openTime: "08:00", closeTime: "22:00", slotMinutes: 60, bookingWindowDays: 30, donationMode: false, donationNote: "" }
 
 const WINDOW_OPTIONS = [
   { value: 7, label: "1 semana" },
@@ -59,7 +59,7 @@ export default function ClubSettingsPage() {
     try {
       const r = await fetch(`/api/businesses/${bid}/club-settings`)
       const d = await r.json()
-      if (d.settings) setForm({ clubName: d.settings.clubName || "", description: d.settings.description || "", address: d.settings.address || "", phone: d.settings.phone || "", website: d.settings.website || "", openDays: d.settings.openDays ?? [1,2,3,4,5,6], openTime: d.settings.openTime || "08:00", closeTime: d.settings.closeTime || "22:00", slotMinutes: d.settings.slotMinutes || 60, bookingWindowDays: d.settings.bookingWindowDays ?? 30 })
+      if (d.settings) setForm({ clubName: d.settings.clubName || "", description: d.settings.description || "", address: d.settings.address || "", phone: d.settings.phone || "", website: d.settings.website || "", openDays: d.settings.openDays ?? [1,2,3,4,5,6], openTime: d.settings.openTime || "08:00", closeTime: d.settings.closeTime || "22:00", slotMinutes: d.settings.slotMinutes || 60, bookingWindowDays: d.settings.bookingWindowDays ?? 30, donationMode: d.settings.donationMode ?? false, donationNote: d.settings.donationNote || "" })
     } finally { setLoading(false) }
   }, [])
 
@@ -194,6 +194,49 @@ export default function ClubSettingsPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Modo donación */}
+      <div style={card}>
+        <div style={cardHeader}>
+          <div className="flex items-center gap-2">
+            <Heart className="w-4 h-4" style={{ color: "#e879f9" }} />
+            <div>
+              <p className="text-sm font-bold" style={{ color: NAVY }}>Modo aporte (sin fines de lucro)</p>
+              <p className="text-xs" style={{ color: "rgba(13,27,42,0.4)" }}>Reemplaza el precio por &quot;Aporte&quot; en la página pública</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setForm(f => ({ ...f, donationMode: !f.donationMode }))}
+            className="relative w-11 h-6 rounded-full transition-colors flex-shrink-0"
+            style={{ background: form.donationMode ? "#e879f9" : "rgba(13,27,42,0.1)" }}
+            aria-checked={form.donationMode}
+            role="switch"
+          >
+            <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
+              style={{ transform: form.donationMode ? "translateX(20px)" : "translateX(0)" }} />
+          </button>
+        </div>
+        {form.donationMode && (
+          <div className="p-5 space-y-3">
+            <p className="text-xs" style={{ color: "rgba(13,27,42,0.5)" }}>
+              Al activar este modo, la página pública mostrará &quot;Aporte&quot; en lugar del precio, junto con la nota que configures abajo.
+            </p>
+            <div>
+              <span style={label}>Nota visible al cliente</span>
+              <textarea
+                value={form.donationNote}
+                onChange={e => setForm(f => ({ ...f, donationNote: e.target.value }))}
+                placeholder="El aporte recaudado se destina íntegramente a la mantención de las instalaciones."
+                rows={2}
+                className="w-full rounded-lg px-3 py-2.5 text-sm outline-none resize-none"
+                style={{ background: "rgba(201,168,76,0.06)", border: BORDER, color: NAVY }}
+              />
+              <p className="text-[11px] mt-1" style={{ color: "rgba(13,27,42,0.35)" }}>Si lo dejas vacío se usará el texto de ejemplo como nota por defecto.</p>
+            </div>
+          </div>
+        )}
       </div>
 
       <button onClick={handleSave} disabled={saving}

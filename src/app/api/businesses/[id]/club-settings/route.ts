@@ -28,6 +28,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       closeTime: body.closeTime || "22:00",
       slotMinutes: Number(body.slotMinutes) || 60,
       bookingWindowDays: Number(body.bookingWindowDays) || 30,
+      donationMode: body.donationMode === true,
+      donationNote: body.donationNote || null,
     },
     create: {
       businessId: id,
@@ -41,6 +43,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       closeTime: body.closeTime || "22:00",
       slotMinutes: Number(body.slotMinutes) || 60,
       bookingWindowDays: Number(body.bookingWindowDays) || 30,
+      donationMode: body.donationMode === true,
+      donationNote: body.donationNote || null,
     },
   })
   return NextResponse.json({ settings })

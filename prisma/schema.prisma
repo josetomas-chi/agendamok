@@ -1136,6 +1136,8 @@ model ClubSettings {
   closeTime   String   @default("22:00")
   slotMinutes        Int      @default(60)
   bookingWindowDays  Int      @default(30)
+  donationMode       Boolean  @default(false)
+  donationNote       String?
   createdAt          DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

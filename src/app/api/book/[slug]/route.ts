@@ -12,7 +12,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
       address: true, city: true, onlinePaymentsEnabled: true, mpConnected: true, primaryColor: true,
       coverImage: true, coverImagePositionY: true, businessType: true, chatBotEnabled: true, accessMode: true,
       bankName: true, bankAccountHolder: true, bankAccountType: true, bankAccountNumber: true, bankRut: true, bankEmail: true,
-      clubSettings: { select: { bookingWindowDays: true } },
+      clubSettings: { select: { bookingWindowDays: true, donationMode: true, donationNote: true } },
       courts: {
         where: { isActive: true },
         select: { id: true, name: true, sport: true, color: true, description: true, sponsorName: true, sponsorLogo: true, sponsorUrl: true, pricingRules: { select: { days: true, startTime: true, endTime: true, price: true, fixedSlots: true } } },
