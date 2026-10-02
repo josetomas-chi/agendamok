@@ -143,7 +143,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     },
   })
   if (!isBlock && booking.client?.email) {
-    const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
+    const business = await prisma.business.findUnique({ where: { id }, select: { name: true, clubSettings: { select: { donationMode: true, donationNote: true } } } })
     sendCourtBookingConfirmation({
       clientName: booking.client.name,
       clientEmail: booking.client.email,
@@ -156,6 +156,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       sponsorName: booking.court.sponsorName ?? undefined,
       sponsorLogo: booking.court.sponsorLogo ?? undefined,
       sponsorUrl: booking.court.sponsorUrl ?? undefined,
+      donationMode: business?.clubSettings?.donationMode ?? false,
+      donationNote: business?.clubSettings?.donationNote ?? null,
     }).catch(console.error)
   }
 
