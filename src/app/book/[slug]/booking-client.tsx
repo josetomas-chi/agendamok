@@ -110,19 +110,21 @@ function BankDetails({
   )
 }
 
-export default function BookingClient({ slug, initialName, initialLogo }: { slug: string; initialName?: string; initialLogo?: string | null }) {
-  const [business, setBusiness] = useState<Business | null>(null)
-  const [loading, setLoading] = useState(true)
+export default function BookingClient({ slug, initialName, initialLogo, initialBusiness }: { slug: string; initialName?: string; initialLogo?: string | null; initialBusiness?: Business }) {
+  const [business, setBusiness] = useState<Business | null>(initialBusiness ?? null)
+  const [loading, setLoading] = useState(!initialBusiness)
   const [notFound, setNotFound] = useState(false)
   const [autoClient, setAutoClient] = useState<{ name: string; email: string; phone: string; rut?: string } | null>(null)
   const [autoChecked, setAutoChecked] = useState(false)
 
   useEffect(() => {
+    if (initialBusiness) return // already have data from SSR
     fetch(`/api/book/${slug}`)
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(d => setBusiness(d.business))
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug])
 
   // Auto-fill for logged-in users
