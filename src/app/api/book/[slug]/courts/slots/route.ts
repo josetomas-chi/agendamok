@@ -46,14 +46,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   const periodStartUTC = chileLocalToUTC(chileOpen)
   const periodEndUTC = chileLocalToUTC(chileClose)
 
+  // Reservas PENDING con más de 15 minutos sin pago se consideran expiradas (slot libre)
+  const pendingCutoff = new Date(Date.now() - 15 * 60 * 1000)
+
   // Existing bookings that overlap with this operating window
   const existing = await prisma.courtBooking.findMany({
     where: {
       courtId,
       startTime: { lt: periodEndUTC },
       endTime: { gt: periodStartUTC },
-      status: { notIn: ["CANCELLED"] },
       deletedAt: null,
+      OR: [
+        { status: { notIn: ["CANCELLED", "PENDING"] } },
+        { status: "PENDING", updatedAt: { gte: pendingCutoff } },
+      ],
     },
     select: { startTime: true, endTime: true },
   })

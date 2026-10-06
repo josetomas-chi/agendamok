@@ -13,12 +13,8 @@
       "schedule": "0 14 * * 1"
     },
     {
-      "path": "/api/cron/survey-emails?secret=agendamok-cron-2026",
-      "schedule": "0 15 * * *"
-    },
-    {
       "path": "/api/cron/cancel-expired-payments?secret=agendamok-cron-2026",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 15 * * *"
     }
   ]
 }

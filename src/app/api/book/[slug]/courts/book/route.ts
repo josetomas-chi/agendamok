@@ -123,6 +123,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   let booking: { id: string; startTime: Date; endTime: Date; price: number; status: string; clientId: string } | null = null
   let existingOwnBooking: typeof booking | null = null
   try {
+    const pendingExpiryCutoff = new Date(Date.now() - 15 * 60 * 1000)
+
     booking = await prisma.$transaction(async (tx) => {
       const conflict = await tx.courtBooking.findFirst({
         where: {
@@ -132,11 +134,26 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
           endTime: { gt: startTime },
           status: { not: "CANCELLED" },
         },
-        select: { id: true, startTime: true, endTime: true, price: true, status: true, clientId: true },
+        select: { id: true, startTime: true, endTime: true, price: true, status: true, clientId: true, updatedAt: true },
       })
-      // If the conflict belongs to the same person (by clientId OR by same email in this business),
-      // treat it as a duplicate submission and return it as success.
-      if (conflict) {
+
+      // Si el conflicto es un PENDING expirado (más de 15 min), cancelarlo y dejar pasar
+      if (conflict && conflict.status === "PENDING" && conflict.updatedAt < pendingExpiryCutoff) {
+        await tx.courtBooking.update({
+          where: { id: conflict.id },
+          data: { status: "CANCELLED" },
+        })
+        await tx.courtBookingLog.create({
+          data: {
+            bookingId: conflict.id,
+            fromStatus: "PENDING",
+            toStatus: "CANCELLED",
+            source: "reactive",
+            meta: JSON.stringify({ reason: "payment_timeout_reactive" }),
+          },
+        })
+        // Continuar como si no hubiera conflicto
+      } else if (conflict) {
         if (conflict.clientId === client.id) {
           existingOwnBooking = conflict
           return conflict
