@@ -532,7 +532,7 @@ export default function LandingPage() {
           <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-sky-100/70 blur-[100px] pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-sky-50/60 blur-[80px] pointer-events-none" />
 
-          <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-16">
+          <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-44 pb-20">
             <h1 className="text-6xl sm:text-7xl lg:text-[88px] font-bold tracking-tight leading-[1.05] mb-6 text-gray-900">
               <span className="hero-word hw0">Tu negocio,</span>{" "}
               <span className="hero-word hw1">en</span>{" "}
