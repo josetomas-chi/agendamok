@@ -26,10 +26,10 @@ const businesses = [
   { name: "Taller Mecánico",     photo: "photo-1487754180451-c456f719a1fc" },
 ]
 
-const CARD_W = 280
-const CARD_H = 380
-const GAP = 20
-const VISIBLE = 3 // cards fully visible + partial sides
+const CARD_W = 260
+const CARD_H = 360
+const GAP = 16
+const VISIBLE = 4 // cards fully visible + partial sides
 
 export function BusinessCarousel() {
   const [index, setIndex] = useState(0)
@@ -72,7 +72,7 @@ export function BusinessCarousel() {
   const offset = -(index * (CARD_W + GAP)) + ((visibleCount - 1) / 2) * (CARD_W + GAP)
 
   return (
-    <section className="relative py-24 overflow-hidden bg-white">
+    <section className="relative pt-8 pb-20 overflow-hidden bg-white">
       <style>{`
         .biz-card {
           transition: transform 0.5s cubic-bezier(0.32,0.72,0,1),
@@ -115,8 +115,8 @@ export function BusinessCarousel() {
                 : -((index - i + total) % total)
             )
             const isActive = i === index
-            const scale = isActive ? 1 : dist === 1 ? 0.92 : 0.84
-            const opacity = isActive ? 1 : dist === 1 ? 0.65 : 0.35
+            const scale = isActive ? 1 : dist === 1 ? 0.95 : dist === 2 ? 0.90 : 0.85
+            const opacity = isActive ? 1 : dist === 1 ? 0.88 : dist === 2 ? 0.70 : 0.45
 
             return (
               <div
@@ -158,9 +158,9 @@ export function BusinessCarousel() {
           })}
         </div>
 
-        {/* Edge fades */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-24" style={{ background: "linear-gradient(to right, #ffffff, transparent)" }} />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-24" style={{ background: "linear-gradient(to left, #ffffff, transparent)" }} />
+        {/* Edge fades — subtle, solo para suavizar el corte */}
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-12" style={{ background: "linear-gradient(to right, #ffffff, transparent)" }} />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-12" style={{ background: "linear-gradient(to left, #ffffff, transparent)" }} />
       </div>
 
       {/* Controls */}
