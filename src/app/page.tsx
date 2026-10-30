@@ -568,6 +568,29 @@ export default function LandingPage() {
           </div>
           <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
+              {/* Toggle ON con pelota */}
+              <div className="flex justify-center mb-6">
+                <svg viewBox="0 0 120 52" width="120" height="52" xmlns="http://www.w3.org/2000/svg" aria-label="AgendaMok Sports activado">
+                  <defs>
+                    <linearGradient id="toggleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#16a34a" />
+                      <stop offset="100%" stopColor="#22c55e" />
+                    </linearGradient>
+                    <filter id="ballShadow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="rgba(0,0,0,0.4)" />
+                    </filter>
+                  </defs>
+                  {/* Pill */}
+                  <rect x="2" y="2" width="116" height="48" rx="24" fill="url(#toggleGrad)" />
+                  {/* ON label */}
+                  <text x="30" y="34" fontFamily="sans-serif" fontWeight="800" fontSize="16" fill="white" textAnchor="middle" letterSpacing="1">ON</text>
+                  {/* Ball knob */}
+                  <circle cx="90" cy="26" r="20" fill="#c8e000" filter="url(#ballShadow)" />
+                  {/* Curvas de pelota de tenis/pádel */}
+                  <path d="M72,20 Q90,14 108,20" fill="none" stroke="white" strokeWidth="2.2" strokeOpacity="0.7" strokeLinecap="round" />
+                  <path d="M72,32 Q90,38 108,32" fill="none" stroke="white" strokeWidth="2.2" strokeOpacity="0.7" strokeLinecap="round" />
+                </svg>
+              </div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold tracking-wider mb-6" style={{ background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.3)", color: GOLD }}>
                 ✦ NUEVO
               </div>
