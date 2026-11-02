@@ -786,7 +786,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
           >+</button>
         </div>
         <div className="overflow-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-          style={{ maxHeight: "calc(100dvh - 160px - 2.75rem - env(safe-area-inset-bottom, 0px))" }}
+          style={{ maxHeight: "var(--calendar-grid-max-h)" }}
           ref={gridRef}>
           <div className="flex" style={{ minWidth: `${44 + courts.length * 130}px` }}>
             {/* Time column */}
