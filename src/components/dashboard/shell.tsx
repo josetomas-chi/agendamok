@@ -60,6 +60,7 @@ export function DashboardShell({
           <div className="p-4 md:p-6 page-enter">{children}</div>
         </main>
         <BottomNav />
+      </div>
     </div>
   )
 }
