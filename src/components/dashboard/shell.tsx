@@ -59,7 +59,7 @@ export function DashboardShell({
         <main className="flex-1 overflow-y-auto min-h-0">
           <div className="p-4 md:p-6 page-enter">{children}</div>
         </main>
-        <BottomNav />
+        {!isSports && <BottomNav />}
       </div>
     </div>
   )
