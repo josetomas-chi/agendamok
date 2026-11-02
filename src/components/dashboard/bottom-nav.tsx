@@ -22,7 +22,7 @@ export function BottomNav() {
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-white/8"
       style={{ background: "#232326", paddingBottom: "env(safe-area-inset-bottom)" }}>
-      <div className="flex items-center justify-around h-14">
+      <div className="flex items-center justify-around h-11">
         {items.map(item => {
           const Icon = item.icon
           const active = isActive(item.href, item.exact)

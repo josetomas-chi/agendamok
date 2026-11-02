@@ -38,7 +38,7 @@ type Booking = {
 const START_HOUR = 8
 const END_HOUR = 23
 const SLOT_MINUTES = 30
-const SLOT_HEIGHT = 28 // px per 30-min slot
+const SLOT_HEIGHT_DEFAULT = 28 // px per 30-min slot
 const slots: string[] = []
 for (let h = START_HOUR; h < END_HOUR; h++) {
   slots.push(`${String(h).padStart(2, "0")}:00`)
@@ -578,7 +578,7 @@ function MiniCalendarClock({ selectedDate, onDateChange }: { selectedDate: Date;
 }
 
 // Returns fixed blocks [{top, height, label}] for a court on a given day
-function getFixedBlocks(court: Court, date: Date) {
+function getFixedBlocks(court: Court, date: Date, slotHeight: number) {
   if (!court.pricingRules) return []
   const dayOfWeek = date.getDay()
   const origin = START_HOUR * 60
@@ -593,8 +593,8 @@ function getFixedBlocks(court: Court, date: Date) {
       const startMins = timeToMinutes(slotStart)
       // End = next fixed slot start, or rule endTime
       const endMins = i + 1 < sorted.length ? timeToMinutes(sorted[i + 1]) : ruleEndMins
-      const top = ((startMins - origin) / SLOT_MINUTES) * SLOT_HEIGHT
-      const height = ((endMins - startMins) / SLOT_MINUTES) * SLOT_HEIGHT
+      const top = ((startMins - origin) / SLOT_MINUTES) * slotHeight
+      const height = ((endMins - startMins) / SLOT_MINUTES) * slotHeight
       blocks.push({ top, height, startLabel: slotStart, endLabel: sorted[i + 1] ?? rule.endTime })
     })
   }
@@ -622,6 +622,8 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null)
   const [dragLabel, setDragLabel] = useState("")
   const [dropTarget, setDropTarget] = useState<{ courtId: string; slot: string } | null>(null)
+  const [slotH, setSlotH] = useState(SLOT_HEIGHT_DEFAULT)
+  const SLOT_HEIGHT = slotH
 
   // null during SSR — set only on client to guarantee browser local timezone
   const [nowTime, setNowTime] = useState<Date | null>(null)
@@ -760,6 +762,29 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
       {courts.length === 0 ? (
         <div className="p-12 text-center text-sm" style={{ color: "rgba(13,27,42,0.35)" }}>No hay canchas activas. Crea una en la sección Canchas.</div>
       ) : (
+        <>
+        {/* Zoom controls — mobile only */}
+        <div className="flex md:hidden items-center justify-end gap-1 px-3 py-1.5" style={{ borderBottom: BORDER, background: "#f5f5f7" }}>
+          <span className="text-[10px] mr-1 font-medium" style={{ color: "rgba(13,27,42,0.35)" }}>Zoom</span>
+          <button
+            onClick={() => setSlotH(h => Math.max(16, h - 4))}
+            className="w-6 h-6 rounded flex items-center justify-center text-sm font-bold select-none"
+            style={{ background: "rgba(13,27,42,0.06)", color: NAVY }}
+            aria-label="Alejar"
+          >−</button>
+          <button
+            onClick={() => setSlotH(SLOT_HEIGHT_DEFAULT)}
+            className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold select-none"
+            style={{ background: slotH === SLOT_HEIGHT_DEFAULT ? "rgba(201,168,76,0.2)" : "rgba(13,27,42,0.06)", color: NAVY }}
+            aria-label="Restablecer zoom"
+          >1×</button>
+          <button
+            onClick={() => setSlotH(h => Math.min(48, h + 4))}
+            className="w-6 h-6 rounded flex items-center justify-center text-sm font-bold select-none"
+            style={{ background: "rgba(13,27,42,0.06)", color: NAVY }}
+            aria-label="Acercar"
+          >+</button>
+        </div>
         <div className="overflow-auto max-h-[calc(100vh-160px)] md:max-h-[calc(100vh-180px)] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" ref={gridRef}>
           <div className="flex" style={{ minWidth: `${44 + courts.length * 130}px` }}>
             {/* Time column */}
@@ -825,7 +850,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                   )}
 
                   {/* Fixed blocks overlay — hides internal 30-min grid lines */}
-                  {getFixedBlocks(court, selectedDate).map((block, bi) => (
+                  {getFixedBlocks(court, selectedDate, SLOT_HEIGHT).map((block, bi) => (
                     <div key={bi} className="absolute left-0 right-0 pointer-events-none z-[1]"
                       style={{ top: block.top, height: block.height, background: "#ffffff", borderTop: "1px solid rgba(13,27,42,0.1)" }} />
                   ))}
@@ -925,6 +950,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
             ))}
           </div>
         </div>
+        </>
       )}
 
       {/* Drag ghost — elemento invisible necesario para courtAtPoint */}

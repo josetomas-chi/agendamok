@@ -56,7 +56,7 @@ export function DashboardShell({
           activeBusinessId={activeBusinessId}
           isSuperAdmin={isSuperAdmin}
         />
-        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
+        <main className="flex-1 overflow-y-auto pb-11 md:pb-0">
           <div className="p-4 md:p-6 page-enter">{children}</div>
         </main>
       </div>
