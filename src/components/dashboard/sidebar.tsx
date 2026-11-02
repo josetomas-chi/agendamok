@@ -149,7 +149,7 @@ export function Sidebar({ onClose, isSports = false, memberRole = "ADMIN", permi
               <div className="font-black text-[11px] tracking-widest uppercase" style={{ color: S.gold }}>Sports</div>
             </div>
           </Link>
-          <button onClick={onClose} className="md:hidden p-1 transition-colors" style={{ color: S.goldDim }}>
+          <button onClick={onClose} className="lg:hidden p-1 transition-colors" style={{ color: S.goldDim }}>
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -222,7 +222,7 @@ export function Sidebar({ onClose, isSports = false, memberRole = "ADMIN", permi
           </div>
           <span className="font-bold text-[15px] tracking-tight text-white">Agenda<span className="text-sky-400">Mok</span></span>
         </Link>
-        <button onClick={onClose} className="md:hidden p-1 text-white/30 hover:text-white/70 transition-colors"><X className="w-4 h-4" /></button>
+        <button onClick={onClose} className="lg:hidden p-1 text-white/30 hover:text-white/70 transition-colors"><X className="w-4 h-4" /></button>
       </div>
       <nav className="flex-1 py-3 px-3 space-y-3 overflow-y-auto scrollbar-hide">
         {GENERAL_GROUPS.map((group) => (

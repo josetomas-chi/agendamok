@@ -31,12 +31,12 @@ export function DashboardShell({
     <div className={`flex h-screen overflow-hidden${isSports ? " theme-light" : ""}`} style={{ background: isSports ? "#f5f5f7" : "#1c1c1e" }}>
       <CommandPalette />
       {sidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-black/60 md:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 z-40 bg-black/60 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
       <div className={[
-        "fixed inset-y-0 left-0 z-[60] md:relative md:z-auto md:translate-x-0",
+        "fixed inset-y-0 left-0 z-[60] lg:relative lg:z-auto lg:translate-x-0",
         "transition-transform duration-300 ease-in-out",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
       ].join(" ")}>
         <Sidebar
           onClose={() => setSidebarOpen(false)}
@@ -56,7 +56,7 @@ export function DashboardShell({
           activeBusinessId={activeBusinessId}
           isSuperAdmin={isSuperAdmin}
         />
-        <main className="flex-1 overflow-y-auto pb-11 md:pb-0">
+        <main className="flex-1 overflow-y-auto pb-11 lg:pb-0">
           <div className="p-4 md:p-6 page-enter">{children}</div>
         </main>
       </div>

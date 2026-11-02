@@ -764,7 +764,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
       ) : (
         <>
         {/* Zoom controls — mobile only */}
-        <div className="flex md:hidden items-center justify-end gap-1 px-3 py-1.5" style={{ borderBottom: BORDER, background: "#f5f5f7" }}>
+        <div className="flex lg:hidden items-center justify-end gap-1 px-3 py-1.5" style={{ borderBottom: BORDER, background: "#f5f5f7" }}>
           <span className="text-[10px] mr-1 font-medium" style={{ color: "rgba(13,27,42,0.35)" }}>Zoom</span>
           <button
             onClick={() => setSlotH(h => Math.max(16, h - 4))}
