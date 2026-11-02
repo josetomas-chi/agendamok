@@ -811,7 +811,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
           )}
           {!isLoggedIn && (
             <button
-              onClick={() => { setShowMyBookings(true); setMyBookings(null); setMyBookingsRut("") }}
+              onClick={() => { setShowMyBookings(true); setMyBookings(null); const r = rut.replace(/[^0-9kK]/gi, ""); setMyBookingsRut(r); if (r) fetchMyBookings(r) }}
               className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all"
               style={{ background: "rgba(56,189,248,0.10)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>
               <Calendar className="w-3 h-3" /> Mis reservas
