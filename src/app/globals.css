@@ -165,17 +165,6 @@
   }
 }
 
-/* Altura máxima del grid del calendario, descontando todo lo que hay
-   encima (topbar + controles) y debajo (bottom nav + safe area en iPhone).
-   Breakpoint lg (1024px) = desktop sin bottom nav */
-:root {
-  --calendar-grid-max-h: calc(100dvh - 320px - env(safe-area-inset-bottom, 0px));
-}
-@media (min-width: 1024px) {
-  :root {
-    --calendar-grid-max-h: calc(100dvh - 180px);
-  }
-}
 
 @layer utilities {
   .scrollbar-hide {

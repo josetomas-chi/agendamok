@@ -785,8 +785,7 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
             aria-label="Acercar"
           >+</button>
         </div>
-        <div className="overflow-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-          style={{ maxHeight: "var(--calendar-grid-max-h)" }}
+        <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           ref={gridRef}>
           <div className="flex" style={{ minWidth: `${44 + courts.length * 130}px` }}>
             {/* Time column */}
