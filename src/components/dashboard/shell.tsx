@@ -56,13 +56,10 @@ export function DashboardShell({
           activeBusinessId={activeBusinessId}
           isSuperAdmin={isSuperAdmin}
         />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto min-h-0">
           <div className="p-4 md:p-6 page-enter">{children}</div>
-          {/* Spacer que replica la altura exacta del bottom nav incluyendo safe area */}
-          <div className="lg:hidden flex-shrink-0" style={{ height: "calc(2.75rem + env(safe-area-inset-bottom, 0px))" }} />
         </main>
-      </div>
-      <BottomNav />
+        <BottomNav />
     </div>
   )
 }
