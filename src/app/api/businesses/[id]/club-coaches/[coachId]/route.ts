@@ -22,7 +22,19 @@ export async function PATCH(req: Request, { params }: Params) {
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id, coachId } = await params
   const body = await req.json()
-  const { name, email, phone, photo, color, paymentType, commissionPercent, isActive, feeRules } = body
+  const { name, email, phone, photo, color, paymentType, commissionPercent, isActive, feeRules, userId } = body
+
+  // Si viene userId (email), buscar el usuario
+  let resolvedUserId: string | null | undefined = undefined
+  if (userId !== undefined) {
+    if (!userId) {
+      resolvedUserId = null
+    } else {
+      const user = await prisma.user.findUnique({ where: { email: userId }, select: { id: true } })
+      if (!user) return NextResponse.json({ error: "Usuario no encontrado con ese email" }, { status: 404 })
+      resolvedUserId = user.id
+    }
+  }
 
   const coach = await prisma.clubCoach.update({
     where: { id: coachId, businessId: id },
@@ -35,6 +47,7 @@ export async function PATCH(req: Request, { params }: Params) {
       ...(paymentType !== undefined && { paymentType }),
       ...(commissionPercent !== undefined && { commissionPercent: paymentType === "COMMISSION" ? commissionPercent : null }),
       ...(isActive !== undefined && { isActive }),
+      ...(resolvedUserId !== undefined && { userId: resolvedUserId }),
     },
   })
 

@@ -31,6 +31,7 @@ type Coach = {
   paymentType: "COMMISSION" | "COURT_FEE"
   commissionPercent: number | null
   isActive: boolean
+  userId: string | null
   feeRules: FeeRule[]
 }
 
@@ -85,7 +86,7 @@ function CoachForm({
   onCancel,
 }: {
   initial?: Partial<Coach>
-  onSave: (data: Omit<Coach, "id" | "isActive">) => Promise<void>
+  onSave: (data: Omit<Coach, "id" | "isActive" | "userId"> & { userId?: string | null }) => Promise<void>
   onCancel: () => void
 }) {
   const [name, setName] = useState(initial?.name ?? "")
@@ -95,6 +96,7 @@ function CoachForm({
   const [color, setColor] = useState(initial?.color ?? "#38bdf8")
   const [paymentType, setPaymentType] = useState<"COMMISSION" | "COURT_FEE">(initial?.paymentType ?? "COMMISSION")
   const [commissionPercent, setCommissionPercent] = useState<string>(String(initial?.commissionPercent ?? ""))
+  const [portalEmail, setPortalEmail] = useState("")
   const [feeRules, setFeeRules] = useState<FeeRule[]>(initial?.feeRules ?? [])
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -146,6 +148,7 @@ function CoachForm({
         paymentType,
         commissionPercent: paymentType === "COMMISSION" ? (parseFloat(commissionPercent) || null) : null,
         feeRules,
+        ...(portalEmail && { userId: portalEmail }),
       })
     } finally {
       setSaving(false)
@@ -203,6 +206,16 @@ function CoachForm({
           <input value={phone} onChange={e => setPhone(e.target.value)}
             className="w-full rounded-lg px-3 py-2 text-sm outline-none"
             style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.12)", color: "#0d1b2a" }} />
+        </div>
+        <div className="col-span-2">
+          <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: "rgba(13,27,42,0.5)" }}>
+            Vincular portal coach {initial?.userId && <span className="text-green-600 normal-case font-normal ml-1">✓ ya vinculado</span>}
+          </label>
+          <input value={portalEmail} onChange={e => setPortalEmail(e.target.value)} type="email"
+            placeholder={initial?.userId ? "Dejar vacío para no cambiar" : "Email de cuenta AgendaMok del coach"}
+            className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+            style={{ background: "rgba(13,27,42,0.05)", border: "1px solid rgba(13,27,42,0.12)", color: "#0d1b2a" }} />
+          <p className="text-[11px] mt-1" style={{ color: "rgba(13,27,42,0.4)" }}>El coach podrá ver su agenda en agendamok.cl/dashboard/coach</p>
         </div>
         <div>
           <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: "rgba(13,27,42,0.5)" }}>Color en calendario</label>
@@ -521,7 +534,7 @@ export default function CoachesTab({ businessId }: { businessId: string }) {
 
   useEffect(() => { load() }, [load])
 
-  async function handleCreate(data: Omit<Coach, "id" | "isActive">) {
+  async function handleCreate(data: Omit<Coach, "id" | "isActive" | "userId"> & { userId?: string | null }) {
     const r = await fetch(`/api/businesses/${businessId}/club-coaches`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -532,7 +545,7 @@ export default function CoachesTab({ businessId }: { businessId: string }) {
     load()
   }
 
-  async function handleEdit(data: Omit<Coach, "id" | "isActive">) {
+  async function handleEdit(data: Omit<Coach, "id" | "isActive" | "userId"> & { userId?: string | null }) {
     if (!editCoach) return
     const r = await fetch(`/api/businesses/${businessId}/club-coaches/${editCoach.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },

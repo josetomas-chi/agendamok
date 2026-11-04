@@ -18,6 +18,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const session = await auth()
   if (!session) redirect("/login")
 
+  // Si el usuario es coach vinculado (sin negocios propios), ir al portal de coach
+  const coachProfile = await prisma.clubCoach.findUnique({ where: { userId: session.user.id }, select: { id: true } })
+
   // Fetch all owned businesses
   const ownedBusinesses: BusinessOption[] = await prisma.business.findMany({
     where: { ownerId: session.user.id, deletedAt: null },
@@ -45,8 +48,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
     ...memberBusinesses.filter((mb) => !ownedBusinesses.find((ob) => ob.id === mb.id)),
   ]
 
-  // Usuario sin negocios ni membresías → es solo cliente, ir a su perfil
-  if (allBusinesses.length === 0) redirect("/profile")
+  // Usuario sin negocios ni membresías → si es coach ir al portal, sino perfil
+  if (allBusinesses.length === 0) {
+    if (coachProfile) redirect("/dashboard/coach")
+    redirect("/profile")
+  }
 
   // Pick active business from cookie, fallback to first
   const cookieStore = await cookies()

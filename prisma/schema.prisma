@@ -135,6 +135,7 @@ model User {
   clientProfiles    Client[]
   businessMembers   BusinessMember[]
   pushSubscriptions PushSubscription[]
+  coachProfile      ClubCoach?
 
   @@index([email])
   @@map("users")
@@ -1163,6 +1164,7 @@ model ClubHoliday {
 model ClubCoach {
   id                String   @id @default(cuid())
   businessId        String
+  userId            String?  @unique
   name              String
   email             String?
   phone             String?
@@ -1175,6 +1177,7 @@ model ClubCoach {
   updatedAt         DateTime @updatedAt
 
   business  Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user      User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
   feeRules  ClubCoachFeeRule[]
   bookings  CourtBooking[]
   schoolGroups  SchoolGroup[]
