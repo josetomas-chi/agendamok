@@ -34,7 +34,7 @@ export async function PATCH(req: Request, { params }: Params) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id, bookingId } = await params
-  const { clientId, courtId, startTime, endTime, notes, status, price, coachPaid } = await req.json()
+  const { clientId, courtId, startTime, endTime, notes, status, price, coachPaid, paidAmount, paidAmountIncrement } = await req.json()
 
   try {
     const data: Record<string, unknown> = {}
@@ -46,6 +46,11 @@ export async function PATCH(req: Request, { params }: Params) {
     if (status !== undefined) data.status = status
     if (price !== undefined) data.price = price
     if (coachPaid !== undefined) data.coachPaid = coachPaid
+    if (paidAmount !== undefined) data.paidAmount = paidAmount
+    if (paidAmountIncrement !== undefined) {
+      const cur = await prisma.courtBooking.findUnique({ where: { id: bookingId }, select: { paidAmount: true } })
+      data.paidAmount = Number(cur?.paidAmount ?? 0) + Number(paidAmountIncrement)
+    }
 
     // Validar duración mínima si cambia horario
     if (startTime !== undefined || endTime !== undefined) {
@@ -194,6 +199,11 @@ export async function PATCH(req: Request, { params }: Params) {
     if (status !== undefined && prevForLog?.status !== status) {
       await prisma.courtBookingLog.create({
         data: { bookingId, fromStatus: prevForLog?.status ?? null, toStatus: status, source: "dashboard", meta: JSON.stringify({ userId: session.user.id }) },
+      }).catch(() => {})
+    }
+    if (paidAmountIncrement !== undefined) {
+      await prisma.courtBookingLog.create({
+        data: { bookingId, fromStatus: booking.status, toStatus: booking.status, source: "partial_payment", meta: JSON.stringify({ increment: Number(paidAmountIncrement), totalPaid: Number(data.paidAmount), userId: session.user.id }) },
       }).catch(() => {})
     }
 

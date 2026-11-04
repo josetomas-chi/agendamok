@@ -30,7 +30,7 @@ export default function CourtsPage() {
   const load = useCallback(async (bid: string) => {
     const r = await fetch(`/api/businesses/${bid}/courts`)
     const d = await r.json()
-    setCourts(d.courts || [])
+    setCourts((d.courts || []).filter((c: Court) => c.isActive !== false))
     setLoading(false)
   }, [])
 
@@ -219,20 +219,20 @@ export default function CourtsPage() {
                   </div>
                 </div>
               ) : (
-                <div className="h-1.5" style={{ background: c.color }} />
+                <div className="h-28 flex items-center justify-center relative overflow-hidden"
+                  style={{ background: `linear-gradient(135deg, rgba(13,27,42,0.9) 0%, ${c.color}22 100%)`, borderBottom: `1px solid ${c.color}40` }}>
+                  <div className="absolute bottom-2 left-3">
+                    {c.sport && <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: c.color }}>{c.sport}</p>}
+                    <p className="text-sm font-bold text-white">{c.name}{c.sponsorName ? ` ${c.sponsorName}` : ""}</p>
+                  </div>
+                </div>
               )}
               <div className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <GripVertical className="w-4 h-4 flex-shrink-0" style={{ color: "rgba(255,255,255,0.2)" }} />
-                    {!c.image && (
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold text-sm text-white">{c.name}{c.sponsorName ? ` ${c.sponsorName}` : ""}</p>
-                          {c.sponsorLogo && <img src={c.sponsorLogo} alt={c.sponsorName || ""} className="h-5 w-auto object-contain opacity-90" />}
-                        </div>
-                        {c.sport && <p className="text-xs mt-0.5 font-semibold uppercase tracking-wide" style={{ color: "#C9A84C" }}>{c.sport}</p>}
-                      </div>
+                    {c.sponsorLogo && !c.image && (
+                      <img src={c.sponsorLogo} alt={c.sponsorName || ""} className="h-5 w-auto object-contain opacity-90" />
                     )}
                   </div>
                   <div className="flex gap-1.5">

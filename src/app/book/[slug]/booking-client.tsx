@@ -817,6 +817,14 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
               <Calendar className="w-3 h-3" /> Mis reservas
             </button>
           )}
+          {!isLoggedIn && (
+            <a href={`/login?callbackUrl=${encodeURIComponent(`/book/${slug}`)}`}
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all"
+              style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.10)" }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+              Ingresar
+            </a>
+          )}
           {isLoggedIn && (
             <a href="/profile" className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all" style={{ background: "rgba(56,189,248,0.12)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
@@ -874,9 +882,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                   {sports.map(s => {
                     const active = selectedSports.includes(s)
                     return (
-                      <button key={s} onClick={() => setSelectedSports(prev =>
-                        prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]
-                      )}
+                      <button key={s} onClick={() => setSelectedSports([s])}
                         className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
                         style={active
                           ? { background: SPORTS_ACCENT, color: SPORTS_BG }
@@ -1000,10 +1006,10 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                             <div className="absolute bottom-0 left-0 right-0 px-4 pb-2.5 flex items-end justify-between gap-2">
                               <div>
                                 <p className="font-bold text-sm text-white leading-tight">{court.name}</p>
-                                {(court.slots[0]?.price > 0 || business.clubSettings?.donationMode) && (
+                                {court.slots[0]?.price > 0 && (
                                   <p className="text-[11px] font-semibold" style={{ color: SPORTS_ACCENT }}>
                                     {business.clubSettings?.donationMode
-                                      ? `Aporte · ${court.slots[0]?.duration ?? duration} min`
+                                      ? `Aporte $${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")} · ${court.slots[0]?.duration ?? duration} min`
                                       : `desde $${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")} · ${court.slots[0]?.duration ?? duration} min`}
                                   </p>
                                 )}
@@ -1021,10 +1027,10 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                             <div className="px-4 pt-3 pb-2 flex items-center gap-3">
                               <div className="flex-1 min-w-0">
                                 <p className="font-bold text-sm text-white">{court.name}</p>
-                                {(court.slots[0]?.price > 0 || business.clubSettings?.donationMode) && (
+                                {court.slots[0]?.price > 0 && (
                                   <p className="text-xs mt-0.5 font-semibold" style={{ color: SPORTS_ACCENT }}>
                                     {business.clubSettings?.donationMode
-                                      ? `Aporte · ${court.slots[0]?.duration ?? duration} min`
+                                      ? `Aporte $${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")} · ${court.slots[0]?.duration ?? duration} min`
                                       : `desde $${Math.min(...court.slots.map(s => s.price)).toLocaleString("es-CL")} · ${court.slots[0]?.duration ?? duration} min`}
                                   </p>
                                 )}
@@ -1062,7 +1068,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                                 }}>
                                 <span className="text-[11px] font-bold leading-none">{slot.time}</span>
                                 <span className="text-[10px] font-normal opacity-60 leading-none">{endTime}</span>
-                                {(slot.price > 0 || business.clubSettings?.donationMode) && <span className="text-[9px] font-normal opacity-60 leading-none mt-0.5">{business.clubSettings?.donationMode ? "Aporte" : `$${slot.price.toLocaleString("es-CL")}`}</span>}
+                                {(slot.price > 0 && !business.clubSettings?.donationMode) && <span className="text-[9px] font-normal opacity-60 leading-none mt-0.5">${slot.price.toLocaleString("es-CL")}</span>}
                               </button>
                             )
                           })}
@@ -1108,7 +1114,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                 <span className="font-bold text-sm text-white">{selectedCourt.name}</span>
                 {selectedSlot.price > 0 && (
                   <span className="ml-auto font-bold text-sm" style={{ color: SPORTS_ACCENT }}>
-                    {business.clubSettings?.donationMode ? "Aporte" : `$${selectedSlot.price.toLocaleString("es-CL")}`}
+                    {business.clubSettings?.donationMode ? `Aporte $${selectedSlot.price.toLocaleString("es-CL")}` : `$${selectedSlot.price.toLocaleString("es-CL")}`}
                   </span>
                 )}
               </div>

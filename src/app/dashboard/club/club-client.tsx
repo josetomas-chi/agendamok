@@ -1255,6 +1255,21 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
     else toast.error("Error al actualizar")
   }
 
+  const [partialMode, setPartialMode] = useState(false)
+  const [partialAmount, setPartialAmount] = useState("")
+
+  async function handlePartialPayment() {
+    const amount = Number(partialAmount.replace(/[^0-9]/g, ""))
+    if (!amount || amount <= 0) return
+    const r = await patch({ paidAmountIncrement: amount })
+    if (r.ok) {
+      toast.success(`Cobro parcial registrado: $${amount.toLocaleString("es-CL")}`)
+      setPartialMode(false)
+      setPartialAmount("")
+      onSaved()
+    } else toast.error("Error al registrar cobro")
+  }
+
   const [annulModal, setAnnulModal] = useState(false)
   const [annulType, setAnnulType] = useState<"credit" | "refund" | null>(null)
   const [annulNote, setAnnulNote] = useState("")
@@ -1554,6 +1569,7 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                 </div>
                 <div className="divide-y" style={{ divideColor: "rgba(13,27,42,0.04)" }}>
                   {logs.map(log => {
+                    const meta = log.meta ? (() => { try { return JSON.parse(log.meta) } catch { return {} } })() : {}
                     const sourceLabel: Record<string, string> = {
                       pay_create: "Pago iniciado",
                       polling: "Confirmado (retorno web)",
@@ -1562,6 +1578,7 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                       dashboard_delete: "Eliminado en dashboard",
                       admin: "Admin",
                       cancel_client: "Cancelado por cliente",
+                      partial_payment: meta.increment ? `Cobro parcial — $${Number(meta.increment).toLocaleString("es-CL")}` : "Cobro parcial",
                     }
                     const statusColor: Record<string, string> = {
                       CONFIRMED: "#16a34a",
@@ -1574,7 +1591,10 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                       <div key={log.id} className="flex items-center gap-2 px-3 py-2">
                         <span className="text-[10px] tabular-nums shrink-0" style={{ color: "rgba(13,27,42,0.35)" }}>{time}</span>
                         <span className="text-[10px] flex-1 truncate" style={{ color: "rgba(13,27,42,0.55)" }}>{sourceLabel[log.source] ?? log.source}</span>
-                        <span className="text-[10px] font-bold shrink-0" style={{ color: statusColor[log.toStatus] ?? "rgba(13,27,42,0.5)" }}>→ {log.toStatus}</span>
+                        {log.source === "partial_payment"
+                          ? <span className="text-[10px] font-bold shrink-0" style={{ color: "#0ea5e9" }}>+${Number(meta.increment ?? 0).toLocaleString("es-CL")}</span>
+                          : <span className="text-[10px] font-bold shrink-0" style={{ color: statusColor[log.toStatus] ?? "rgba(13,27,42,0.5)" }}>→ {log.toStatus}</span>
+                        }
                       </div>
                     )
                   })}
@@ -1630,6 +1650,46 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                       style={{ background: "rgba(201,168,76,0.15)", border: `1px solid rgba(201,168,76,0.5)`, color: "#8a6520" }}>
                       {saving ? "Guardando…" : "✓ Cobrar / Completar"}
                     </button>
+                  )}
+                  {!isCompleted && Number(booking.price) > 0 && (
+                    partialMode ? (
+                      <div className="rounded-xl p-3 space-y-2" style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.2)" }}>
+                        <p className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.5)" }}>
+                          Pendiente: ${(Number(booking.price) - Number(booking.paidAmount)).toLocaleString("es-CL")}
+                        </p>
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "rgba(13,27,42,0.4)" }}>$</span>
+                            <input
+                              autoFocus
+                              type="text" inputMode="numeric"
+                              value={partialAmount}
+                              onChange={e => setPartialAmount(e.target.value.replace(/[^0-9]/g, ""))}
+                              onKeyDown={e => e.key === "Enter" && handlePartialPayment()}
+                              placeholder="0"
+                              className="w-full h-9 rounded-lg pl-6 pr-3 text-sm font-bold focus:outline-none"
+                              style={{ background: "white", border: "1px solid rgba(13,27,42,0.15)", color: "#0d1b2a" }}
+                            />
+                          </div>
+                          <button onClick={handlePartialPayment} disabled={saving || !partialAmount}
+                            className="h-9 px-4 rounded-lg text-sm font-bold transition-colors disabled:opacity-40"
+                            style={{ background: "rgba(56,189,248,0.15)", border: "1px solid rgba(56,189,248,0.4)", color: "#0ea5e9" }}>
+                            Cobrar
+                          </button>
+                          <button onClick={() => { setPartialMode(false); setPartialAmount("") }}
+                            className="h-9 px-3 rounded-lg text-sm transition-colors"
+                            style={{ color: "rgba(13,27,42,0.35)" }}>
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={() => setPartialMode(true)}
+                        className="w-full h-9 rounded-xl text-sm font-semibold transition-colors"
+                        style={{ background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)", color: "#0ea5e9" }}>
+                        $ Cobro parcial
+                      </button>
+                    )
                   )}
                   <div className="flex gap-2">
                     <button onClick={() => setMode("edit")}
