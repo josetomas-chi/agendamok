@@ -30,6 +30,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       bookingWindowDays: Number(body.bookingWindowDays) || 30,
       donationMode: body.donationMode === true,
       donationNote: body.donationNote || null,
+      ...(body.sportPaymentPercents !== undefined && { sportPaymentPercents: body.sportPaymentPercents }),
     },
     create: {
       businessId: id,
@@ -45,6 +46,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       bookingWindowDays: Number(body.bookingWindowDays) || 30,
       donationMode: body.donationMode === true,
       donationNote: body.donationNote || null,
+      ...(body.sportPaymentPercents !== undefined && { sportPaymentPercents: body.sportPaymentPercents }),
     },
   })
   return NextResponse.json({ settings })

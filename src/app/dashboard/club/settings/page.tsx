@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useEffect, useCallback } from "react"
 import { useBusiness } from "@/contexts/business-context"
-import { Settings, CalendarX2, Plus, Trash2, Heart } from "lucide-react"
+import { Settings, CalendarX2, Plus, Trash2, Heart, CreditCard } from "lucide-react"
 import { toast } from "sonner"
 
 const NAVY = "#0d1b2a"
@@ -50,6 +50,8 @@ export default function ClubSettingsPage() {
   const [form, setForm] = useState<ClubForm>(DEFAULTS)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [sportPercents, setSportPercents] = useState<Record<string, number>>({})
+  const [newSport, setNewSport] = useState("")
   const [holidays, setHolidays] = useState<Holiday[]>([])
   const [showHolidayForm, setShowHolidayForm] = useState(false)
   const [holidayForm, setHolidayForm] = useState({ ...EMPTY_HOLIDAY })
@@ -59,7 +61,10 @@ export default function ClubSettingsPage() {
     try {
       const r = await fetch(`/api/businesses/${bid}/club-settings`)
       const d = await r.json()
-      if (d.settings) setForm({ clubName: d.settings.clubName || "", description: d.settings.description || "", address: d.settings.address || "", phone: d.settings.phone || "", website: d.settings.website || "", openDays: d.settings.openDays ?? [1,2,3,4,5,6], openTime: d.settings.openTime || "08:00", closeTime: d.settings.closeTime || "22:00", slotMinutes: d.settings.slotMinutes || 60, bookingWindowDays: d.settings.bookingWindowDays ?? 30, donationMode: d.settings.donationMode ?? false, donationNote: d.settings.donationNote || "" })
+      if (d.settings) {
+        setForm({ clubName: d.settings.clubName || "", description: d.settings.description || "", address: d.settings.address || "", phone: d.settings.phone || "", website: d.settings.website || "", openDays: d.settings.openDays ?? [1,2,3,4,5,6], openTime: d.settings.openTime || "08:00", closeTime: d.settings.closeTime || "22:00", slotMinutes: d.settings.slotMinutes || 60, bookingWindowDays: d.settings.bookingWindowDays ?? 30, donationMode: d.settings.donationMode ?? false, donationNote: d.settings.donationNote || "" })
+        setSportPercents((d.settings.sportPaymentPercents as Record<string, number>) ?? {})
+      }
     } finally { setLoading(false) }
   }, [])
 
@@ -75,7 +80,7 @@ export default function ClubSettingsPage() {
 
   async function handleSave() {
     setSaving(true)
-    const r = await fetch(`/api/businesses/${businessId}/club-settings`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) })
+    const r = await fetch(`/api/businesses/${businessId}/club-settings`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, sportPaymentPercents: sportPercents }) })
     if (r.ok) toast.success("Configuración guardada"); else toast.error("Error al guardar")
     setSaving(false)
   }
@@ -237,6 +242,55 @@ export default function ClubSettingsPage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Porcentaje de pago online por deporte */}
+      <div style={card}>
+        <div style={cardHeader}>
+          <div className="flex items-center gap-2">
+            <CreditCard className="w-4 h-4" style={{ color: GOLD }} />
+            <div>
+              <p className="text-sm font-bold" style={{ color: NAVY }}>Pago online por deporte</p>
+              <p className="text-xs" style={{ color: "rgba(13,27,42,0.4)" }}>% del precio que el cliente paga al reservar online (100% = pago total)</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-5 space-y-3">
+          {Object.entries(sportPercents).length === 0 && (
+            <p className="text-xs" style={{ color: "rgba(13,27,42,0.35)" }}>Sin configuración por deporte — todos los deportes cobran 100% online.</p>
+          )}
+          {Object.entries(sportPercents).map(([sport, pct]) => (
+            <div key={sport} className="flex items-center gap-3">
+              <div className="flex-1 h-10 rounded-lg px-3 flex items-center text-sm font-semibold" style={{ background: "rgba(201,168,76,0.06)", border: BORDER, color: NAVY }}>{sport}</div>
+              <div className="flex items-center gap-1.5">
+                <input type="number" min="1" max="100" value={pct}
+                  onChange={e => setSportPercents(prev => ({ ...prev, [sport]: Math.min(100, Math.max(1, Number(e.target.value))) }))}
+                  className="w-20 h-10 rounded-lg px-3 text-sm text-center outline-none font-bold"
+                  style={{ background: "rgba(201,168,76,0.06)", border: BORDER, color: NAVY }} />
+                <span className="text-xs font-semibold" style={{ color: "rgba(13,27,42,0.4)" }}>%</span>
+              </div>
+              <button onClick={() => setSportPercents(prev => { const next = { ...prev }; delete next[sport]; return next })}
+                className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-50 transition-colors"
+                style={{ color: "rgba(13,27,42,0.3)" }}>
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+          <div className="flex gap-2 pt-1">
+            <input value={newSport} onChange={e => setNewSport(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && newSport.trim()) { setSportPercents(prev => ({ ...prev, [newSport.trim()]: 100 })); setNewSport("") } }}
+              placeholder="Nombre del deporte (ej: Pádel)" className="flex-1 h-9 rounded-lg px-3 text-sm outline-none"
+              style={{ background: "rgba(201,168,76,0.06)", border: BORDER, color: NAVY }} />
+            <button onClick={() => { if (newSport.trim()) { setSportPercents(prev => ({ ...prev, [newSport.trim()]: 100 })); setNewSport("") } }}
+              className="h-9 px-3 rounded-lg text-xs font-bold flex items-center gap-1"
+              style={{ background: "rgba(201,168,76,0.12)", color: NAVY, border: BORDER }}>
+              <Plus className="w-3.5 h-3.5" /> Agregar
+            </button>
+          </div>
+          <p className="text-[11px]" style={{ color: "rgba(13,27,42,0.3)" }}>
+            El nombre debe coincidir exactamente con el deporte asignado a las canchas (ej: &quot;Pádel&quot;, &quot;Tenis&quot;).
+          </p>
+        </div>
       </div>
 
       <button onClick={handleSave} disabled={saving}

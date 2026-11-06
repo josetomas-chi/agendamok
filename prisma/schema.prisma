@@ -1139,6 +1139,7 @@ model ClubSettings {
   bookingWindowDays  Int      @default(30)
   donationMode       Boolean  @default(false)
   donationNote       String?
+  sportPaymentPercents Json?
   createdAt          DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

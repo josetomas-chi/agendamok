@@ -31,7 +31,7 @@ type Business = {
   accessMode: string
   bankName: string | null; bankAccountHolder: string | null; bankAccountType: string | null
   bankAccountNumber: string | null; bankRut: string | null; bankEmail: string | null
-  clubSettings: { bookingWindowDays: number; donationMode: boolean; donationNote: string | null } | null
+  clubSettings: { bookingWindowDays: number; donationMode: boolean; donationNote: string | null; sportPaymentPercents: Record<string, number> | null } | null
   courts: Court[]
   services: Service[]; staff: Staff[]
 }
@@ -499,7 +499,12 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   const [selectedCourt, setSelectedCourt] = useState<CourtResult | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<{ time: string; price: number; paymentPlayers: number; duration: number } | null>(null)
   const [courtPayMethod, setCourtPayMethod] = useState<"local" | "online">(business.onlinePaymentsEnabled ? "online" : "local")
-  const [depositPct, setDepositPct] = useState<25 | 50 | 100>(25)
+  const sportPercents = (business.clubSettings?.sportPaymentPercents ?? {}) as Record<string, number>
+  function getSportDepositPct(sport: string | null): number {
+    if (!sport) return 100
+    const p = sportPercents[sport]
+    return (p !== undefined) ? Math.min(100, Math.max(1, p)) : 100
+  }
   const [step, setStep] = useState<CourtStep>("home")
   const [pressingSlot, setPressingSlot] = useState<string | null>(null) // courtId-slotTime
 
@@ -670,7 +675,6 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
           notes: form.notes || undefined,
           price: selectedSlot.price,
           paymentPlayers: selectedSlot.paymentPlayers,
-          depositPct,
         }),
       })
       let d: Record<string, unknown> = {}
@@ -1270,42 +1274,31 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
             </div>
             )}
 
-            {/* Payment method selector — when online payments enabled, pago online is mandatory (min 25%) */}
-            {business.onlinePaymentsEnabled && selectedSlot.price > 0 && (
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: SPORTS_ACCENT }}>Forma de pago</p>
-                <div className="rounded-xl py-3 px-3" style={{ background: "rgba(56,189,248,0.15)", border: `1.5px solid ${SPORTS_ACCENT}` }}>
-                  <p className="text-xs font-bold text-white">Pagar ahora con tarjeta</p>
-                  <p className="text-[10px] mt-0.5 opacity-60">Mínimo 25% para confirmar la reserva</p>
-                </div>
-                {courtPayMethod === "online" && (
-                  <div className="space-y-1.5">
-                    <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: SPORTS_ACCENT }}>Monto a pagar ahora</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {([25, 50, 100] as const).map(pct => {
-                        const amt = Math.round(selectedSlot.price * pct / 100)
-                        return (
-                          <button key={pct} type="button" onClick={() => setDepositPct(pct)}
-                            className="py-2.5 px-2 rounded-xl text-center transition-all"
-                            style={depositPct === pct
-                              ? { background: "rgba(56,189,248,0.15)", border: `1.5px solid ${SPORTS_ACCENT}`, color: "#f0f6ff" }
-                              : { background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}`, color: "rgba(255,255,255,0.4)" }}>
-                            <p className="text-[10px] font-bold">{pct === 100 ? "Total" : `${pct}%`}</p>
-                            <p className="text-xs font-bold text-white">${amt.toLocaleString("es-CL")}</p>
-                            {pct === 25 && <p className="text-[9px] opacity-50">mínimo</p>}
-                          </button>
-                        )
-                      })}
+            {/* Payment info — amount determined by admin-configured sport percent */}
+            {business.onlinePaymentsEnabled && selectedSlot.price > 0 && (() => {
+              const pct = getSportDepositPct(selectedCourt?.sport ?? null)
+              const amt = Math.round(selectedSlot.price * pct / 100)
+              const resto = selectedSlot.price - amt
+              return (
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: SPORTS_ACCENT }}>Forma de pago</p>
+                  <div className="rounded-xl py-3 px-3 space-y-1" style={{ background: "rgba(56,189,248,0.15)", border: `1.5px solid ${SPORTS_ACCENT}` }}>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-white">Pagar ahora con tarjeta</p>
+                      <p className="text-sm font-black text-white">${amt.toLocaleString("es-CL")}</p>
                     </div>
-                    {depositPct < 100 && (
-                      <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.35)" }}>
-                        Resto (${Math.round(selectedSlot.price * (100 - depositPct) / 100).toLocaleString("es-CL")}) se paga en cancha
+                    {pct < 100 && (
+                      <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+                        {pct}% del total · Resto (${resto.toLocaleString("es-CL")}) se paga en cancha
                       </p>
                     )}
+                    {pct === 100 && (
+                      <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.45)" }}>Pago total online</p>
+                    )}
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )
+            })()}
 
             <button
               onClick={async () => {
@@ -1329,7 +1322,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                 : sessionChecked && !isLoggedIn && emailExists
                   ? "Ingresar y confirmar →"
                   : courtPayMethod === "online" && business.onlinePaymentsEnabled && selectedSlot.price > 0
-                    ? `Pagar $${Math.round(selectedSlot.price * depositPct / 100).toLocaleString("es-CL")} →`
+                    ? `Pagar $${Math.round(selectedSlot.price * getSportDepositPct(selectedCourt?.sport ?? null) / 100).toLocaleString("es-CL")} →`
                     : "Confirmar reserva →"}
             </button>
           </div>

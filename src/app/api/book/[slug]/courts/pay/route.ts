@@ -18,7 +18,7 @@ export async function POST(req: Request, { params }: Params) {
     select: {
       id: true, name: true,
       flowApiKey: true, flowSecretKey: true, onlinePaymentsEnabled: true,
-      clubSettings: { select: { bookingWindowDays: true } },
+      clubSettings: { select: { bookingWindowDays: true, sportPaymentPercents: true } },
     },
   })
   if (!business) return NextResponse.json({ error: "Negocio no encontrado" }, { status: 404 })
@@ -31,7 +31,6 @@ export async function POST(req: Request, { params }: Params) {
     courtId, date, time, duration = 60,
     clientName, clientEmail, clientPhone, notes,
     paymentPlayers = 1,
-    depositPct = 100,
   } = body
 
   if (!courtId || !date || !time || !clientName || !clientEmail) {
@@ -55,7 +54,7 @@ export async function POST(req: Request, { params }: Params) {
   const court = await prisma.court.findFirst({
     where: { id: courtId, businessId: business.id, isActive: true },
     select: {
-      name: true, sponsorName: true, sponsorLogo: true, sponsorUrl: true,
+      name: true, sport: true, sponsorName: true, sponsorLogo: true, sponsorUrl: true,
       pricingRules: { select: { days: true, startTime: true, endTime: true, price: true, fixedSlots: true } },
     },
   })
@@ -75,8 +74,12 @@ export async function POST(req: Request, { params }: Params) {
     })
   }
 
-  // Amount to charge now: depositPct % of total (min 25%, max 100%)
-  const pct = Math.min(100, Math.max(25, Number(depositPct)))
+  // Determine payment % from admin-configured sport percents (never trust client)
+  const sportPercents = (business.clubSettings?.sportPaymentPercents ?? {}) as Record<string, number>
+  const sportKey = court.sport ?? ""
+  const pct = sportKey && sportPercents[sportKey] !== undefined
+    ? Math.min(100, Math.max(1, sportPercents[sportKey]))
+    : 100
   const clientAmount = Math.round(price * pct / 100)
 
   // Cancel stale PENDING bookings before attempting to create a new one:
@@ -138,7 +141,7 @@ export async function POST(req: Request, { params }: Params) {
         },
       })
       await prisma.courtBookingLog.create({
-        data: { bookingId: booking.id, fromStatus: null, toStatus: "PENDING", source: "pay_create", meta: JSON.stringify({ clientEmail, depositPct: pct }) },
+        data: { bookingId: booking.id, fromStatus: null, toStatus: "PENDING", source: "pay_create", meta: JSON.stringify({ clientEmail, sportPaymentPct: pct, sport: court.sport }) },
       })
     }
   } catch (err) {
