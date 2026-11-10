@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   Calendar, Users, Scissors, UserCheck, BarChart3,
-  Settings, CreditCard, Megaphone, MapPin, LogOut, LayoutDashboard, Star, Percent, FileText, HelpCircle, X, Trophy, GraduationCap, Shield,
+  Settings, CreditCard, Megaphone, MapPin, LogOut, LayoutDashboard, Star, Percent, FileText, HelpCircle, X, Trophy, GraduationCap, Shield, QrCode,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -42,6 +42,7 @@ const GENERAL_GROUPS = [
       { href: "/dashboard/reports", label: "Reportes", icon: BarChart3 },
       { href: "/dashboard/marketing", label: "Marketing", icon: Megaphone },
       { href: "/dashboard/surveys", label: "Encuestas", icon: Star },
+      { href: "/dashboard/loyalty", label: "Fidelización", icon: QrCode },
     ],
   },
   {
@@ -80,6 +81,7 @@ const SPORTS_GROUPS = [
     label: "Crecimiento",
     items: [
       { href: "/dashboard/reports", label: "Reportes", icon: BarChart3 },
+      { href: "/dashboard/loyalty", label: "Fidelización", icon: QrCode },
     ],
   },
   {

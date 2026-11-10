@@ -259,6 +259,7 @@ model Business {
   loyaltyEnabled              Boolean   @default(true)
   loyaltyPointsPerVisit       Int       @default(10)
   loyaltyVipThreshold         Int       @default(500)
+  loyaltyPesosPerPoint        Int       @default(100)
   segmentDiscounts            Json      @default("{}")
   coverImage                  String?
   coverImagePositionY         Int       @default(50)
@@ -320,6 +321,8 @@ model Business {
   accessRequests            BusinessAccessRequest[]
   schoolPayments            SchoolPayment[]
   walletTransactions        WalletTransaction[]
+  loyaltyBenefits           LoyaltyBenefit[]
+  loyaltyTransactions       LoyaltyTransaction[]
 
   @@index([slug])
   @@map("businesses")
@@ -607,6 +610,7 @@ model Client {
   schoolAttendance       SchoolAttendance[]
   walletTransactions     WalletTransaction[]
   pushSubscriptions      PushSubscription[]
+  loyaltyTransactions    LoyaltyTransaction[]
 
   @@unique([businessId, rut])
   @@index([businessId, email])
@@ -1444,6 +1448,47 @@ model TournamentScheduleRestriction {
   @@unique([participantId, date, time])
   @@index([participantId])
   @@map("tournament_schedule_restrictions")
+}
+
+// ─── LOYALTY ──────────────────────────────────────────────────────────────────
+
+model LoyaltyBenefit {
+  id          String   @id @default(cuid())
+  businessId  String
+  name        String
+  description String?
+  pointsCost  Int
+  category    String   @default("general") // courts | store | hydration | general
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business     Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  transactions LoyaltyTransaction[]
+
+  @@index([businessId])
+  @@map("loyalty_benefits")
+}
+
+model LoyaltyTransaction {
+  id          String   @id @default(cuid())
+  businessId  String
+  clientId    String
+  type        String   // EARN | REDEEM
+  points      Int
+  amountPaid  Int?     // pesos cobrados (para EARN)
+  description String
+  benefitId   String?
+  staffName   String?
+  createdAt   DateTime @default(now())
+
+  business  Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  client    Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  benefit   LoyaltyBenefit? @relation(fields: [benefitId], references: [id])
+
+  @@index([businessId])
+  @@index([clientId])
+  @@map("loyalty_transactions")
 }
 
 model TournamentMatch {
