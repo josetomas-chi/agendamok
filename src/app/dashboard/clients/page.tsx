@@ -73,6 +73,7 @@ export default function ClientsPage() {
   const [clientsPage, setClientsPage] = useState(1)
   const [clientsPages, setClientsPages] = useState(1)
   const [clinicalEnabled, setClinicalEnabled] = useState(false)
+  const [businessSports, setBusinessSports] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [segment, setSegment] = useState("")
@@ -91,6 +92,7 @@ export default function ClientsPage() {
     loadClients(businessId, "", "", 1)
     fetch(`/api/businesses/${businessId}`).then(r => r.json()).then(b => {
       setClinicalEnabled(b.business?.clinicalRecordEnabled ?? false)
+      setBusinessSports(b.business?.sports ?? [])
     })
   }, [businessId])
 
@@ -472,6 +474,29 @@ export default function ClientsPage() {
                       ))}
                     </select>
                   </div>
+                  {selected.segment === "INFLUENCER" && businessSports.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {businessSports.map(sport => {
+                        const tag = `influencer:${sport}`
+                        const active = selected.tags.includes(tag)
+                        return (
+                          <button
+                            key={sport}
+                            onClick={() => {
+                              const newTags = active
+                                ? selected.tags.filter(t => t !== tag)
+                                : [...selected.tags, tag]
+                              patchClient(selected.id, { tags: newTags })
+                              setSelected(s => s ? { ...s, tags: newTags } : s)
+                            }}
+                            className={`text-[11px] px-2 py-0.5 rounded-full border transition-colors ${active ? "bg-pink-500/30 border-pink-500/50 text-pink-200" : "bg-white/5 border-white/10 text-white/40 hover:border-pink-500/30 hover:text-pink-300"}`}
+                          >
+                            {active ? "✓ " : ""}{sport.charAt(0).toUpperCase() + sport.slice(1)}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </DialogHeader>
@@ -937,6 +962,29 @@ export default function ClientsPage() {
                       ))}
                     </select>
                   </div>
+                  {selected.segment === "INFLUENCER" && businessSports.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {businessSports.map(sport => {
+                        const tag = `influencer:${sport}`
+                        const active = selected.tags.includes(tag)
+                        return (
+                          <button
+                            key={sport}
+                            onClick={() => {
+                              const newTags = active
+                                ? selected.tags.filter(t => t !== tag)
+                                : [...selected.tags, tag]
+                              patchClient(selected.id, { tags: newTags })
+                              setSelected(s => s ? { ...s, tags: newTags } : s)
+                            }}
+                            className={`text-[11px] px-2 py-0.5 rounded-full border transition-colors ${active ? "bg-pink-500/30 border-pink-500/50 text-pink-200" : "bg-white/5 border-white/10 text-white/40 hover:border-pink-500/30 hover:text-pink-300"}`}
+                          >
+                            {active ? "✓ " : ""}{sport.charAt(0).toUpperCase() + sport.slice(1)}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </DialogHeader>

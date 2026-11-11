@@ -133,17 +133,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       price = calcCourtPrice(court.pricingRules, startChile, endChile, holiday)
 
       // Apply segment discount only for regular court bookings (not coach classes)
-      // Sport-specific key (e.g. "INFLUENCER:padel") takes priority over generic key ("INFLUENCER")
+      // Sport-specific discount: check sport-specific key first, then generic segment key
+      // For INFLUENCER, also verify the client has the sport tag (e.g. "influencer:padel")
       if (clientId) {
         const clientRecord = await prisma.client.findUnique({
           where: { id: clientId },
-          select: { segment: true, business: { select: { segmentDiscounts: true } } },
+          select: { segment: true, tags: true, business: { select: { segmentDiscounts: true } } },
         })
         if (clientRecord) {
           const discounts = (clientRecord.business.segmentDiscounts ?? {}) as Record<string, number>
-          const sportKey = `${clientRecord.segment}:${court.sport?.toLowerCase() ?? ""}`
-          const pct = discounts[sportKey] ?? discounts[clientRecord.segment] ?? 0
-          if (pct > 0) price = Math.round(price * (1 - pct / 100))
+          const sport = court.sport?.toLowerCase() ?? ""
+          const sportKey = `${clientRecord.segment}:${sport}`
+          // For INFLUENCER: only apply if client has the matching sport tag (or no sport tags at all = applies to all)
+          const influencerSportTags = clientRecord.tags.filter(t => t.startsWith("influencer:"))
+          const sportTagOk = clientRecord.segment !== "INFLUENCER" || influencerSportTags.length === 0 || clientRecord.tags.includes(`influencer:${sport}`)
+          if (sportTagOk) {
+            const pct = discounts[sportKey] ?? discounts[clientRecord.segment] ?? 0
+            if (pct > 0) price = Math.round(price * (1 - pct / 100))
+          }
         }
       }
     }
