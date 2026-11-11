@@ -131,6 +131,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         where: { businessId: id, date: { gte: new Date(start.toDateString()), lt: new Date(new Date(start.toDateString()).getTime() + 86400000) }, type: "SURCHARGE" },
       })
       price = calcCourtPrice(court.pricingRules, startChile, endChile, holiday)
+
+      // Apply segment discount only for regular court bookings (not coach classes)
+      if (clientId) {
+        const clientRecord = await prisma.client.findUnique({
+          where: { id: clientId },
+          select: { segment: true, business: { select: { segmentDiscounts: true } } },
+        })
+        if (clientRecord) {
+          const discounts = (clientRecord.business.segmentDiscounts ?? {}) as Record<string, number>
+          const pct = discounts[clientRecord.segment] ?? 0
+          if (pct > 0) price = Math.round(price * (1 - pct / 100))
+        }
+      }
     }
 
   }
