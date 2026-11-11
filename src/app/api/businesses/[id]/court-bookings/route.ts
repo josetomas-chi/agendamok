@@ -146,7 +146,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           const sportKey = `${clientRecord.segment}:${sport}`
           // For INFLUENCER: only apply if client has the matching sport tag (or no sport tags at all = applies to all)
           const influencerSportTags = clientRecord.tags.filter(t => t.startsWith("influencer:"))
-          const sportTagOk = clientRecord.segment !== "INFLUENCER" || influencerSportTags.length === 0 || clientRecord.tags.includes(`influencer:${sport}`)
+          // INFLUENCER must have at least one sport tag; if none selected, no discount applies
+          const sportTagOk = clientRecord.segment !== "INFLUENCER"
+            ? true
+            : influencerSportTags.length > 0 && clientRecord.tags.includes(`influencer:${sport}`)
           if (sportTagOk) {
             const pct = discounts[sportKey] ?? discounts[clientRecord.segment] ?? 0
             if (pct > 0) price = Math.round(price * (1 - pct / 100))

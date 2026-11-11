@@ -475,7 +475,11 @@ export default function ClientsPage() {
                     </select>
                   </div>
                   {selected.segment === "INFLUENCER" && businessSports.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
+                    <div className="mt-2">
+                      {!selected.tags.some(t => t.startsWith("influencer:")) && (
+                        <p className="text-[11px] text-orange-400 mb-1.5">⚠ Selecciona al menos un deporte para activar el descuento</p>
+                      )}
+                    <div className="flex flex-wrap gap-1.5">
                       {businessSports.map(sport => {
                         const tag = `influencer:${sport}`
                         const active = selected.tags.includes(tag)
@@ -495,6 +499,7 @@ export default function ClientsPage() {
                           </button>
                         )
                       })}
+                    </div>
                     </div>
                   )}
                 </div>
@@ -963,7 +968,11 @@ export default function ClientsPage() {
                     </select>
                   </div>
                   {selected.segment === "INFLUENCER" && businessSports.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
+                    <div className="mt-2">
+                      {!selected.tags.some(t => t.startsWith("influencer:")) && (
+                        <p className="text-[11px] text-orange-400 mb-1.5">⚠ Selecciona al menos un deporte para activar el descuento</p>
+                      )}
+                    <div className="flex flex-wrap gap-1.5">
                       {businessSports.map(sport => {
                         const tag = `influencer:${sport}`
                         const active = selected.tags.includes(tag)
@@ -983,6 +992,7 @@ export default function ClientsPage() {
                           </button>
                         )
                       })}
+                    </div>
                     </div>
                   )}
                 </div>
