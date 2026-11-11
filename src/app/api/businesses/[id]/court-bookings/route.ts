@@ -132,6 +132,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       })
       price = calcCourtPrice(court.pricingRules, startChile, endChile, holiday)
     }
+
   }
 
   const booking = await prisma.courtBooking.create({

@@ -47,7 +47,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   if (!court) return NextResponse.json({ error: "Cancha no disponible" }, { status: 404 })
 
   // Server-side price calculation
-  const { price, error: durationError } = getCourtBookingPrice(court.pricingRules, date, time, Number(duration))
+  const { price: basePrice, error: durationError } = getCourtBookingPrice(court.pricingRules, date, time, Number(duration))
   if (durationError) return NextResponse.json({ error: durationError }, { status: 400 })
 
   // Find or create client (outside transaction — not part of the critical section)
@@ -117,6 +117,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       }
     }
   }
+
+  // Segment discounts are not applied to court bookings (shared courts — price is for the full court)
+  const price = basePrice
 
   // Atomic: check availability + create booking in a serializable transaction
   // This prevents double-bookings if two requests arrive simultaneously.
