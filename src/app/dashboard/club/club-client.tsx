@@ -1267,15 +1267,11 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
 
     // If RUT provided, find client and award loyalty points
     if (partialRut.trim()) {
-      const clientsRes = await fetch(`/api/businesses/${businessId}/clients?search=${encodeURIComponent(partialRut.trim())}`)
-      if (clientsRes.ok) {
-        const { clients } = await clientsRes.json()
-        const normalizedRut = partialRut.trim().replace(/[.\-\s]/g, "").toLowerCase()
-        const match = (clients as Array<{ id: string; rut: string | null }>).find(c =>
-          c.rut && c.rut.replace(/[.\-\s]/g, "").toLowerCase() === normalizedRut
-        )
-        if (match) {
-          await fetch(`/api/loyalty/${match.id}/earn`, {
+      const byRutRes = await fetch(`/api/businesses/${businessId}/clients/by-rut?rut=${encodeURIComponent(partialRut.trim())}`)
+      if (byRutRes.ok) {
+        const { client: rutClient } = await byRutRes.json()
+        if (rutClient) {
+          await fetch(`/api/loyalty/${rutClient.id}/earn`, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ amountPaid: amount, description: `Cancha — cobro parcial $${amount.toLocaleString("es-CL")}` }),
           })
