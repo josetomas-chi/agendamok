@@ -143,17 +143,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         if (clientRecord) {
           const discounts = (clientRecord.business.segmentDiscounts ?? {}) as Record<string, number>
           const sport = court.sport?.toLowerCase() ?? ""
-          const sportKey = `${clientRecord.segment}:${sport}`
           const influencerSportTags = clientRecord.tags.filter(t => t.startsWith("influencer:"))
+          // Case-insensitive comparison to handle tags stored with accents/capitals (e.g. "influencer:Pádel")
           const sportTagOk = clientRecord.segment !== "INFLUENCER"
             ? true
-            : influencerSportTags.length > 0 && clientRecord.tags.includes(`influencer:${sport}`)
-          const pct = sportTagOk ? (discounts[sportKey] ?? discounts[clientRecord.segment] ?? 0) : 0
-          console.log("[court-booking discount]", {
-            clientId, segment: clientRecord.segment, tags: clientRecord.tags,
-            courtSport: court.sport, sport, sportKey, sportTagOk,
-            discounts, pct, priceBeforeDiscount: price,
-          })
+            : influencerSportTags.length > 0 && clientRecord.tags.some(t => t.toLowerCase() === `influencer:${sport}`)
+          // Check sport-specific discount key (try both "INFLUENCER:padel" and "INFLUENCER:Pádel" etc.)
+          const matchingDiscountKey = Object.keys(discounts).find(k => k.toLowerCase() === `${clientRecord.segment}:${sport}`.toLowerCase())
+          const pct = sportTagOk ? (matchingDiscountKey ? discounts[matchingDiscountKey] : (discounts[clientRecord.segment] ?? 0)) : 0
           if (pct > 0) price = Math.round(price * (1 - pct / 100))
         }
       }

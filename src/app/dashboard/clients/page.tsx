@@ -481,7 +481,7 @@ export default function ClientsPage() {
                       )}
                     <div className="flex flex-wrap gap-1.5">
                       {businessSports.map(sport => {
-                        const tag = `influencer:${sport}`
+                        const tag = `influencer:${sport.toLowerCase()}`
                         const active = selected.tags.includes(tag)
                         return (
                           <button
@@ -974,7 +974,7 @@ export default function ClientsPage() {
                       )}
                     <div className="flex flex-wrap gap-1.5">
                       {businessSports.map(sport => {
-                        const tag = `influencer:${sport}`
+                        const tag = `influencer:${sport.toLowerCase()}`
                         const active = selected.tags.includes(tag)
                         return (
                           <button
