@@ -241,7 +241,9 @@ export default function ClientsPage() {
       toast.success("Cliente actualizado")
     } else {
       const d = await r.json().catch(() => ({}))
-      toast.error(d.error || "Error al actualizar")
+      let msg = d.error || "Error al actualizar"
+      if (d.conflictName) msg += ` (cliente: ${d.conflictName}${d.conflictId ? ` — ID: ${d.conflictId}` : ""})`
+      toast.error(msg, { duration: 10000 })
     }
     setSavingClient(false)
   }

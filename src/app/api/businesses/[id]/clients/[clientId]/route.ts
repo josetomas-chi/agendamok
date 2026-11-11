@@ -25,8 +25,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (data.rut) {
     const conflict = await prisma.client.findFirst({
       where: { businessId: id, rut: data.rut as string, deletedAt: null, NOT: { id: clientId } },
+      select: { id: true, name: true, lastName: true, email: true },
     })
-    if (conflict) return NextResponse.json({ error: "Ya existe un cliente con ese RUT" }, { status: 409 })
+    if (conflict) return NextResponse.json({
+      error: "Ya existe un cliente con ese RUT",
+      conflictId: conflict.id,
+      conflictName: `${conflict.name} ${conflict.lastName ?? ""}`.trim(),
+      conflictEmail: conflict.email,
+    }, { status: 409 })
   }
 
   if (data.email && typeof data.email === "string") {
