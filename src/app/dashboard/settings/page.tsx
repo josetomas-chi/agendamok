@@ -86,7 +86,6 @@ function SettingsContent() {
   const [loyaltyPoints, setLoyaltyPoints] = useState("10")
   const [loyaltyThreshold, setLoyaltyThreshold] = useState("500")
   const [segmentDiscounts, setSegmentDiscounts] = useState<Record<string, string>>({ VIP: "", INFLUENCER: "", FREQUENT: "", REGULAR: "", AT_RISK: "", NEW: "" })
-  const COURT_SPORTS = ["padel", "tennis", "futbol", "basquetbol", "squash", "badminton"]
   const [courtSegmentDiscounts, setCourtSegmentDiscounts] = useState<Record<string, string>>({})
   const [savingLoyalty, setSavingLoyalty] = useState(false)
 
@@ -1867,7 +1866,8 @@ function SettingsContent() {
               <CardDescription>Configura el % de descuento por segmento para cada deporte. Sobrescribe el descuento general para reservas de cancha. Ej: Influencer en pádel → 25% (1/4 de cancha gratis).</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {COURT_SPORTS.map(sport => {
+              {sports.length === 0 && <p className="text-sm text-muted-foreground">No tienes deportes configurados en tus canchas.</p>}
+              {sports.map(sport => {
                 const sportLabel = sport.charAt(0).toUpperCase() + sport.slice(1)
                 const relevantSegments = [
                   { key: "INFLUENCER", label: "Influencer", color: "text-pink-400" },
