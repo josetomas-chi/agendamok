@@ -133,6 +133,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       price = calcCourtPrice(court.pricingRules, startChile, endChile, holiday)
 
       // Apply segment discount only for regular court bookings (not coach classes)
+      // Sport-specific key (e.g. "INFLUENCER:padel") takes priority over generic key ("INFLUENCER")
       if (clientId) {
         const clientRecord = await prisma.client.findUnique({
           where: { id: clientId },
@@ -140,7 +141,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         })
         if (clientRecord) {
           const discounts = (clientRecord.business.segmentDiscounts ?? {}) as Record<string, number>
-          const pct = discounts[clientRecord.segment] ?? 0
+          const sportKey = `${clientRecord.segment}:${court.sport?.toLowerCase() ?? ""}`
+          const pct = discounts[sportKey] ?? discounts[clientRecord.segment] ?? 0
           if (pct > 0) price = Math.round(price * (1 - pct / 100))
         }
       }

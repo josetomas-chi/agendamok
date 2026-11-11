@@ -86,6 +86,8 @@ function SettingsContent() {
   const [loyaltyPoints, setLoyaltyPoints] = useState("10")
   const [loyaltyThreshold, setLoyaltyThreshold] = useState("500")
   const [segmentDiscounts, setSegmentDiscounts] = useState<Record<string, string>>({ VIP: "", INFLUENCER: "", FREQUENT: "", REGULAR: "", AT_RISK: "", NEW: "" })
+  const COURT_SPORTS = ["padel", "tennis", "futbol", "basquetbol", "squash", "badminton"]
+  const [courtSegmentDiscounts, setCourtSegmentDiscounts] = useState<Record<string, string>>({})
   const [savingLoyalty, setSavingLoyalty] = useState(false)
 
   // Holidays
@@ -161,11 +163,16 @@ function SettingsContent() {
       }
       // Load loyalty settings
       setLoyaltyEnabled(biz.business.loyaltyEnabled ?? true)
-      setLoyaltyPoints(String(biz.business.loyaltyPointsPerVisit ?? 10))
+      setLoyaltyPoints(String(biz.business.loyaltyPesosPerPoint ?? 100))
       setLoyaltyThreshold(String(biz.business.loyaltyVipThreshold ?? 500))
       if (biz.business.segmentDiscounts) {
         const saved = biz.business.segmentDiscounts as Record<string, number>
         setSegmentDiscounts(prev => Object.fromEntries(Object.keys(prev).map(k => [k, saved[k] != null ? String(saved[k]) : ""])))
+        // Load court-sport-specific discounts (keys like "INFLUENCER:padel")
+        const courtKeys = Object.entries(saved).filter(([k]) => k.includes(":"))
+        if (courtKeys.length > 0) {
+          setCourtSegmentDiscounts(Object.fromEntries(courtKeys.map(([k, v]) => [k, v != null ? String(v) : ""])))
+        }
       }
       // Load WhatsApp usage & addon status
       const waR = await fetch(`/api/businesses/${bid}/whatsapp-usage`)
@@ -261,11 +268,14 @@ function SettingsContent() {
     for (const [seg, val] of Object.entries(segmentDiscounts)) {
       discounts[seg] = val === "" ? null : Math.min(100, Math.max(0, Number(val)))
     }
+    for (const [key, val] of Object.entries(courtSegmentDiscounts)) {
+      discounts[key] = val === "" ? null : Math.min(100, Math.max(0, Number(val)))
+    }
     await fetch(`/api/businesses/${business.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         loyaltyEnabled,
-        loyaltyPointsPerVisit: Math.max(0, Number(loyaltyPoints) || 0),
+        loyaltyPesosPerPoint: Math.max(1, Number(loyaltyPoints) || 100),
         loyaltyVipThreshold: Math.max(1, Number(loyaltyThreshold) || 500),
         segmentDiscounts: discounts,
       }),
@@ -1783,21 +1793,21 @@ function SettingsContent() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2"><Gift className="w-4 h-4 text-yellow-400" />Puntos de fidelización</CardTitle>
-              <CardDescription>Los clientes acumulan puntos cada vez que se completa un turno.</CardDescription>
+              <CardDescription>Los clientes acumulan puntos según lo que gastan. La recepcionista ingresa el monto cobrado y el sistema calcula los puntos automáticamente.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Puntos por turno completado</Label>
+                  <Label className="text-sm">Pesos por punto</Label>
                   <Input
                     type="number"
                     value={loyaltyPoints}
                     onFocus={e => e.target.select()}
                     onChange={e => setLoyaltyPoints(e.target.value)}
                     className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    placeholder="10"
+                    placeholder="100"
                   />
-                  <p className="text-xs text-muted-foreground">Ej: 10 puntos por cada sesión</p>
+                  <p className="text-xs text-muted-foreground">Ej: 100 → el cliente gana 1 punto por cada $100 pagados</p>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm">Puntos para alcanzar VIP automático</Label>
@@ -1847,6 +1857,53 @@ function SettingsContent() {
                   </div>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
+          {/* Descuentos por deporte (canchas) */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Descuentos por deporte (canchas)</CardTitle>
+              <CardDescription>Configura el % de descuento por segmento para cada deporte. Sobrescribe el descuento general para reservas de cancha. Ej: Influencer en pádel → 25% (1/4 de cancha gratis).</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {COURT_SPORTS.map(sport => {
+                const sportLabel = sport.charAt(0).toUpperCase() + sport.slice(1)
+                const relevantSegments = [
+                  { key: "INFLUENCER", label: "Influencer", color: "text-pink-400" },
+                  { key: "VIP", label: "VIP", color: "text-purple-400" },
+                  { key: "FREQUENT", label: "Frecuente", color: "text-green-500" },
+                ]
+                const hasAnyValue = relevantSegments.some(s => courtSegmentDiscounts[`${s.key}:${sport}`])
+                return (
+                  <div key={sport}>
+                    <p className="text-sm font-semibold mb-2">{sportLabel}</p>
+                    <div className="space-y-2 pl-2">
+                      {relevantSegments.map(({ key, label, color }) => {
+                        const ck = `${key}:${sport}`
+                        return (
+                          <div key={ck} className="flex items-center gap-4">
+                            <span className={`w-28 text-sm font-medium ${color}`}>{label}</span>
+                            <div className="flex items-center gap-2 flex-1">
+                              <Input
+                                type="number"
+                                value={courtSegmentDiscounts[ck] ?? ""}
+                                onFocus={e => e.target.select()}
+                                onChange={e => setCourtSegmentDiscounts(prev => ({ ...prev, [ck]: e.target.value }))}
+                                placeholder={segmentDiscounts[key] ? `${segmentDiscounts[key]}% (general)` : "Sin descuento"}
+                                min={0} max={100}
+                                className="max-w-[140px] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                              />
+                              <span className="text-sm text-muted-foreground">%</span>
+                              {courtSegmentDiscounts[ck] === "100" && <span className="text-xs text-green-400 font-medium">Gratis</span>}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
             </CardContent>
           </Card>
 
