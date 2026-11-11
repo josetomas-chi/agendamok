@@ -49,8 +49,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     const client = await prisma.client.update({ where: { id: clientId, businessId: id }, data })
     return NextResponse.json({ client })
-  } catch (e) {
+  } catch (e: unknown) {
     console.error("Error updating client:", e)
+    const code = (e as { code?: string })?.code
+    const fields = JSON.stringify((e as { meta?: unknown })?.meta ?? {})
+    if (code === "P2002") {
+      if (fields.includes("rut")) return NextResponse.json({ error: "Ya existe un cliente con ese RUT" }, { status: 409 })
+      if (fields.includes("email")) return NextResponse.json({ error: "Ya existe un cliente con ese email" }, { status: 409 })
+    }
     return NextResponse.json({ error: "No se pudo guardar el cliente" }, { status: 400 })
   }
 }
