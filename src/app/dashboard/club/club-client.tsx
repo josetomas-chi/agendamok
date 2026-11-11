@@ -1257,17 +1257,37 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
 
   const [partialMode, setPartialMode] = useState(false)
   const [partialAmount, setPartialAmount] = useState("")
+  const [partialRut, setPartialRut] = useState("")
 
   async function handlePartialPayment() {
     const amount = Number(partialAmount.replace(/[^0-9]/g, ""))
     if (!amount || amount <= 0) return
     const r = await patch({ paidAmountIncrement: amount })
-    if (r.ok) {
-      toast.success(`Cobro parcial registrado: $${amount.toLocaleString("es-CL")}`)
-      setPartialMode(false)
-      setPartialAmount("")
-      onSaved()
-    } else toast.error("Error al registrar cobro")
+    if (!r.ok) { toast.error("Error al registrar cobro"); return }
+
+    // If RUT provided, find client and award loyalty points
+    if (partialRut.trim()) {
+      const clientsRes = await fetch(`/api/businesses/${businessId}/clients?search=${encodeURIComponent(partialRut.trim())}`)
+      if (clientsRes.ok) {
+        const { clients } = await clientsRes.json()
+        const normalizedRut = partialRut.trim().replace(/[.\-\s]/g, "").toLowerCase()
+        const match = (clients as Array<{ id: string; rut: string | null }>).find(c =>
+          c.rut && c.rut.replace(/[.\-\s]/g, "").toLowerCase() === normalizedRut
+        )
+        if (match) {
+          await fetch(`/api/loyalty/${match.id}/earn`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ amountPaid: amount, description: `Cancha — cobro parcial $${amount.toLocaleString("es-CL")}` }),
+          })
+        }
+      }
+    }
+
+    toast.success(`Cobro parcial registrado: $${amount.toLocaleString("es-CL")}`)
+    setPartialMode(false)
+    setPartialAmount("")
+    setPartialRut("")
+    onSaved()
   }
 
   const [annulModal, setAnnulModal] = useState(false)
@@ -1676,12 +1696,20 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                             style={{ background: "rgba(56,189,248,0.15)", border: "1px solid rgba(56,189,248,0.4)", color: "#0ea5e9" }}>
                             Cobrar
                           </button>
-                          <button onClick={() => { setPartialMode(false); setPartialAmount("") }}
+                          <button onClick={() => { setPartialMode(false); setPartialAmount(""); setPartialRut("") }}
                             className="h-9 px-3 rounded-lg text-sm transition-colors"
                             style={{ color: "rgba(13,27,42,0.35)" }}>
                             ✕
                           </button>
                         </div>
+                        <input
+                          type="text"
+                          value={partialRut}
+                          onChange={e => setPartialRut(e.target.value)}
+                          placeholder="RUT jugador (opcional — para sumar puntos)"
+                          className="w-full h-8 rounded-lg px-3 text-xs focus:outline-none"
+                          style={{ background: "white", border: "1px solid rgba(13,27,42,0.1)", color: "#0d1b2a" }}
+                        />
                       </div>
                     ) : (
                       <button onClick={() => setPartialMode(true)}
