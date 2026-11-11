@@ -60,7 +60,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const code = (e as { code?: string })?.code
     const fields = JSON.stringify((e as { meta?: unknown })?.meta ?? {})
     if (code === "P2002") {
-      if (fields.includes("rut")) return NextResponse.json({ error: "Ya existe un cliente con ese RUT" }, { status: 409 })
+      if (fields.includes("rut")) {
+        // Check if conflict is a soft-deleted record — if so, clear its RUT and retry
+        const softDeleted = await prisma.client.findFirst({
+          where: { businessId: id, rut: data.rut as string, NOT: { id: clientId } },
+          select: { id: true, deletedAt: true },
+        })
+        if (softDeleted?.deletedAt) {
+          await prisma.client.update({ where: { id: softDeleted.id }, data: { rut: null } })
+          const client = await prisma.client.update({ where: { id: clientId, businessId: id }, data })
+          return NextResponse.json({ client })
+        }
+        return NextResponse.json({ error: "Ya existe un cliente con ese RUT", conflictId: softDeleted?.id }, { status: 409 })
+      }
       if (fields.includes("email")) return NextResponse.json({ error: "Ya existe un cliente con ese email" }, { status: 409 })
     }
     return NextResponse.json({ error: "No se pudo guardar el cliente" }, { status: 400 })
