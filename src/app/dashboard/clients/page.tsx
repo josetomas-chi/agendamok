@@ -226,6 +226,10 @@ export default function ClientsPage() {
 
   async function patchClient(clientId: string, data: Record<string, unknown>) {
     setSavingClient(true)
+    // Normalize tags: lowercase + deduplicate
+    if (Array.isArray(data.tags)) {
+      data = { ...data, tags: [...new Set((data.tags as string[]).map(t => t.toLowerCase()))] }
+    }
     const r = await fetch(`/api/businesses/${businessId}/clients/${clientId}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -487,9 +491,9 @@ export default function ClientsPage() {
                           <button
                             key={sport}
                             onClick={() => {
-                              const newTags = active
-                                ? selected.tags.filter(t => t !== tag)
-                                : [...selected.tags, tag]
+                              // Remove all variants of this sport tag (any case) then toggle
+                              const withoutSport = selected.tags.filter(t => t.toLowerCase() !== tag)
+                              const newTags = active ? withoutSport : [...withoutSport, tag]
                               patchClient(selected.id, { tags: newTags })
                               setSelected(s => s ? { ...s, tags: newTags } : s)
                             }}
@@ -980,9 +984,9 @@ export default function ClientsPage() {
                           <button
                             key={sport}
                             onClick={() => {
-                              const newTags = active
-                                ? selected.tags.filter(t => t !== tag)
-                                : [...selected.tags, tag]
+                              // Remove all variants of this sport tag (any case) then toggle
+                              const withoutSport = selected.tags.filter(t => t.toLowerCase() !== tag)
+                              const newTags = active ? withoutSport : [...withoutSport, tag]
                               patchClient(selected.id, { tags: newTags })
                               setSelected(s => s ? { ...s, tags: newTags } : s)
                             }}
