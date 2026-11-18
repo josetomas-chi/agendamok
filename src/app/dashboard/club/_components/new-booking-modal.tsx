@@ -321,6 +321,19 @@ export default function NewBookingModal({
   const [eventStaffMembers, setEventStaffMembers] = useState<StaffMember[]>([])
   const [eventStaffId, setEventStaffId] = useState<string>("")
 
+  // Auto-calculate endTime from service duration when event start/service changes
+  useEffect(() => {
+    if (bookingType !== "event" || !eventServiceId || !form.startTime) return
+    const svc = eventServices.find(s => s.id === eventServiceId)
+    if (!svc) return
+    const [h, m] = form.startTime.split(":").map(Number)
+    const endMins = h * 60 + m + svc.duration
+    const endH = Math.min(Math.floor(endMins / 60), 23)
+    const endM = endMins % 60
+    setForm(f => ({ ...f, endTime: `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}` }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingType, eventServiceId, form.startTime])
+
   // Deporte fijo para la sesión: viene de la cancha preseleccionada (clic en calendario)
   // Se usa como filtro permanente en reserva múltiple aunque se deseleccionen todas las canchas
   const contextSport = preselect?.courtId
@@ -1581,7 +1594,12 @@ export default function NewBookingModal({
 
             <div className="grid grid-cols-2 gap-2">
               <TimeSelect label="Inicio" value={form.startTime} onChange={v => setForm(f => ({ ...f, startTime: v }))} />
-              <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} minTime={form.startTime} />
+              <div>
+                <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fin</p>
+                <div className={inputCls} style={{ ...inputStyle, color: "rgba(13,27,42,0.5)", pointerEvents: "none" } as React.CSSProperties}>
+                  {form.endTime || "—"}
+                </div>
+              </div>
             </div>
 
             {/* Staff picker */}
