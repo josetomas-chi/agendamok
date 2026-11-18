@@ -214,11 +214,11 @@ export default function ServicesPage() {
 
       {/* Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md p-5">
-          <DialogHeader className="pb-3">
+        <DialogContent className="max-w-md p-5 max-h-[90vh] flex flex-col">
+          <DialogHeader className="pb-3 flex-shrink-0">
             <DialogTitle className="text-base">{editing ? "Editar servicio" : "Nuevo servicio"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-3 overflow-y-auto flex-1 pr-1">
             <div>
               <Label className="text-xs">Nombre *</Label>
               <Input className="h-8 text-sm mt-1" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ej: Sesión Kinesiología" />
@@ -307,7 +307,7 @@ export default function ServicesPage() {
               {courts.length > 0 && (
                 <div>
                   <Label className="text-xs">Canchas disponibles para este evento</Label>
-                  <div className="flex flex-col gap-1 mt-1">
+                  <div className="flex flex-col gap-1 mt-1 max-h-48 overflow-y-auto pr-1">
                     {courts.map(c => {
                       const checked = form.eventCourtIds.includes(c.id)
                       return (
