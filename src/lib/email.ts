@@ -57,13 +57,15 @@ function base(content: string) {
 
 export async function sendBookingConfirmation({
   clientName, clientEmail, businessName,
-  serviceName, staffName, date, time, duration, cancelUrl, startTimeISO,
+  serviceName, staffName, date, time, duration, cancelUrl, startTimeISO, eventIncludes,
 }: {
   clientName: string; clientEmail: string; businessName: string
   serviceName: string; staffName: string; date: string; time: string; duration: number
-  cancelUrl?: string; startTimeISO?: string
+  cancelUrl?: string; startTimeISO?: string; eventIncludes?: string | null
 }) {
   if (!process.env.RESEND_API_KEY) return
+
+  const isEvent = !!eventIncludes
 
   // Build Google Calendar URL
   let gcalUrl = ""
@@ -75,7 +77,7 @@ export async function sendBookingConfirmation({
       action: "TEMPLATE",
       text: `${serviceName} — ${businessName}`,
       dates: `${fmt(start)}/${fmt(end)}`,
-      details: `Profesional: ${staffName}`,
+      details: isEvent ? eventIncludes! : `Profesional: ${staffName}`,
     })
     gcalUrl = `https://calendar.google.com/calendar/render?${params.toString()}`
   }
@@ -83,16 +85,17 @@ export async function sendBookingConfirmation({
   await resend.emails.send({
     from: FROM,
     to: clientEmail,
-    subject: `Turno confirmado — ${businessName}`,
+    subject: `${isEvent ? "Evento confirmado" : "Turno confirmado"} — ${businessName}`,
     html: base(`
-      <h1>¡Turno confirmado! ✓</h1>
-      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu reserva en <strong style="color:#38bdf8">${businessName}</strong> está confirmada.</p>
+      <h1>${isEvent ? "¡Evento confirmado! 🎉" : "¡Turno confirmado! ✓"}</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu ${isEvent ? "evento" : "reserva"} en <strong style="color:#38bdf8">${businessName}</strong> está confirmad${isEvent ? "o" : "a"}.</p>
       <div class="box">
-        <div class="row"><span class="label">Servicio</span><span class="value">${serviceName}</span></div>
-        <div class="row"><span class="label">Profesional</span><span class="value">${staffName}</span></div>
+        <div class="row"><span class="label">${isEvent ? "Evento" : "Servicio"}</span><span class="value">${serviceName}</span></div>
+        ${!isEvent ? `<div class="row"><span class="label">Profesional</span><span class="value">${staffName}</span></div>` : ""}
         <div class="row"><span class="label">Fecha</span><span class="value">${date}</span></div>
         <div class="row"><span class="label">Hora</span><span class="value">${time} hrs</span></div>
         <div class="row"><span class="label">Duración</span><span class="value">${duration} min</span></div>
+        ${isEvent ? `<div class="row" style="align-items:flex-start"><span class="label">Incluye</span><span class="value" style="white-space:pre-line">${eventIncludes}</span></div>` : ""}
       </div>
       ${gcalUrl ? `
       <div style="text-align:center;margin:24px 0 8px">
