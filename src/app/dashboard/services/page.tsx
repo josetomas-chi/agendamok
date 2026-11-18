@@ -214,11 +214,11 @@ export default function ServicesPage() {
 
       {/* Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md p-5 max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-md p-5 max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader className="pb-3 flex-shrink-0">
             <DialogTitle className="text-base">{editing ? "Editar servicio" : "Nuevo servicio"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 overflow-y-auto flex-1 pr-1">
+          <div className="space-y-3 overflow-y-auto flex-1 min-h-0 pr-1">
             <div>
               <Label className="text-xs">Nombre *</Label>
               <Input className="h-8 text-sm mt-1" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ej: Sesión Kinesiología" />
