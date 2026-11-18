@@ -282,6 +282,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           time: timeStr,
           duration: service.duration,
           startTimeISO: startTime.toISOString(),
+          isEvent: appointment.service.isEvent ?? false,
           eventIncludes: appointment.service.eventIncludes ?? undefined,
         }) : Promise.resolve(),
         staffEmail && staffEmail !== business?.owner?.email ? sendStaffBookingAlert({

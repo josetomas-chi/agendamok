@@ -57,15 +57,13 @@ function base(content: string) {
 
 export async function sendBookingConfirmation({
   clientName, clientEmail, businessName,
-  serviceName, staffName, date, time, duration, cancelUrl, startTimeISO, eventIncludes,
+  serviceName, staffName, date, time, duration, cancelUrl, startTimeISO, isEvent, eventIncludes,
 }: {
   clientName: string; clientEmail: string; businessName: string
   serviceName: string; staffName: string; date: string; time: string; duration: number
-  cancelUrl?: string; startTimeISO?: string; eventIncludes?: string | null
+  cancelUrl?: string; startTimeISO?: string; isEvent?: boolean; eventIncludes?: string | null
 }) {
   if (!process.env.RESEND_API_KEY) return
-
-  const isEvent = !!eventIncludes
 
   // Build Google Calendar URL
   let gcalUrl = ""
