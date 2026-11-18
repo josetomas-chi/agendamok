@@ -12,7 +12,7 @@ import { utcToChileLocal } from "@/lib/timezone"
 
 const schema = z.object({
   serviceId: z.string().cuid(),
-  staffId: z.string().cuid(),
+  staffId: z.string().cuid().optional(),
   clientId: z.string().cuid().optional(),
   clientName: z.string().optional(),
   clientEmail: z.string().email().optional(),
@@ -75,6 +75,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const service = await prisma.service.findUnique({ where: { id: data.serviceId } })
     if (!service) return NextResponse.json({ error: "Servicio no encontrado" }, { status: 404 })
 
+    // Resolve staffId: required unless it's an event service (auto-assign first staff)
+    let staffId = data.staffId
+    if (!staffId) {
+      if (!service.isEvent) return NextResponse.json({ error: "Staff requerido" }, { status: 400 })
+      const firstStaff = await prisma.staffMember.findFirst({ where: { businessId: id, deletedAt: null }, select: { id: true } })
+      if (!firstStaff) return NextResponse.json({ error: "No hay staff registrado en el negocio" }, { status: 400 })
+      staffId = firstStaff.id
+    }
+
     const startTime = new Date(data.startTime)
     if (startTime < new Date()) {
       return NextResponse.json({ error: "No puedes crear un turno en un horario que ya pasó" }, { status: 400 })
@@ -88,7 +97,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const dow = localStart.getDay()
     const startStr = `${String(localStart.getHours()).padStart(2, "0")}:${String(localStart.getMinutes()).padStart(2, "0")}`
     const endStr = `${String(localEnd.getHours()).padStart(2, "0")}:${String(localEnd.getMinutes()).padStart(2, "0")}`
-    const schedule = await prisma.workSchedule.findUnique({ where: { staffId_dayOfWeek: { staffId: data.staffId, dayOfWeek: dow } } })
+    const schedule = await prisma.workSchedule.findUnique({ where: { staffId_dayOfWeek: { staffId, dayOfWeek: dow } } })
     if (!schedule || !schedule.isWorking) {
       return NextResponse.json({ error: "El profesional no trabaja ese día" }, { status: 409 })
     }
@@ -103,7 +112,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const apptDateObj = new Date(apptDate)
     const exceptions = await prisma.availabilityException.findMany({
       where: {
-        staffId: data.staffId,
+        staffId,
         date: { lte: apptDateObj },
         OR: [
           { endDate: null },
@@ -127,7 +136,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         // Use exception capacity instead of service capacity
         const overlapping = await prisma.appointment.count({
           where: {
-            staffId: data.staffId, deletedAt: null,
+            staffId, deletedAt: null,
             status: { in: ["PENDING", "CONFIRMED"] },
             startTime: { lt: endTime }, endTime: { gt: startTime },
           },
@@ -146,7 +155,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // Verificar que el profesional no tenga otro turno que se superponga (cualquier servicio)
     const staffConflict = await prisma.appointment.findFirst({
       where: {
-        staffId: data.staffId, deletedAt: null,
+        staffId, deletedAt: null,
         status: { in: ["PENDING", "CONFIRMED"] },
         startTime: { lt: endTime }, endTime: { gt: startTime },
       },
@@ -165,7 +174,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       if (capacity > 1) {
         const overlapping = await prisma.appointment.count({
           where: {
-            staffId: data.staffId, serviceId: data.serviceId, deletedAt: null,
+            staffId, serviceId: data.serviceId, deletedAt: null,
             status: { in: ["PENDING", "CONFIRMED"] },
             startTime: { lt: endTime }, endTime: { gt: startTime },
           },
@@ -252,7 +261,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       data: {
         businessId: id,
         serviceId: data.serviceId,
-        staffId: data.staffId,
+        staffId,
         clientId,
         locationId: data.locationId || null,
         startTime,
@@ -275,7 +284,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       select: { name: true, ownerId: true, owner: { select: { email: true } } },
     })
     const staffUser = await prisma.staffMember.findUnique({
-      where: { id: data.staffId },
+      where: { id: staffId },
       select: { user: { select: { email: true } } },
     }).catch(() => null)
     const staffEmail = staffUser?.user?.email ?? null

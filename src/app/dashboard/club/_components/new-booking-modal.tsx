@@ -613,7 +613,6 @@ export default function NewBookingModal({
       if (!eventServiceId) { toast.error("Selecciona un tipo de evento"); return }
       if (eventCourtIds.length === 0) { toast.error("Selecciona al menos una cancha"); return }
       const resolvedStaffId = eventStaffId || eventStaffMembers[0]?.id
-      if (!resolvedStaffId) { toast.error("No hay staff disponible"); return }
       setSaving(true)
       try {
         const clientId = await resolveClientId()
