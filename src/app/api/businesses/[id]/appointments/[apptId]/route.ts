@@ -58,7 +58,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     where: { id: apptId },
     data: body,
     include: {
-      service: { select: { name: true, color: true, price: true, duration: true } },
+      service: { select: { name: true, color: true, price: true, duration: true, isEvent: true } },
       staff: { select: { id: true, commissionType: true, commissionValue: true, user: { select: { name: true } } } },
       client: { select: { name: true, lastName: true, email: true, phone: true } },
       business: { select: { name: true, slug: true } },
@@ -102,10 +102,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       clientEmail: appointment.client.email,
       businessName: appointment.business.name,
       serviceName: appointment.service.name,
-      staffName: appointment.staff.user.name || "Sin asignar",
+      staffName: appointment.staff?.user.name || "Sin asignar",
       date: format(utcToChileLocal(appointment.startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
       time: format(utcToChileLocal(appointment.startTime), "HH:mm"),
       bookingUrl: `${baseUrl}/book/${appointment.business.slug}`,
+      isEvent: appointment.service.isEvent ?? false,
     }).catch(() => {})
   }
 
@@ -117,11 +118,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       clientEmail: appointment.client.email,
       businessName: appointment.business.name,
       serviceName: appointment.service.name,
-      staffName: appointment.staff.user.name || "Sin asignar",
+      staffName: appointment.staff?.user.name || "Sin asignar",
       date: format(utcToChileLocal(appointment.startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
       time: format(utcToChileLocal(appointment.startTime), "HH:mm"),
       startTimeISO: appointment.startTime.toISOString(),
       duration: appointment.service.duration ?? 60,
+      isEvent: appointment.service.isEvent ?? false,
     }).catch(() => {})
   }
 
@@ -172,7 +174,7 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
     where: { id: apptId },
     data: { deletedAt: new Date(), status: "CANCELLED" },
     include: {
-      service: { select: { name: true } },
+      service: { select: { name: true, isEvent: true } },
       staff: { select: { user: { select: { name: true } } } },
       client: { select: { name: true, email: true } },
       business: { select: { name: true, slug: true } },
@@ -186,10 +188,11 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
       clientEmail: appt.client.email,
       businessName: appt.business.name,
       serviceName: appt.service.name,
-      staffName: appt.staff.user.name || "Sin asignar",
+      staffName: appt.staff?.user.name || "Sin asignar",
       date: format(utcToChileLocal(appt.startTime), "EEEE d 'de' MMMM yyyy", { locale: es }),
       time: format(utcToChileLocal(appt.startTime), "HH:mm"),
       bookingUrl: `${baseUrl}/book/${appt.business.slug}`,
+      isEvent: appt.service.isEvent ?? false,
     }).catch(() => {})
   }
 

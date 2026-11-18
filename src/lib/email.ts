@@ -111,26 +111,27 @@ export async function sendBookingConfirmation({
 }
 
 export async function sendCancellationEmail({
-  clientName, clientEmail, businessName, serviceName, staffName, date, time, bookingUrl,
+  clientName, clientEmail, businessName, serviceName, staffName, date, time, bookingUrl, isEvent,
 }: {
   clientName: string; clientEmail: string; businessName: string
-  serviceName: string; staffName: string; date: string; time: string; bookingUrl?: string
+  serviceName: string; staffName: string; date: string; time: string; bookingUrl?: string; isEvent?: boolean
 }) {
   if (!process.env.RESEND_API_KEY) return
   await resend.emails.send({
     from: FROM,
     to: clientEmail,
-    subject: `Turno cancelado — ${businessName}`,
+    subject: `${isEvent ? "Evento cancelado" : "Turno cancelado"} — ${businessName}`,
     html: base(`
-      <h1>Turno cancelado</h1>
-      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu turno en <strong style="color:#38bdf8">${businessName}</strong> ha sido cancelado.</p>
+      <h1>${isEvent ? "Evento cancelado ❌" : "Turno cancelado"}</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu ${isEvent ? "evento" : "turno"} en <strong style="color:#38bdf8">${businessName}</strong> ha sido cancelado.</p>
       <div class="box">
-        <div class="row"><span class="label">Servicio</span><span class="value">${serviceName}</span></div>
-        <div class="row"><span class="label">Profesional</span><span class="value">${staffName}</span></div>
+        <div class="row"><span class="label">${isEvent ? "Evento" : "Servicio"}</span><span class="value">${serviceName}</span></div>
+        ${!isEvent ? `<div class="row"><span class="label">Profesional</span><span class="value">${staffName}</span></div>` : ""}
         <div class="row"><span class="label">Fecha</span><span class="value">${date}</span></div>
         <div class="row"><span class="label">Hora</span><span class="value">${time} hrs</span></div>
       </div>
-      ${bookingUrl ? `
+      ${isEvent ? `<p style="text-align:center;color:rgba(255,255,255,0.5);font-size:14px;margin:20px 0 4px">¡Esperamos verte pronto en ${businessName}! 👋</p>` : ""}
+      ${!isEvent && bookingUrl ? `
       <div style="text-align:center;margin:24px 0 8px">
         <a href="${bookingUrl}" style="display:inline-block;background:#38bdf8;color:#0c1a2e;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;letter-spacing:0.01em">
           Reagendar turno →
@@ -141,11 +142,11 @@ export async function sendCancellationEmail({
 }
 
 export async function sendRescheduleEmail({
-  clientName, clientEmail, businessName, serviceName, staffName, date, time, startTimeISO, duration,
+  clientName, clientEmail, businessName, serviceName, staffName, date, time, startTimeISO, duration, isEvent,
 }: {
   clientName: string; clientEmail: string; businessName: string
   serviceName: string; staffName: string; date: string; time: string
-  startTimeISO?: string; duration: number
+  startTimeISO?: string; duration: number; isEvent?: boolean
 }) {
   if (!process.env.RESEND_API_KEY) return
 
@@ -158,7 +159,7 @@ export async function sendRescheduleEmail({
       action: "TEMPLATE",
       text: `${serviceName} — ${businessName}`,
       dates: `${fmt(start)}/${fmt(end)}`,
-      details: `Profesional: ${staffName}`,
+      details: isEvent ? serviceName : `Profesional: ${staffName}`,
     })
     gcalUrl = `https://calendar.google.com/calendar/render?${params.toString()}`
   }
@@ -166,13 +167,13 @@ export async function sendRescheduleEmail({
   await resend.emails.send({
     from: FROM,
     to: clientEmail,
-    subject: `Turno reprogramado — ${businessName}`,
+    subject: `${isEvent ? "Evento modificado" : "Turno reprogramado"} — ${businessName}`,
     html: base(`
-      <h1>Turno reprogramado ✓</h1>
-      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu turno en <strong style="color:#38bdf8">${businessName}</strong> ha sido reagendado.</p>
+      <h1>${isEvent ? "Evento modificado 📅" : "Turno reprogramado ✓"}</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu ${isEvent ? "evento" : "turno"} en <strong style="color:#38bdf8">${businessName}</strong> ha sido ${isEvent ? "modificado" : "reagendado"}.</p>
       <div class="box">
-        <div class="row"><span class="label">Servicio</span><span class="value">${serviceName}</span></div>
-        <div class="row"><span class="label">Profesional</span><span class="value">${staffName}</span></div>
+        <div class="row"><span class="label">${isEvent ? "Evento" : "Servicio"}</span><span class="value">${serviceName}</span></div>
+        ${!isEvent ? `<div class="row"><span class="label">Profesional</span><span class="value">${staffName}</span></div>` : ""}
         <div class="row"><span class="label">Nueva fecha</span><span class="value">${date}</span></div>
         <div class="row"><span class="label">Nueva hora</span><span class="value">${time} hrs</span></div>
       </div>
