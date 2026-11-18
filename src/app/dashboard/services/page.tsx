@@ -336,12 +336,12 @@ export default function ServicesPage() {
               )}
             </>)}
 
-            <div className="flex gap-2 pt-1">
-              <Button className="flex-1 h-8 text-sm" onClick={handleSave} disabled={saving || !form.name}>
-                {saving ? "Guardando..." : "Guardar"}
-              </Button>
-              <Button variant="outline" className="h-8 text-sm" onClick={() => setOpen(false)}>Cancelar</Button>
-            </div>
+          </div>
+          <div className="flex gap-2 pt-3 flex-shrink-0 border-t border-white/10 mt-2">
+            <Button className="flex-1 h-8 text-sm" onClick={handleSave} disabled={saving || !form.name}>
+              {saving ? "Guardando..." : "Guardar"}
+            </Button>
+            <Button variant="outline" className="h-8 text-sm" onClick={() => setOpen(false)}>Cancelar</Button>
           </div>
         </DialogContent>
       </Dialog>
