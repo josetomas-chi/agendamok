@@ -227,7 +227,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       const blocks = await Promise.allSettled(
         selectedCourts.map((courtId: string) =>
           prisma.courtBooking.create({
-            data: { businessId: id, courtId, clientId, startTime, endTime, price: 0, status: "CONFIRMED", blockType: "BOOKING", notes: `Evento: ${service.name}` },
+            data: { businessId: id, courtId, clientId, startTime, endTime, price: appointmentPrice ?? 0, status: "CONFIRMED", blockType: "BOOKING", notes: `Evento: ${service.name}` },
             select: { id: true },
           })
         )
