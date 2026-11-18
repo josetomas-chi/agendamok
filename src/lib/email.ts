@@ -93,7 +93,7 @@ export async function sendBookingConfirmation({
         <div class="row"><span class="label">Fecha</span><span class="value">${date}</span></div>
         <div class="row"><span class="label">Hora</span><span class="value">${time} hrs</span></div>
         <div class="row"><span class="label">Duración</span><span class="value">${duration} min</span></div>
-        ${isEvent && eventIncludes ? `<div class="row" style="align-items:flex-start"><span class="label">Incluye</span><span class="value" style="white-space:pre-line">${eventIncludes}</span></div>` : ""}
+        ${isEvent && eventIncludes ? `<div class="row" style="align-items:flex-start"><span class="label">Incluye</span><span class="value" style="white-space:pre-line;text-align:left">${eventIncludes}</span></div>` : ""}
       </div>
       ${gcalUrl ? `
       <div style="text-align:center;margin:24px 0 8px">
