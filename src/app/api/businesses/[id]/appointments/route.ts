@@ -204,8 +204,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       )
     }
 
-    // Apply holiday surcharge if applicable
-    let appointmentPrice: number | undefined
+    // Apply holiday surcharge if applicable; always store service price
+    let appointmentPrice: number | undefined = service.price ? Number(service.price) : undefined
     if (service.price) {
       const dayStart = new Date(startTime.toDateString())
       const dayEnd = new Date(dayStart.getTime() + 86400000)

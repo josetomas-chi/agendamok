@@ -879,6 +879,8 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                     const { top, height } = bookingStyle(b)
                     const heightPx = height
                     const isBlockEntry = b.blockType === "BLOCK"
+                    const isEventBlock = !isBlockEntry && b.notes?.startsWith("Evento:")
+                    const eventColor = "#6366f1"
                     return (
                       <div key={b.id}
                         onMouseDown={e => { if (e.button === 0 && !isBlockEntry) handleBookingMouseDown(e, b) }}
@@ -887,8 +889,9 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                         style={{ top, height,
                           background: isBlockEntry
                             ? "repeating-linear-gradient(-45deg, rgba(90,90,90,0.18) 0px, rgba(90,90,90,0.18) 3px, rgba(220,220,220,0.55) 3px, rgba(220,220,220,0.55) 8px)"
+                            : isEventBlock ? `${eventColor}cc`
                             : (b.status === "COMPLETED" || (Number(b.price) > 0 && Number(b.paidAmount) >= Number(b.price))) ? "rgba(34,197,94,0.55)" : b.coach?.color ? `${b.coach.color}cc` : "rgba(251,146,60,0.85)",
-                          boxShadow: isBlockEntry ? `inset 0 0 0 5px #aaa` : `inset 0 0 0 5px ${(b.status === "COMPLETED" || (Number(b.price) > 0 && Number(b.paidAmount) >= Number(b.price))) ? "#16a34a" : b.coach?.color ?? "#fb923c"}`,
+                          boxShadow: isBlockEntry ? `inset 0 0 0 5px #aaa` : `inset 0 0 0 5px ${isEventBlock ? eventColor : (b.status === "COMPLETED" || (Number(b.price) > 0 && Number(b.paidAmount) >= Number(b.price))) ? "#16a34a" : b.coach?.color ?? "#fb923c"}`,
                           opacity: draggingId === b.id ? 0.35 : 1 }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = "brightness(0.92)" }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = "none" }}
@@ -940,8 +943,8 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                               {b.client ? [b.client.name, b.client.lastName].filter(Boolean).join(" ") : "Sin cliente"}
                             </p>
                           )}
-                          <p className="text-[8px] font-bold uppercase tracking-wide leading-none truncate mt-0.5" style={{ color: "rgba(13,27,42,0.45)" }}>
-                            {b.coach ? "Clase Particular" : "Reserva Común"}
+                          <p className="text-[8px] font-bold uppercase tracking-wide leading-none truncate mt-0.5" style={{ color: isEventBlock ? `${eventColor}cc` : "rgba(13,27,42,0.45)" }}>
+                            {b.coach ? "Clase Particular" : isEventBlock ? (b.notes?.replace("Evento: ", "") || "Evento") : "Reserva Común"}
                           </p>
                           {heightPx >= 56 && (
                             <p className="text-[9px] font-bold mt-1" style={{ color: "rgba(13,27,42,0.65)" }}>
