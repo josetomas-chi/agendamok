@@ -142,15 +142,32 @@ export default function ClubPageClient({ businessId: initialBusinessId, initialC
   const sports = Array.from(sportsSeen.values())
 
   function handleSlotClick(courtId: string, slotTime: string) {
-    const [h, m] = slotTime.split(":").map(Number)
-    const endH = m === 30 ? h + 1 : h
-    const endM = m === 30 ? 0 : 30
-    setPreselect({
-      courtId,
-      date: format(selectedDate, "yyyy-MM-dd"),
-      startTime: slotTime,
-      endTime: `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`,
-    })
+    const court = courts.find(c => c.id === courtId)
+    const dayOfWeek = selectedDate.getDay()
+    // Find a pricing rule with fixed slots that covers this time
+    const ruleWithSlots = court?.pricingRules?.find(r =>
+      (r.fixedSlots?.length ?? 0) > 0 &&
+      r.days.includes(dayOfWeek) &&
+      slotTime >= r.startTime && slotTime < r.endTime
+    )
+    if (ruleWithSlots?.fixedSlots?.length) {
+      // Snap to the nearest fixed slot start at or before the clicked time
+      const sorted = [...ruleWithSlots.fixedSlots].sort()
+      const snapStart = sorted.filter(s => s <= slotTime).pop() ?? sorted[0]
+      const snapIdx = sorted.indexOf(snapStart)
+      const snapEnd = snapIdx >= 0 && snapIdx < sorted.length - 1 ? sorted[snapIdx + 1] : ruleWithSlots.endTime
+      setPreselect({ courtId, date: format(selectedDate, "yyyy-MM-dd"), startTime: snapStart, endTime: snapEnd })
+    } else {
+      const [h, m] = slotTime.split(":").map(Number)
+      const endH = m === 30 ? h + 1 : h
+      const endM = m === 30 ? 0 : 30
+      setPreselect({
+        courtId,
+        date: format(selectedDate, "yyyy-MM-dd"),
+        startTime: slotTime,
+        endTime: `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`,
+      })
+    }
     setNewBookingOpen(true)
   }
 
