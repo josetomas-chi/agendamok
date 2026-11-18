@@ -628,7 +628,7 @@ model Appointment {
   businessId    String
   locationId    String?
   serviceId     String
-  staffId       String
+  staffId       String?
   clientId      String
   startTime     DateTime
   endTime       DateTime
@@ -649,7 +649,7 @@ model Appointment {
   business      Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
   location      Location?         @relation(fields: [locationId], references: [id])
   service       Service           @relation(fields: [serviceId], references: [id])
-  staff         StaffMember       @relation(fields: [staffId], references: [id])
+  staff         StaffMember?      @relation(fields: [staffId], references: [id])
   client        Client            @relation(fields: [clientId], references: [id])
   payment       Payment?
   notifications NotificationLog[]

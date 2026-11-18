@@ -75,14 +75,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const service = await prisma.service.findUnique({ where: { id: data.serviceId } })
     if (!service) return NextResponse.json({ error: "Servicio no encontrado" }, { status: 404 })
 
-    // Resolve staffId: required unless it's an event service (auto-assign the booking user's staff record)
-    let staffId = data.staffId
+    // Resolve staffId: required for regular bookings; for events, prefer the booking user's staff record
+    let staffId: string | null = data.staffId ?? null
     if (!staffId) {
       if (!service.isEvent) return NextResponse.json({ error: "Staff requerido" }, { status: 400 })
       const myStaff = await prisma.staffMember.findFirst({ where: { businessId: id, userId: session.user.id, deletedAt: null }, select: { id: true } })
       const fallback = myStaff ?? await prisma.staffMember.findFirst({ where: { businessId: id, deletedAt: null }, select: { id: true } })
-      if (!fallback) return NextResponse.json({ error: "No hay staff registrado en el negocio" }, { status: 400 })
-      staffId = fallback.id
+      staffId = fallback?.id ?? null
     }
 
     const startTime = new Date(data.startTime)
@@ -91,101 +90,79 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
     const endTime = addMinutes(startTime, service.duration)
 
-    // Check staff work schedule
+    // Check staff work schedule (skip for events without staff)
     const { utcToChileLocal } = await import("@/lib/timezone")
     const localStart = utcToChileLocal(startTime)
     const localEnd = utcToChileLocal(endTime)
     const dow = localStart.getDay()
     const startStr = `${String(localStart.getHours()).padStart(2, "0")}:${String(localStart.getMinutes()).padStart(2, "0")}`
     const endStr = `${String(localEnd.getHours()).padStart(2, "0")}:${String(localEnd.getMinutes()).padStart(2, "0")}`
-    const schedule = await prisma.workSchedule.findUnique({ where: { staffId_dayOfWeek: { staffId, dayOfWeek: dow } } })
-    if (!schedule || !schedule.isWorking) {
-      return NextResponse.json({ error: "El profesional no trabaja ese día" }, { status: 409 })
+
+    if (staffId) {
+      const schedule = await prisma.workSchedule.findUnique({ where: { staffId_dayOfWeek: { staffId, dayOfWeek: dow } } })
+      if (!schedule || !schedule.isWorking) {
+        return NextResponse.json({ error: "El profesional no trabaja ese día" }, { status: 409 })
+      }
+      if (startStr < schedule.startTime || endStr > schedule.endTime) {
+        return NextResponse.json({ error: `El horario está fuera del horario de trabajo del profesional (${schedule.startTime}–${schedule.endTime})` }, { status: 409 })
+      }
+
+      // Check availability exceptions for this staff + date
+      const apptDate = startTime.toISOString().slice(0, 10)
+      const apptTimeStr = `${String(startTime.getUTCHours()).padStart(2, "0")}:${String(startTime.getUTCMinutes()).padStart(2, "0")}`
+      const apptDateObj = new Date(apptDate)
+      const exceptions = await prisma.availabilityException.findMany({
+        where: {
+          staffId,
+          date: { lte: apptDateObj },
+          OR: [{ endDate: null }, { endDate: { gte: apptDateObj } }],
+        },
+      })
+
+      for (const ex of exceptions) {
+        const fullDay = !ex.startTime && !ex.endTime
+        const inRange = fullDay || (ex.startTime && ex.endTime && apptTimeStr >= ex.startTime && apptTimeStr < ex.endTime)
+        if (!inRange) continue
+        if (ex.type === "BLOCKED") {
+          return NextResponse.json(
+            { error: ex.reason ? `Profesional no disponible: ${ex.reason}` : "Profesional no disponible en ese horario" },
+            { status: 409 }
+          )
+        }
+        if (ex.type === "CAPACITY_OVERRIDE" && ex.capacity !== null) {
+          const overlapping = await prisma.appointment.count({
+            where: { staffId, deletedAt: null, status: { in: ["PENDING", "CONFIRMED"] }, startTime: { lt: endTime }, endTime: { gt: startTime } },
+          })
+          if (overlapping >= ex.capacity) {
+            return NextResponse.json({ error: `Capacidad reducida para este día: máximo ${ex.capacity} personas` }, { status: 409 })
+          }
+          break
+        }
+      }
+
+      // Check staff conflict
+      const staffConflict = await prisma.appointment.findFirst({
+        where: { staffId, deletedAt: null, status: { in: ["PENDING", "CONFIRMED"] }, startTime: { lt: endTime }, endTime: { gt: startTime } },
+      })
+      if (staffConflict) {
+        return NextResponse.json({ error: "El profesional ya tiene un turno en ese horario" }, { status: 409 })
+      }
     }
-    if (startStr < schedule.startTime || endStr > schedule.endTime) {
-      return NextResponse.json({ error: `El horario está fuera del horario de trabajo del profesional (${schedule.startTime}–${schedule.endTime})` }, { status: 409 })
-    }
 
-    // Check availability exceptions for this staff + date
-    const apptDate = startTime.toISOString().slice(0, 10)
-    const apptTimeStr = `${String(startTime.getUTCHours()).padStart(2, "0")}:${String(startTime.getUTCMinutes()).padStart(2, "0")}`
-
-    const apptDateObj = new Date(apptDate)
-    const exceptions = await prisma.availabilityException.findMany({
-      where: {
-        staffId,
-        date: { lte: apptDateObj },
-        OR: [
-          { endDate: null },
-          { endDate: { gte: apptDateObj } },
-        ],
-      },
-    })
-
-    for (const ex of exceptions) {
-      const fullDay = !ex.startTime && !ex.endTime
-      const inRange = fullDay || (ex.startTime && ex.endTime && apptTimeStr >= ex.startTime && apptTimeStr < ex.endTime)
-      if (!inRange) continue
-
-      if (ex.type === "BLOCKED") {
+    // Normal capacity check for multi-capacity services
+    if (service.capacity && service.capacity > 1) {
+      const overlapping = await prisma.appointment.count({
+        where: {
+          serviceId: data.serviceId, deletedAt: null,
+          status: { in: ["PENDING", "CONFIRMED"] },
+          startTime: { lt: endTime }, endTime: { gt: startTime },
+        },
+      })
+      if (overlapping >= service.capacity) {
         return NextResponse.json(
-          { error: ex.reason ? `Profesional no disponible: ${ex.reason}` : "Profesional no disponible en ese horario" },
+          { error: `Este horario ya está completo (capacidad máxima: ${service.capacity})` },
           { status: 409 }
         )
-      }
-      if (ex.type === "CAPACITY_OVERRIDE" && ex.capacity !== null) {
-        // Use exception capacity instead of service capacity
-        const overlapping = await prisma.appointment.count({
-          where: {
-            staffId, deletedAt: null,
-            status: { in: ["PENDING", "CONFIRMED"] },
-            startTime: { lt: endTime }, endTime: { gt: startTime },
-          },
-        })
-        if (overlapping >= ex.capacity) {
-          return NextResponse.json(
-            { error: `Capacidad reducida para este día: máximo ${ex.capacity} personas` },
-            { status: 409 }
-          )
-        }
-        // Exception already handled capacity — skip normal check
-        break
-      }
-    }
-
-    // Verificar que el profesional no tenga otro turno que se superponga (cualquier servicio)
-    const staffConflict = await prisma.appointment.findFirst({
-      where: {
-        staffId, deletedAt: null,
-        status: { in: ["PENDING", "CONFIRMED"] },
-        startTime: { lt: endTime }, endTime: { gt: startTime },
-      },
-    })
-    if (staffConflict) {
-      return NextResponse.json(
-        { error: "El profesional ya tiene un turno en ese horario" },
-        { status: 409 }
-      )
-    }
-
-    // Normal capacity check (only if no CAPACITY_OVERRIDE exception matched)
-    const hasOverride = exceptions.some((ex: { type: string; startTime: string | null; endTime: string | null }) => ex.type === "CAPACITY_OVERRIDE" && (!ex.startTime || (ex.startTime <= apptTimeStr && ex.endTime! > apptTimeStr)))
-    if (!hasOverride) {
-      const capacity = service.capacity ?? 1
-      if (capacity > 1) {
-        const overlapping = await prisma.appointment.count({
-          where: {
-            staffId, serviceId: data.serviceId, deletedAt: null,
-            status: { in: ["PENDING", "CONFIRMED"] },
-            startTime: { lt: endTime }, endTime: { gt: startTime },
-          },
-        })
-        if (overlapping >= capacity) {
-          return NextResponse.json(
-            { error: `Este horario ya está completo (capacidad máxima: ${capacity})` },
-            { status: 409 }
-          )
-        }
       }
     }
 
@@ -284,14 +261,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       where: { id },
       select: { name: true, ownerId: true, owner: { select: { email: true } } },
     })
-    const staffUser = await prisma.staffMember.findUnique({
+    const staffUser = staffId ? await prisma.staffMember.findUnique({
       where: { id: staffId },
       select: { user: { select: { email: true } } },
-    }).catch(() => null)
+    }).catch(() => null) : null
     const staffEmail = staffUser?.user?.email ?? null
     const dateStr = format(utcToChileLocal(startTime), "EEEE d 'de' MMMM yyyy", { locale: es })
     const timeStr = format(utcToChileLocal(startTime), "HH:mm")
-    const staffName = appointment.staff.user.name || "Sin asignar"
+    const staffName = appointment.staff?.user.name || "Sin asignar"
 
     after(async () => {
       await Promise.allSettled([
