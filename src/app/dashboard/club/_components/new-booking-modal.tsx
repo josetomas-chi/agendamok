@@ -612,7 +612,8 @@ export default function NewBookingModal({
     if (bookingType === "event") {
       if (!eventServiceId) { toast.error("Selecciona un tipo de evento"); return }
       if (eventCourtIds.length === 0) { toast.error("Selecciona al menos una cancha"); return }
-      if (!eventStaffId) { toast.error("Selecciona un staff para el evento"); return }
+      const resolvedStaffId = eventStaffId || eventStaffMembers[0]?.id
+      if (!resolvedStaffId) { toast.error("No hay staff disponible"); return }
       setSaving(true)
       try {
         const clientId = await resolveClientId()
@@ -621,7 +622,7 @@ export default function NewBookingModal({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             serviceId: eventServiceId,
-            staffId: eventStaffId,
+            staffId: resolvedStaffId,
             clientId: clientId || undefined,
             startTime: localToIso(form.date, `${form.startTime}:00`),
             status: "CONFIRMED",
