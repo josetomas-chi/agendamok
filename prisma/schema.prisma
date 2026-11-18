@@ -491,6 +491,10 @@ model Service {
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
 
+  isEvent        Boolean  @default(false)
+  eventIncludes  String?  @db.Text
+  eventCourtIds  String[]
+
   business     Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
   category     ServiceCategory? @relation(fields: [categoryId], references: [id])
   staff        StaffMember[]    @relation("StaffServices")
@@ -632,6 +636,7 @@ model Appointment {
   notes         String?           @db.Text
   internalNotes String?           @db.Text
   price         Float?
+  eventCourtBookingIds     String[]
   googleEventId           String?
   cancelToken              String?           @unique
   whatsappReminderSentAt   DateTime?

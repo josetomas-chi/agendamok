@@ -11,25 +11,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import { Plus, Pencil, Trash2, Clock, DollarSign, Circle, Power, Check, X } from "lucide-react"
+import { Plus, Pencil, Trash2, Clock, DollarSign, Circle, Power, Check, X, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type Category = { id: string; name: string; order: number }
+type CourtSimple = { id: string; name: string; sport: string | null }
 type Service = {
   id: string; name: string; description: string | null; duration: number
   price: number; color: string; isActive: boolean; category: Category | null
   bufferAfter: number; requiresDeposit: boolean; deposit: number | null
-  capacity: number
+  capacity: number; isEvent: boolean; eventIncludes: string | null; eventCourtIds: string[]
 }
 
 const COLORS = ["#6366f1","#8b5cf6","#ec4899","#ef4444","#f97316","#eab308","#22c55e","#14b8a6","#0ea5e9","#64748b"]
 
-const DEFAULT_FORM = { name: "", description: "", duration: 60, price: 0, color: "#6366f1", categoryId: "", bufferAfter: 0, requiresDeposit: false, deposit: 0, isActive: true, capacity: 1 }
+const DEFAULT_FORM = { name: "", description: "", duration: 60, price: 0, color: "#6366f1", categoryId: "", bufferAfter: 0, requiresDeposit: false, deposit: 0, isActive: true, capacity: 1, isEvent: false, eventIncludes: "", eventCourtIds: [] as string[] }
 
 export default function ServicesPage() {
   const { businessId } = useBusiness()
   const [services, setServices] = useState<Service[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [courts, setCourts] = useState<CourtSimple[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Service | null>(null)
@@ -41,6 +43,7 @@ export default function ServicesPage() {
   useEffect(() => {
     if (!businessId) { setLoading(false); return }
     loadServices(businessId)
+    fetch(`/api/businesses/${businessId}/courts`).then(r => r.json()).then(d => setCourts(d.courts || []))
   }, [businessId])
 
   async function loadServices(bid: string) {
@@ -70,6 +73,7 @@ export default function ServicesPage() {
       price: s.price, color: s.color, categoryId: s.category?.id || "",
       bufferAfter: s.bufferAfter, requiresDeposit: s.requiresDeposit,
       deposit: s.deposit || 0, isActive: s.isActive, capacity: s.capacity ?? 1,
+      isEvent: s.isEvent || false, eventIncludes: s.eventIncludes || "", eventCourtIds: s.eventCourtIds || [],
     })
     setOpen(true)
   }
@@ -82,7 +86,7 @@ export default function ServicesPage() {
     const method = editing ? "PATCH" : "POST"
     const r = await fetch(url, {
       method, headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, price: Number(form.price), duration: Number(form.duration), bufferAfter: Number(form.bufferAfter), deposit: Number(form.deposit), capacity: Number(form.capacity), categoryId: form.categoryId || null }),
+      body: JSON.stringify({ ...form, price: Number(form.price), duration: Number(form.duration), bufferAfter: Number(form.bufferAfter), deposit: Number(form.deposit), capacity: Number(form.capacity), categoryId: form.categoryId || null, eventIncludes: form.eventIncludes || null }),
     })
     if (r.ok) {
       toast.success(editing ? "Servicio actualizado" : "Servicio creado")
@@ -270,6 +274,68 @@ export default function ServicesPage() {
                 ))}
               </div>
             </div>
+            {/* Event toggle */}
+            <div>
+              <button type="button"
+                onClick={() => setForm(f => ({ ...f, isEvent: !f.isEvent }))}
+                className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 transition-all"
+                style={form.isEvent
+                  ? { background: "rgba(99,102,241,0.1)", border: "1.5px solid #6366f1" }
+                  : { background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.1)" }}>
+                <div className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
+                  style={{ background: form.isEvent ? "#6366f1" : "transparent", border: form.isEvent ? "none" : "1.5px solid rgba(0,0,0,0.2)" }}>
+                  {form.isEvent && <span className="text-white text-[9px] font-black">✓</span>}
+                </div>
+                <div className="text-left flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5" style={{ color: form.isEvent ? "#6366f1" : undefined }} />
+                    <span className="text-xs font-semibold" style={{ color: form.isEvent ? "#4f46e5" : undefined }}>Servicio tipo evento</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Incluye recursos adicionales como canchas o quinchos</p>
+                </div>
+              </button>
+            </div>
+
+            {form.isEvent && (<>
+              <div>
+                <Label className="text-xs">Qué incluye el evento</Label>
+                <Textarea className="text-sm mt-1" rows={3}
+                  placeholder="Ej: 3 hrs de cancha de pádel + quincho con parrilla y mesa de picnic..."
+                  value={form.eventIncludes}
+                  onChange={e => setForm(f => ({ ...f, eventIncludes: e.target.value }))} />
+              </div>
+              {courts.length > 0 && (
+                <div>
+                  <Label className="text-xs">Canchas disponibles para este evento</Label>
+                  <div className="flex flex-col gap-1 mt-1">
+                    {courts.map(c => {
+                      const checked = form.eventCourtIds.includes(c.id)
+                      return (
+                        <button key={c.id} type="button"
+                          onClick={() => setForm(f => ({
+                            ...f,
+                            eventCourtIds: checked
+                              ? f.eventCourtIds.filter(id => id !== c.id)
+                              : [...f.eventCourtIds, c.id],
+                          }))}
+                          className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-left transition-all"
+                          style={checked
+                            ? { background: "rgba(99,102,241,0.1)", border: "1px solid #6366f1" }
+                            : { background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.08)" }}>
+                          <div className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
+                            style={{ background: checked ? "#6366f1" : "transparent", border: checked ? "none" : "1.5px solid rgba(0,0,0,0.2)" }}>
+                            {checked && <span className="text-white text-[9px] font-black">✓</span>}
+                          </div>
+                          <span className="font-medium">{c.name}</span>
+                          {c.sport && <span className="text-xs text-muted-foreground">· {c.sport}</span>}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </>)}
+
             <div className="flex gap-2 pt-1">
               <Button className="flex-1 h-8 text-sm" onClick={handleSave} disabled={saving || !form.name}>
                 {saving ? "Guardando..." : "Guardar"}
@@ -304,7 +370,10 @@ function ServiceGrid({ items, onEdit, onDelete, onToggle }: {
                 <Circle className="w-3 h-3 flex-shrink-0" fill={s.color} color={s.color} />
                 <h3 className="font-semibold truncate">{s.name}</h3>
               </div>
-              {!s.isActive && <Badge variant="secondary" className="text-xs flex-shrink-0">Inactivo</Badge>}
+              <div className="flex gap-1 flex-shrink-0">
+                {s.isEvent && <Badge variant="secondary" className="text-xs gap-0.5"><Zap className="w-2.5 h-2.5" />Evento</Badge>}
+                {!s.isActive && <Badge variant="secondary" className="text-xs">Inactivo</Badge>}
+              </div>
             </div>
             {s.category && <p className="text-xs text-muted-foreground mb-1">{s.category.name}</p>}
             {s.description && <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{s.description}</p>}

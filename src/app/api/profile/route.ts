@@ -106,6 +106,7 @@ export async function GET() {
       const pointsPerVisit = c.business.loyaltyPointsPerVisit ?? 10
       const ptsToNext = c.segment === "VIP" ? 0 : Math.max(0, vipThreshold - c.loyaltyPoints)
       return {
+        clientId: c.id,
         businessId: c.businessId,
         businessName: c.business.name,
         businessSlug: c.business.slug,

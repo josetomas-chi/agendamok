@@ -262,8 +262,8 @@ export default function MarketingPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-muted/30 rounded-xl">
-                  <p className="text-xs text-muted-foreground mb-1">Puntos por turno completado</p>
-                  <p className="text-2xl font-bold">{loyalty.loyaltyPointsPerVisit}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Pesos por punto</p>
+                  <p className="text-2xl font-bold">${loyalty.loyaltyPesosPerPoint ?? loyalty.loyaltyPointsPerVisit}</p>
                 </div>
                 <div className="p-4 bg-muted/30 rounded-xl">
                   <p className="text-xs text-muted-foreground mb-1">Puntos para VIP automático</p>

@@ -14,6 +14,9 @@ const schema = z.object({
   requiresDeposit: z.boolean().optional(),
   bufferAfter: z.number().int().min(0).optional(),
   isActive: z.boolean().optional(),
+  isEvent: z.boolean().optional(),
+  eventIncludes: z.string().optional().nullable(),
+  eventCourtIds: z.array(z.string()).optional(),
 })
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string; serviceId: string }> }) {

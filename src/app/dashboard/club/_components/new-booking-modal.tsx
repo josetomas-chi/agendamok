@@ -19,7 +19,9 @@ const GOLD = "#C9A84C"
 const NAVY = "#0d1b2a"
 const BORDER = "rgba(201,168,76,0.2)"
 
-type BookingType = "simple" | "recurring" | "class" | "block"
+type BookingType = "simple" | "recurring" | "class" | "block" | "event"
+type EventService = { id: string; name: string; duration: number; price: number; eventIncludes: string | null; eventCourtIds: string[] }
+type StaffMember = { id: string; name: string; color: string }
 type TimeSlot = { id: string; startTime: string; endTime: string }
 
 function TimeSelect({ value, onChange, label, minTime, allowedRange }: { value: string; onChange: (v: string) => void; label: string; minTime?: string; allowedRange?: { start: string; end: string }[] }) {
@@ -281,6 +283,7 @@ const BOOKING_TYPES: { key: BookingType; label: string; desc: string }[] = [
   { key: "recurring", label: "Reserva múltiple", desc: "Varias canchas u horarios" },
   { key: "class",     label: "Clase particular", desc: "Con entrenador asignado" },
   { key: "block",     label: "Bloquear cancha",  desc: "Mantención o evento" },
+  { key: "event",     label: "Evento",           desc: "Cumpleaños, quincho u otro" },
 ]
 
 export default function NewBookingModal({
@@ -310,6 +313,13 @@ export default function NewBookingModal({
   const [saving, setSaving] = useState(false)
   const [allCourts, setAllCourts] = useState<Court[]>(courts)
   const [bookedCourtIds, setBookedCourtIds] = useState<Set<string>>(new Set())
+
+  // ── Estado Evento ─────────────────────────────────────────────────────────
+  const [eventServices, setEventServices] = useState<EventService[]>([])
+  const [eventServiceId, setEventServiceId] = useState<string>("")
+  const [eventCourtIds, setEventCourtIds] = useState<string[]>([])
+  const [eventStaffMembers, setEventStaffMembers] = useState<StaffMember[]>([])
+  const [eventStaffId, setEventStaffId] = useState<string>("")
 
   // Deporte fijo para la sesión: viene de la cancha preseleccionada (clic en calendario)
   // Se usa como filtro permanente en reserva múltiple aunque se deseleccionen todas las canchas
@@ -350,6 +360,15 @@ export default function NewBookingModal({
   useEffect(() => {
     fetch(`/api/businesses/${businessId}/courts`).then(r => r.json()).then(d => setAllCourts(d.courts || []))
     fetch(`/api/businesses/${businessId}/club-coaches`).then(r => r.json()).then(d => setCoaches((d.coaches || []).filter((c: Coach & { isActive: boolean }) => c.isActive)))
+    fetch(`/api/businesses/${businessId}/services`).then(r => r.json()).then(d => {
+      const evtSvcs = (d.services || []).filter((s: EventService & { isEvent: boolean; isActive: boolean }) => s.isEvent && s.isActive)
+      setEventServices(evtSvcs)
+    })
+    fetch(`/api/businesses/${businessId}/staff`).then(r => r.json()).then(d => {
+      const members = (d.staff || []).map((s: { id: string; color: string; user: { name: string } }) => ({ id: s.id, name: s.user?.name || "Sin nombre", color: s.color }))
+      setEventStaffMembers(members)
+      if (members.length === 1) setEventStaffId(members[0].id)
+    })
   }, [businessId])
 
   const activeCourts = allCourts.filter(c => c.isActive !== false)
@@ -577,6 +596,32 @@ export default function NewBookingModal({
   async function handleSave() {
     if (!form.date) { toast.error("Selecciona una fecha"); return }
 
+    if (bookingType === "event") {
+      if (!eventServiceId) { toast.error("Selecciona un tipo de evento"); return }
+      if (eventCourtIds.length === 0) { toast.error("Selecciona al menos una cancha"); return }
+      if (!eventStaffId) { toast.error("Selecciona un staff para el evento"); return }
+      setSaving(true)
+      try {
+        const clientId = await resolveClientId()
+        const r = await fetch(`/api/businesses/${businessId}/appointments`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            serviceId: eventServiceId,
+            staffId: eventStaffId,
+            clientId: clientId || undefined,
+            startTime: localToIso(form.date, `${form.startTime}:00`),
+            status: "CONFIRMED",
+            notes: form.notes || undefined,
+            eventCourtIds,
+          }),
+        })
+        if (r.ok) { toast.success("Evento creado"); onSaved() }
+        else { const d = await r.json(); toast.error(d.error || "Error al crear el evento") }
+      } finally { setSaving(false) }
+      return
+    }
+
     if (bookingType === "block") {
       if (!form.courtId) { toast.error("Selecciona una cancha"); return }
       setSaving(true)
@@ -795,6 +840,7 @@ export default function NewBookingModal({
   const saveLabel = (() => {
     if (saving) return "Guardando…"
     if (bookingType === "block") return "Bloquear cancha"
+    if (bookingType === "event") return "Confirmar evento"
     if (bookingType === "class") return classRecurring ? "Crear clases recurrentes" : "Crear clase particular"
     if (bookingType === "simple") return "Confirmar reserva"
     // recurring
@@ -1449,6 +1495,117 @@ export default function NewBookingModal({
               <TimeSelect label="Inicio" value={form.startTime} onChange={v => setForm(f => ({ ...f, startTime: v }))} />
               <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} minTime={form.startTime} />
             </div>
+          </>)}
+
+          {/* ══════════════ EVENTO ══════════════ */}
+          {bookingType === "event" && (<>
+            {eventServices.length === 0 ? (
+              <div className="rounded-xl px-4 py-3 text-center"
+                style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                <p className="text-xs font-semibold" style={{ color: "#4f46e5" }}>No hay servicios de evento configurados</p>
+                <p className="text-[10px] mt-1" style={{ color: "rgba(13,27,42,0.4)" }}>Ve a Servicios y activa "Servicio tipo evento" en el servicio correspondiente</p>
+              </div>
+            ) : (
+              <div>
+                <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Tipo de evento</p>
+                <div className="flex flex-col gap-1.5">
+                  {eventServices.map(svc => {
+                    const isSelected = eventServiceId === svc.id
+                    return (
+                      <button key={svc.id} type="button"
+                        onClick={() => { setEventServiceId(svc.id); setEventCourtIds([]) }}
+                        className="flex items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-all"
+                        style={isSelected
+                          ? { background: "rgba(99,102,241,0.1)", border: "1.5px solid #6366f1" }
+                          : { background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.1)" }}>
+                        <div className="mt-0.5 w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0"
+                          style={{ background: isSelected ? "#6366f1" : "transparent", border: isSelected ? "none" : "1.5px solid rgba(13,27,42,0.2)" }}>
+                          {isSelected && <span className="text-white text-[10px] font-black">✓</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold" style={{ color: isSelected ? "#4338ca" : NAVY }}>{svc.name}</p>
+                          {svc.eventIncludes && <p className="text-[10px] mt-0.5" style={{ color: "rgba(13,27,42,0.5)" }}>{svc.eventIncludes}</p>}
+                          <p className="text-[10px] font-semibold mt-1" style={{ color: isSelected ? "#4f46e5" : "rgba(13,27,42,0.4)" }}>
+                            {svc.duration} min · ${Number(svc.price).toLocaleString("es-CL")}
+                          </p>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Court picker — available courts from selected event service */}
+            {eventServiceId && (() => {
+              const svc = eventServices.find(s => s.id === eventServiceId)
+              if (!svc || !svc.eventCourtIds.length) return null
+              const availCourts = allCourts.filter(c => svc.eventCourtIds.includes(c.id) && c.isActive !== false)
+              if (!availCourts.length) return null
+              return (
+                <div>
+                  <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>
+                    Recursos del evento {eventCourtIds.length > 0 && <span style={{ color: "#6366f1" }}>({eventCourtIds.length})</span>}
+                  </p>
+                  <div className="flex flex-col gap-1">
+                    {availCourts.map(c => {
+                      const checked = eventCourtIds.includes(c.id)
+                      return (
+                        <button key={c.id} type="button"
+                          onClick={() => setEventCourtIds(prev =>
+                            prev.includes(c.id) ? prev.filter(id => id !== c.id) : [...prev, c.id]
+                          )}
+                          className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-left transition-all"
+                          style={checked
+                            ? { background: NAVY, borderLeft: `3px solid ${c.color || "#6366f1"}` }
+                            : { background: "rgba(13,27,42,0.04)", border: `1px solid rgba(13,27,42,0.08)`, borderLeft: `3px solid ${c.color || "#6366f1"}`, borderLeftWidth: "3px" }}>
+                          <span className="text-xs font-semibold flex-1 truncate"
+                            style={{ color: checked ? "#fff" : NAVY }}>{c.name}</span>
+                          {c.sport && <span className="text-[10px]" style={{ color: checked ? "rgba(255,255,255,0.5)" : "rgba(13,27,42,0.35)" }}>{c.sport}</span>}
+                          {checked && <span className="text-[10px] font-black" style={{ color: "#6366f1" }}>✓</span>}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
+
+            <ClientCombobox clients={clients} businessId={businessId} value={selectedClient} onSelect={setSelectedClient} />
+
+            <div>
+              <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Fecha</p>
+              <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                className={inputCls} style={{ ...inputStyle, colorScheme: "light" } as React.CSSProperties} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <TimeSelect label="Inicio" value={form.startTime} onChange={v => setForm(f => ({ ...f, startTime: v }))} />
+              <TimeSelect label="Fin" value={form.endTime} onChange={v => setForm(f => ({ ...f, endTime: v }))} minTime={form.startTime} />
+            </div>
+
+            {/* Staff picker */}
+            {eventStaffMembers.length > 1 && (
+              <div>
+                <p className={labelCls} style={{ color: "rgba(13,27,42,0.4)" }}>Responsable</p>
+                <div className="flex flex-col gap-1.5">
+                  {eventStaffMembers.map(m => (
+                    <button key={m.id} type="button" onClick={() => setEventStaffId(m.id)}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all"
+                      style={eventStaffId === m.id
+                        ? { background: "rgba(201,168,76,0.1)", border: `1.5px solid ${GOLD}` }
+                        : { background: "rgba(13,27,42,0.04)", border: "1px solid rgba(13,27,42,0.1)" }}>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white flex-shrink-0"
+                        style={{ background: m.color }}>
+                        {m.name[0]}
+                      </div>
+                      <span className="text-sm font-bold" style={{ color: eventStaffId === m.id ? "#8a6520" : NAVY }}>{m.name}</span>
+                      {eventStaffId === m.id && <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(201,168,76,0.2)", color: GOLD }}>✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </>)}
 
           {/* Notas — siempre visible (en bloqueo sirve como "motivo") */}

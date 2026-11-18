@@ -17,12 +17,33 @@ const CATEGORY_LABEL: Record<string, string> = {
   courts: "🏟️ Canchas", store: "🛍️ Tienda", hydration: "💧 Hidratación", general: "🎁 General",
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }
+
 export default function LoyaltyCard({ params }: { params: Promise<{ clientId: string }> }) {
   const { clientId } = use(params)
   const [data, setData] = useState<ClientData | null>(null)
   const [qrUrl, setQrUrl] = useState("")
   const [error, setError] = useState("")
   const [tab, setTab] = useState<"card" | "benefits">("card")
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const [showIosModal, setShowIosModal] = useState(false)
+  const [installed, setInstalled] = useState(false)
+
+  useEffect(() => {
+    // Check if already running as PWA
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      setInstalled(true)
+    }
+
+    // Android/Chrome install prompt
+    const handler = (e: Event) => {
+      e.preventDefault()
+      setInstallPrompt(e as BeforeInstallPromptEvent)
+    }
+    window.addEventListener("beforeinstallprompt", handler)
+    return () => window.removeEventListener("beforeinstallprompt", handler)
+  }, [])
 
   useEffect(() => {
     fetch(`/api/loyalty/${clientId}`)
@@ -30,12 +51,27 @@ export default function LoyaltyCard({ params }: { params: Promise<{ clientId: st
       .then(d => {
         if (d.error) { setError(d.error); return }
         setData(d.client)
-        const url = `${window.location.origin}/loyalty/${clientId}`
+        const url = `${window.location.origin}/dashboard/loyalty?client=${clientId}`
         QRCode.toDataURL(url, { width: 280, margin: 2, color: { dark: "#0f172a", light: "#ffffff" } })
           .then(setQrUrl)
       })
       .catch(() => setError("Error al cargar"))
   }, [clientId])
+
+  async function handleInstall() {
+    if (installPrompt) {
+      await installPrompt.prompt()
+      const { outcome } = await installPrompt.userChoice
+      if (outcome === "accepted") setInstalled(true)
+      setInstallPrompt(null)
+      return
+    }
+    // iOS: show manual instructions
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
+    if (isIos) { setShowIosModal(true); return }
+    // Other browsers
+    setShowIosModal(true)
+  }
 
   if (error) return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950">
@@ -52,9 +88,60 @@ export default function LoyaltyCard({ params }: { params: Promise<{ clientId: st
   const pct = Math.min(100, Math.round((data.business.loyaltyVipThreshold > 0 ? data.loyaltyPoints / data.business.loyaltyVipThreshold : 1) * 100))
   const isVip = data.segment === "VIP"
   const firstName = data.name.split(" ")[0]
+  const isIos = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent)
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-slate-950 py-8 px-4">
+      {/* iOS install modal */}
+      {showIosModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-6"
+          style={{ background: "rgba(0,0,0,0.7)" }}
+          onClick={() => setShowIosModal(false)}>
+          <div className="w-full max-w-sm rounded-2xl p-5 space-y-4"
+            style={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)" }}
+            onClick={e => e.stopPropagation()}>
+            <p className="text-white font-black text-base text-center">Guardar en pantalla de inicio</p>
+            {isIos ? (
+              <div className="space-y-3">
+                {[
+                  { n: "1", text: "Toca el ícono de compartir", icon: "⬆️" },
+                  { n: "2", text: 'Baja y toca "Añadir a pantalla de inicio"', icon: "➕" },
+                  { n: "3", text: "Toca Agregar", icon: "✅" },
+                ].map(s => (
+                  <div key={s.n} className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
+                      style={{ background: accent, color: "#0f172a" }}>{s.n}</div>
+                    <span className="text-sm text-white/80">{s.icon} {s.text}</span>
+                  </div>
+                ))}
+                <p className="text-xs text-center mt-2" style={{ color: "rgba(255,255,255,0.3)" }}>
+                  Debe abrirse en Safari para funcionar
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {[
+                  { n: "1", text: "Toca los tres puntos (⋮) arriba a la derecha", icon: "⋮" },
+                  { n: "2", text: 'Toca "Añadir a pantalla de inicio"', icon: "➕" },
+                  { n: "3", text: "Confirma", icon: "✅" },
+                ].map(s => (
+                  <div key={s.n} className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
+                      style={{ background: accent, color: "#0f172a" }}>{s.n}</div>
+                    <span className="text-sm text-white/80">{s.icon} {s.text}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button onClick={() => setShowIosModal(false)}
+              className="w-full py-3 rounded-xl text-sm font-bold"
+              style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }}>
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-1 mb-6 rounded-xl p-1" style={{ background: "rgba(255,255,255,0.06)" }}>
         {(["card", "benefits"] as const).map(t => (
@@ -130,10 +217,23 @@ export default function LoyaltyCard({ params }: { params: Promise<{ clientId: st
             </p>
           </div>
 
-          {/* Install hint */}
-          <p className="text-center text-[11px]" style={{ color: "rgba(255,255,255,0.2)" }}>
-            💡 Agrega esta página a tu pantalla de inicio para acceso rápido
-          </p>
+          {/* Install button */}
+          {!installed && (
+            <button onClick={handleInstall}
+              className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2.5 text-sm font-bold"
+              style={{ background: `${accent}18`, border: `1.5px solid ${accent}44`, color: accent }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2v13M7 10l5 5 5-5"/><path d="M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/>
+              </svg>
+              Guardar en pantalla de inicio
+            </button>
+          )}
+
+          {installed && (
+            <p className="text-center text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
+              ✓ Ya guardada en tu pantalla de inicio
+            </p>
+          )}
         </div>
       )}
 

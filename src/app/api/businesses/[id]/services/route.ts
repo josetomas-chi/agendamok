@@ -14,6 +14,9 @@ const schema = z.object({
   requiresDeposit: z.boolean().default(false),
   bufferAfter: z.number().int().min(0).default(0),
   isActive: z.boolean().default(true),
+  isEvent: z.boolean().optional(),
+  eventIncludes: z.string().optional().nullable(),
+  eventCourtIds: z.array(z.string()).optional(),
 })
 
 async function getBusinessId(userId: string) {

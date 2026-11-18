@@ -13,7 +13,7 @@ import { signOut } from "next-auth/react"
 import { parseISO } from "date-fns"
 
 type BusinessBenefit = {
-  businessId: string; businessName: string; businessSlug: string
+  clientId: string; businessId: string; businessName: string; businessSlug: string
   businessCover: string | null; businessColor: string
   loyaltyEnabled: boolean
   loyaltyPoints: number; creditBalance: number; segment: string
@@ -1797,6 +1797,21 @@ export default function ProfileContent() {
                               </p>
                             </div>
                           )}
+
+                          {/* QR card button */}
+                          <a href={`/loyalty/${b.clientId}`}
+                            style={{
+                              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                              marginTop: 14, padding: "10px", borderRadius: 10, textDecoration: "none",
+                              background: "rgba(56,189,248,0.06)", border: `1px solid rgba(56,189,248,0.2)`,
+                              color: ACCENT, fontSize: 13, fontWeight: 700,
+                            }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                              <rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3M17 20h3M20 17v3"/>
+                            </svg>
+                            Ver mi tarjeta QR
+                          </a>
                         </div>
                       </div>
                     )

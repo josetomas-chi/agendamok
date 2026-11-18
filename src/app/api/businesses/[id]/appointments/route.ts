@@ -21,6 +21,7 @@ const schema = z.object({
   startTime: z.string(), // ISO string from browser (local timezone)
   notes: z.string().optional(),
   status: z.enum(["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED", "NO_SHOW"]).default("CONFIRMED"),
+  eventCourtIds: z.array(z.string()).optional(),
 })
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -232,6 +233,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }
     }
 
+    // Auto-block courts for event services
+    let eventCourtBookingIds: string[] = []
+    if (service.isEvent && (service.eventCourtIds as string[]).length > 0 && data.eventCourtIds?.length) {
+      const selectedCourts = data.eventCourtIds.filter((cid: string) => (service.eventCourtIds as string[]).includes(cid))
+      const blocks = await Promise.allSettled(
+        selectedCourts.map((courtId: string) =>
+          prisma.courtBooking.create({
+            data: { businessId: id, courtId, clientId, startTime, endTime, price: 0, status: "CONFIRMED", blockType: "BOOKING", notes: `Evento: ${service.name}` },
+            select: { id: true },
+          })
+        )
+      )
+      eventCourtBookingIds = blocks.flatMap(r => r.status === "fulfilled" ? [r.value.id] : [])
+    }
+
     const appointment = await prisma.appointment.create({
       data: {
         businessId: id,
@@ -244,9 +260,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         status: data.status,
         notes: data.notes,
         ...(appointmentPrice !== undefined && { price: appointmentPrice }),
+        ...(eventCourtBookingIds.length > 0 && { eventCourtBookingIds }),
       },
       include: {
-        service: { select: { name: true, color: true } },
+        service: { select: { name: true, color: true, isEvent: true, eventIncludes: true } },
         staff: { select: { id: true, color: true, user: { select: { name: true, image: true } } } },
         client: { select: { id: true, name: true, lastName: true, email: true, phone: true, rut: true } },
       },
