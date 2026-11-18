@@ -75,13 +75,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const service = await prisma.service.findUnique({ where: { id: data.serviceId } })
     if (!service) return NextResponse.json({ error: "Servicio no encontrado" }, { status: 404 })
 
-    // Resolve staffId: required unless it's an event service (auto-assign first staff)
+    // Resolve staffId: required unless it's an event service (auto-assign the booking user's staff record)
     let staffId = data.staffId
     if (!staffId) {
       if (!service.isEvent) return NextResponse.json({ error: "Staff requerido" }, { status: 400 })
-      const firstStaff = await prisma.staffMember.findFirst({ where: { businessId: id, deletedAt: null }, select: { id: true } })
-      if (!firstStaff) return NextResponse.json({ error: "No hay staff registrado en el negocio" }, { status: 400 })
-      staffId = firstStaff.id
+      const myStaff = await prisma.staffMember.findFirst({ where: { businessId: id, userId: session.user.id, deletedAt: null }, select: { id: true } })
+      const fallback = myStaff ?? await prisma.staffMember.findFirst({ where: { businessId: id, deletedAt: null }, select: { id: true } })
+      if (!fallback) return NextResponse.json({ error: "No hay staff registrado en el negocio" }, { status: 400 })
+      staffId = fallback.id
     }
 
     const startTime = new Date(data.startTime)
