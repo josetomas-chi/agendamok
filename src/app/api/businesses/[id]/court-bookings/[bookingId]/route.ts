@@ -274,6 +274,8 @@ export async function DELETE(req: Request, { params }: Params) {
 
   if (!silent && booking.client?.email) {
     const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
+    const isEventBlock = booking.notes?.startsWith("Evento:")
+    const eventName = isEventBlock ? booking.notes?.replace("Evento: ", "") : undefined
     sendCourtBookingCancellation({
       clientName: booking.client.name,
       clientEmail: booking.client.email,
@@ -281,6 +283,8 @@ export async function DELETE(req: Request, { params }: Params) {
       courtName: booking.court.name,
       startTime: booking.startTime.toISOString(),
       endTime: booking.endTime.toISOString(),
+      isEvent: isEventBlock,
+      eventName,
     }).catch(console.error)
   }
 

@@ -550,25 +550,29 @@ export async function sendCourtBookingConfirmation({
 }
 
 export async function sendCourtBookingCancellation({
-  clientName, clientEmail, businessName, courtName, startTime, endTime,
+  clientName, clientEmail, businessName, courtName, startTime, endTime, isEvent, eventName,
 }: {
   clientName: string; clientEmail: string; businessName: string
-  courtName: string; startTime: string; endTime: string
+  courtName: string; startTime: string; endTime: string; isEvent?: boolean; eventName?: string
 }) {
   if (!process.env.RESEND_API_KEY) return
   await resend.emails.send({
     from: FROM,
     to: clientEmail,
-    subject: `Reserva cancelada — ${businessName}`,
+    subject: `${isEvent ? "Evento cancelado" : "Reserva cancelada"} — ${businessName}`,
     html: base(`
-      <h1>Reserva cancelada</h1>
-      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu reserva en <strong style="color:#38bdf8">${businessName}</strong> ha sido cancelada.</p>
+      <h1>${isEvent ? "Evento cancelado ❌" : "Reserva cancelada"}</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu ${isEvent ? "evento" : "reserva"} en <strong style="color:#38bdf8">${businessName}</strong> ha sido cancelad${isEvent ? "o" : "a"}.</p>
       <div class="box">
-        <div class="row"><span class="label">Cancha</span><span class="value">${courtName}</span></div>
+        ${isEvent
+          ? `<div class="row"><span class="label">Evento</span><span class="value">${eventName || courtName}</span></div>`
+          : `<div class="row"><span class="label">Cancha</span><span class="value">${courtName}</span></div>`}
         <div class="row"><span class="label">Fecha</span><span class="value">${fmtCourtDate(startTime)}</span></div>
         <div class="row"><span class="label">Horario</span><span class="value">${fmtCourtTime(startTime)} – ${fmtCourtTime(endTime)} hrs</span></div>
       </div>
-      <p class="subtitle" style="margin-top:16px;font-size:13px">Si crees que esto es un error, contacta directamente a ${businessName}.</p>
+      ${isEvent
+        ? `<p style="text-align:center;color:rgba(255,255,255,0.5);font-size:14px;margin:20px 0 4px">¡Esperamos verte pronto en ${businessName}! 👋</p>`
+        : `<p class="subtitle" style="margin-top:16px;font-size:13px">Si crees que esto es un error, contacta directamente a ${businessName}.</p>`}
     `),
   })
 }
