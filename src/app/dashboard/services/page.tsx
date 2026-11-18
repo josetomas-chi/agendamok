@@ -307,7 +307,7 @@ export default function ServicesPage() {
               {courts.length > 0 && (
                 <div>
                   <Label className="text-xs">Canchas disponibles para este evento</Label>
-                  <div className="flex flex-col gap-1 mt-1 max-h-48 overflow-y-auto pr-1">
+                  <div className="flex flex-col gap-1 mt-1 max-h-32 overflow-y-auto pr-1">
                     {courts.map(c => {
                       const checked = form.eventCourtIds.includes(c.id)
                       return (
