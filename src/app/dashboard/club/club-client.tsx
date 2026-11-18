@@ -850,18 +850,19 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                         style={{
                           height: SLOT_HEIGHT,
                           borderBottom: slot.endsWith(":00") ? `1px solid rgba(13,27,42,0.06)` : `2px solid rgba(13,27,42,0.35)`,
-                          background: isDropOver ? "rgba(201,168,76,0.12)" : !slotAvailable && courtAvailable ? "rgba(13,27,42,0.055)" : "transparent",
+                          background: isDropOver ? "rgba(201,168,76,0.12)" : !slotAvailable && courtAvailable ? "#edf0f4" : "transparent",
                         }}
                         onMouseEnter={e => { if (slotAvailable && !customDragRef.current) (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.07)" }}
-                        onMouseLeave={e => { if (!customDragRef.current) (e.currentTarget as HTMLElement).style.background = !slotAvailable && courtAvailable ? "rgba(13,27,42,0.055)" : "transparent" }}
+                        onMouseLeave={e => { if (!customDragRef.current) (e.currentTarget as HTMLElement).style.background = !slotAvailable && courtAvailable ? "#edf0f4" : "transparent" }}
                       />
                     )
                   })}
                   {/* Unavailable day overlay */}
                   {!courtAvailable && (
                     <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
-                      style={{ background: "rgba(13,27,42,0.055)" }}>
-                      <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full" style={{ color: "rgba(13,27,42,0.35)", background: "rgba(255,255,255,0.75)", letterSpacing: "0.12em" }}>
+                      style={{ background: "#edf0f4" }}>
+                      <span className="text-[10px] font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full"
+                        style={{ color: "#8a93a0", background: "#d6dce5", letterSpacing: "0.14em" }}>
                         No disponible
                       </span>
                     </div>
