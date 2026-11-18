@@ -187,8 +187,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     if (!clientId) return NextResponse.json({ error: "Cliente requerido" }, { status: 400 })
 
-    // Check if the client already has an overlapping appointment (any staff)
-    const clientConflict = await prisma.appointment.count({
+    // Check if the client already has an overlapping appointment (skip for events — receptionist manages)
+    const clientConflict = service.isEvent ? 0 : await prisma.appointment.count({
       where: {
         clientId,
         deletedAt: null,
