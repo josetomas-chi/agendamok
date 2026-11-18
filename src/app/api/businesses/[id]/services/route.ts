@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { hasBusinessAccess } from "@/lib/business-access"
 import { z } from "zod"
 
 const schema = z.object({
@@ -14,6 +15,7 @@ const schema = z.object({
   requiresDeposit: z.boolean().default(false),
   bufferAfter: z.number().int().min(0).default(0),
   isActive: z.boolean().default(true),
+  capacity: z.number().int().min(1).optional(),
   isEvent: z.boolean().optional(),
   eventIncludes: z.string().optional().nullable(),
   eventCourtIds: z.array(z.string()).optional(),
@@ -47,8 +49,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   const { id } = await params
-  const businessId = await getBusinessId(session.user.id)
-  if (businessId !== id) return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  if (!(await hasBusinessAccess(id, session.user.id))) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+  }
 
   try {
     const body = await req.json()
