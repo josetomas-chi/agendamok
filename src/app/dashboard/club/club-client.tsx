@@ -850,18 +850,18 @@ function CourtCalendar({ courts, bookings, selectedDate, onDateChange, onSlotCli
                         style={{
                           height: SLOT_HEIGHT,
                           borderBottom: slot.endsWith(":00") ? `1px solid rgba(13,27,42,0.06)` : `2px solid rgba(13,27,42,0.35)`,
-                          background: isDropOver ? "rgba(201,168,76,0.12)" : !slotAvailable && courtAvailable ? "repeating-linear-gradient(45deg,rgba(13,27,42,0.04) 0px,rgba(13,27,42,0.04) 3px,transparent 3px,transparent 8px)" : "transparent",
+                          background: isDropOver ? "rgba(201,168,76,0.12)" : !slotAvailable && courtAvailable ? "rgba(13,27,42,0.055)" : "transparent",
                         }}
                         onMouseEnter={e => { if (slotAvailable && !customDragRef.current) (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.07)" }}
-                        onMouseLeave={e => { if (!customDragRef.current) (e.currentTarget as HTMLElement).style.background = !slotAvailable && courtAvailable ? "repeating-linear-gradient(45deg,rgba(13,27,42,0.04) 0px,rgba(13,27,42,0.04) 3px,transparent 3px,transparent 8px)" : "transparent" }}
+                        onMouseLeave={e => { if (!customDragRef.current) (e.currentTarget as HTMLElement).style.background = !slotAvailable && courtAvailable ? "rgba(13,27,42,0.055)" : "transparent" }}
                       />
                     )
                   })}
                   {/* Unavailable day overlay */}
                   {!courtAvailable && (
                     <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
-                      style={{ background: "repeating-linear-gradient(45deg,rgba(13,27,42,0.03) 0px,rgba(13,27,42,0.03) 4px,transparent 4px,transparent 10px)" }}>
-                      <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded" style={{ color: "rgba(13,27,42,0.25)", background: "rgba(255,255,255,0.8)" }}>
+                      style={{ background: "rgba(13,27,42,0.055)" }}>
+                      <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full" style={{ color: "rgba(13,27,42,0.35)", background: "rgba(255,255,255,0.75)", letterSpacing: "0.12em" }}>
                         No disponible
                       </span>
                     </div>
