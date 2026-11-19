@@ -1032,7 +1032,7 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
           </div>
 
           {/* Results — hidden when Eventos tab is active */}
-          {selectedSports[0] === "__eventos__" ? null : /* Results */
+          {selectedSports[0] !== "__eventos__" && (
           <div className="mt-5 space-y-3">
             {searching && (
               <div className="flex items-center justify-center gap-2 py-10" style={{ color: "rgba(255,255,255,0.3)" }}>
@@ -1150,7 +1150,8 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
             )}
 
           </div>
-        </div>}
+          )}
+        </div>
       )}
 
       {/* ── EVENTS SECTION (legacy — now shown in Eventos tab) ─── */}
