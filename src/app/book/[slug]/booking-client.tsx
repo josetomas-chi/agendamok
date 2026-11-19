@@ -831,39 +831,39 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
 
       {/* ── HEADER AgendaMok Sports ────────────────────── */}
       <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: `1px solid ${SPORTS_BORDER}`, background: "rgba(13,27,42,0.95)", backdropFilter: "blur(12px)" }}>
-        <div className="flex items-center gap-2">
-          <img src="/agendamok-icon.png" alt="AgendaMok" className="w-8 h-8 flex-shrink-0" />
-          <div className="flex items-baseline gap-0.5">
-            <span className="text-sm font-black text-white">Agenda</span>
-            <span className="text-sm font-black" style={{ color: SPORTS_ACCENT }}>Mok</span>
+        {/* Logo + Sports badge stacked */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <img src="/agendamok-icon.png" alt="AgendaMok" className="w-7 h-7 flex-shrink-0" />
+          <div className="flex flex-col leading-none">
+            <div className="flex items-baseline gap-0.5">
+              <span className="text-sm font-black text-white">Agenda</span>
+              <span className="text-sm font-black" style={{ color: SPORTS_ACCENT }}>Mok</span>
+            </div>
+            <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: SPORTS_ACCENT }}>Sports</span>
           </div>
-          <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: "rgba(56,189,248,0.12)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>Sports</span>
         </div>
-        <div className="flex items-center gap-3">
+        {/* Right: WhatsApp phone + Mis reservas */}
+        <div className="flex items-center gap-2 min-w-0">
           {business.phone && (
-            <a href={`tel:${business.phone}`} className="flex items-center gap-1 text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
-              <Phone className="w-3 h-3" /> {business.phone}
+            <a href={`https://wa.me/${business.phone.replace(/\D/g, "")}`}
+              className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-full flex-shrink-0"
+              style={{ background: "rgba(37,211,102,0.12)", color: "#25D366", border: "1px solid rgba(37,211,102,0.25)" }}>
+              {/* WhatsApp icon */}
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              {business.phone}
             </a>
           )}
           {!isLoggedIn && (
             <button
               onClick={() => { setShowMyBookings(true); setMyBookings(null); const r = rut.replace(/[^0-9kK]/gi, ""); setMyBookingsRut(r); if (r) fetchMyBookings(r) }}
-              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all"
+              className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-full flex-shrink-0"
               style={{ background: "rgba(56,189,248,0.10)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>
               <Calendar className="w-3 h-3" /> Mis reservas
             </button>
           )}
-          {!isLoggedIn && (
-            <a href={`/login?callbackUrl=${encodeURIComponent(`/book/${slug}`)}`}
-              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all"
-              style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.10)" }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-              Ingresar
-            </a>
-          )}
           {isLoggedIn && (
-            <a href="/profile" className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all" style={{ background: "rgba(56,189,248,0.12)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            <a href="/profile" className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-full flex-shrink-0" style={{ background: "rgba(56,189,248,0.12)", color: SPORTS_ACCENT, border: `1px solid ${SPORTS_BORDER}` }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
               Mi perfil
             </a>
           )}
@@ -910,13 +910,13 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
           {/* Search card */}
           <div className="rounded-2xl p-4 mt-4 space-y-4" style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}` }}>
 
-            {/* Sport tabs */}
-            {sports.length > 1 && (
+            {/* Sport tabs — always show if there are events or multiple sports */}
+            {(sports.length > 1 || eventServices.length > 0) && (
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: SPORTS_ACCENT }}>Deporte</p>
                 <div className="flex gap-2 flex-wrap">
                   {sports.map(s => {
-                    const active = selectedSports.includes(s)
+                    const active = selectedSports.includes(s) && selectedSports[0] !== "__eventos__"
                     return (
                       <button key={s} onClick={() => setSelectedSports([s])}
                         className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
@@ -927,12 +927,21 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                       </button>
                     )
                   })}
+                  {eventServices.length > 0 && (
+                    <button onClick={() => setSelectedSports(["__eventos__"])}
+                      className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
+                      style={selectedSports[0] === "__eventos__"
+                        ? { background: "#6366f1", color: "#fff" }
+                        : { background: "rgba(99,102,241,0.12)", color: "rgba(165,180,252,0.8)", border: "1px solid rgba(99,102,241,0.3)" }}>
+                      🎉 Eventos
+                    </button>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Duration selector */}
-            {availableDurations.length > 1 && (
+            {/* Duration selector — hidden when Eventos tab is active */}
+            {selectedSports[0] !== "__eventos__" && availableDurations.length > 1 && (
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: SPORTS_ACCENT }}>Duración</p>
                 <div className="flex gap-2">
@@ -949,8 +958,31 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
               </div>
             )}
 
-            {/* Date picker */}
-            <div>
+            {/* Event cards — shown inline when Eventos tab is active */}
+            {selectedSports[0] === "__eventos__" && (
+              <div className="space-y-3 mt-1">
+                {eventServices.map(evt => (
+                  <button key={evt.id} onClick={() => { setSelectedEvent(evt); setStep("event-form"); window.scrollTo({ top: 0, behavior: "smooth" }) }}
+                    className="w-full text-left rounded-2xl p-4 transition-all"
+                    style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)" }}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-semibold text-white text-sm">{evt.name}</p>
+                        {evt.description && <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>{evt.description}</p>}
+                        {evt.eventIncludes && <p className="text-xs mt-1.5" style={{ color: "rgba(165,180,252,0.8)" }}>✦ {evt.eventIncludes}</p>}
+                      </div>
+                      <div className="text-right shrink-0">
+                        {evt.price && <p className="text-sm font-bold" style={{ color: "#a5b4fc" }}>${Number(evt.price).toLocaleString("es-CL")}</p>}
+                        <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>{evt.duration} min</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Date picker — hidden when Eventos tab is active */}
+            {selectedSports[0] !== "__eventos__" && <div>
               <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: SPORTS_ACCENT }}>Fecha</p>
               <div className="flex items-center gap-2 mb-2">
                 <button onClick={() => setWeekOffset(w => Math.max(0, w - 1))} disabled={weekOffset === 0}
@@ -995,11 +1027,12 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
                   )
                 })}
               </div>
-            </div>
+            </div>}
 
           </div>
 
-          {/* Results */}
+          {/* Results — hidden when Eventos tab is active */}
+          {selectedSports[0] === "__eventos__" ? null : /* Results */
           <div className="mt-5 space-y-3">
             {searching && (
               <div className="flex items-center justify-center gap-2 py-10" style={{ color: "rgba(255,255,255,0.3)" }}>
@@ -1117,11 +1150,11 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
             )}
 
           </div>
-        </div>
+        </div>}
       )}
 
-      {/* ── EVENTS SECTION ─────────────────────────────── */}
-      {(step === "home" || step === "court") && eventServices.length > 0 && (
+      {/* ── EVENTS SECTION (legacy — now shown in Eventos tab) ─── */}
+      {false && (step === "home" || step === "court") && eventServices.length > 0 && (
         <div className="max-w-lg mx-auto px-4 pb-4">
           <p className="text-[10px] font-bold uppercase tracking-widest mb-3 mt-2" style={{ color: SPORTS_ACCENT }}>Eventos disponibles</p>
           <div className="space-y-3">
