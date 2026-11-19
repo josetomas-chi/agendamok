@@ -32,6 +32,7 @@ async function getFullBusiness(slug: string) {
       services: {
         where: { isActive: true, deletedAt: null },
         select: { id: true, name: true, description: true, duration: true, price: true, color: true, categoryId: true,
+          isEvent: true, eventIncludes: true,
           category: { select: { id: true, name: true, order: true } } },
         orderBy: [{ category: { order: "asc" } }, { name: "asc" }],
       },

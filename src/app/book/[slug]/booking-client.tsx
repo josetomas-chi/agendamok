@@ -14,6 +14,7 @@ type Category = { id: string; name: string; order: number }
 type Service = {
   id: string; name: string; description: string | null; duration: number
   price: number; color: string; categoryId: string | null; category: Category | null
+  isEvent?: boolean; eventIncludes?: string | null
 }
 type Staff = {
   id: string; color: string; specialty: string | null; bio: string | null
@@ -37,7 +38,7 @@ type Business = {
 }
 
 type Step = "home" | "staff" | "datetime" | "form" | "confirmed"
-type CourtStep = "home" | "court" | "datetime" | "form" | "confirmed"
+type CourtStep = "home" | "court" | "datetime" | "form" | "confirmed" | "event-form" | "event-confirmed"
 type PayMethod = "online" | "local" | "mp"
 
 // ── Bank details card with copy buttons ───────────────────────────────────
@@ -508,6 +509,11 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
   const [step, setStep] = useState<CourtStep>("home")
   const [pressingSlot, setPressingSlot] = useState<string | null>(null) // courtId-slotTime
 
+  // Event booking state
+  const eventServices = business.services.filter(s => s.isEvent)
+  const [selectedEvent, setSelectedEvent] = useState<Service | null>(null)
+  const [eventSubmitting, setEventSubmitting] = useState(false)
+
   function selectSlot(court: CourtResult, slot: { time: string; price: number; paymentPlayers: number; duration: number }) {
     const key = `${court.id}-${slot.time}`
     setPressingSlot(key)
@@ -644,6 +650,32 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, selectedCourt, selectedSlot])
+
+  async function handleEventConfirm() {
+    if (!selectedEvent || !form.name || !form.email) return
+    setEventSubmitting(true)
+    try {
+      const r = await fetch(`/api/book/${slug}/event`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          serviceId: selectedEvent.id,
+          clientName: form.name,
+          clientEmail: form.email,
+          clientPhone: form.phone || undefined,
+          notes: form.notes || undefined,
+        }),
+      })
+      const d = await r.json()
+      if (!r.ok) { alert(d.error || "Error al confirmar"); setEventSubmitting(false); return }
+      setStep("event-confirmed")
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    } catch {
+      alert("Error inesperado. Intenta nuevamente.")
+    } finally {
+      setEventSubmitting(false)
+    }
+  }
 
   async function handleConfirm() {
     if (!selectedCourt || !selectedSlot || !form.name || !form.email) return
@@ -1085,6 +1117,117 @@ function CourtBookingFlow({ business, slug, initialClient }: { business: Busines
             )}
 
           </div>
+        </div>
+      )}
+
+      {/* ── EVENTS SECTION ─────────────────────────────── */}
+      {(step === "home" || step === "court") && eventServices.length > 0 && (
+        <div className="max-w-lg mx-auto px-4 pb-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-3 mt-2" style={{ color: SPORTS_ACCENT }}>Eventos disponibles</p>
+          <div className="space-y-3">
+            {eventServices.map(svc => (
+              <div key={svc.id} className="rounded-2xl overflow-hidden" style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}` }}>
+                <div className="h-1 w-full" style={{ background: svc.color || "#6366f1" }} />
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3 mb-1">
+                    <p className="font-bold text-sm text-white leading-tight">{svc.name}</p>
+                    {svc.price > 0 && <p className="text-sm font-bold flex-shrink-0" style={{ color: SPORTS_ACCENT }}>${svc.price.toLocaleString("es-CL")}</p>}
+                  </div>
+                  {svc.description && <p className="text-[11px] leading-snug mb-2" style={{ color: "rgba(255,255,255,0.45)" }}>{svc.description}</p>}
+                  {svc.eventIncludes && (
+                    <div className="rounded-xl px-3 py-2 mb-3 text-[11px] leading-relaxed" style={{ background: "rgba(99,102,241,0.12)", color: "rgba(255,255,255,0.6)", whiteSpace: "pre-line" }}>
+                      {svc.eventIncludes}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => { setSelectedEvent(svc); setStep("event-form"); window.scrollTo({ top: 0, behavior: "smooth" }) }}
+                    className="w-full py-2.5 rounded-xl text-sm font-bold transition-all"
+                    style={{ background: svc.color || "#6366f1", color: "#fff" }}>
+                    Consultar / Reservar →
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── EVENT FORM ──────────────────────────────────── */}
+      {step === "event-form" && selectedEvent && (
+        <div className="_slide-up max-w-lg mx-auto w-full overflow-x-hidden">
+          <div className="sticky top-0 z-20 px-4 py-3 flex items-center gap-3" style={{ background: `${SPORTS_BG}ee`, backdropFilter: "blur(12px)", borderBottom: `1px solid ${SPORTS_BORDER}` }}>
+            <button onClick={() => setStep("home")} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
+              style={{ background: "rgba(99,102,241,0.15)", color: "#a5b4fc" }}>
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold truncate text-white">{selectedEvent.name}</p>
+              <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>{selectedEvent.duration} min · {selectedEvent.price > 0 ? `$${selectedEvent.price.toLocaleString("es-CL")}` : "Consultar precio"}</p>
+            </div>
+          </div>
+          <div className="px-4 pb-10 pt-5 space-y-4">
+            {selectedEvent.eventIncludes && (
+              <div className="rounded-2xl p-4" style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.3)" }}>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "#a5b4fc" }}>Incluye</p>
+                <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.7)", whiteSpace: "pre-line" }}>{selectedEvent.eventIncludes}</p>
+              </div>
+            )}
+            <div className="rounded-2xl p-4 space-y-3" style={{ background: SPORTS_CARD, border: `1px solid ${SPORTS_BORDER}` }}>
+              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: SPORTS_ACCENT }}>Tus datos</p>
+              <div>
+                <p className="text-xs mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>Nombre *</p>
+                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Tu nombre completo"
+                  className="w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none"
+                  style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${SPORTS_BORDER}` }} />
+              </div>
+              <div>
+                <p className="text-xs mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>Email *</p>
+                <input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="tu@email.com" type="email"
+                  className="w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none"
+                  style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${SPORTS_BORDER}` }} />
+              </div>
+              <div>
+                <p className="text-xs mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>Teléfono</p>
+                <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+56 9 1234 5678"
+                  className="w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none"
+                  style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${SPORTS_BORDER}` }} />
+              </div>
+              <div>
+                <p className="text-xs mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>Notas (fecha deseada, cantidad de personas, etc.)</p>
+                <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} placeholder="Ej: Sábado 29 de noviembre, 20 personas..."
+                  className="w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none resize-none"
+                  style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${SPORTS_BORDER}` }} />
+              </div>
+            </div>
+            <button onClick={handleEventConfirm} disabled={eventSubmitting || !form.name || !form.email}
+              className="w-full py-3.5 rounded-2xl text-sm font-bold transition-all disabled:opacity-50"
+              style={{ background: selectedEvent.color || "#6366f1", color: "#fff" }}>
+              {eventSubmitting ? "Enviando..." : "Enviar solicitud →"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── EVENT CONFIRMED ─────────────────────────────── */}
+      {step === "event-confirmed" && selectedEvent && (
+        <div className="_slide-up max-w-lg mx-auto w-full px-4 pt-10 pb-24 text-center">
+          <div className="text-5xl mb-4">🎉</div>
+          <h2 className="text-xl font-bold text-white mb-2">¡Solicitud enviada!</h2>
+          <p className="text-sm mb-6" style={{ color: "rgba(255,255,255,0.5)" }}>
+            Hemos recibido tu solicitud para <strong className="text-white">{selectedEvent.name}</strong>. Te contactaremos a <strong className="text-white">{form.email}</strong> para confirmar los detalles.
+          </p>
+          {business.phone && (
+            <a href={`https://wa.me/${business.phone.replace(/\D/g, "")}`}
+              className="inline-block w-full py-3 rounded-2xl text-sm font-bold mb-3"
+              style={{ background: "#25D366", color: "#fff" }}>
+              💬 Consultar por WhatsApp
+            </a>
+          )}
+          <button onClick={() => { setStep("home"); setSelectedEvent(null) }}
+            className="w-full py-3 rounded-2xl text-sm font-semibold"
+            style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }}>
+            Volver al inicio
+          </button>
         </div>
       )}
 
