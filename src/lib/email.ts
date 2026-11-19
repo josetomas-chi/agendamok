@@ -57,11 +57,11 @@ function base(content: string) {
 
 export async function sendBookingConfirmation({
   clientName, clientEmail, businessName,
-  serviceName, staffName, date, time, duration, cancelUrl, startTimeISO, isEvent, eventIncludes,
+  serviceName, staffName, date, time, duration, cancelUrl, startTimeISO, isEvent, eventIncludes, businessPhone,
 }: {
   clientName: string; clientEmail: string; businessName: string
   serviceName: string; staffName: string; date: string; time: string; duration: number
-  cancelUrl?: string; startTimeISO?: string; isEvent?: boolean; eventIncludes?: string | null
+  cancelUrl?: string; startTimeISO?: string; isEvent?: boolean; eventIncludes?: string | null; businessPhone?: string | null
 }) {
   if (!process.env.RESEND_API_KEY) return
 
@@ -99,6 +99,12 @@ export async function sendBookingConfirmation({
       <div style="text-align:center;margin:24px 0 8px">
         <a href="${gcalUrl}" style="display:inline-block;background:#38bdf8;color:#0c1a2e;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;letter-spacing:0.01em">
           📅 Agregar a Google Calendar
+        </a>
+      </div>` : ""}
+      ${isEvent && businessPhone ? `
+      <div style="text-align:center;margin:12px 0 8px">
+        <a href="https://wa.me/${businessPhone.replace(/\D/g, "")}" style="display:inline-block;background:#25D366;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;letter-spacing:0.01em">
+          💬 Consultar por WhatsApp
         </a>
       </div>` : ""}
       <hr class="divider"/>
@@ -550,12 +556,13 @@ export async function sendCourtBookingConfirmation({
 }
 
 export async function sendCourtBookingCancellation({
-  clientName, clientEmail, businessName, courtName, startTime, endTime, isEvent, eventName,
+  clientName, clientEmail, businessName, courtName, startTime, endTime, isEvent, eventName, businessPhone,
 }: {
   clientName: string; clientEmail: string; businessName: string
-  courtName: string; startTime: string; endTime: string; isEvent?: boolean; eventName?: string
+  courtName: string; startTime: string; endTime: string; isEvent?: boolean; eventName?: string; businessPhone?: string | null
 }) {
   if (!process.env.RESEND_API_KEY) return
+  const waLink = businessPhone ? `https://wa.me/${businessPhone.replace(/\D/g, "")}` : null
   await resend.emails.send({
     from: FROM,
     to: clientEmail,
@@ -571,33 +578,41 @@ export async function sendCourtBookingCancellation({
         <div class="row"><span class="label">Horario</span><span class="value">${fmtCourtTime(startTime)} – ${fmtCourtTime(endTime)} hrs</span></div>
       </div>
       ${isEvent
-        ? `<p style="text-align:center;color:rgba(255,255,255,0.5);font-size:14px;margin:20px 0 4px">¡Esperamos verte pronto en ${businessName}! 👋</p>`
+        ? waLink
+          ? `<div style="text-align:center;margin:20px 0 8px"><a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;letter-spacing:0.01em">💬 Consultar por WhatsApp</a></div>`
+          : `<p style="text-align:center;color:rgba(255,255,255,0.5);font-size:14px;margin:20px 0 4px">¡Esperamos verte pronto en ${businessName}! 👋</p>`
         : `<p class="subtitle" style="margin-top:16px;font-size:13px">Si crees que esto es un error, contacta directamente a ${businessName}.</p>`}
     `),
   })
 }
 
 export async function sendCourtBookingModification({
-  clientName, clientEmail, businessName, courtName, startTime, endTime, price,
+  clientName, clientEmail, businessName, courtName, startTime, endTime, price, isEvent, eventName, businessPhone,
 }: {
   clientName: string; clientEmail: string; businessName: string
   courtName: string; startTime: string; endTime: string; price: number
+  isEvent?: boolean; eventName?: string; businessPhone?: string | null
 }) {
   if (!process.env.RESEND_API_KEY) return
+  const waLink = businessPhone ? `https://wa.me/${businessPhone.replace(/\D/g, "")}` : null
   await resend.emails.send({
     from: FROM,
     to: clientEmail,
-    subject: `Reserva modificada — ${businessName}`,
+    subject: `${isEvent ? "Evento modificado" : "Reserva modificada"} — ${businessName}`,
     html: base(`
-      <h1>Reserva modificada ✓</h1>
-      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu reserva en <strong style="color:#38bdf8">${businessName}</strong> fue actualizada.</p>
+      <h1>${isEvent ? "Evento modificado 📅" : "Reserva modificada ✓"}</h1>
+      <p class="subtitle">Hola <strong style="color:#fff">${clientName}</strong>, tu ${isEvent ? "evento" : "reserva"} en <strong style="color:#38bdf8">${businessName}</strong> fue actualizado.</p>
       <div class="box">
-        <div class="row"><span class="label">Cancha</span><span class="value">${courtName}</span></div>
+        <div class="row"><span class="label">${isEvent ? "Evento" : "Cancha"}</span><span class="value">${isEvent ? (eventName || courtName) : courtName}</span></div>
         <div class="row"><span class="label">Nueva fecha</span><span class="value">${fmtCourtDate(startTime)}</span></div>
         <div class="row"><span class="label">Nuevo horario</span><span class="value">${fmtCourtTime(startTime)} – ${fmtCourtTime(endTime)} hrs</span></div>
-        <div class="row"><span class="label">Precio</span><span class="value">$${price.toLocaleString("es-CL")}</span></div>
+        ${!isEvent ? `<div class="row"><span class="label">Precio</span><span class="value">$${price.toLocaleString("es-CL")}</span></div>` : ""}
       </div>
-      <p class="subtitle" style="margin-top:16px;font-size:13px">Si tienes alguna duda, contacta directamente a ${businessName}.</p>
+      ${waLink
+        ? `<div style="text-align:center;margin:24px 0 8px"><a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;letter-spacing:0.01em">💬 Consultar por WhatsApp</a></div>`
+        : businessPhone
+          ? `<p class="subtitle" style="margin-top:16px;font-size:13px;text-align:center">¿Tienes dudas? Llámanos al <strong style="color:#fff">${businessPhone}</strong></p>`
+          : `<p class="subtitle" style="margin-top:16px;font-size:13px">Si tienes alguna duda, contacta directamente a ${businessName}.</p>`}
     `),
   })
 }

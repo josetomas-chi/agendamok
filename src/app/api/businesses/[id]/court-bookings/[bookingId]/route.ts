@@ -234,7 +234,9 @@ export async function PATCH(req: Request, { params }: Params) {
     // Email de modificación si cambió horario/cancha y hay cliente con email
     const timeChanged = startTime !== undefined || endTime !== undefined || courtId !== undefined
     if (timeChanged && booking.client?.email && status === undefined) {
-      const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
+      const business = await prisma.business.findUnique({ where: { id }, select: { name: true, phone: true } })
+      const isEventBlock = booking.notes?.startsWith("Evento:")
+      const eventName = isEventBlock ? booking.notes?.replace("Evento: ", "") : undefined
       sendCourtBookingModification({
         clientName: booking.client.name,
         clientEmail: booking.client.email,
@@ -243,6 +245,9 @@ export async function PATCH(req: Request, { params }: Params) {
         startTime: booking.startTime.toISOString(),
         endTime: booking.endTime.toISOString(),
         price: Number(booking.price),
+        isEvent: isEventBlock,
+        eventName,
+        businessPhone: business?.phone ?? null,
       }).catch(console.error)
     }
 
@@ -273,7 +278,7 @@ export async function DELETE(req: Request, { params }: Params) {
   }).catch(() => {})
 
   if (!silent && booking.client?.email) {
-    const business = await prisma.business.findUnique({ where: { id }, select: { name: true } })
+    const business = await prisma.business.findUnique({ where: { id }, select: { name: true, phone: true } })
     const isEventBlock = booking.notes?.startsWith("Evento:")
     const eventName = isEventBlock ? booking.notes?.replace("Evento: ", "") : undefined
     sendCourtBookingCancellation({
@@ -285,6 +290,7 @@ export async function DELETE(req: Request, { params }: Params) {
       endTime: booking.endTime.toISOString(),
       isEvent: isEventBlock,
       eventName,
+      businessPhone: business?.phone ?? null,
     }).catch(console.error)
   }
 

@@ -259,7 +259,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // Send emails after response
     const business = await prisma.business.findUnique({
       where: { id },
-      select: { name: true, ownerId: true, owner: { select: { email: true } } },
+      select: { name: true, ownerId: true, phone: true, owner: { select: { email: true } } },
     })
     const staffUser = staffId ? await prisma.staffMember.findUnique({
       where: { id: staffId },
@@ -284,6 +284,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           startTimeISO: startTime.toISOString(),
           isEvent: appointment.service.isEvent ?? false,
           eventIncludes: appointment.service.eventIncludes ?? undefined,
+          businessPhone: business?.phone ?? null,
         }) : Promise.resolve(),
         staffEmail && staffEmail !== business?.owner?.email ? sendStaffBookingAlert({
           staffEmail,
