@@ -13,6 +13,7 @@ type Stats = {
   monthStats: { total: number; completed: number; cancelled: number; noShow: number; revenue: number; occupancyRate: number; noShowRate: number }
   topServices: { name: string; count: number }[]
   topClients: { name: string; visits: number }[]
+  revenueByS: { sport: string; revenue: number }[]
 }
 
 const COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"]
@@ -225,6 +226,32 @@ export default function ReportsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Revenue by sport */}
+      {data?.revenueByS && data.revenueByS.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Ingresos por deporte</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={data.revenueByS} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 12 }} axisLine={false} tickLine={false}
+                  tickFormatter={v => `$${Number(v).toLocaleString("es-CL")}`} />
+                <YAxis type="category" dataKey="sport" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={90} />
+                <Tooltip
+                  formatter={(v) => [`$${Number(v).toLocaleString("es-CL")}`, "Ingresos"]}
+                  contentStyle={{ background: "#1a1a1e", border: "1px solid #3a3a3c", borderRadius: 8, color: "#38bdf8" }}
+                  labelStyle={{ color: "#a1a1aa" }}
+                  cursor={{ fill: "#ffffff08" }}
+                />
+                <Bar dataKey="revenue" radius={[0, 6, 6, 0]}>
+                  {data.revenueByS.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Pie chart */}

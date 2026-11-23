@@ -101,6 +101,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     ...(noCoachCount > 0 ? [{ name: "Reserva de cancha", count: noCoachCount }] : []),
   ].sort((a, b) => b.count - a.count).slice(0, 5)
 
+  // Revenue by sport (court bookings in period with price > 0)
+  const courtBookingsWithSport = await prisma.courtBooking.findMany({
+    where: { businessId: id, deletedAt: null, status: "COMPLETED", startTime: { gte: monthStart, lte: monthEnd } },
+    select: { price: true, court: { select: { sport: true } } },
+  })
+  const sportRevenueMap = new Map<string, number>()
+  for (const b of courtBookingsWithSport) {
+    const sport = b.court?.sport || "Sin deporte"
+    sportRevenueMap.set(sport, (sportRevenueMap.get(sport) ?? 0) + Number(b.price))
+  }
+  const revenueByS = [...sportRevenueMap.entries()]
+    .map(([sport, revenue]) => ({ sport, revenue }))
+    .sort((a, b) => b.revenue - a.revenue)
+
   // Top clients (appointments + court bookings)
   const [apptClientRows, courtClientRows] = await Promise.all([
     prisma.appointment.findMany({
@@ -138,5 +152,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     },
     topServices: allServiceRows,
     topClients: topClientsWithNames,
+    revenueByS,
   })
 }
