@@ -83,7 +83,7 @@ export function calcCourtPrice(
   start: Date,
   end: Date,
   holiday?: Holiday | null,
-  useUTC = false,
+  useUTC = true,
 ): number {
   const getHours   = useUTC ? (d: Date) => d.getUTCHours()   : (d: Date) => d.getHours()
   const getMinutes = useUTC ? (d: Date) => d.getUTCMinutes() : (d: Date) => d.getMinutes()
