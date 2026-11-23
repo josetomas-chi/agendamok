@@ -62,35 +62,70 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const cancelled = cancelledAppts + cancelledCourt
   const noShow = noShowAppts
 
-  // Top services
-  const topServices = await prisma.appointment.groupBy({
+  // Top services (appointments + court bookings via coach name)
+  const topApptServices = await prisma.appointment.groupBy({
     by: ["serviceId"],
-    where: { businessId: id, deletedAt: null, status: "COMPLETED", startTime: { gte: monthStart } },
+    where: { businessId: id, deletedAt: null, status: "COMPLETED", startTime: { gte: monthStart, lte: monthEnd } },
     _count: { id: true },
     orderBy: { _count: { id: "desc" } },
     take: 5,
   })
+  const topCourtServices = await prisma.courtBooking.groupBy({
+    by: ["coachId"],
+    where: { businessId: id, deletedAt: null, status: "COMPLETED", startTime: { gte: monthStart, lte: monthEnd }, coachId: { not: null } },
+    _count: { id: true },
+    orderBy: { _count: { id: "desc" } },
+    take: 5,
+  })
+  const topCourtNoCoach = await prisma.courtBooking.count({
+    where: { businessId: id, deletedAt: null, status: "COMPLETED", startTime: { gte: monthStart, lte: monthEnd }, coachId: null },
+  })
 
-  const topServicesWithNames = await Promise.all(
-    topServices.map(async (s: { serviceId: string; _count: { id: number } }) => {
+  const apptServiceRows = await Promise.all(
+    topApptServices.map(async (s: { serviceId: string; _count: { id: number } }) => {
       const service = await prisma.service.findUnique({ where: { id: s.serviceId }, select: { name: true } })
       return { name: service?.name || "Desconocido", count: s._count.id }
     })
   )
+  const coachServiceRows = await Promise.all(
+    topCourtServices.map(async (s: { coachId: string | null; _count: { id: number } }) => {
+      if (!s.coachId) return null
+      const coach = await prisma.clubCoach.findUnique({ where: { id: s.coachId }, select: { name: true } })
+      return { name: `Clase ${coach?.name || "Coach"}`, count: s._count.id }
+    })
+  )
+  const allServiceRows = [
+    ...apptServiceRows,
+    ...(coachServiceRows.filter(Boolean) as { name: string; count: number }[]),
+    ...(topCourtNoCoach > 0 ? [{ name: "Reserva de cancha", count: topCourtNoCoach }] : []),
+  ].sort((a, b) => b.count - a.count).slice(0, 5)
 
-  // Top clients
-  const topClients = await prisma.appointment.groupBy({
+  // Top clients (appointments + court bookings)
+  const topApptClients = await prisma.appointment.groupBy({
     by: ["clientId"],
-    where: { businessId: id, deletedAt: null, status: "COMPLETED" },
+    where: { businessId: id, deletedAt: null, status: "COMPLETED", clientId: { not: null } },
     _count: { id: true },
     orderBy: { _count: { id: "desc" } },
-    take: 5,
+    take: 10,
+  })
+  const topCourtClients = await prisma.courtBooking.groupBy({
+    by: ["clientId"],
+    where: { businessId: id, deletedAt: null, status: "COMPLETED", clientId: { not: null } },
+    _count: { id: true },
+    orderBy: { _count: { id: "desc" } },
+    take: 10,
   })
 
+  // Merge by clientId
+  const clientMap = new Map<string, number>()
+  for (const r of topApptClients) if (r.clientId) clientMap.set(r.clientId, (clientMap.get(r.clientId) ?? 0) + r._count.id)
+  for (const r of topCourtClients) if (r.clientId) clientMap.set(r.clientId, (clientMap.get(r.clientId) ?? 0) + r._count.id)
+  const topClientIds = [...clientMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
+
   const topClientsWithNames = await Promise.all(
-    topClients.map(async (c: { clientId: string; _count: { id: number } }) => {
-      const client = await prisma.client.findUnique({ where: { id: c.clientId }, select: { name: true } })
-      return { name: client?.name || "Desconocido", visits: c._count.id }
+    topClientIds.map(async ([clientId, visits]) => {
+      const client = await prisma.client.findUnique({ where: { id: clientId }, select: { name: true } })
+      return { name: client?.name || "Desconocido", visits }
     })
   )
 
@@ -105,7 +140,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       occupancyRate: total > 0 ? Math.round((completed / total) * 100) : 0,
       noShowRate: total > 0 ? Math.round((noShow / total) * 100) : 0,
     },
-    topServices: topServicesWithNames,
+    topServices: allServiceRows,
     topClients: topClientsWithNames,
   })
 }
