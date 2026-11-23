@@ -70,15 +70,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     orderBy: { _count: { id: "desc" } },
     take: 5,
   })
-  const topCourtServices = await prisma.courtBooking.groupBy({
-    by: ["coachId"],
-    where: { businessId: id, deletedAt: null, status: "COMPLETED", startTime: { gte: monthStart, lte: monthEnd }, NOT: { coachId: null } },
-    _count: { id: true },
-    orderBy: { _count: { id: "desc" } },
-    take: 5,
-  })
-  const topCourtNoCoach = await prisma.courtBooking.count({
-    where: { businessId: id, deletedAt: null, status: "COMPLETED", startTime: { gte: monthStart, lte: monthEnd }, coachId: null },
+  const courtBookingServiceRows = await prisma.courtBooking.findMany({
+    where: { businessId: id, deletedAt: null, status: "COMPLETED", startTime: { gte: monthStart, lte: monthEnd } },
+    select: { coachId: true },
   })
 
   const apptServiceRows = await Promise.all(
@@ -87,39 +81,41 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return { name: service?.name || "Desconocido", count: s._count.id }
     })
   )
+
+  // Group court bookings by coachId in code
+  const coachCountMap = new Map<string, number>()
+  let noCoachCount = 0
+  for (const r of courtBookingServiceRows) {
+    if (r.coachId) coachCountMap.set(r.coachId, (coachCountMap.get(r.coachId) ?? 0) + 1)
+    else noCoachCount++
+  }
   const coachServiceRows = await Promise.all(
-    topCourtServices.map(async (s: { coachId: string | null; _count: { id: number } }) => {
-      if (!s.coachId) return null
-      const coach = await prisma.clubCoach.findUnique({ where: { id: s.coachId }, select: { name: true } })
-      return { name: `Clase ${coach?.name || "Coach"}`, count: s._count.id }
+    [...coachCountMap.entries()].map(async ([coachId, count]) => {
+      const coach = await prisma.clubCoach.findUnique({ where: { id: coachId }, select: { name: true } })
+      return { name: `Clase ${coach?.name || "Coach"}`, count }
     })
   )
   const allServiceRows = [
     ...apptServiceRows,
-    ...(coachServiceRows.filter(Boolean) as { name: string; count: number }[]),
-    ...(topCourtNoCoach > 0 ? [{ name: "Reserva de cancha", count: topCourtNoCoach }] : []),
+    ...coachServiceRows,
+    ...(noCoachCount > 0 ? [{ name: "Reserva de cancha", count: noCoachCount }] : []),
   ].sort((a, b) => b.count - a.count).slice(0, 5)
 
   // Top clients (appointments + court bookings)
-  const topApptClients = await prisma.appointment.groupBy({
-    by: ["clientId"],
-    where: { businessId: id, deletedAt: null, status: "COMPLETED", NOT: { clientId: null } },
-    _count: { id: true },
-    orderBy: { _count: { id: "desc" } },
-    take: 10,
-  })
-  const topCourtClients = await prisma.courtBooking.groupBy({
-    by: ["clientId"],
-    where: { businessId: id, deletedAt: null, status: "COMPLETED", NOT: { clientId: null } },
-    _count: { id: true },
-    orderBy: { _count: { id: "desc" } },
-    take: 10,
-  })
+  const [apptClientRows, courtClientRows] = await Promise.all([
+    prisma.appointment.findMany({
+      where: { businessId: id, deletedAt: null, status: "COMPLETED" },
+      select: { clientId: true },
+    }),
+    prisma.courtBooking.findMany({
+      where: { businessId: id, deletedAt: null, status: "COMPLETED" },
+      select: { clientId: true },
+    }),
+  ])
 
-  // Merge by clientId
   const clientMap = new Map<string, number>()
-  for (const r of topApptClients) if (r.clientId) clientMap.set(r.clientId, (clientMap.get(r.clientId) ?? 0) + r._count.id)
-  for (const r of topCourtClients) if (r.clientId) clientMap.set(r.clientId, (clientMap.get(r.clientId) ?? 0) + r._count.id)
+  for (const r of apptClientRows) if (r.clientId) clientMap.set(r.clientId, (clientMap.get(r.clientId) ?? 0) + 1)
+  for (const r of courtClientRows) if (r.clientId) clientMap.set(r.clientId, (clientMap.get(r.clientId) ?? 0) + 1)
   const topClientIds = [...clientMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
 
   const topClientsWithNames = await Promise.all(
