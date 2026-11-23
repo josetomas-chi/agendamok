@@ -245,7 +245,14 @@ function calcPrice(court: Court | undefined, startTime: string, endTime: string,
     const ruleEnd = new Date(new Date(cursor).setHours(reh, rem, 0, 0))
     const segEnd = ruleEnd < end ? ruleEnd : end
     const segHours = (segEnd.getTime() - cursor.getTime()) / (1000 * 60 * 60)
-    total += rule.fixedSlots?.length ? Number(rule.price) : Number(rule.price) * segHours
+    if (rule.fixedSlots && rule.fixedSlots.length > 1) {
+      const [h0, m0] = rule.fixedSlots[0].split(":").map(Number)
+      const [h1, m1] = rule.fixedSlots[1].split(":").map(Number)
+      const slotHours = (h1 * 60 + m1 - (h0 * 60 + m0)) / 60
+      total += Number(rule.price) * (segHours / slotHours)
+    } else {
+      total += Number(rule.price) * segHours
+    }
     cursor = segEnd
   }
   return total
