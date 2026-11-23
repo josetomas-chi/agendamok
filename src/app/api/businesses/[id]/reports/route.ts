@@ -72,7 +72,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   })
   const topCourtServices = await prisma.courtBooking.groupBy({
     by: ["coachId"],
-    where: { businessId: id, deletedAt: null, status: "COMPLETED", startTime: { gte: monthStart, lte: monthEnd }, coachId: { not: null } },
+    where: { businessId: id, deletedAt: null, status: "COMPLETED", startTime: { gte: monthStart, lte: monthEnd }, NOT: { coachId: null } },
     _count: { id: true },
     orderBy: { _count: { id: "desc" } },
     take: 5,
@@ -103,14 +103,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   // Top clients (appointments + court bookings)
   const topApptClients = await prisma.appointment.groupBy({
     by: ["clientId"],
-    where: { businessId: id, deletedAt: null, status: "COMPLETED", clientId: { not: null } },
+    where: { businessId: id, deletedAt: null, status: "COMPLETED", NOT: { clientId: null } },
     _count: { id: true },
     orderBy: { _count: { id: "desc" } },
     take: 10,
   })
   const topCourtClients = await prisma.courtBooking.groupBy({
     by: ["clientId"],
-    where: { businessId: id, deletedAt: null, status: "COMPLETED", clientId: { not: null } },
+    where: { businessId: id, deletedAt: null, status: "COMPLETED", NOT: { clientId: null } },
     _count: { id: true },
     orderBy: { _count: { id: "desc" } },
     take: 10,
