@@ -1155,6 +1155,51 @@ function ClientCombobox({ clients, businessId, value, onSelect }: {
 
 type BookingLog = { id: string; fromStatus: string | null; toStatus: string; source: string; meta: string | null; createdAt: string }
 
+function PriceEditField({ price, onSave }: { price: number; onSave: (p: number) => Promise<void> }) {
+  const [editing, setEditing] = React.useState(false)
+  const [val, setVal] = React.useState(String(price))
+  const [saving, setSaving] = React.useState(false)
+
+  async function handleSave() {
+    const n = Number(val.replace(/\D/g, ""))
+    if (isNaN(n) || n < 0) return
+    setSaving(true)
+    await onSave(n)
+    setSaving(false)
+    setEditing(false)
+  }
+
+  if (!editing) return (
+    <button
+      className="flex items-center gap-1.5 text-sm font-semibold hover:opacity-70 transition-opacity"
+      style={{ color: "#0d1b2a" }}
+      onClick={() => { setVal(String(price)); setEditing(true) }}
+    >
+      ${price.toLocaleString("es-CL")}
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    </button>
+  )
+
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-sm font-semibold" style={{ color: "#0d1b2a" }}>$</span>
+      <input
+        autoFocus
+        type="number"
+        value={val}
+        onChange={e => setVal(e.target.value)}
+        onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setEditing(false) }}
+        className="w-28 text-sm font-semibold text-right rounded px-1.5 py-0.5 border"
+        style={{ color: "#0d1b2a", borderColor: "rgba(13,27,42,0.2)" }}
+      />
+      <button onClick={handleSave} disabled={saving} className="text-xs px-2 py-0.5 rounded font-semibold text-white" style={{ background: "#0ea5e9" }}>
+        {saving ? "…" : "OK"}
+      </button>
+      <button onClick={() => setEditing(false)} className="text-xs px-1.5 py-0.5 rounded font-semibold" style={{ color: "rgba(13,27,42,0.4)" }}>✕</button>
+    </div>
+  )
+}
+
 function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
   booking: Booking
   businessId: string
@@ -1579,7 +1624,7 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
               {[
                 { label: "Fecha", value: utcDate(booking.startTime, "EEEE d 'de' MMMM yyyy") },
                 { label: "Horario", value: `${utcTime(booking.startTime)} – ${utcTime(booking.endTime)}` },
-                { label: "Precio total", value: `$${Number(booking.price).toLocaleString("es-CL")}` },
+                { label: "Precio total", value: "__PRICE_EDITABLE__" },
                 ...(booking.status === "PENDING" && booking.notes?.includes("[flow:") ? [
                   { label: "Estado pago", value: "⏳ Pago online en verificación" },
                 ] : []),
@@ -1590,7 +1635,17 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between px-4 py-2.5" style={{ borderColor: "rgba(13,27,42,0.06)" }}>
                   <span className="text-xs uppercase tracking-wide font-semibold" style={{ color: "rgba(13,27,42,0.4)" }}>{label}</span>
-                  <span className="text-sm font-semibold" style={{ color: NAVY }}>{value}</span>
+                  {value === "__PRICE_EDITABLE__" ? (
+                    <PriceEditField
+                      price={Number(booking.price)}
+                      onSave={async (newPrice) => {
+                        const r = await patch({ price: newPrice })
+                        if (r.ok) onSaved()
+                      }}
+                    />
+                  ) : (
+                    <span className="text-sm font-semibold" style={{ color: NAVY }}>{value}</span>
+                  )}
                 </div>
               ))}
             </div>

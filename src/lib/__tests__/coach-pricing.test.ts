@@ -74,6 +74,22 @@ describe("calcCoachBookingPrice — COMMISSION", () => {
   })
 })
 
+describe("calcCoachBookingPrice — cruce de horario", () => {
+  it("18:30-19:30 cruza límite valle/punta → aplica tarifa proporcional de cada tramo", () => {
+    // 0.5h × 5000 (valle) + 0.5h × 15000 (punta) = 2500 + 7500 = 10000
+    const start = chileDate("2026-11-23", "18:30") // lunes
+    const end   = chileDate("2026-11-23", "19:30")
+    expect(calcCoachBookingPrice(coachArriendo, start, end)).toBe(10000)
+  })
+
+  it("COMMISSION 18:30-19:30 cruza límite → usa classPrice proporcional", () => {
+    // 0.5h × 20000 (valle) + 0.5h × 25000 (punta) = 10000 + 12500 = 22500
+    const start = chileDate("2026-11-23", "18:30")
+    const end   = chileDate("2026-11-23", "19:30")
+    expect(calcCoachBookingPrice(coachComision, start, end)).toBe(22500)
+  })
+})
+
 describe("calcCoachBookingPrice — COURT_FEE", () => {
   it("1h en horario valle → rule.price × 1 (no classPrice)", () => {
     const start = chileDate("2026-11-23", "10:00") // lunes, valle

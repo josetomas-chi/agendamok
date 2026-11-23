@@ -27,20 +27,38 @@ export function calcCoachBookingPrice(
   start: Date,
   end: Date,
 ): number {
-  const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
-  const dow = start.getUTCDay()
-  const h = String(start.getUTCHours()).padStart(2, "0")
-  const m = String(start.getUTCMinutes()).padStart(2, "0")
-  const timeStr = `${h}:${m}`
+  return segmentCoachPrice(coach, start, end, coach.paymentType === "COURT_FEE" ? "price" : "classPrice")
+}
 
-  const rule = coach.feeRules.find(r =>
-    r.days.map(Number).includes(dow) && timeStr >= r.startTime && timeStr < r.endTime
-  )
-  if (!rule) return 0
+function segmentCoachPrice(
+  coach: CoachPricingInput,
+  start: Date,
+  end: Date,
+  field: "price" | "classPrice",
+): number {
+  let total = 0
+  let cursor = new Date(start)
+  while (cursor < end) {
+    const dow = cursor.getUTCDay()
+    const h = String(cursor.getUTCHours()).padStart(2, "0")
+    const m = String(cursor.getUTCMinutes()).padStart(2, "0")
+    const timeStr = `${h}:${m}`
 
-  return coach.paymentType === "COURT_FEE"
-    ? Number(rule.price) * durationHours
-    : Number(rule.classPrice) * durationHours
+    const rule = coach.feeRules.find(r =>
+      r.days.map(Number).includes(dow) && timeStr >= r.startTime && timeStr < r.endTime
+    )
+    if (!rule) { cursor = new Date(cursor.getTime() + 60 * 1000); continue }
+
+    // Avanza hasta el fin de la regla o el fin de la reserva
+    const [reh, rem] = rule.endTime.split(":").map(Number)
+    const ruleEnd = new Date(cursor)
+    ruleEnd.setUTCHours(reh, rem, 0, 0)
+    const segEnd = ruleEnd < end ? ruleEnd : end
+    const segHours = (segEnd.getTime() - cursor.getTime()) / (1000 * 60 * 60)
+    total += Number(rule[field]) * segHours
+    cursor = segEnd
+  }
+  return total
 }
 
 /**
@@ -61,16 +79,8 @@ export function calcCoachSettlement(
     return { coachEarns, coachPays: 0, clubEarns: bookingPrice - coachEarns }
   }
 
-  // COURT_FEE
-  const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
-  const dow = start.getUTCDay()
-  const h = String(start.getUTCHours()).padStart(2, "0")
-  const m = String(start.getUTCMinutes()).padStart(2, "0")
-  const timeStr = `${h}:${m}`
-  const rule = coach.feeRules.find(r =>
-    r.days.map(Number).includes(dow) && timeStr >= r.startTime && timeStr < r.endTime
-  )
-  const coachPays = rule ? Number(rule.price) * durationHours : 0
+  // COURT_FEE: arriendo = segmentación por reglas
+  const coachPays = segmentCoachPrice(coach, start, end, "price")
   return { coachEarns: bookingPrice - coachPays, coachPays, clubEarns: coachPays }
 }
 
