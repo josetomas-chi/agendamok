@@ -175,6 +175,49 @@ export async function sendWhatsAppReactivation({
   await sendTemplate(phoneNumberId, to, "reactivacion", [clientName, businessName])
 }
 
+// ─── Nueva reserva de cancha (notificación interna al negocio) ───────────────
+// Template "nueva_reserva_cancha":
+// "🎾 Nueva reserva en *{{1}}*\n👤 {{2}}\n📋 {{3}}\n📅 {{4}} · {{5}} hrs\n💵 ${{6}} pagado"
+
+export async function sendWhatsAppOwnerNewCourtBooking({
+  phoneNumberId, ownerPhone, businessName, clientName, courtName, date, time, amount,
+}: {
+  phoneNumberId: string
+  ownerPhone: string
+  businessName: string
+  clientName: string
+  courtName: string
+  date: string
+  time: string
+  amount: string
+}) {
+  await sendTemplate(phoneNumberId, ownerPhone, "nueva_reserva_cancha", [
+    businessName, clientName, courtName, date, time, amount,
+  ])
+}
+
+// ─── Nuevo comprobante de transferencia (notificación interna al negocio) ─────
+// Template "nuevo_comprobante":
+// "📎 Comprobante recibido en *{{1}}*\n👤 {{2}} · {{3}}\n📅 {{4}} · {{5}} hrs\n💵 ${{6}}\nVer: {{7}}"
+
+export async function sendWhatsAppOwnerNewVoucher({
+  phoneNumberId, ownerPhone, businessName, clientName, courtName, date, time, amount, voucherUrl,
+}: {
+  phoneNumberId: string
+  ownerPhone: string
+  businessName: string
+  clientName: string
+  courtName: string
+  date: string
+  time: string
+  amount: string
+  voucherUrl: string
+}) {
+  await sendTemplate(phoneNumberId, ownerPhone, "nuevo_comprobante", [
+    businessName, clientName, courtName, date, time, amount, voucherUrl,
+  ])
+}
+
 // ─── Resumen diario ──────────────────────────────────────────────────────────
 // Template: "📊 Resumen de hoy en *{{1}}*: {{2}} turnos confirmados · {{3}} completados · {{4}} cancelados."
 
