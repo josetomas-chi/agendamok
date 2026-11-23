@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { calcCoachSettlement } from "@/lib/pricing"
 import { utcToChileLocal } from "@/lib/timezone"
 
 type Params = { params: Promise<{ id: string; coachId: string }> }
@@ -44,28 +45,9 @@ export async function GET(req: Request, { params }: Params) {
     const durationHours = durationMinutes / 60
     const price = Number(b.price)
 
-    let coachEarns = 0
-    let coachPays = 0
-    let clubEarns = 0
-
     const startChile = utcToChileLocal(b.startTime)
-    const timeStr = `${String(startChile.getUTCHours()).padStart(2, "0")}:${String(startChile.getUTCMinutes()).padStart(2, "0")}`
-    const dow = startChile.getUTCDay()
-    const rule = coach.feeRules.find(
-      (r: { days: number[]; startTime: string; endTime: string }) => r.days.includes(dow) && timeStr >= r.startTime && timeStr < r.endTime
-    )
-
-    if (coach.paymentType === "COMMISSION") {
-      // Coach recibe su % del precio de la clase; el club se queda con el resto
-      const pct = coach.commissionPercent ?? 0
-      coachEarns = price * (pct / 100)
-      clubEarns = price - coachEarns
-    } else {
-      // COURT_FEE: el club cobra arriendo fijo; el coach se queda con el resto
-      coachPays = rule ? Number(rule.price) * durationHours : 0
-      clubEarns = coachPays
-      coachEarns = price - coachPays
-    }
+    const endChile = utcToChileLocal(b.endTime)
+    const { coachEarns, coachPays, clubEarns } = calcCoachSettlement(coach, price, startChile, endChile)
 
     return {
       id: b.id,

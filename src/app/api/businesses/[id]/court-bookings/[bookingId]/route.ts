@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendCourtBookingModification, sendCourtBookingCancellation } from "@/lib/email"
+import { calcCoachBookingPrice } from "@/lib/pricing"
 import { utcToChileLocal } from "@/lib/timezone"
 
 type Params = { params: Promise<{ id: string; bookingId: string }> }
@@ -87,17 +88,7 @@ export async function PATCH(req: Request, { params }: Params) {
             where: { id: current.coachId },
             include: { feeRules: true },
           })
-          if (coach) {
-            const timeStr = `${String(startChile.getHours()).padStart(2, "0")}:${String(startChile.getMinutes()).padStart(2, "0")}`
-            const feeRule = coach.feeRules.find(r =>
-              r.days.map(Number).includes(dayOfWeek) && timeStr >= r.startTime && timeStr < r.endTime
-            )
-            if (feeRule) {
-              data.price = coach.paymentType === "COURT_FEE"
-                ? Number(feeRule.price) * durationHours
-                : Number(feeRule.classPrice) * durationHours
-            }
-          }
+          if (coach) data.price = calcCoachBookingPrice(coach, startChile, endChile)
         } else {
           // Reserva sin coach: recalcular proporcional según tarifas de la cancha
           const resolvedCourtId = courtId ?? current.courtId

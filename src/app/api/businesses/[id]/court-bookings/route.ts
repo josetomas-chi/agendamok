@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendCourtBookingConfirmation } from "@/lib/email"
-import { calcCourtPrice } from "@/lib/pricing"
+import { calcCourtPrice, calcCoachBookingPrice } from "@/lib/pricing"
 import { utcToChileLocal } from "@/lib/timezone"
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -122,16 +122,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!isBlock) {
     if (coachId) {
       const coach = await prisma.clubCoach.findUnique({ where: { id: coachId }, include: { feeRules: true } })
-      if (coach) {
-        const rule = coach.feeRules.find(r => r.days.includes(startChile.getDay()) && timeStr >= r.startTime && timeStr < r.endTime)
-        if (rule) {
-          // COURT_FEE: el precio guardado es el arriendo que paga al club (rule.price)
-          // COMMISSION: el precio guardado es lo que cobra al alumno (rule.classPrice)
-          price = coach.paymentType === "COURT_FEE"
-            ? Number(rule.price) * durationHours
-            : Number(rule.classPrice) * durationHours
-        }
-      }
+      if (coach) price = calcCoachBookingPrice(coach, startChile, endChile)
     } else {
       const holiday = await prisma.clubHoliday.findFirst({
         where: { businessId: id, date: { gte: new Date(start.toDateString()), lt: new Date(new Date(start.toDateString()).getTime() + 86400000) }, type: "SURCHARGE" },

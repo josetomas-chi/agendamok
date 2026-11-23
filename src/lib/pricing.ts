@@ -1,5 +1,79 @@
 import type { CourtPricingRule } from "@prisma/client"
 
+// ─── Coach types ──────────────────────────────────────────────────────────────
+
+export type CoachFeeRule = {
+  days: number[]
+  startTime: string  // "HH:mm"
+  endTime: string    // "HH:mm"
+  classPrice: number // lo que cobra el profe al alumno por hora
+  price: number      // arriendo que paga el profe al club por hora (COURT_FEE)
+}
+
+export type CoachPricingInput = {
+  paymentType: "COMMISSION" | "COURT_FEE"
+  commissionPercent?: number | null
+  feeRules: CoachFeeRule[]
+}
+
+/**
+ * Calcula el precio a guardar en CourtBooking cuando hay coach.
+ * - COMMISSION: se guarda classPrice × horas (precio al alumno del que el club toma su %)
+ * - COURT_FEE:  se guarda rule.price × horas (arriendo fijo al club)
+ * Recibe fechas con la hora chilena bakeada como UTC (resultado de utcToChileLocal).
+ */
+export function calcCoachBookingPrice(
+  coach: CoachPricingInput,
+  start: Date,
+  end: Date,
+): number {
+  const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
+  const dow = start.getUTCDay()
+  const h = String(start.getUTCHours()).padStart(2, "0")
+  const m = String(start.getUTCMinutes()).padStart(2, "0")
+  const timeStr = `${h}:${m}`
+
+  const rule = coach.feeRules.find(r =>
+    r.days.map(Number).includes(dow) && timeStr >= r.startTime && timeStr < r.endTime
+  )
+  if (!rule) return 0
+
+  return coach.paymentType === "COURT_FEE"
+    ? Number(rule.price) * durationHours
+    : Number(rule.classPrice) * durationHours
+}
+
+/**
+ * Calcula los montos de liquidación para una sesión completada con coach.
+ * - COMMISSION: coach gana su % del precio guardado; club gana el resto
+ * - COURT_FEE:  coach paga arriendo al club según regla; coach gana el resto
+ * Devuelve coachEarns, coachPays, clubEarns (todos en pesos).
+ */
+export function calcCoachSettlement(
+  coach: CoachPricingInput,
+  bookingPrice: number,       // CourtBooking.price ya guardado
+  start: Date,                // Chile-local bakeada como UTC
+  end: Date,
+): { coachEarns: number; coachPays: number; clubEarns: number } {
+  if (coach.paymentType === "COMMISSION") {
+    const pct = coach.commissionPercent ?? 0
+    const coachEarns = bookingPrice * (pct / 100)
+    return { coachEarns, coachPays: 0, clubEarns: bookingPrice - coachEarns }
+  }
+
+  // COURT_FEE
+  const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
+  const dow = start.getUTCDay()
+  const h = String(start.getUTCHours()).padStart(2, "0")
+  const m = String(start.getUTCMinutes()).padStart(2, "0")
+  const timeStr = `${h}:${m}`
+  const rule = coach.feeRules.find(r =>
+    r.days.map(Number).includes(dow) && timeStr >= r.startTime && timeStr < r.endTime
+  )
+  const coachPays = rule ? Number(rule.price) * durationHours : 0
+  return { coachEarns: bookingPrice - coachPays, coachPays, clubEarns: coachPays }
+}
+
 type Holiday = {
   surchargeType: string | null
   surchargeValue: number | null
