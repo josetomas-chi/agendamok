@@ -240,7 +240,7 @@ export default function ReportsPage() {
                 <YAxis type="category" dataKey="sport" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={90} />
                 <Tooltip
                   formatter={(v) => [`$${Number(v).toLocaleString("es-CL")}`, "Ingresos"]}
-                  contentStyle={{ background: "#1a1a1e", border: "1px solid #3a3a3c", borderRadius: 8, color: "#38bdf8" }}
+                  contentStyle={{ background: "#1a1a1e", border: "1px solid #3a3a3c", borderRadius: 8, color: "#f4f4f5" }}
                   labelStyle={{ color: "#a1a1aa" }}
                   cursor={{ fill: "#ffffff08" }}
                 />
