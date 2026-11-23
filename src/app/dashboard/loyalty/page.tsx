@@ -383,40 +383,85 @@ export default function LoyaltyPage() {
 
       {/* ── HISTORY ────────────────────────────────────────── */}
       {tab === "history" && (
-        <div style={card}>
+        <div className="space-y-4">
           {loadingTx ? (
-            <div className="py-12 flex justify-center"><Loader2 className="w-5 h-5 animate-spin" style={{ color: ACCENT }} /></div>
+            <div style={card} className="py-12 flex justify-center"><Loader2 className="w-5 h-5 animate-spin" style={{ color: ACCENT }} /></div>
           ) : transactions.length === 0 ? (
-            <div className="py-12 text-center">
+            <div style={card} className="py-12 text-center">
               <History className="w-10 h-10 mx-auto mb-3" style={{ color: MUTED2 }} />
               <p className="text-sm" style={{ color: MUTED }}>Aún no hay transacciones</p>
             </div>
-          ) : (
-            <div>
-              {transactions.map((tx, i) => (
-                <div key={tx.id} className="px-4 py-3.5 flex items-center gap-3"
-                  style={{ borderBottom: i < transactions.length - 1 ? BORDER : undefined }}>
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-black"
-                    style={{ background: tx.type === "EARN" ? "rgba(34,197,94,0.1)" : "rgba(251,146,60,0.1)", color: tx.type === "EARN" ? "#16a34a" : "#ea580c" }}>
-                    {tx.type === "EARN" ? "+" : "−"}
+          ) : (() => {
+            // Top clientes por puntos ganados
+            const earnMap = new Map<string, { name: string; pts: number }>()
+            for (const tx of transactions) {
+              if (tx.type !== "EARN") continue
+              const key = tx.client.id
+              const name = `${tx.client.name}${tx.client.lastName ? " " + tx.client.lastName : ""}`
+              earnMap.set(key, { name, pts: (earnMap.get(key)?.pts ?? 0) + tx.points })
+            }
+            const topClients = [...earnMap.values()].sort((a, b) => b.pts - a.pts).slice(0, 5)
+            const maxPts = topClients[0]?.pts ?? 1
+
+            return (
+              <>
+                {/* Ranking */}
+                <div style={card}>
+                  <div className="px-4 pt-4 pb-2">
+                    <p className="text-sm font-bold" style={{ color: NAVY }}>Clientes con más puntos acumulados</p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: NAVY }}>{tx.client.name} {tx.client.lastName ?? ""}</p>
-                    <p className="text-xs truncate" style={{ color: MUTED }}>{tx.description}</p>
-                    {tx.staffName && <p className="text-[10px]" style={{ color: MUTED2 }}>por {tx.staffName}</p>}
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-black" style={{ color: tx.type === "EARN" ? "#16a34a" : "#ea580c" }}>
-                      {tx.type === "EARN" ? "+" : ""}{tx.points} pts
-                    </p>
-                    <p className="text-[10px]" style={{ color: MUTED2 }}>
-                      {new Date(tx.createdAt).toLocaleDateString("es-CL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                    </p>
+                  <div className="px-4 pb-4 space-y-3">
+                    {topClients.map((c, i) => (
+                      <div key={c.name} className="flex items-center gap-3">
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black text-white flex-shrink-0"
+                          style={{ background: i === 0 ? "#f59e0b" : i === 1 ? "#94a3b8" : i === 2 ? "#b45309" : ACCENT }}>
+                          {i + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold truncate" style={{ color: NAVY }}>{c.name}</p>
+                          <div className="h-1.5 rounded-full mt-1" style={{ background: "rgba(13,27,42,0.08)" }}>
+                            <div className="h-1.5 rounded-full transition-all" style={{ width: `${(c.pts / maxPts) * 100}%`, background: ACCENT }} />
+                          </div>
+                        </div>
+                        <span className="text-sm font-black flex-shrink-0" style={{ color: "#16a34a" }}>{c.pts} pts</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+
+                {/* Historial */}
+                <div style={card}>
+                  <div className="px-4 pt-4 pb-2">
+                    <p className="text-sm font-bold" style={{ color: NAVY }}>Últimas transacciones</p>
+                  </div>
+                  <div>
+                    {transactions.map((tx, i) => (
+                      <div key={tx.id} className="px-4 py-3.5 flex items-center gap-3"
+                        style={{ borderTop: `1px solid ${BORDER}` }}>
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-black"
+                          style={{ background: tx.type === "EARN" ? "rgba(34,197,94,0.1)" : "rgba(251,146,60,0.1)", color: tx.type === "EARN" ? "#16a34a" : "#ea580c" }}>
+                          {tx.type === "EARN" ? "+" : "−"}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold truncate" style={{ color: NAVY }}>{tx.client.name} {tx.client.lastName ?? ""}</p>
+                          <p className="text-xs truncate" style={{ color: MUTED }}>{tx.description}</p>
+                          {tx.staffName && <p className="text-[10px]" style={{ color: MUTED2 }}>por {tx.staffName}</p>}
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-black" style={{ color: tx.type === "EARN" ? "#16a34a" : "#ea580c" }}>
+                            {tx.type === "EARN" ? "+" : ""}{tx.points} pts
+                          </p>
+                          <p className="text-[10px]" style={{ color: MUTED2 }}>
+                            {new Date(tx.createdAt).toLocaleDateString("es-CL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )
+          })()}
         </div>
       )}
 
