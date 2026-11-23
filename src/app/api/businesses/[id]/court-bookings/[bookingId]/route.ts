@@ -92,7 +92,11 @@ export async function PATCH(req: Request, { params }: Params) {
             const feeRule = coach.feeRules.find(r =>
               r.days.map(Number).includes(dayOfWeek) && timeStr >= r.startTime && timeStr < r.endTime
             )
-            if (feeRule) data.price = Number(feeRule.classPrice) * durationHours
+            if (feeRule) {
+              data.price = coach.paymentType === "COURT_FEE"
+                ? Number(feeRule.price) * durationHours
+                : Number(feeRule.classPrice) * durationHours
+            }
           }
         } else {
           // Reserva sin coach: recalcular proporcional según tarifas de la cancha

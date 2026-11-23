@@ -124,7 +124,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       const coach = await prisma.clubCoach.findUnique({ where: { id: coachId }, include: { feeRules: true } })
       if (coach) {
         const rule = coach.feeRules.find(r => r.days.includes(startChile.getDay()) && timeStr >= r.startTime && timeStr < r.endTime)
-        if (rule) price = Number(rule.classPrice) * durationHours
+        if (rule) {
+          // COURT_FEE: el precio guardado es el arriendo que paga al club (rule.price)
+          // COMMISSION: el precio guardado es lo que cobra al alumno (rule.classPrice)
+          price = coach.paymentType === "COURT_FEE"
+            ? Number(rule.price) * durationHours
+            : Number(rule.classPrice) * durationHours
+        }
       }
     } else {
       const holiday = await prisma.clubHoliday.findFirst({
