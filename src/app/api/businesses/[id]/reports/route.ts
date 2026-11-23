@@ -36,17 +36,31 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     })
   )
 
-  // This month stats
-  const [totalAppts, completedAppts, cancelledAppts, noShowAppts, monthRevenue] = await Promise.all([
+  // This month stats (appointments + court bookings)
+  const courtWhere = (extra: object) => ({ businessId: id, deletedAt: null, startTime: { gte: monthStart, lte: monthEnd }, ...extra })
+
+  const [
+    totalAppts, completedAppts, cancelledAppts, noShowAppts,
+    totalCourt, completedCourt, cancelledCourt,
+    monthRevenue,
+  ] = await Promise.all([
     prisma.appointment.count({ where: { businessId: id, deletedAt: null, startTime: { gte: monthStart, lte: monthEnd } } }),
     prisma.appointment.count({ where: { businessId: id, deletedAt: null, status: "COMPLETED", startTime: { gte: monthStart, lte: monthEnd } } }),
     prisma.appointment.count({ where: { businessId: id, deletedAt: null, status: "CANCELLED", startTime: { gte: monthStart, lte: monthEnd } } }),
     prisma.appointment.count({ where: { businessId: id, deletedAt: null, status: "NO_SHOW", startTime: { gte: monthStart, lte: monthEnd } } }),
+    prisma.courtBooking.count({ where: courtWhere({}) }),
+    prisma.courtBooking.count({ where: courtWhere({ status: "COMPLETED" }) }),
+    prisma.courtBooking.count({ where: courtWhere({ status: "CANCELLED" }) }),
     prisma.payment.aggregate({
       where: paymentWhere({ paidAt: { gte: monthStart, lte: monthEnd } }),
       _sum: { amount: true },
     }),
   ])
+
+  const total = totalAppts + totalCourt
+  const completed = completedAppts + completedCourt
+  const cancelled = cancelledAppts + cancelledCourt
+  const noShow = noShowAppts
 
   // Top services
   const topServices = await prisma.appointment.groupBy({
@@ -83,13 +97,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   return NextResponse.json({
     revenueByMonth,
     monthStats: {
-      total: totalAppts,
-      completed: completedAppts,
-      cancelled: cancelledAppts,
-      noShow: noShowAppts,
+      total,
+      completed,
+      cancelled,
+      noShow,
       revenue: Number(monthRevenue._sum.amount || 0),
-      occupancyRate: totalAppts > 0 ? Math.round((completedAppts / totalAppts) * 100) : 0,
-      noShowRate: totalAppts > 0 ? Math.round((noShowAppts / totalAppts) * 100) : 0,
+      occupancyRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+      noShowRate: total > 0 ? Math.round((noShow / total) * 100) : 0,
     },
     topServices: topServicesWithNames,
     topClients: topClientsWithNames,
