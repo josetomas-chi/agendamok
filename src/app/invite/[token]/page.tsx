@@ -85,8 +85,7 @@ function InviteContent() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
           <span className="font-bold text-2xl tracking-tight">Agenda<span className="text-sky-400">Mok</span></span>
-          <p className="text-white/50 text-sm mt-2">Te invitaron a unirte como <strong className="text-white">Recepcionista</strong> en</p>
-          <p className="text-sky-400 font-semibold text-lg">{info?.businessName}</p>
+          <p className="text-white/50 text-sm mt-2">{info?.businessName ? <>Crea tu contraseña para acceder a <strong className="text-white">{info.businessName}</strong></> : "Crea tu contraseña para empezar a reservar"}</p>
         </div>
 
         <div className="bg-[#2c2c30] border border-white/10 rounded-2xl p-6 space-y-4">
