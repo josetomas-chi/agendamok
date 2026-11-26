@@ -1812,6 +1812,20 @@ function BookingDetail({ booking, businessId, clients, onClose, onSaved }: {
                       </button>
                     )}
                   </div>
+                  {isCompleted && (
+                    <button onClick={async () => {
+                      if (!confirm("¿Revertir esta reserva a Confirmada? Se eliminará el pago registrado.")) return
+                      setSaving(true)
+                      const r = await fetch(`/api/businesses/${businessId}/court-bookings/${booking.id}/revert`, { method: "POST" })
+                      setSaving(false)
+                      if (r.ok) { toast.success("Reserva revertida a Confirmada"); onSaved() }
+                      else toast.error("Error al revertir")
+                    }} disabled={saving}
+                      className="w-full h-9 rounded-xl text-xs font-medium transition-colors disabled:opacity-50"
+                      style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)", color: "rgba(161,120,0,0.8)" }}>
+                      ↩ Revertir a Confirmada
+                    </button>
+                  )}
                 </div>
 
                 {/* Acciones de la serie recurrente */}
